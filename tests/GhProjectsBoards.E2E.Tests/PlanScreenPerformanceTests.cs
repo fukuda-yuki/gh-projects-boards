@@ -97,7 +97,7 @@ public sealed class PlanScreenPerformanceTests
             window.SetForeground();
             AutomationElement Find(string id) => window.FindFirstDescendant(c => c.ByAutomationId(id)) ?? throw new AssertionException("Missing control: " + id);
             Find("PlanConnect").AsButton().Invoke();
-            Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 2);
+            Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 1);
             Find("AvailableProjects").AsListBox().Select(0);
             Wait(() => Find("OpenProjectName").Properties.Name.ValueOrDefault == "第2027.04版");
             Wait(() => Find("PlanCell1_Title").IsOffscreen == false && Find("PlanUnpublished").Properties.Name.ValueOrDefault == "未発行 0 タスク");

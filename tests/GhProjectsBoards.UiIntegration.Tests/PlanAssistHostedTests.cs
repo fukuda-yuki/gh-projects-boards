@@ -491,7 +491,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             await PickerCommand("PlanConnection"); await Ui.Run(() => Ui.Click("PlanConnect"));
         } else {
             await PickerCommand("PlanChooseProject");
-            await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
+            await ProjectChooserTestActions.SelectOwner("acme");
+            await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         }
         await Ui.Until(() => runtime.Disposed == 1);
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);

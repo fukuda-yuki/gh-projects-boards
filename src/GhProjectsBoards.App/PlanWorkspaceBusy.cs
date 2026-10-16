@@ -144,6 +144,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private async Task OpenProject(ProjectChoice? choice, string? address = null, bool readAgain = false)
     {
+        await chooser.Stop();
         CancelDetail(clearCache: true);
         await EndAssist(); ClearAssistMessages();
         openFailure.IsOpen = false;

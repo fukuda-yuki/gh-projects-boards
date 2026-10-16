@@ -560,7 +560,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await PickerCommand("PlanChooseProject");
-        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedItem = workspace.Available.Single(p => p.Id.NodeId == "P2"));
+        await ProjectChooserTestActions.SelectOwner("acme");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Idle();
         await OpenProjectPicker();
         await WaitForProjectPickerItems("P2");
@@ -590,7 +591,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await PickerCommand("PlanChooseProject");
-        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedItem = workspace.Available.Single(p => p.Id.NodeId == "P2"));
+        await ProjectChooserTestActions.SelectOwner("acme");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Idle();
         await OpenProjectPicker();
         await WaitForProjectPickerItems("P2");
@@ -1028,7 +1030,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => { var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "80"; });
         await PickerCommand("PlanChooseProject");
         await Ui.Until(() => workspace.Session!.Document.State.Settings.People.Any(p => p.Allowance == 80));
-        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
+        await ProjectChooserTestActions.SelectOwner("acme");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Session!.Document.Project.NodeId == "P2");
         await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => {
@@ -1208,13 +1211,14 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (previousProject) await Open();
         else {
             await Ui.Run(() => Ui.Click("PlanConnect"));
-            await Ui.Until(() => workspace.Available.Count == 2);
+            await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1);
         }
         var previous = workspace.Session;
         var selected = workspace.Selected;
         if (previousProject) await PickerCommand("PlanChooseProject");
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "ProjectFields" }));
-        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = previousProject ? 1 : 0);
+        if (previousProject) await ProjectChooserTestActions.SelectOwner("acme");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         try {
             await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Visible);
             await Ui.Until(() => new[] { "PlanBusyPanel", "PlanBusyRing", "PlanBusyHeading", "PlanBusyCancel" }
@@ -1222,7 +1226,7 @@ internal sealed partial class PlanWorkspaceHostedTests
                     element.IsLoaded && element.ActualWidth > 0 && element.ActualHeight > 0)));
             await Ui.Run(async () => await RenderedEvidence.Capture(view, "opening-before-cancel-" + previousProject));
             await Ui.Run(() => {
-                var expected = workspace.Available[previousProject ? 1 : 0].Title;
+                var expected = previousProject ? "運用計画" : "開発計画";
                 Assert.That(Ui.Find<TextBlock>("OpenProjectName").Text, Is.EqualTo(expected));
                 Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo(expected + " を読み込み中"));
                 Assert.That(AutomationProperties.GetName(Ui.Find<ContentControl>("PlanBusyPanel")), Does.StartWith(expected + " を開いています"));
@@ -1262,7 +1266,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (previousProject) { await Open(); await PickerCommand("PlanChooseProject"); }
         else {
             await Ui.Run(() => Ui.Click("PlanConnect"));
-            await Ui.Until(() => workspace.Available.Count == 2);
+            await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1);
         }
         var previous = workspace.Session;
         var selected = workspace.Selected;
@@ -1308,7 +1312,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (refresh) await Open();
         else {
             await Ui.Run(() => Ui.Click("PlanConnect"));
-            await Ui.Until(() => workspace.Available.Count == 2);
+            await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1);
         }
         var observed = false;
         var enabled = true;
@@ -1711,7 +1715,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await PickerCommand("PlanChooseProject");
-        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
+        await ProjectChooserTestActions.SelectOwner("acme");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P2");
         await Ui.Idle();
         await Settings();
@@ -1726,7 +1731,7 @@ internal sealed partial class PlanWorkspaceHostedTests
                 if (switchProject) {
                     Ui.Click("PlanProjectPicker");
                     await Ui.Ready<ListView>("RegisteredProjects");
-                    Ui.Find<ListView>("RegisteredProjects").SelectedIndex = 0;
+                    Ui.Find<ListView>("RegisteredProjects").SelectedItem = workspace.Registered.Single(p => p.Id.NodeId == "P1");
                 }
                 else Ui.Click("PlanShowTasks");
             };
@@ -1764,15 +1769,16 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
     }
     [Test]
-    public async Task ConnectListsPersonalAndOrganizationProjectsAndOneClickOpensMappedTasks()
+    public async Task ConnectListsOwnersAndOneClickOpensMappedTasks()
     {
         await Ui.Run(() => Ui.Click("PlanConnect"));
-        await Ui.Until(() => workspace.Available.Count == 2 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
+        await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         string problem = "";
         await Ui.Run(() => problem = Ui.Find<TextBlock>("PlanError").Text);
         Assert.That(problem, Is.Empty);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<ListView>("AvailableProjects").Items.Count, Is.EqualTo(2));
+            Assert.That(Ui.Find<ListView>("PlanProjectOwners").Items.Cast<OwnerChoice>().Select(o => o.Login), Is.EqualTo(new[] { "fixture-user", "acme" }));
+            Assert.That(Ui.Find<ListView>("AvailableProjects").Items.Count, Is.EqualTo(1));
             Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0;
         });
         await Ui.Until(() => workspace.Session is not null);
@@ -1822,7 +1828,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     private async Task Open(string firstTitle = "設計")
     {
         await Ui.Run(() => Ui.Click("PlanConnect"));
-        await Ui.Until(() => workspace.Available.Count == 2 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
+        await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
             Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0;
@@ -1855,7 +1861,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await CommitText("PlanCell1_Title", "未発行の設計");
         await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Title == "未発行の設計");
         await PickerCommand("PlanChooseProject");
-        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
+        await ProjectChooserTestActions.SelectOwner("acme");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P2");
         await Ui.Idle();
         await SelectRegistered("P1");
@@ -2161,7 +2168,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => oldRate = Ui.Find<NumberBox>("PlanRateU1"));
         await PickerCommand("PlanChooseProject");
         await Ui.Ready<ListView>("AvailableProjects");
-        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
+        await ProjectChooserTestActions.SelectOwner("acme");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Selected!.Id.NodeId == "P2"); await Ui.Idle();
         await Ui.Run(() => oldRate.Value = 50); await Ui.Idle();
         Assert.That(workspace.Session!.UndoCount, Is.Zero);
@@ -2261,6 +2269,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanConnect"));
         await Ui.Until(() => Ui.Find<InfoBar>("PlanOpenFailure").IsOpen || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Ready<Button>("PlanReadAgain");
+        await ProjectChooserTestActions.SelectOwner("acme");
         await Ui.Run(() => {
             var failure = Ui.Find<InfoBar>("PlanOpenFailure");
             Assert.That(failure.Title, Is.EqualTo("計画を開けませんでした"));
@@ -2269,7 +2278,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<InfoBar>("PlanSaveFailure").IsOpen, Is.False);
             Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
             var others = Ui.Find<ListView>("AvailableProjects");
-            Assert.That(others.Items.Count, Is.EqualTo(2)); Assert.That(others.ActualHeight, Is.GreaterThan(0), "The other Projects stay reachable.");
+            Assert.That(others.Items.Cast<ProjectChoice>().Single().Id.NodeId, Is.EqualTo("P2"));
+            Assert.That(others.IsEnabled, Is.True); Assert.That(others.ActualHeight, Is.GreaterThan(0), "The other Projects stay reachable.");
         });
         Assert.That(await File.ReadAllTextAsync(path), Is.EqualTo(unreadable), "Showing the failure never changes the stored plan.");
 
@@ -2290,7 +2300,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await PickerCommand("PlanChooseProject");
-        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
+        await ProjectChooserTestActions.SelectOwner("acme");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P2"); await Ui.Idle();
         await SelectRegistered("P1");
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P1"); await Ui.Idle();
@@ -2321,7 +2332,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         if (stage == "open") {
             await Ui.Run(() => Ui.Click("PlanConnect"));
-            await Ui.Until(() => workspace.Available.Count == 2); await Ui.Idle();
+            await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1); await Ui.Idle();
         }
         else if (stage is "refresh" or "csv") await Open();
         if (stage == "csv")
@@ -2371,11 +2382,13 @@ internal sealed partial class PlanWorkspaceHostedTests
         var scope = new ConnectionScope("github.com", 42);
         var choices = Enumerable.Range(1, 40).Select(i => new ProjectChoice(new(scope, "P" + i), new(scope, "O1"),
             "fixture-user", "User", i, "https://github.com/users/fixture-user/projects/" + i,
-            i == 1 ? "codex-sandbox" : "計画 " + i)).ToImmutableArray();
+            i == 40 ? "codex-sandbox" : "計画 " + i)).ToImmutableArray();
         Directory.CreateDirectory(workspace.Root);
         File.WriteAllText(Path.Combine(workspace.Root, "workspace.json"), PlanJson.Text(new PlanWorkspaceCatalog(1, choices, null)));
         await Ui.Run(() => { view.Width = 900; view.Height = 620; Ui.Click("PlanConnect"); });
         await Ui.Until(() => workspace.Registered.Count == 40); await Ui.Idle();
+        await Ui.Until(() => Ui.Find<ListView>("PlanRecentProjects").Items.Count == 5);
+        await Ui.Run(() => Assert.That(Ui.Find<ListView>("PlanRecentProjects").Items.Cast<ProjectChoice>().Select(p => p.Number), Is.EqualTo(new[] { 40, 39, 38, 37, 36 })));
         await OpenProjectPicker();
         await Ui.Until(() => Ui.Find<ListView>("RegisteredProjects").ContainerFromIndex(0) is ListViewItem { IsLoaded: true });
         await Ui.Run(() => {

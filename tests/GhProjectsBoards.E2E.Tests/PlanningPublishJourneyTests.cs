@@ -44,7 +44,7 @@ public sealed class PlanningPublishJourneyTests
                 Find("PlanConnect").AsButton().Invoke();
                 if (launch == 0)
                 {
-                    Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 2);
+                    Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 1);
                     Find("AvailableProjects").AsListBox().Select(0);
                 }
                 Wait(() => Find("PlanCell1_Title").AsTextBox().Text == (launch == 0 || interrupted ? "設計" : "設計の更新"));

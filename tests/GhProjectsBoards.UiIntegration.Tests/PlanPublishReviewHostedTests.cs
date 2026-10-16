@@ -50,7 +50,7 @@ internal sealed class PlanPublishReviewHostedTests
         FakePlanEditor.Save(root, new(Enumerable.Range(1, count).Select(i => new PlanFakeIssue(
             new("I" + i, "要求タスク " + i, "acme/repo") { Estimate = 8, Remaining = 8, Actual = 0, Start = publishedDay, End = publishedDay }, "", true)).ToImmutableArray(), count + 1));
         await Ui.Run(() => Ui.Click("PlanConnect"));
-        await Ui.Until(() => workspace.Available.Count == 2 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
+        await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Run(() => { Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty); Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0; });
         await Ui.Until(() => workspace.Session is not null);
         await Ui.Ready<PlanSheetCell>("PlanCell1_Title");
@@ -163,8 +163,9 @@ internal sealed class PlanPublishReviewHostedTests
             await Ui.Ready<Button>("PlanChooseProject");
             await Ui.Run(() => Ui.Click("PlanChooseProject"));
             await Ui.Ready<ListView>("AvailableProjects");
-            await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
-            await Ui.Until(() => workspace.Selected!.Id == workspace.Available[1].Id && Ui.Find<Button>("PlanPublish").IsEnabled);
+            await ProjectChooserTestActions.SelectOwner("acme");
+            await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
+            await Ui.Until(() => workspace.Selected!.Id.NodeId == "P2" && Ui.Find<Button>("PlanPublish").IsEnabled);
         }
         else
         {

@@ -46,14 +46,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Button undoButton, redoButton;
     private string currentPage = "connection", settingsReturnPage = "tasks";
     private readonly StackPanel connection = new() { Spacing = 8, MaxWidth = 540, HorizontalAlignment = HorizontalAlignment.Left };
-    private readonly StackPanel chooser = new() { Spacing = 8 };
+    private readonly PlanProjectChooser chooser;
     private readonly StackPanel settings = new() { Spacing = 12, MaxWidth = 850, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly ScrollViewer settingsScroll;
     private readonly Grid settingsArea = new() { RowSpacing = 12 };
     private readonly Button settingsBack;
     private FrameworkElement? columnSettingsHeading;
     private readonly ListView registered = Id(new ListView { SelectionMode = ListViewSelectionMode.Single }, "RegisteredProjects");
-    private readonly ListView available = Id(new ListView { SelectionMode = ListViewSelectionMode.Single, MaxHeight = 450 }, "AvailableProjects");
     private readonly Dictionary<ScopedId, PlanSheetView> sheets = [];
     private PlanSheetView? sheet;
     private readonly Grid taskArea = new();
@@ -112,7 +111,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         for (var i = 0; i < 3; i++) root.RowDefinitions.Add(new() { Height = GridLength.Auto });
         root.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         root.RowDefinitions.Add(new() { Height = GridLength.Auto });
-        registered.ItemTemplate = available.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanProjectChoiceTemplate"];
+        registered.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanProjectChoiceTemplate"];
         registered.MaxHeight = 320;
         registered.ContainerContentChanging += (_, args) => {
             if (args.InRecycleQueue) return;
@@ -208,27 +207,23 @@ internal sealed partial class PlanWorkspaceView : UserControl
         failures.Children.Add(refreshFailure); failures.Children.Add(publishFailure); failures.Children.Add(openFailure); failures.Children.Add(saveFailure); failures.Children.Add(sheetFailureHost);
         root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
+        var address = new Expander { Header = "URLで開く", HorizontalAlignment = HorizontalAlignment.Stretch };
+        var addressPanel = new StackPanel { Spacing = 8 }; addressPanel.Children.Add(url);
+        addressPanel.Children.Add(Button("開く", "PlanOpenUrl", () => OpenProject(null, url.Text)));
+        address.Content = addressPanel; chooser = new(workspace, choice => Run(() => OpenProject(choice)), address);
         connection.Children.Add(Button("接続", "PlanConnect", async () => {
-            CancelDetail(clearCache: true); detailConnecting = true;
+            await chooser.Stop(); CancelDetail(clearCache: true); detailConnecting = true;
             try {
                 await EndAssist(); ClearAssistMessages();
                 openFailure.IsOpen = false;
                 await workspace.Connect(this.factory(executable.Text, host.Text), OperationToken);
                 RefreshLists(); RenderTasks();
-                if (workspace.DiscoveryWarning is { } warning) error.Text = warning;
                 Show(workspace.Session is null ? "chooser" : "tasks");
             }
             finally { detailConnecting = false; UpdateDetailVisibility(); }
         }));
-        chooser.Children.Add(Label("プロジェクトを選択"));
-        chooser.Children.Add(available);
-        var address = new Expander { Header = "URLで開く", HorizontalAlignment = HorizontalAlignment.Stretch };
-        var addressPanel = new StackPanel { Spacing = 8 }; addressPanel.Children.Add(url);
-        addressPanel.Children.Add(Button("開く", "PlanOpenUrl", () => OpenProject(null, url.Text)));
-        address.Content = addressPanel; chooser.Children.Add(address);
 
         registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(() => OpenProject(choice)); } };
-        available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(() => OpenProject(choice)); };
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
         settingsArea.RowDefinitions.Add(new() { Height = GridLength.Auto });
         settingsArea.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
@@ -284,7 +279,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         // handlers would keep this whole view and its native tree alive. Attach them only while loaded.
         Loaded += (_, _) => { WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = titleCommands; };
         Unloaded += (_, _) => {
-            CancelDetail(clearCache: true); detailNavigationStarted?.TrySetCanceled(); detailWeb?.Close();
+            chooser.Cancel(); CancelDetail(clearCache: true); detailNavigationStarted?.TrySetCanceled(); detailWeb?.Close();
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
             captionRoot = null;
@@ -522,6 +517,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         // Cancel GitHub work before the assist's bounded shutdown so no further publish batches are sent meanwhile.
         operationCancellation?.Cancel();
         detailNavigationStarted?.TrySetCanceled();
+        await chooser.Stop();
         await detailWork;
         await EndAssist();
         closing = true; await operation;
@@ -545,6 +541,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         publishReview.Visibility = page == "publish" ? Visibility.Visible : Visibility.Collapsed;
         connection.Visibility = page == "connection" ? Visibility.Visible : Visibility.Collapsed;
         chooser.Visibility = page == "chooser" ? Visibility.Visible : Visibility.Collapsed;
+        if (page == "chooser") chooser.Activate();
         taskArea.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         settingsArea.Visibility = settingsScroll.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
         toolbar.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
@@ -558,7 +555,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private void RefreshLists()
     {
         rendering = true;
-        try { registered.ItemsSource = workspace.Registered; registered.SelectedItem = workspace.Selected; available.ItemsSource = workspace.Available; available.SelectedItem = null; }
+        try { registered.ItemsSource = workspace.Registered; registered.SelectedItem = workspace.Selected; chooser.Refresh(); }
         finally { rendering = false; }
         RefreshProjectChecks();
     }

@@ -235,7 +235,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected);
         } else {
             await PickerCommand("PlanChooseProject");
-            await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = action == "switch" ? 1 : 0);
+            if (action == "switch") await ProjectChooserTestActions.SelectOwner("acme");
+            await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
             await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected);
         }
         if (action == "switch") {
