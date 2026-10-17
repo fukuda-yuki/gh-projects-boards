@@ -26,6 +26,7 @@ Write agent-facing and shared development documents in English. Respond to the u
 
 - Read [DESIGN.md](DESIGN.md) before designing, implementing or reviewing changes to appearance, wording, information presentation, navigation or interaction flows.
 - Define the user's task and decision for the affected surface, then apply the relevant design principles alongside the owning Issue and specification. Review the resulting presentation and behavior against those principles; record justified exceptions and unverified conditions in the Issue/PR.
+- For an Issue that changes what the user sees or does, record how a reference product does the same job and the intended steps in the Issue before implementation, and run those steps in the ordinary app at the owner's size before requesting merge. The product review agent's reference and acceptance modes define both (#221).
 - Judge a UI change by the PMO planning job in [#76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76): run it in the ordinary app with realistic data and look at the rendered screens before reporting it complete. Passing tests do not establish usability.
 - Select validation through the [test policy](tests/README.md); use DESIGN.md's checks for design judgment without duplicating either document's rules here.
 
