@@ -99,7 +99,8 @@ def handle_hook_event(repo_root: Path) -> int:
     """フック呼び出しハンドラ。アクティブでない場合は1ミリ秒で exit 0。"""
     active, data = is_active(repo_root)
     if not active or not data:
-        # マニュアル作業以外では何もせず即時終了
+        # マニュアル作業以外では何もせず即時終了（PostToolUse契約として{}を出力）
+        print("{}")
         return 0
 
     # 標準入力からイベント情報を受け取る（もしあれば）
@@ -114,6 +115,7 @@ def handle_hook_event(repo_root: Path) -> int:
     target_path = Path(data.get("target_file", ""))
     backup_path = Path(data.get("backup_file", ""))
     if not target_path.exists() or not backup_path.exists():
+        print("{}")
         return 0
 
     # newfacts.py または yomiyasu による検査
@@ -138,6 +140,7 @@ def handle_hook_event(repo_root: Path) -> int:
         except Exception:
             pass
 
+    print("{}")
     return 0
 
 

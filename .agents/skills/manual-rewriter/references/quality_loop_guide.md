@@ -62,3 +62,6 @@
 | **常套句・禁止語の排除** | 「本質」「極めて」「〜と言えるでしょう」等がないか | `natural-japanese/lint.py` | 禁止語・常套句 0件 |
 | **書式の適正化** | 過剰な太字、ラベル箇条書き、不要な前置き・結びがないか | `yomiyasu_lint.py` / `lint.py` | 書式違反 0件 |
 | **文脈の自然さ・格調** | マニュアルとして明快で自然、助詞の配置が美しいか | `gemini-pure` / Orchestrator | 人間可読性・明快さ最高評価 |
+
+> [!NOTE]
+> `yomiyasu` および `natural-japanese` には `disable-model-invocation: true` が設定されているため、モデルが勝手に単体起動することはありません。`manual-rewriter` は各Sub-Agentへの明示的プロンプト指示および直接スクリプト実行（`run_rewrite_loop.py`）により、確実にこれらを発火・統制します。

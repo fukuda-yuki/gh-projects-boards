@@ -8,3 +8,5 @@ coverage-history/
 *.user
 *.suo
 __pycache__/
+
+.agents/.agents/

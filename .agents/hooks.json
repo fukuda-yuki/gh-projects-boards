@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .agents/skills/manual-rewriter/scripts/manual_rewrite_hook.py --hook"
+            "command": "python skills/manual-rewriter/scripts/manual_rewrite_hook.py --hook"
           }
         ]
       },
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .agents/skills/manual-rewriter/scripts/manual_rewrite_hook.py --hook"
+            "command": "python skills/manual-rewriter/scripts/manual_rewrite_hook.py --hook"
           }
         ]
       }

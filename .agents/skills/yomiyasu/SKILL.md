@@ -4,6 +4,7 @@ description: AIが生成した日本語の推敲に使うスキル。「この�
 license: MIT
 metadata:
   version: "2.0.0"
+disable-model-invocation: true
 ---
 
 # yomiyasu

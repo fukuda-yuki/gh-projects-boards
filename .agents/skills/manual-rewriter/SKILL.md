@@ -76,6 +76,13 @@ license: MIT
   - マニュアル読者にとっての「読みやすさ」「理解のしやすさ」「文章の流れの心地よさ」の最大化。
   - 正確な助詞配置と主述の結びつき、文と文のスムーズな論理展開の提案。
 
+### Sub-Agentの起動方式と `disable-model-invocation: true` について
+- `yomiyasu` および `natural-japanese` には **`disable-model-invocation: true`** が設定されています。これにより、モデルが日常会話や通常の開発作業中に自律的・暗黙的にこれらのスキルを単体起動することが完全に防止されます。
+- `manual-rewriter` から各Sub-Agentを呼び出す際は、モデルの暗黙的な自動選択に頼るのではなく、次の方法で確実に発火・適用します：
+  1. **明示的なスキルファイル参照**: `invoke_subagent` 呼び出し時、プロンプト内で各スキルの指示書（`.agents/skills/yomiyasu/SKILL.md` や `.agents/skills/natural-japanese/SKILL.md`）を読み込ませてその規則に従わせる。
+  2. **スラッシュコマンドによる明示実行**: `/yomiyasu` や `/natural-japanese` を明示的に指定して起動する（明示的コマンド実行は `disable-model-invocation: true` でも発火します）。
+  3. **機械的検査スクリプトの直接実行**: `run_rewrite_loop.py`（内部で `yomiyasu_lint.py`, `lint.py`, `newfacts.py` を呼び出し）によるルールチェックはコマンド実行であるため、モデル呼び出し制限の影響を一切受けずに 100% 確実に動作します。
+
 ---
 
 ## 3. 日本語表現の優先順位と重み付け統合
