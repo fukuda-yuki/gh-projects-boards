@@ -19,7 +19,7 @@ internal sealed class PlanPhaseIntegrationTests
             var day = new DateOnly(2026, 10, 6);
             var workspace = new PlanWorkspace(new(root), () => day);
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var session = workspace.Session!;
             Assert.That(session.Document.State.Rows.Single().Phase, Is.EqualTo("SA"));
             Assert.That(session.Document.State.Settings.Columns.Single(c => c.Role == PlanField.Phase).FieldId, Is.EqualTo("F-Phase"));

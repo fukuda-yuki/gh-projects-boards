@@ -300,7 +300,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task RegisteredProjectSwitchAsksBeforeDiscardAndReturnKeepsProject()
     {
         await Open(); await PickerCommand("PlanChooseProject");
-        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedItem = workspace.Available.Single(p => p.Id.NodeId == "P2"));
+        await ProjectChooserTestActions.SelectOwner("acme");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P2"); await Ui.Idle(); await DetailFallback();
         await Ui.Run(() => { SelectDetail("I1"); ToggleDetail(); }); await DetailReady();
         await Ui.Run(() => Ui.Click("PlanDetailEdit")); await Ui.Ready<TextBox>("PlanDetailEditor");
@@ -619,7 +620,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected);
         } else {
             await PickerCommand("PlanChooseProject");
-            await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = action == "switch" ? 1 : 0);
+            if (action == "switch") await ProjectChooserTestActions.SelectOwner("acme");
+            await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
             await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected);
         }
         if (action == "switch") {

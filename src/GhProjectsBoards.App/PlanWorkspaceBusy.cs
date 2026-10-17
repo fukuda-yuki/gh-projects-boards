@@ -145,6 +145,7 @@ internal sealed partial class PlanWorkspaceView
     private async Task OpenProject(ProjectChoice? choice, string? address = null, bool readAgain = false)
     {
         if (!await DiscardDetailEdit()) { RefreshLists(); return; }
+        await chooser.Stop();
         CancelDetail(clearCache: true);
         await EndAssist(); ClearAssistMessages();
         openFailure.IsOpen = false;

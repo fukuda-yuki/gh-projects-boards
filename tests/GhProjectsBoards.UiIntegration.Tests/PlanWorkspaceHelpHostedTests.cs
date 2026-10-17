@@ -108,6 +108,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         var manual = Path.Combine(AppContext.BaseDirectory, "マニュアル.md");
         var launched = new ConcurrentQueue<string>();
         using var locked = File.Open(manual, FileMode.Open, FileAccess.Read, FileShare.None);
+        await Ui.Ready<Button>("PlanHelp");
         await Ui.Run(() => { view.OpenDocument = path => launched.Enqueue(path); Ui.Click("PlanHelp"); });
         await Ui.Until(() => !launched.IsEmpty);
         Assert.That(launched, Is.EqualTo(new[] { manual }));
@@ -123,6 +124,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         var launched = new ConcurrentQueue<string>();
         File.Move(manual, retained);
         try {
+            // The title-bar commands load a layout pass after the view; a click must wait for them like a user would.
+            await Ui.Ready<Button>("PlanHelp");
             await Ui.Run(() => { view.OpenDocument = path => launched.Enqueue(path); Ui.Click("PlanHelp"); });
             await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.StartsWith("マニュアルが見つかりません:"));
             await Ui.Run(() => {
@@ -138,6 +141,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test, Category("Manual")]
     public async Task FailedManualLaunchShowsExistingErrorPresentation()
     {
+        await Ui.Ready<Button>("PlanHelp");
         await Ui.Run(() => {
             view.OpenDocument = _ => throw new IOException("Cannot open the document.");
             Ui.Click("PlanHelp");

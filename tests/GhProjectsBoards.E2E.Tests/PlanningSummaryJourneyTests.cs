@@ -36,7 +36,7 @@ public sealed class PlanningSummaryJourneyTests
             GetClientRect(handle, out var client); var outer = window.BoundingRectangle;
             window.Patterns.Transform.Pattern.Resize(1280 * factor + outer.Width - client.Right, 720 * factor + outer.Height - client.Bottom);
             Find("PlanGhPath").AsTextBox().Text = fake; Find("PlanConnect").AsButton().Invoke();
-            Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 2); Find("AvailableProjects").AsListBox().Select(0);
+            Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 1); Find("AvailableProjects").AsListBox().Select(0);
             Wait(() => Find("PlanCell1_Title").AsTextBox().Text == "計画レビュー 1");
             Find("PlanShowSummary").Patterns.SelectionItem.Pattern.Select();
             Wait(() => Find("SummaryCell_U1_0").IsAvailable);

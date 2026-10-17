@@ -157,9 +157,11 @@ public static class ManualCaptureWindow {
 
     Capture '02-connection' 'PlanConnect'
     Ui invoke -Id PlanConnect | Out-Null
-    Wait-State "第2027\.04版" | Out-Null
+    Wait-Control PlanProjectOwners
+    Wait-Control PlanProjectRepositories
+    Wait-State "第2027\.04版 fixture-user プロジェクト 3" | Out-Null
     Capture '03-project-chooser' 'AvailableProjects'
-    Ui click -Name '第2027.04版' | Out-Null
+    Ui select -Name '第2027.04版 fixture-user プロジェクト 3' | Out-Null
     Wait-Control PlanTasks
     Wait-State '未発行 0 タスク' | Out-Null
     Capture '04-plan' 'PlanSheetFilter'

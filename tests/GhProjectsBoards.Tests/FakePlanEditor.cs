@@ -36,11 +36,25 @@ internal static class FakePlanEditor
             object Choice(string projectId, string owner) => new { id = projectId, number = projectId == "P1" ? 3 : 4,
                 url = "https://github.com/" + (owner == "fixture-user" ? "users/" : "orgs/") + owner + "/projects/" + (projectId == "P1" ? "3" : "4"),
                     title = projectId == "P1" ? scenario.TryGetProperty("versionTitle", out var version) ? version.GetString() : "開発計画" : "運用計画", owner = new { id = "O1", __typename = owner == "fixture-user" ? "User" : "Organization", login = owner } };
-            if (query.Contains("RegistrationOwners")) Write(new { data = new { viewer = new { organizations = Page([new { login = "acme" }], 1) } } });
+            var large = scenario.TryGetProperty("chooserCatalog", out var catalog) && catalog.GetBoolean();
+            if (query.Contains("RegistrationOwners")) Write(new { data = new { viewer = new { organizations = Page(large ? [new { login = "acme" }, new { login = "broken" }] : [new { login = "acme" }], large ? 2 : 1) } } });
             else if (query.Contains("RegistrationProjects"))
             {
                 var owner = variables.GetProperty("owner").GetString()!;
-                Write(new { data = new { repositoryOwner = new { projectsV2 = Page([Choice(owner == "fixture-user" ? "P1" : "P2", owner)], 1) } } });
+                File.AppendAllText(Path.Combine(root, "listing-requests.txt"), owner + "\n");
+                if (owner == "broken" && !File.Exists(Path.Combine(root, "recover-owner"))) { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
+                var count = large && owner == "fixture-user" ? scenario.TryGetProperty("chooserProjectCount", out var projectCount) ? projectCount.GetInt32() : 80 : 1;
+                var entries = Enumerable.Range(1, count).Select(i => {
+                    var node = JsonSerializer.SerializeToNode(Choice(owner == "fixture-user" ? "P1" : "P2", owner))!.AsObject();
+                    if (i > 1) { node["id"] = "PX" + i; node["number"] = i + 10; node["title"] = "計画 " + i; node["url"] = $"https://github.com/users/{owner}/projects/{i + 10}"; }
+                    node["closed"] = large && i % 4 == 0;
+                    node["updatedAt"] = "2026-10-17T00:00:00Z";
+                    var names = !large ? new[] { "acme/repo" } : i % 3 == 0 ? [] : i % 3 == 1 ? new[] { owner + "/alpha", "other/shared" } : new[] { owner + "/beta" };
+                    node["repositories"] = JsonSerializer.SerializeToNode(new { nodes = names.Select(n => new { nameWithOwner = n }) });
+                    return (object)node;
+                }).ToArray();
+                var offset = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String ? int.Parse(after.GetString()!) : 0;
+                Write(new { data = new { repositoryOwner = new { projectsV2 = Page(entries.Skip(offset).Take(50), count, offset + 50 < count, offset + 50 < count ? (offset + 50).ToString() : null) } } });
             }
             else if (query.Contains("RegistrationResolve"))
                 Write(new { data = new { user = new { projectV2 = Choice("P1", "fixture-user") } } });

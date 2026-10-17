@@ -6,6 +6,57 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanWorkspaceTests
 {
+    [TestCase("acme", "acme"), TestCase("missing", "fixture-user")]
+    public async Task DefaultOwnerUsesMostRecentRegisteredOwnerWhenStillAccessible(string recentOwner, string expected)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-default-owner-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), """{"planEditor":true,"workspace":true}""");
+            FakePlanEditor.Save(root, new([], 1));
+            var store = new PlanStore(root);
+            Directory.CreateDirectory(store.Root);
+            var scope = new ConnectionScope("github.com", 42);
+            ProjectChoice Choice(string owner, int number) => new(new(scope, "P" + number), new(scope, "O" + number), owner, "Organization", number, $"https://github.com/orgs/{owner}/projects/{number}", "Plan " + number);
+            File.WriteAllText(Path.Combine(store.Root, "workspace.json"), PlanJson.Text(new PlanWorkspaceCatalog(1, [Choice("fixture-user", 1), Choice(recentOwner, 2)], null)));
+            var workspace = new PlanWorkspace(store, () => new(2026, 10, 17));
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            Assert.That(workspace.DefaultOwner!.Login, Is.EqualTo(expected));
+            Assert.That(workspace.Registered.Select(p => p.Number), Is.EqualTo(new[] { 2, 1 }));
+            Assert.That(File.Exists(Path.Combine(root, "listing-requests.txt")), Is.False);
+        } finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task ConnectionReadsOwnersOnlyAndListingsCacheReloadReconnectAndIsolateFailure()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-chooser-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), """{"planEditor":true,"workspace":true,"chooserCatalog":true,"chooserProjectCount":8}""");
+            FakePlanEditor.Save(root, new([], 1));
+            GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
+            var workspace = new PlanWorkspace(new(root), () => new(2026, 10, 17));
+            int Requests(string owner) => File.ReadAllLines(Path.Combine(root, "listing-requests.txt")).Count(l => l == owner);
+            await workspace.Connect(Service());
+            Assert.That(workspace.Owners.Select(o => o.Login), Is.EqualTo(new[] { "fixture-user", "acme", "broken" }));
+            Assert.That(File.Exists(Path.Combine(root, "listing-requests.txt")), Is.False);
+            Assert.That(workspace.DefaultOwner!.Login, Is.EqualTo("fixture-user"));
+            var first = await workspace.Listings("fixture-user");
+            Assert.That(await workspace.Listings("FIXTURE-USER"), Is.EqualTo(first));
+            Assert.That(Requests("fixture-user"), Is.EqualTo(1));
+            await workspace.Listings("fixture-user", reload: true);
+            Assert.That(Requests("fixture-user"), Is.EqualTo(2));
+            Assert.ThrowsAsync<DiscoveryException>(async () => await workspace.Listings("broken"));
+            Assert.ThrowsAsync<DiscoveryException>(async () => await workspace.Listings("broken"));
+            Assert.That(Requests("broken"), Is.EqualTo(2));
+            Assert.That((await workspace.Listings("acme")).Single().Choice.Id.NodeId, Is.EqualTo("P2"));
+            Assert.That(Requests("acme"), Is.EqualTo(1));
+            await workspace.Connect(Service());
+            await workspace.Listings("fixture-user");
+            Assert.That(Requests("fixture-user"), Is.EqualTo(3));
+        } finally { Directory.Delete(root, true); }
+    }
     [TestCase(false), TestCase(true)]
     public async Task FirstOpenInitializesPeriodAndMilestonesThenPreservesUserSettings(bool clear)
     {
@@ -30,7 +81,7 @@ internal sealed class PlanWorkspaceTests
             GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com",
                 new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
             await workspace.Connect(Service());
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var session = workspace.Session!;
             var initial = session.Document.State.Settings;
             Assert.Multiple(() => {
@@ -82,7 +133,7 @@ internal sealed class PlanWorkspaceTests
             var day = new DateOnly(2026, 10, 6);
             var workspace = new PlanWorkspace(new(root), () => day);
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var session = workspace.Session!;
             if (noWrites) await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectStart = day }), day);
             else await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Edited")]), day);
@@ -117,7 +168,7 @@ internal sealed class PlanWorkspaceTests
             var day = new DateOnly(2026, 10, 6);
             var workspace = new PlanWorkspace(new(root), () => day);
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var session = workspace.Session!;
             Assert.Multiple(() =>
             {
@@ -147,7 +198,7 @@ internal sealed class PlanWorkspaceTests
             var day = new DateOnly(2026, 10, 6);
             var workspace = new PlanWorkspace(store, () => day);
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var session = workspace.Session!;
             Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day));
             void AssertHeld(PlanSession plan, DateOnly today)
@@ -189,7 +240,7 @@ internal sealed class PlanWorkspaceTests
             var workspace = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
             var reports = new List<RemoteProgress>();
-            await workspace.Open(workspace.Available[0], progress: new InlineProgress<RemoteProgress>(reports.Add));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice, progress: new InlineProgress<RemoteProgress>(reports.Add));
             Assert.That(reports, Does.Contain(new RemoteProgress("プロジェクトの項目を取得", 1, 1)));
             Assert.That(reports.Last().Stage, Is.EqualTo("日程を計算"));
             reports.Clear();
@@ -217,7 +268,7 @@ internal sealed class PlanWorkspaceTests
             var store = new PlanStore(root);
             var workspace = new PlanWorkspace(store, () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var original = workspace.Session!;
             await original.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local edit")]), DateOnly.FromDateTime(DateTime.Today));
             await original.FlushAsync();
@@ -226,7 +277,7 @@ internal sealed class PlanWorkspaceTests
             var document = original.Document;
             var selected = workspace.Selected;
             var saved = File.ReadAllBytes(store.FileFor(document.Project));
-            var choice = workspace.Available[1];
+            var choice = (await workspace.Listings("acme"))[0].Choice;
             using var cancellation = new CancellationTokenSource();
             var reports = new List<RemoteProgress>();
             var reporter = new InlineProgress<RemoteProgress>(value => {
@@ -259,7 +310,7 @@ internal sealed class PlanWorkspaceTests
             var store = new PlanStore(root);
             var workspace = new PlanWorkspace(store, () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            var choice = workspace.Available[0];
+            var choice = (await workspace.Listings("fixture-user"))[0].Choice;
             using var cancellation = new CancellationTokenSource();
             var reporter = new InlineProgress<RemoteProgress>(value => {
                 if (value.Stage == "日程を計算") cancellation.Cancel();
@@ -286,7 +337,7 @@ internal sealed class PlanWorkspaceTests
             var store = new PlanStore(root);
             var workspace = new PlanWorkspace(store, () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[1]);
+            await workspace.Open((await workspace.Listings("acme"))[0].Choice);
             var original = workspace.Session;
             var selected = workspace.Selected;
             var saved = File.ReadAllBytes(store.FileFor(selected!.Id));
@@ -303,7 +354,7 @@ internal sealed class PlanWorkspaceTests
                 Assert.That(workspace.Session, Is.SameAs(original));
                 Assert.That(workspace.Selected, Is.EqualTo(selected));
                 Assert.That(File.ReadAllBytes(store.FileFor(selected.Id)), Is.EqualTo(saved));
-                Assert.That(File.Exists(store.FileFor(workspace.Available[0].Id)), Is.False);
+                Assert.That(File.Exists(store.FileFor((await workspace.Listings("fixture-user"))[0].Choice.Id)), Is.False);
             }
             finally {
                 cancellation.Cancel();
@@ -311,7 +362,7 @@ internal sealed class PlanWorkspaceTests
                 try { await open; } catch (Exception ex) when (ex is OperationCanceledException or DiscoveryException) { }
             }
             await workspace.OpenUrl("https://github.com/users/fixture-user/projects/3");
-            Assert.That(workspace.Selected!.Id, Is.EqualTo(workspace.Available[0].Id));
+            Assert.That(workspace.Selected!.Id, Is.EqualTo((await workspace.Listings("fixture-user"))[0].Choice.Id));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         }
         finally { Directory.Delete(root, true); }
@@ -331,9 +382,9 @@ internal sealed class PlanWorkspaceTests
             var store = new PlanStore(root);
             var workspace = new PlanWorkspace(store, () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var original = workspace.Session;
-            var choice = workspace.Available[1];
+            var choice = (await workspace.Listings("acme"))[0].Choice;
             File.WriteAllText(Path.Combine(root, "scenario.json"), $"{{\"planEditor\":true,\"workspace\":true,\"planFault\":\"{fault}\"}}");
             Assert.ThrowsAsync<InvalidOperationException>(() => workspace.Open(choice));
             Assert.That(workspace.Session, Is.SameAs(original));
@@ -354,7 +405,7 @@ internal sealed class PlanWorkspaceTests
             FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
             var workspace = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var good = await workspace.PreviewCsv(PlanCsvImportTests.Read("a,A,8,alice;late-user,,,,"));
             Assert.That(good.Errors, Is.Empty);
             Assert.That(good.Command!.Rows.Single().Assignees, Is.EqualTo(new[] { "U1", "U101" }));
@@ -382,8 +433,8 @@ internal sealed class PlanWorkspaceTests
             var first = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             var second = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await first.Connect(Service()); await second.Connect(Service());
-            await first.Open(first.Available[0]);
-            await second.Open(second.Available[1]);
+            await first.Open((await first.Listings("fixture-user"))[0].Choice);
+            await second.Open((await second.Listings("acme"))[0].Choice);
             var reopened = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await reopened.Connect(Service());
             Assert.That(reopened.Registered.Select(p => p.Id.NodeId), Is.EquivalentTo(new[] { "P1", "P2" }));
@@ -404,17 +455,20 @@ internal sealed class PlanWorkspaceTests
                 new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
             var workspace = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(Service());
-            Assert.That(workspace.Available.Count, Is.EqualTo(2));
-            await workspace.Open(workspace.Available[0]);
+            Assert.That(workspace.Owners.Count, Is.EqualTo(2));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             Assert.That(workspace.Session!.Document.Sync.DraftCount, Is.EqualTo(2));
             Assert.That(workspace.Session.Document.Sync.PullRequestCount, Is.EqualTo(1));
             Assert.That(workspace.Session.Document.State.Rows.Length, Is.EqualTo(1));
             Assert.That(workspace.Session.Document.State.Settings.Columns.Length, Is.EqualTo(5));
             await workspace.Session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "未発行の設計")]), new(2026, 10, 6));
-            await workspace.Open(workspace.Available[1]);
+            await workspace.Open((await workspace.Listings("acme"))[0].Choice);
+            Assert.That(workspace.Registered.Select(p => p.Id.NodeId), Is.EqualTo(new[] { "P2", "P1" }));
+            Assert.That(workspace.DefaultOwner!.Login, Is.EqualTo("acme"));
             Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("設計"));
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));
+            Assert.That(workspace.Registered.Select(p => p.Id.NodeId), Is.EqualTo(new[] { "P1", "P2" }));
             var restarted = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await restarted.Connect(Service());
             Assert.That(restarted.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));
@@ -445,7 +499,7 @@ internal sealed class PlanWorkspaceTests
             FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Assignees = ["U1"] }, "", true)], 2));
             var workspace = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[0]);
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var state = FakePlanEditor.Load(root);
             FakePlanEditor.Save(root, state with { Issues = [state.Issues[0] with { Row = state.Issues[0].Row with { Assignees = ["U2"] } }] });
             await workspace.Refresh();

@@ -57,7 +57,7 @@ public sealed class PlanningWorkspaceJourneyTests
                 Find(window!, "PlanConnect").AsButton().Invoke();
                 if (launch == 0)
                 {
-                    Wait(() => window!.FindFirstDescendant(c => c.ByAutomationId("AvailableProjects"))?.AsListBox().Items.Length == 2);
+                    Wait(() => window!.FindFirstDescendant(c => c.ByAutomationId("AvailableProjects"))?.AsListBox().Items.Length == 1);
                     Find(window!, "AvailableProjects").AsListBox().Select(0);
                 }
                 Wait(() => Find(window!, "OpenProjectName").Properties.Name.ValueOrDefault == "第2027.04版");

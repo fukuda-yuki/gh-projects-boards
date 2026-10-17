@@ -116,8 +116,8 @@ internal sealed class EvaluationFixtureTests
             var workspace = new PlanWorkspace(new PlanStore(root), () => DateOnly.FromDateTime(DateTime.Today));
             var runner = new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = Path.Combine(root, "fake-gh") });
             await workspace.Connect(new GhConnectionService(GhProcessTests.FakeExecutable, "github.com", runner));
-            Assert.That(workspace.Available.First().Title, Is.EqualTo(plan.Title));
-            await workspace.Open(workspace.Available.First());
+            Assert.That((await workspace.Listings("fixture-user"))[0].Choice.Title, Is.EqualTo(plan.Title));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var session = workspace.Session!;
             Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(plan.StatusDate));
             Assert.That(session.Document.State.Rows.Length, Is.EqualTo(1040), "40 requirement Issues are additional to the 1,000 executable tasks.");

@@ -1,7 +1,10 @@
 using System.Text.Json;
+using System.Collections.Immutable;
 using GhProjectsBoards.App.GitHub;
 
 namespace GhProjectsBoards.Core.Projects;
+
+internal sealed record ProjectListing(ProjectChoice Choice, bool Closed, DateTimeOffset UpdatedAt, ImmutableArray<string> Repositories);
 
 internal sealed record ProjectChoice(ScopedId Id, ScopedId OwnerId, string OwnerLogin, string OwnerType, int Number, string Url, string Title)
 {
@@ -34,26 +37,32 @@ internal sealed class ProjectDiscovery(GhConnectionService service)
             new() { ["owner"] = owner }, ["repositoryOwner", "repositories"], token);
         return nodes.Select(n => ReadRepository(context, n)).ToArray();
     }
-    public async Task<IReadOnlyList<ProjectChoice>> ProjectsAsync(ConnectionContext context, string owner, string? repository, string search, CancellationToken token)
+    public async Task<IReadOnlyList<ProjectListing>> ListingsAsync(ConnectionContext context, string owner, CancellationToken token)
     {
-        var variables = new Dictionary<string, object?> { ["owner"] = owner, ["search"] = search };
-        string query;
-        string[] path;
-        if (repository is not null)
-        {
-            variables["name"] = repository;
-            query = "query RegistrationProjects($owner:String!,$name:String!,$search:String,$after:String) { repository(owner:$owner,name:$name) { projectsV2(first:100,after:$after,query:$search,minPermissionLevel:READ) { nodes { " + Identity + " } " + PageInfo + " } } }";
-            path = ["repository", "projectsV2"];
-        }
-        else
-        {
-            query = "query RegistrationProjects($owner:String!,$search:String,$after:String) { repositoryOwner(login:$owner) { ... on User { projectsV2(first:100,after:$after,query:$search,minPermissionLevel:READ) { nodes { " + Identity + " } " + PageInfo + " } } ... on Organization { projectsV2(first:100,after:$after,query:$search,minPermissionLevel:READ) { nodes { " + Identity + " } " + PageInfo + " } } } }";
-            path = ["repositoryOwner", "projectsV2"];
-        }
-        var nodes = await Pages(context, query, variables, path, token);
-        var results = nodes.Select(n => Choice(context, n)).ToArray();
-        if (results.Select(p => p.Id).Distinct().Count() != results.Length) throw new DiscoveryException(FailureKind.InvalidResponse);
+        var connection = "projectsV2(first:50,after:$after,minPermissionLevel:READ,orderBy:{field:UPDATED_AT, direction:DESC}) { nodes { " + Identity + " closed updatedAt repositories(first:100) { nodes { nameWithOwner } } } " + PageInfo + " }";
+        var nodes = await Pages(context, "query RegistrationProjects($owner:String!,$after:String) { repositoryOwner(login:$owner) { ... on User { " + connection + " } ... on Organization { " + connection + " } } }",
+            new() { ["owner"] = owner }, ["repositoryOwner", "projectsV2"], token);
+        var results = nodes.Select(n => Listing(context, n)).ToArray();
+        if (results.Select(p => p.Choice.Id).Distinct().Count() != results.Length) throw new DiscoveryException(FailureKind.InvalidResponse);
         return results;
+    }
+    private static ProjectListing Listing(ConnectionContext context, JsonElement node)
+    {
+        try {
+            var closed = At(node, "closed");
+            var updated = At(node, "updatedAt");
+            var repositories = At(node, "repositories", "nodes");
+            if (closed.ValueKind is not (JsonValueKind.True or JsonValueKind.False) || updated.ValueKind != JsonValueKind.String ||
+                !updated.TryGetDateTimeOffset(out var date) || repositories.ValueKind != JsonValueKind.Array)
+                throw new DiscoveryException(FailureKind.InvalidResponse);
+            // GitHub returns null for a linked repository the viewer cannot read; the Project itself stays listed.
+            var names = repositories.EnumerateArray().Where(r => r.ValueKind != JsonValueKind.Null).Select(r => Text(r, "nameWithOwner")).ToImmutableArray();
+            if (names.Any(n => n.Split('/') is not [var owner, var name] || string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(name)))
+                throw new DiscoveryException(FailureKind.InvalidResponse);
+            return new(Choice(context, node), closed.GetBoolean(), date, names.Distinct(StringComparer.OrdinalIgnoreCase).ToImmutableArray());
+        } catch (DiscoveryException) { throw new DiscoveryException(FailureKind.InvalidResponse); }
+        catch (InvalidOperationException) { throw new DiscoveryException(FailureKind.InvalidResponse); }
+        catch (FormatException) { throw new DiscoveryException(FailureKind.InvalidResponse); }
     }
     public async Task<ProjectChoice> ResolveAsync(ConnectionContext context, string url, CancellationToken token)
     {

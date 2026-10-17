@@ -29,12 +29,13 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
     private PlanWorkspaceCatalog catalog = new(1, [], null);
     public GhProjectsBoards.App.GitHub.GhConnectionService? Service { get; private set; }
     public GhProjectsBoards.App.GitHub.ConnectionContext? Context { get; private set; }
-    public IReadOnlyList<ProjectChoice> Available { get; private set; } = [];
-    public IReadOnlyList<ProjectChoice> Registered => catalog.Projects.Where(p => p.Id.Scope == Scope).ToArray();
+    private readonly Dictionary<string, IReadOnlyList<ProjectListing>> listings = new(StringComparer.OrdinalIgnoreCase);
+    public IReadOnlyList<OwnerChoice> Owners { get; private set; } = [];
+    public OwnerChoice? DefaultOwner => Owners.FirstOrDefault(o => o.Login.Equals(Registered.FirstOrDefault()?.OwnerLogin, StringComparison.OrdinalIgnoreCase)) ?? Owners.FirstOrDefault();
+    public IReadOnlyList<ProjectChoice> Registered => catalog.Projects.Where(p => p.Id.Scope == Scope).Reverse().ToArray();
     private ConnectionScope? Scope => Context is null ? null : ConnectionScope.From(Context);
     public ProjectChoice? Selected { get; private set; }
     public PlanSession? Session { get; private set; }
-    public string? DiscoveryWarning { get; private set; }
     public string Root => store.Root;
     public IReadOnlyList<PlanResource> People
     {
@@ -93,7 +94,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
     public async Task Connect(GhProjectsBoards.App.GitHub.GhConnectionService service, CancellationToken token = default)
     {
         await Flush();
-        Service = null; Context = null; Selected = null; Session = null; Available = [];
+        Service = null; Context = null; Selected = null; Session = null; Owners = []; listings.Clear();
         var connection = await service.ConnectAsync(token);
         token.ThrowIfCancellationRequested();
         if (!connection.IsConnected) throw new InvalidOperationException(GhProjectsBoards.App.ConnectionViewModel.FailureText(connection.Result.Failure));
@@ -106,18 +107,22 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
                 || catalog.Projects.Select(p => p.Id).Distinct().Count() != catalog.Projects.Length)
                 throw new InvalidOperationException("プロジェクト一覧を読み込めません。");
         }
-        var discovery = new ProjectDiscovery(service);
-        var available = new List<ProjectChoice>();
-        DiscoveryWarning = null;
-        foreach (var owner in await discovery.OwnersAsync(Context, token))
-        {
-            try { available.AddRange(await discovery.ProjectsAsync(Context, owner.Login, null, "", token)); }
-            catch (DiscoveryException) { token.ThrowIfCancellationRequested(); DiscoveryWarning = owner.Login + " のプロジェクトを取得できません。再接続してください。"; }
-        }
+        Owners = await new ProjectDiscovery(service).OwnersAsync(Context, token);
         token.ThrowIfCancellationRequested();
-        Available = available.DistinctBy(p => p.Id).ToArray();
         if (catalog.Selected is { } selected && Registered.SingleOrDefault(p => p.Id == selected) is { } choice)
             await Open(choice, token);
+    }
+    public async Task<IReadOnlyList<ProjectListing>> Listings(string owner, bool reload = false, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        var context = Context ?? throw new InvalidOperationException("接続してください。");
+        var service = Service!;
+        if (!reload && listings.TryGetValue(owner, out var cached)) return cached;
+        var result = await new ProjectDiscovery(service).ListingsAsync(context, owner, token);
+        token.ThrowIfCancellationRequested();
+        if (!ReferenceEquals(context, Context)) throw new OperationCanceledException("接続先が変更されました。", token);
+        listings[owner] = result;
+        return result;
     }
     public async Task OpenUrl(string url, CancellationToken token = default)
         => await Open(await new ProjectDiscovery(Service!).ResolveAsync(Context!, url, token), token);

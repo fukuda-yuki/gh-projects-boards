@@ -45,7 +45,7 @@ public sealed class PlanSheetImeTests
             string Count() => Find("PlanUnpublished").Properties.Name.ValueOrDefault ?? "";
             Find("PlanGhPath").AsTextBox().Text = Environment.GetEnvironmentVariable("GHPB_E2E_FAKE_GH_PATH")!;
             Find("PlanConnect").AsButton().Invoke();
-            Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 2);
+            Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 1);
             Find("AvailableProjects").AsListBox().Select(0);
             Wait(() => window!.FindFirstDescendant(c => c.ByAutomationId("PlanCell1_Title")) is { IsOffscreen: false });
             Keyboard.TypeVirtualKeyCode(0x12); window!.SetForeground();
