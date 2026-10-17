@@ -1,0 +1,4 @@
+interface:
+  display_name: "Natural Japanese"
+  short_description: "自然で簡潔な日本語への推敲・レビュー（AI臭さ・常套句・新事実付加を排除）"
+  default_prompt: "Use $natural-japanese to review or rewrite the target document, strictly detecting AI clichés, translationese, and preventing any added facts or changed certainty."

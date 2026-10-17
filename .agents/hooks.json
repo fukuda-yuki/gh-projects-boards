@@ -1,0 +1,25 @@
+{
+  "manual-rewrite-guard": {
+    "enabled": true,
+    "PostToolUse": [
+      {
+        "matcher": "write_to_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .agents/skills/manual-rewriter/scripts/manual_rewrite_hook.py --hook"
+          }
+        ]
+      },
+      {
+        "matcher": "replace_file_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .agents/skills/manual-rewriter/scripts/manual_rewrite_hook.py --hook"
+          }
+        ]
+      }
+    ]
+  }
+}

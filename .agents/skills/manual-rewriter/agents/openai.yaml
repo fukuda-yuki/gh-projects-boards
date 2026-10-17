@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manual Rewriter"
+  short_description: "マニュアル推敲・リライト品質保証オーケストレーター（Gemini > yomiyasu ≒ natural-japanese）"
+  default_prompt: "Use $manual-rewriter to rewrite or review manual documents with strict meaning preservation and multi-agent quality assurance loop."

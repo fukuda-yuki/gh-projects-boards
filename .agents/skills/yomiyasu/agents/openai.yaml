@@ -1,0 +1,4 @@
+interface:
+  display_name: "Yomiyasu"
+  short_description: "比喩動詞の排除と意味保持を徹底する日本語推敲・レビュー"
+  default_prompt: "Use $yomiyasu to review or rewrite the target document, ensuring exact meaning preservation, eliminating metaphorical verbs, and smoothing list items."
