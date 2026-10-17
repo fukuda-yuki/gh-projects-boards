@@ -49,7 +49,7 @@ jobs:
         run: node --test scripts/release-policy.test.cjs
       - name: Validate tag, main ancestry and exact-commit CI
         id: source
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const validate = require('./scripts/release-policy.cjs');
@@ -147,7 +147,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Recheck tag and CI before creating a draft
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           EXPECTED_COMMIT: ${{ needs.validate.outputs.sha }}
         with:
