@@ -504,16 +504,7 @@ internal sealed class PlanSession
         }
     }
     private static bool InputReferences(string json, string identity)
-    {
-        using var input = System.Text.Json.JsonDocument.Parse(json);
-        bool Contains(System.Text.Json.JsonElement element, bool identifier = false) => element.ValueKind switch
-        {
-            System.Text.Json.JsonValueKind.String => identifier && element.GetString() is { } text && (text == identity || text == "item:" + identity),
-            System.Text.Json.JsonValueKind.Array => element.EnumerateArray().Any(e => Contains(e, identifier)),
-            System.Text.Json.JsonValueKind.Object => element.EnumerateObject().Any(p => Contains(p.Value, PlanPublishPlan.IsIdentifierField(p.Name))), _ => false
-        };
-        return Contains(input.RootElement);
-    }
+        => PlanPublishPlan.ReferencesIdentity(json, text => text == identity || text == "item:" + identity);
     private static string ReplaceIdentities(string json, IReadOnlyDictionary<string, string> ids)
     {
         var node = System.Text.Json.Nodes.JsonNode.Parse(json)!;

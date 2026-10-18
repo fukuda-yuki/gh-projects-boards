@@ -50,6 +50,9 @@ internal sealed partial class PlanSheetView : Grid
     internal int LaterTasks => lateness.LaterTasks;
     private Dictionary<string, string> peopleNames = new();
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<string>>.Empty);
+    private ImmutableArray<string> untitledNewRows = [];
+    // An inserted row the PMO has not titled yet: the publish skips it and the sheet marks its title (#247).
+    internal bool IsUntitledNewRow(string identity) => untitledNewRows.Contains(identity);
     internal sealed record Column(string? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
         new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 224), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
@@ -79,6 +82,9 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Canvas chartHead = Id(new Canvas { Height = 48, Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) }, "PlanGanttHeader");
     private readonly TextBlock reason = Id(new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis }, "PlanStartReason");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanSheetError");
+    // Derived from the document, so it names the untitled rows and disappears with them (#247).
+    private readonly TextBlock untitledRows = Id(new TextBlock { TextWrapping = TextWrapping.Wrap,
+        Foreground = Brush("SystemFillColorCriticalBrush"), Visibility = Visibility.Collapsed }, "PlanSheetUntitledRows");
     internal readonly InfoBar SaveFailure = Id(new InfoBar { Title = "保存できませんでした", Severity = InfoBarSeverity.Error, IsClosable = false }, "PlanSheetSaveFailure");
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
     private string? headerKey, timelineKey;
@@ -146,6 +152,7 @@ internal sealed partial class PlanSheetView : Grid
         var commands = commandBar = Id(new SheetCommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
             OverflowButtonVisibility = CommandBarOverflowButtonVisibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetCommands");
         AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
+        AddCommand(commands, "行を削除", "PlanSheetDelete", Symbol.Delete, DeleteRows).KeyboardAcceleratorTextOverride = "Ctrl+-";
         AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M2,5 L5,8 L2,11 L1,10 L3,8 L1,6 Z");
         AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M4,5 L1,8 L4,11 L5,10 L3,8 L5,6 Z");
         InitializeOverview(commands);
@@ -196,11 +203,12 @@ internal sealed partial class PlanSheetView : Grid
         AutomationProperties.SetName(emptyHint, emptyHint.Text);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(selectedLine); SetRow(selectedLine, 2);
-        var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(error);
+        var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(untitledRows); feedback.Children.Add(error);
         SaveFailure.ActionButton = retrySave;
         if (!hostSaveFailure) feedback.Children.Add(SaveFailure);
         retrySave.Click += async (_, _) => await Run(async () => { Check(await Session.RetrySaveAsync()); }, "Retry save");
         error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = string.IsNullOrEmpty(error.Text) ? Visibility.Collapsed : Visibility.Visible);
+        untitledRows.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => untitledRows.Visibility = string.IsNullOrEmpty(untitledRows.Text) ? Visibility.Collapsed : Visibility.Visible);
         Children.Add(feedback); SetRow(feedback, 1);
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions.Add(new()); grid.ColumnDefinitions.Add(new()); }
@@ -406,7 +414,7 @@ internal sealed partial class PlanSheetView : Grid
             // Nesting them inside that same queue would wait on themselves.
             if (!queueInSheet) { await action(); return; }
             await Run(async () => {
-                if (id is "PlanSheetInsert" or "PlanSheetIndent" or "PlanSheetOutdent") await CommitPending();
+                if (id is "PlanSheetInsert" or "PlanSheetDelete" or "PlanSheetIndent" or "PlanSheetOutdent") await CommitPending();
                 await action();
             }, id);
         };
@@ -589,6 +597,7 @@ internal sealed partial class PlanSheetView : Grid
             nonWorkingDates = nextNonWorkingDates;
             lateness = PlanLateness.Classify(scheduled, document.Baseline, calendar, document.State.Settings.StatusDate ?? today);
             Unpublished = PlanOperations.Changes(document, today, scheduled);
+            untitledNewRows = PlanOperations.UntitledNewRows(document);
             SummaryIds = Rows.Values.Where(r => r.Parent is not null && Rows.ContainsKey(r.Parent)).Select(r => r.Parent!).ToHashSet();
             folded.IntersectWith(SummaryIds);
             presentedDocument = document; presentedToday = today;
@@ -601,7 +610,18 @@ internal sealed partial class PlanSheetView : Grid
         finally { rendering = false; }
         ReconcileSelection(); RefreshLayout();
         metrics.Mark("layout");
-        UpdateReason(); RefreshOverviewCommands(); Changed?.Invoke();
+        RenderUntitledRows(); UpdateReason(); RefreshOverviewCommands(); Changed?.Invoke();
+    }
+    // The rows a publish will not create because they have no title (#247). Both the line and the cell
+    // mark are derived from the document, so they vanish with the cause.
+    private void RenderUntitledRows()
+    {
+        var positions = untitledNewRows.Select(id => PlanIds.GetValueOrDefault(id)).Where(id => id > 0).ToArray();
+        var text = positions.Length == 0 ? "" : "タイトルを入力してください（ID "
+            + (positions.Length > 10 ? string.Join(", ", positions.Take(10)) + " ほか" + (positions.Length - 10).ToString("N0") + " 件" : string.Join(", ", positions))
+            + "）。行を削除 で行ごと消せます。";
+        if (untitledRows.Text == text) return;
+        untitledRows.Text = text; AutomationProperties.SetName(untitledRows, text);
     }
     private void RefreshVisibleRows(PlanDocument document)
     {

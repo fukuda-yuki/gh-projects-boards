@@ -29,7 +29,7 @@ internal static class PlanField
     public static bool IsDefined(string value) => All.Contains(value) || PlanSheetColumns.IsExtra(value);
 }
 
-internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset }
+internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, Delete, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset }
 internal sealed record PlanColumnDefinition(string Id, string Name, string DataType)
 { public ImmutableArray<string> Options { get; init; } = []; }
 internal sealed record PlanColumnMapping(string Role, string FieldId, string Name, string DataType);
@@ -105,6 +105,7 @@ internal sealed record IndentPlanRows(ImmutableArray<string> Targets, bool Outde
 internal sealed record MovePlanSubtrees(ImmutableArray<string> Targets, string? Before = null) : PlanCommand;
 internal sealed record ArrangePlanOutline() : PlanCommand;
 internal sealed record MovePlanRows(ImmutableArray<string> Targets, string? Before = null) : PlanCommand;
+internal sealed record DeletePlanRows(ImmutableArray<string> Targets) : PlanCommand;
 internal sealed record ReplacePlanSettings(ProjectPlanSettings Settings) : PlanCommand;
 internal sealed record PlanRowChange(string Identity, PlanRow? Before, PlanRow? After);
 internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowChange> Rows,

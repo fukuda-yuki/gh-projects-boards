@@ -1035,6 +1035,35 @@ internal sealed partial class PlanPublisherTests
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         Assert.That(session.Document.Sync.Publish, Is.Null);
     }
+    [Test]
+    public async Task AnUntitledRowIsNotCreatedAndTheRestOfThePlanStillPublishes()
+    {
+        await Start(1);
+        await session.Execute(new InsertPlanRows([PlanRow.New("", "acme/repo")]), Today);
+        var untitled = session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:", StringComparison.Ordinal));
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Edited")]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Title), Is.EqualTo(new[] { "Edited" }));
+        var sent = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(sent, Does.Contain("updateIssue"));
+        Assert.That(sent, Does.Not.Contain("createIssue"));
+        Assert.That(session.Document.Sync.Failures, Is.Empty, "A row that cannot be published yet is not a failure.");
+        Assert.That(session.Document.State.Rows.Any(r => r.Identity == untitled.Identity), Is.True);
+        Assert.That(session.Changes(Today).Fields.ContainsKey(untitled.Identity), Is.True);
+    }
+
+    [Test]
+    public async Task AnUntitledRowAlonePublishesNothingAndStillSucceeds()
+    {
+        await Start(1);
+        await session.Execute(new InsertPlanRows([PlanRow.New("", "acme/repo")]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Count, Is.EqualTo(1));
+        Assert.That(File.Exists(Path.Combine(root, "plan-mutations.jsonl")), Is.False, "Nothing is sent for a row this publish cannot create.");
+        Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(1));
+    }
     private static readonly DateOnly Today = new(2026, 10, 5);
     private static readonly ScopedId Project = new(new("github.com", 42), "P1");
     private string root = null!;

@@ -37,6 +37,9 @@ internal sealed partial class PlanSheetView
     internal sealed record Edge(int From, int To, DateOnly End, DateOnly Start);
     internal IReadOnlyList<Edge> Edges { get; private set; } = [];
     internal static bool Down(VirtualKey key) => (InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
+    // Ctrl+-: the numeric keypad reports Subtract, the main row reports the OEM minus code (Excel's
+    // Ctrl+- accepts both), so 行を削除 must too (#247).
+    internal static bool Minus(VirtualKey key) => key == VirtualKey.Subtract || (int)key == 189;
     private CellRange Range
     {
         get
@@ -255,7 +258,8 @@ internal sealed partial class PlanSheetView
         // Run yields to native focus events before executing. Preserve command
         // targets at invocation, including paste's matrix expansion order.
         var range = Range;
-        var rows = key is VirtualKey.C or VirtualKey.Delete ? RowIds.Skip(range.Row).Take(range.RowCount).ToArray() : [];
+        var deleting = Minus(key);
+        var rows = key is VirtualKey.C or VirtualKey.Delete || deleting ? RowIds.Skip(range.Row).Take(range.RowCount).ToArray() : [];
         var fields = key is VirtualKey.C or VirtualKey.Delete ? Fields.Skip(range.Column).Take(range.ColumnCount).ToArray() : [];
         var visible = key == VirtualKey.V ? RowIds.Where(Rows.ContainsKey).ToArray() : [];
         var columns = key == VirtualKey.V ? Fields.ToArray() : [];
@@ -268,6 +272,7 @@ internal sealed partial class PlanSheetView
                 case VirtualKey.Delete: await Clear(rows, fields); break;
                 case VirtualKey.Z: await ChangeHistory(false); break;
                 case VirtualKey.Y: await ChangeHistory(true); break;
+                default: if (deleting) await DeleteRows(rows); break;
             }
         });
     }
@@ -438,6 +443,16 @@ internal sealed partial class PlanSheetView
         var row = PlanRow.New("", repository);
         Check(await Session.Execute(new InsertPlanRows([row], selected.Length == 0 ? null : selected), Today));
         RevealAddedRow(row.Identity);
+    }
+    // 行を削除 removes the rows of the selection with their subtrees, whatever columns are selected.
+    // A published Issue is refused by Core and points at 完了・中止・この版から外す (#231, #247).
+    private Task DeleteRows() => DeleteRows(RangeRows(Range));
+    internal async Task DeleteRows(IReadOnlyList<string> rows)
+    {
+        if (rows.Count == 0) throw new ArgumentException("削除する行を選択してください。");
+        if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
+        Check(await Session.Execute(new DeletePlanRows([.. rows]), Today));
+        Refresh();
     }
     internal void RevealAddedRow(string identity)
     {
