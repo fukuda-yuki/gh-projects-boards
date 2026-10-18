@@ -129,6 +129,12 @@ internal sealed record PlanSaveResult(bool Succeeded, PlanSaveFailure Failure, s
     public bool Retryable => Failure == PlanSaveFailure.Io;
 }internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);
 internal sealed record PlanOpenResult(PlanLoadStatus Status, PlanSession? Session, string? Error);
+internal sealed record PlanReconcileResult(bool Succeeded, string? Error);
+// Carries the failure kind to the UI boundary, so a changed stored plan is not presented as a retry (#248).
+internal sealed class PlanSaveFailedException(PlanSaveResult result) : IOException(result.Error ?? "保存できませんでした。")
+{
+    public PlanSaveResult Result { get; } = result;
+}
 internal sealed record PlanImportResult(bool Applied, ImmutableArray<string> Warnings, string? Error, PlanSaveResult? Save);
 internal sealed record PlanSiblingOrderChange(ImmutableArray<string> Before, ImmutableArray<string> After);
 internal enum PlanUnpublishedInputKind { Entered, Recalculated }

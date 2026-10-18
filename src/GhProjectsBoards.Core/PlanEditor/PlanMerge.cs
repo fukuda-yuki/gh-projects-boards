@@ -59,6 +59,32 @@ internal static class PlanValues
 }
 internal static class PlanMerge
 {
+    // #248: the edits this window made since its last stored save, applied onto the plan another writer
+    // stored. Only the fields this window actually changed are taken, so the other writer's fields on the
+    // same row survive; a row this window created is carried over whole and one it deleted stays deleted.
+    internal static PlanState ReapplyLocalEdits(PlanState stored, PlanState saved, PlanState mine)
+    {
+        var savedRows = saved.Rows.ToDictionary(r => r.Identity);
+        var mineIds = mine.Rows.Select(r => r.Identity).ToHashSet();
+        var rows = stored.Rows.ToDictionary(r => r.Identity);
+        foreach (var row in mine.Rows)
+        {
+            if (!savedRows.TryGetValue(row.Identity, out var before)) { rows[row.Identity] = row; continue; }
+            if (!rows.TryGetValue(row.Identity, out var target)) continue;
+            var applied = target;
+            foreach (var field in PlanValues.RowFields)
+                if (PlanValues.Get(row, field) != PlanValues.Get(before, field)) applied = PlanValues.Set(applied, field, PlanValues.Get(row, field));
+            rows[row.Identity] = applied;
+        }
+        var storedOrder = stored.Rows.Select(r => r.Identity).Where(rows.ContainsKey).ToArray();
+        var mineOrder = mine.Rows.Select(r => r.Identity).Where(rows.ContainsKey).ToArray();
+        // The stored order stands unless this window reordered or inserted; rows it never saw keep their place.
+        var order = mine.Rows.Select(r => r.Identity).SequenceEqual(saved.Rows.Select(r => r.Identity))
+            ? storedOrder.Concat(mineOrder.Where(id => !storedOrder.Contains(id))).ToArray()
+            : mineOrder.Concat(storedOrder.Where(id => !mineIds.Contains(id))).ToArray();
+        var settings = PlanOperations.SettingsEqual(saved.Settings, mine.Settings) ? stored.Settings : mine.Settings;
+        return new(order.Select(id => rows[id]).ToImmutableArray(), settings);
+    }
     internal static string[] MergeOrder(IEnumerable<string> primary, IEnumerable<string> secondary)
     {
         var order = primary.ToList(); var anchors = order.ToHashSet(); var additions = secondary.ToArray();

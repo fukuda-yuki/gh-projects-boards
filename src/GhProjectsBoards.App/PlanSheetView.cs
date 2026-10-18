@@ -87,6 +87,10 @@ internal sealed partial class PlanSheetView : Grid
         Foreground = Brush("SystemFillColorCriticalBrush"), Visibility = Visibility.Collapsed }, "PlanSheetUntitledRows");
     internal readonly InfoBar SaveFailure = Id(new InfoBar { Title = "保存できませんでした", Severity = InfoBarSeverity.Error, IsClosable = false }, "PlanSheetSaveFailure");
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
+    // A changed stored plan cannot be resolved by retrying: these are the two ways out (#248).
+    private readonly StackPanel conflictActions = new() { Orientation = Orientation.Horizontal, Spacing = 8, Visibility = Visibility.Collapsed };
+    private readonly Button reapplyStored = Id(new Button { Content = "読み直して編集を適用" }, "PlanSaveReapply");
+    private readonly Button saveCopy = Id(new Button { Content = "コピーとして保存…" }, "PlanSaveCopy");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
     private Func<PlanRow, bool>? filterPredicate;
@@ -126,7 +130,8 @@ internal sealed partial class PlanSheetView : Grid
     internal string WorkDescription => $"loaded={IsLoaded}, disposed={disposed}, commands=[{string.Join(", ", commands.Values)}], tail={tail.Status}, clipboard={clipboardWork}, dragTimer={dragScroll.IsEnabled}, frame={frameSubscribed}, focusTarget={requestedFocus}, pendingCells={Pending.Count}, realizedRows={Realized.Count}, zoomOpen={zoom.IsDropDownOpen}, calendarOpen={statusDate.IsCalendarOpen}";
     internal event Action? Changed;
     internal event Action<PlanSaveResult>? SaveFeedbackChanged;
-    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? openColumns = null, Func<Task>? exportCsv = null)
+    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? openColumns = null, Func<Task>? exportCsv = null,
+        Func<Task>? reapplyStoredPlan = null, Func<Task>? savePlanCopy = null)
     {
         Session = session;
         this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
@@ -205,8 +210,12 @@ internal sealed partial class PlanSheetView : Grid
         Children.Add(selectedLine); SetRow(selectedLine, 2);
         var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(untitledRows); feedback.Children.Add(error);
         SaveFailure.ActionButton = retrySave;
+        conflictActions.Children.Add(reapplyStored); conflictActions.Children.Add(saveCopy);
+        SaveFailure.Content = conflictActions;
         if (!hostSaveFailure) feedback.Children.Add(SaveFailure);
         retrySave.Click += async (_, _) => await Run(async () => { Check(await Session.RetrySaveAsync()); }, "Retry save");
+        reapplyStored.Click += async (_, _) => { if (reapplyStoredPlan is { } reapply) await Run(reapply, "Reapply stored plan"); };
+        saveCopy.Click += async (_, _) => { if (savePlanCopy is { } copy) await Run(copy, "Save plan copy"); };
         error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = string.IsNullOrEmpty(error.Text) ? Visibility.Collapsed : Visibility.Visible);
         untitledRows.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => untitledRows.Visibility = string.IsNullOrEmpty(untitledRows.Text) ? Visibility.Collapsed : Visibility.Visible);
         Children.Add(feedback); SetRow(feedback, 1);
@@ -453,13 +462,17 @@ internal sealed partial class PlanSheetView : Grid
         if (result.Succeeded) ClearSaveFailure();
         else {
             error.Text = ""; SaveFailure.Message = result.Error ?? "保存できません。再試行してください。";
-            SaveFailure.IsOpen = true; retrySave.Visibility = Visibility.Visible;
-            throw new IOException(result.Error);
+            SaveFailure.IsOpen = true;
+            // Retrying cannot resolve a plan another writer stored; the two escapes replace it (#248).
+            var conflict = result.Failure == PlanSaveFailure.ChangedFile;
+            retrySave.Visibility = conflict ? Visibility.Collapsed : Visibility.Visible;
+            conflictActions.Visibility = conflict ? Visibility.Visible : Visibility.Collapsed;
+            throw new PlanSaveFailedException(result);
         }
     }
     internal void ClearSaveFailure()
     {
-        SaveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed;
+        SaveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; conflictActions.Visibility = Visibility.Collapsed;
     }
     internal async Task FlushInput()
     {
