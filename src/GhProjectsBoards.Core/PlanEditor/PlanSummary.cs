@@ -74,7 +74,7 @@ internal static class PlanSummary
         int? elapsed = settings.ProjectStart is { } from ? days(from.DayNumber, statusDate.DayNumber - 1) : null;
         int? remaining = settings.ProjectEnd is { } until ? days(statusDate.DayNumber, until.DayNumber) : null;
         var tasks = scheduled.Where(t => !t.IsSummary).ToArray();
-        var lateness = PlanLateness.Classify(scheduled, document.Baseline, calendar, statusDate);
+        var lateness = PlanLateness.Classify(scheduled, calendar, statusDate);
         bool Overdue(ScheduledTask task) => lateness.Tasks[task.Input.Identity].Level == PlanLatenessLevel.Overdue;
         SummaryTasks Sum(IReadOnlyList<ScheduledTask> source)
         {

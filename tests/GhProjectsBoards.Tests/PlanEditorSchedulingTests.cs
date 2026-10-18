@@ -84,10 +84,10 @@ internal sealed class PlanEditorSchedulingTests
         Assert.That(result.StartReason, Is.EqualTo(reason));
     }
 
-    [TestCase("2026-10-01", "2026-10-01", "2026-10-05", "開始日を維持")]
+    [TestCase("2026-10-01", "2026-10-01", "2026-10-01", "開始日を維持")]
     [TestCase("2026-10-07", "2026-10-07", "2026-10-07", "開始日を維持")]
     [TestCase(null, "2026-10-05", "2026-10-05", "基準日")]
-    public void ProgressRetainsStartAndSchedulesRemainingFromStatusOrStart(string? start, string expectedStart, string expectedEnd, string reason)
+    public void ProgressRetainsStartAndConsumesActualAndRemainingFromIt(string? start, string expectedStart, string expectedEnd, string reason)
     {
         var result = Run(Task() with { Actual = 4, Remaining = 4, Start = start is null ? null : D(start) });
         Dates(result, expectedStart, expectedEnd);
@@ -168,7 +168,8 @@ internal sealed class PlanEditorSchedulingTests
         };
         var results = Calculate([predecessor, successor], Settings with { StatusDate = Monday.AddDays(2) });
         Dates(results[0], "2026-10-05", "2026-10-06");
-        Dates(results[1], start, "2026-10-07");
+        // A 日程固定 successor keeps its typed pair; an automatic in-progress one consumes Actual + Remaining from its start.
+        Dates(results[1], start, fixedDates ? "2026-10-07" : start);
         Assert.That(results[1].Start.Origin, Is.EqualTo(DateOrigin.Kept));
         Assert.That(results[1].End.Origin, Is.EqualTo(fixedDates ? DateOrigin.Kept : DateOrigin.Calculated));
         Assert.That(results[1].Warnings.Contains("先行タスクより前に開始"), Is.EqualTo(warning));
@@ -263,7 +264,7 @@ internal sealed class PlanEditorSchedulingTests
         var result = Calculate(rows, Settings)[0];
         Assert.That((result.Estimate, result.Remaining, result.Actual), Is.EqualTo(((decimal?)estimate, (decimal?)remaining, (decimal?)(allMissing ? 0 : 2))));
         Assert.That((result.MissingEstimates, result.MissingRemaining), Is.EqualTo((missingEstimate, missingRemaining)));
-        Assert.That(PlanSheetText.Indicator(null, result, null, null, "", true),
+        Assert.That(PlanSheetText.Indicator(null, result, null, "", true),
             Is.EqualTo($"見積のないタスク {missingEstimate}、未発行の変更あり"));
     }
 
@@ -321,7 +322,7 @@ internal sealed class PlanEditorSchedulingTests
         {
             Actual = 2, Start = Monday.AddDays(-3), StartNoEarlierThan = Monday.AddDays(10), Predecessors = ["issue:1"]
         }], Settings with { ProjectStart = Monday.AddDays(2) })[1];
-        Dates(result, "2026-10-02", "2026-10-05");
+        Dates(result, "2026-10-02", "2026-10-02");
         Assert.That(result.Warnings, Does.Contain("先行タスクより前に開始"));
     }
 
@@ -426,10 +427,11 @@ internal sealed class PlanEditorSchedulingTests
     {
         var input = Task(work: estimate) with { Remaining = remaining, Actual = actual, Closed = closed, CloseDate = closed ? Monday.AddDays(-3) : null, Start = Monday.AddDays(-4), End = Monday.AddDays(-3) };
         var result = Run(input);
-        Dates(result, closed ? "2026-10-01" : "2026-10-05", closed ? "2026-10-02" : "2026-10-05");
+        // Zero work sits on the plan's own date, so a マイルストーン no longer moves to the 基準日 on every read.
+        Dates(result, closed ? "2026-10-01" : "2026-10-01", closed ? "2026-10-02" : "2026-10-01");
         Assert.That(result.IsZeroRemainingOpen, Is.EqualTo(!closed && !milestone));
         Assert.That(result.IsMilestone, Is.EqualTo(milestone));
-        Assert.That(result.StartReason, Is.EqualTo(closed ? "完了" : "基準日"));
+        Assert.That(result.StartReason, Is.EqualTo(closed ? "完了" : "開始日を維持"));
         Assert.That(result.End.Origin, Is.EqualTo(DateOrigin.Calculated));
     }
 
@@ -609,8 +611,8 @@ internal sealed class PlanEditorSchedulingTests
     {
         var input = Task() with { Start = Monday.AddDays(1), End = Monday, GitHubStart = Monday.AddDays(1), GitHubEnd = Monday };
         var result = Run(input);
-        Dates(result, "2026-10-05", "2026-10-05");
-        Assert.That(result.Start.Origin, Is.EqualTo(DateOrigin.Calculated));
+        Dates(result, "2026-10-06", "2026-10-06");
+        Assert.That(result.Start.Origin, Is.EqualTo(DateOrigin.Kept), "The plan keeps its own start.");
         Assert.That(result.Warnings, Is.Empty);
     }
     [TestCase(false), TestCase(true)]

@@ -111,12 +111,11 @@ internal sealed partial class PlanPublisherTests
             Assert.That(session.Document.Sync.Unavailable, Is.Empty);
             Assert.That(session.Document.Sync.Failures, Is.Empty);
             Assert.That(session.Changes(day).TaskCount, Is.Zero);
-            Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.Reset));
-            Assert.That(session.Schedule(day).All(t => t.Start.Value == Today.AddDays(-2) && t.End.Value == Today.AddDays(-1)), Is.True);
+            Assert.That(session.Schedule(day).All(t => t.Start.Value == t.Input.Start && t.End.Value == t.Input.End), Is.True,
+                "Reset takes GitHub's dates as the plan dates.");
         });
         await Reopen();
         await session.Undo(day);
-        Assert.That(session.Document.Dates.Held, Is.Null);
         Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Title, Is.EqualTo("Older edit"));
         Assert.That(session.Document.Baseline.Rows.Single(r => r.Identity == "I1").Title, Is.EqualTo("Remote I1"));
         Assert.That(session.Document.State.Rows.Any(r => r.Identity == added.Identity), Is.True);
@@ -128,8 +127,7 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Changes(day).TaskCount, Is.Zero);
         Assert.That(session.Document.Sync.Failures, Is.Empty);
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "After reset")]), day);
-        Assert.That(session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.Reset));
-        Assert.That(session.Schedule(day).Any(t => t.Start.Value != Today.AddDays(-2)), Is.True);
+        Assert.That(session.Schedule(day).Any(t => t.Start.Value != Today.AddDays(-2)), Is.False, "A title edit moves no date.");
         await session.Undo(day); // edit
         await session.Undo(day); // reset
         await session.Undo(day); // actual
@@ -163,7 +161,6 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Changes(day).TaskCount, Is.Zero);
         Assert.That((await publisher.ResetAsync(session, day.AddDays(1))).Succeeded, Is.True);
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day.AddDays(1)));
-        Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.Reset));
         Assert.That(session.Changes(day).TaskCount, Is.Zero);
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }

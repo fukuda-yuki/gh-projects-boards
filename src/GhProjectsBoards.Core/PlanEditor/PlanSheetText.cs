@@ -5,13 +5,13 @@ namespace GhProjectsBoards.Core.PlanEditor;
 internal static class PlanSheetText
 {
     internal static string Indicator(PlanRow? taskRow, ScheduledTask? effort, PlanTaskLateness? late,
-        DateOnly? publishedEnd, string remoteProblem, bool unpublished)
+        string remoteProblem, bool unpublished)
     {
         var states = new List<string>();
         var done = taskRow?.Closed == true;
         var typed = taskRow?.StartNoEarlierThan is not null || taskRow?.Fixed == true;
         if (remoteProblem.Length > 0) states.Add(remoteProblem);
-        if (late?.MissedPublishedDate is { } missed) {
+        if (late?.MissedDate is { } missed) {
             var date = missed.ToString("M/d", CultureInfo.InvariantCulture);
             var remaining = effort?.Remaining;
             var remainingText = remaining is { } work
@@ -19,23 +19,27 @@ internal static class PlanSheetText
             states.Add(late.OverdueKind == PlanOverdueKind.Finish
                 ? $"期限超過: 完了予定 {date} を過ぎて未完了{remainingText}"
                 : $"期限超過: 開始予定 {date} を過ぎて未着手");
+            if (late.DaysLater is { } also) states.Add($"見込終了は +{also} 日");
         }
-        if (late?.DaysLater is { } days && publishedEnd is { } published)
-            states.Add($"予定より遅れ: 発行済み {published.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日");
+        if (late?.DaysLater is { } days && late.Level == PlanLatenessLevel.Later)
+            states.Add($"予定より遅れ: +{days} 日（{Cause(late)}）");
         if (effort?.IsSummary == true && late is not null) {
             var descendants = new List<string>();
             if (late.OverdueDescendantTasks > 0) descendants.Add($"期限超過 {late.OverdueDescendantTasks}");
             if (late.LaterDescendantTasks > 0) descendants.Add($"予定より遅れ {late.LaterDescendantTasks}");
+            if (late.OverEstimateDescendantTasks > 0) descendants.Add($"見積超過 {late.OverEstimateDescendantTasks}");
             if (descendants.Count > 0) states.Add("配下に" + string.Join("、", descendants));
         }
         if (effort is { IsSummary: true, MissingEstimates: > 0 }) states.Add($"見積のないタスク {effort.MissingEstimates}");
         if (effort?.IsOverEstimate == true)
             states.Add(effort.Forecast is null ? "見積超過: 見込工数・差異が数値の範囲外です" : $"見積超過: 見込工数 {effort.Forecast:0.############################}h（見積工数 {effort.Estimate:0.############################}h、差異 {effort.Variance:+0.############################;-0.############################;0}h）");
-        if (effort?.IsZeroRemainingOpen == true) states.Add("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません");
         if (done) states.Add("完了");
         if (typed) states.Add(taskRow?.Fixed == true ? "日程固定" : "開始日を指定");
         if (unpublished) states.Add("未発行の変更あり");
         return string.Join("、", states);
+
+        static string Cause(PlanTaskLateness late) => late.CausePredecessorRowId is { } predecessor
+            ? $"先行 {predecessor} の遅れによる" : "自分の残による";
     }
     internal static string RemoteProblem(PlanSync sync, string identity)
     {

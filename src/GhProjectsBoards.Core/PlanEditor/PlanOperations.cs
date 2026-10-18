@@ -52,18 +52,13 @@ internal static class PlanOperations
         { GitHubStart = baseline.GetValueOrDefault(r.Identity)?.Start, GitHubEnd = baseline.GetValueOrDefault(r.Identity)?.End }).ToArray(),
             new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
                 Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
-                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today, holdGitHubDates: document.Dates.Held is not null);
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today);
     }
+    // The tasks whose plan dates the change between two documents moves. A task the change does not
+    // reach keeps its dates, so this is exactly the rescheduled subtree (#236).
     internal static ImmutableHashSet<string> ChangedTaskDates(PlanDocument before, PlanDocument after, DateOnly today)
     {
-        // Held dates are exactly the baseline; comparing them needs no scheduler pass.
-        var baseline = before.Dates.Held is not null ? before.Baseline.Rows.ToDictionary(r => r.Identity) : null;
-        var previous = before.Dates.Held is not null
-            ? before.State.Rows.ToDictionary(r => r.Identity, r => {
-                var row = baseline!.GetValueOrDefault(r.Identity);
-                return (Start: row?.Start, End: row?.End);
-            })
-            : Schedule(before, today).ToDictionary(t => t.Input.Identity, t => (Start: t.Start.Value, End: t.End.Value));
+        var previous = Schedule(before, today).ToDictionary(t => t.Input.Identity, t => (Start: t.Start.Value, End: t.End.Value));
         return Schedule(after, today).Where(t => !t.IsSummary &&
             (!previous.TryGetValue(t.Input.Identity, out var old) || old.Start != t.Start.Value || old.End != t.End.Value))
             .Select(t => t.Input.Identity).ToImmutableHashSet();
@@ -144,6 +139,9 @@ internal static class PlanOperations
         var state = d.State;
         var rows = state.Rows.ToList();
         var byId = rows.ToDictionary(r => r.Identity);
+        // What a PMO edit reschedules (#236): the edited task, its transitive successors and the roll-ups.
+        var rescheduled = new HashSet<string>(StringComparer.Ordinal);
+        var rescheduleAll = false;
         PlanOperationKind kind;
         switch (command)
         {
@@ -165,6 +163,7 @@ internal static class PlanOperations
                     if (ReadOnlyReason(byId[c.Identity], summaries.Contains(c.Identity), c.Field) is { } reason)
                         throw new ArgumentException(reason);
                     if (PlanSheetColumns.IsExtra(c.Field) && PlanExtraEditing.ReadOnlyReason(d, byId[c.Identity], c.Field) is { } unavailable) throw new ArgumentException(unavailable);
+                    if (ScheduleFields.Contains(c.Field)) rescheduled.Add(c.Identity);
                     var value = c.Field is PlanField.Phase or PlanField.MilestoneTitle ? PlanSheetEditing.Parse(d, c.Field, String(c.Value) ?? "", today, c.Identity)
                         : c.Field == PlanField.Labels ? PlanSheetEditing.Parse(d, c.Field, string.Join(",", Ids(c.Value)), today, c.Identity) : c.Value;
                     byId[c.Identity] = PlanSheetColumns.IsExtra(c.Field)
@@ -199,6 +198,7 @@ internal static class PlanOperations
                 var index = insert.Before is null ? rows.Count : rows.FindIndex(r => r.Identity == insert.Before);
                 Require(index >= 0, "挿入先がありません。");
                 var additions = insert.Rows.Select(r => r with { Repository = r.Repository.Length == 0 ? state.Settings.DefaultRepository ?? "" : r.Repository }).ToArray();
+                rescheduled.UnionWith(additions.Select(r => r.Identity));
                 Require(additions.All(r => IsLocal(r.Identity) && !(r.Estimate < 0 || r.Remaining < 0 || r.Actual < 0) && (!TaskInput(r).KeepsDates || !(TaskInput(r).KeptDates.Start > TaskInput(r).KeptDates.End))), "新規行の識別子、工数または日付が不正です。");
                 if (kind == PlanOperationKind.CsvImport) rows = new PlanOutline(state.Rows).Import([.. additions]).ToList();
                 else {
@@ -226,31 +226,94 @@ internal static class PlanOperations
                     Require(first > 0, "直前の同階層タスクがありません。"); newParent = siblings[first - 1].Identity;
                 }
                 var ids = selected.Select(r => r.Identity).ToHashSet();
+                rescheduled.UnionWith(ids);
                 rows = indent.Outdent ? new PlanOutline(state.Rows).Outdent(indent.Targets).ToList()
                     : rows.Select(r => ids.Contains(r.Identity) ? r with { Parent = newParent } : r).ToList();
                 break;
             case MovePlanSubtrees outlineMove:
                 kind = PlanOperationKind.Move;
+                rescheduled.UnionWith(outlineMove.Targets);
                 rows = new PlanOutline(state.Rows).Move(outlineMove.Targets, outlineMove.Before).ToList();
                 break;
             case ArrangePlanOutline:
                 kind = PlanOperationKind.Move;
+                rescheduleAll = true;
                 rows = new PlanOutline(state.Rows).Arrange().ToList();
                 break;
             case MovePlanRows move:
                 kind = PlanOperationKind.Move;
                 var moving = Selected(rows, move.Targets); var movingIds = moving.Select(r => r.Identity).ToHashSet();
                 Require(move.Before is null || byId.ContainsKey(move.Before) && !movingIds.Contains(move.Before), "移動先は選択外の行にしてください。");
+                rescheduled.UnionWith(movingIds);
                 rows.RemoveAll(r => movingIds.Contains(r.Identity));
                 rows.InsertRange(move.Before is null ? rows.Count : rows.FindIndex(r => r.Identity == move.Before), moving);
                 break;
             case ReplacePlanSettings settings:
-                kind = PlanOperationKind.Settings; state = state with { Settings = settings.Settings }; break;
+                kind = PlanOperationKind.Settings;
+                // Only a change that can move dates reschedules: the calendar, the Project period or people rates.
+                rescheduleAll = ScheduleSettings(state.Settings, settings.Settings);
+                state = state with { Settings = settings.Settings }; break;
             default: throw new ArgumentException("未対応の計画操作です。");
         }
         state = state with { Rows = rows.ToImmutableArray() };
+        state = Reschedule(d, state, rescheduled, rescheduleAll, today);
         ValidateDocument(d with { State = state }, today);
         return (state, kind);
+    }
+    // Start and end are plan values: only a PMO edit that reaches a task rewrites them, and that edit
+    // reaches the edited task, its transitive successors and the summary roll-ups (#236).
+    private static readonly HashSet<string> ScheduleFields = new(StringComparer.Ordinal)
+        { PlanField.Start, PlanField.End, PlanField.Estimate, PlanField.Remaining, PlanField.Actual,
+          PlanField.Predecessors, PlanField.Fixed, PlanField.StartNoEarlierThan, PlanField.Parent };
+    private static bool ScheduleSettings(ProjectPlanSettings before, ProjectPlanSettings after)
+        => before.ProjectStart != after.ProjectStart || before.ProjectEnd != after.ProjectEnd
+            || !before.CompanyDaysOff.SequenceEqual(after.CompanyDaysOff) || before.ImportedHolidays != after.ImportedHolidays
+            || !before.People.SequenceEqual(after.People);
+    private static PlanState Reschedule(PlanDocument d, PlanState state, IReadOnlyCollection<string> edited, bool all, DateOnly today)
+    {
+        var affected = Affected(state, edited, all);
+        if (affected.Count == 0) return state;
+        var settings = state.Settings;
+        var scheduled = PlanScheduler.Calculate(state.Rows.Select((r, i) => TaskInput(r, i)).ToArray(),
+            new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
+                Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today, affected);
+        var byId = scheduled.ToDictionary(t => t.Input.Identity);
+        // Only the end is written: the plan start stays the live value of the row's own start, 開始日指定
+        // and predecessor finishes, so a typed start keeps its edit form and its classification.
+        return state with { Rows = state.Rows.Select(r => byId.TryGetValue(r.Identity, out var task) && affected.Contains(r.Identity)
+            ? r with { End = task.End.Value } : r).ToImmutableArray() };
+    }
+    // The edited rows, every row that depends on them through a predecessor link or a roll-up, and the
+    // summaries above them. Everything else keeps its plan dates.
+    private static ImmutableHashSet<string> Affected(PlanState state, IReadOnlyCollection<string> edited, bool all)
+    {
+        var rows = state.Rows;
+        var present = rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+        if (all) return present.ToImmutableHashSet(StringComparer.Ordinal);
+        var byId = rows.ToDictionary(r => r.Identity);
+        var queue = new Queue<string>(edited.Where(present.Contains));
+        var affected = new HashSet<string>(queue, StringComparer.Ordinal);
+        while (queue.TryDequeue(out var id))
+        {
+            foreach (var next in rows)
+            {
+                if (affected.Contains(next.Identity)) continue;
+                if (next.Parent == id || EffectivePredecessors(byId, next).Contains(id))
+                {
+                    affected.Add(next.Identity);
+                    queue.Enqueue(next.Identity);
+                }
+            }
+        }
+        return affected.ToImmutableHashSet(StringComparer.Ordinal);
+    }
+    private static HashSet<string> EffectivePredecessors(IReadOnlyDictionary<string, PlanRow> byId, PlanRow row)
+    {
+        var result = new HashSet<string>(row.Predecessors, StringComparer.Ordinal);
+        for (var parent = row.Parent; parent is not null && byId.TryGetValue(parent, out var above); parent = above.Parent)
+            result.UnionWith(above.Predecessors);
+        return result;
     }
     private static List<PlanRow> Selected(List<PlanRow> rows, ImmutableArray<string> ids)
     {
@@ -403,7 +466,7 @@ internal static class PlanOperations
         foreach (var calculated in schedule ?? Schedule(d, today))
         {
             var r = d.State.Rows[calculated.Input.RowId - 1];
-            if (d.Dates.Held is null && r.Closed && !calculated.IsSummary) r = r with { Remaining = 0 };
+            if (calculated.Input.Closed && !calculated.IsSummary) r = r with { Remaining = 0 };
             if (!baseline.TryGetValue(r.Identity, out var old)) { result[r.Identity] = [PlanField.NewTask]; continue; }
             var fields = ImmutableArray.CreateBuilder<string>();
             foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Phase, PlanField.MilestoneTitle, PlanField.Closed, PlanField.Parent,
@@ -419,7 +482,7 @@ internal static class PlanOperations
                 fields.Add(PlanField.Start);
             if (calculated.End.Value != old.End && !IsUnmappedCalculation(calculated, PlanField.End, d.State.Settings))
                 fields.Add(PlanField.End);
-            foreach (var field in fields.Where(field => d.Dates.Held is null && IsRecalculatedField(calculated, field)))
+            foreach (var field in fields.Where(field => IsRecalculatedField(calculated, field)))
                 recalculated.Add((r.Identity, field));
             if (moved.Contains(r.Identity)) fields.Add(PlanField.Order);
             if (SiblingOrderChange(d, r.Identity) is not null) fields.Add(PlanField.SubIssueOrder);

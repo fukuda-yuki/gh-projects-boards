@@ -80,9 +80,6 @@ internal sealed class PlanSession
         }
         return new(PlanLoadStatus.Loaded, session, null);
     }
-    private static PlanDateState ReleaseDates(PlanDocument document) => document.Dates.Held is { } origin ? new(null, origin) : document.Dates;
-    private static PlanPatch DateTransition(PlanPatch patch, PlanDocument document, PlanDateState dates)
-        => document.Dates == dates ? patch : patch with { BeforeDates = document.Dates, AfterDates = dates };
     public Task<PlanSaveResult> Execute(PlanCommand command, DateOnly today) => ExecuteCore(command, today, false);
     internal Task<PlanSaveResult> AcceptFieldSettings(ProjectPlanSettings settings, DateOnly today) => ExecuteCore(new ReplacePlanSettings(settings), today, true);
     private Task<PlanSaveResult> ExecuteCore(PlanCommand command, DateOnly today, bool fromRemote)
@@ -94,29 +91,29 @@ internal sealed class PlanSession
             var document = checkpoint.Document;
             var (state, kind) = PlanOperations.Apply(document, command, today);
             if (command is MovePlanSubtrees or ArrangePlanOutline && state.Rows.SequenceEqual(document.State.Rows)) return CurrentSave();
-            var priorSettings = checkpoint.Document.State.Settings;
-            var mappingOnly = command is ReplacePlanSettings && PlanOperations.SettingsEqual(priorSettings, state.Settings with { PhaseMilestones = priorSettings.PhaseMilestones, SheetColumns = priorSettings.SheetColumns });
-            // Column presentation and milestone targets do not change the held schedule.
-            var dates = fromRemote || mappingOnly ? checkpoint.Document.Dates : ReleaseDates(checkpoint.Document);
-            var patch = DateTransition(PlanOperations.Difference(checkpoint.Document.State, state, kind), checkpoint.Document, dates);
-            if (patch.Rows.IsEmpty && patch.BeforeOrder is null && patch.BeforeSettings is null && patch.BeforeDates is null) return CurrentSave();
+            var patch = PlanOperations.Difference(checkpoint.Document.State, state, kind);
+            if (patch.Rows.IsEmpty && patch.BeforeOrder is null && patch.BeforeSettings is null) return CurrentSave();
             var publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state);
             var undo = checkpoint.Undo.Add(patch);
             if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
             // A sub-issue order failure stays recorded while the plan still asks for the order it names
             // (only adding or removing its row drops it); like NewTask and Order, its field is not a row
             // value, so it must not be compared through PlanValues.
-            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Dates = dates, Sync = checkpoint.Document.Sync with { Publish = publish, Failures = checkpoint.Document.Sync.Failures.Where(f => !patch.Rows.Any(r => r.Identity == f.Identity && (r.Before is null || r.After is null || f.Field is PlanField.NewTask or PlanField.Order || f.Field != PlanField.SubIssueOrder && PlanValues.Get(r.Before, f.Field) != PlanValues.Get(r.After, f.Field)))).ToImmutableArray() } }, Undo = undo, Redo = [] };
-            return SaveAfterPlanningCommand(document, today);
+            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Sync = checkpoint.Document.Sync with { Publish = publish, Failures = checkpoint.Document.Sync.Failures.Where(f => !patch.Rows.Any(r => r.Identity == f.Identity && (r.Before is null || r.After is null || f.Field is PlanField.NewTask or PlanField.Order || f.Field != PlanField.SubIssueOrder && PlanValues.Get(r.Before, f.Field) != PlanValues.Get(r.After, f.Field)))).ToImmutableArray() } }, Undo = undo, Redo = [] };
+            return SaveAfterPlanningCommand(document, kind, today);
         }
     }
-    private Task<PlanSaveResult> SaveAfterPlanningCommand(PlanDocument before, DateOnly today)
+    // A settings change that affects the schedule (calendar, Project start, 基準日) reports the tasks it
+    // moved with a filter. An ordinary cell edit reschedules what it touches and shows those dates as
+    // unpublished changes instead; no command reports a whole-plan recalculation (#236).
+    private Task<PlanSaveResult> SaveAfterPlanningCommand(PlanDocument before, PlanOperationKind kind, DateOnly today)
     {
         var after = checkpoint.Document;
-        if (before.Dates.Held is null || after.Dates.Held is not null) return QueueSave();
+        if (kind != PlanOperationKind.Settings) return QueueSave();
+        var changed = PlanOperations.ChangedTaskDates(before, after, today);
+        if (changed.IsEmpty) return QueueSave();
         var date = after.State.Settings.StatusDate ?? today;
-        var result = new PlanRefreshResult(date, date, PlanOperations.ChangedTaskDates(before, after, today));
-        return WithRecalculation(QueueSave(), result);
+        return WithRecalculation(QueueSave(), new PlanRefreshResult(date, date, changed));
     }
     private static async Task<PlanSaveResult> WithRecalculation(Task<PlanSaveResult> save, PlanRefreshResult result)
         // The shared save task and lastSave stay notification-free for later commands and retries.
@@ -138,7 +135,7 @@ internal sealed class PlanSession
                 throw new InvalidOperationException("発行結果を確認してから行を取り消してください。");
             var baseline = PlanOperations.ReplayBaseline(checkpoint.Document.Baseline, patch, forward);
             PlanOperations.ValidateDocument(checkpoint.Document with { State = state, Baseline = baseline }, today);
-            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Baseline = baseline, Dates = (forward ? patch.AfterDates : patch.BeforeDates) ?? checkpoint.Document.Dates, Sync = checkpoint.Document.Sync with { Publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state), Failures = forward && patch.Kind == PlanOperationKind.Reset ? [] : checkpoint.Document.Sync.Failures, LocalOrderChoices = (forward ? patch.AfterLocalOrderChoices : patch.BeforeLocalOrderChoices) ?? checkpoint.Document.Sync.LocalOrderChoices, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? checkpoint.Document.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? checkpoint.Document.Sync.Unavailable } },
+            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Baseline = baseline, Sync = checkpoint.Document.Sync with { Publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state), Failures = forward && patch.Kind == PlanOperationKind.Reset ? [] : checkpoint.Document.Sync.Failures, LocalOrderChoices = (forward ? patch.AfterLocalOrderChoices : patch.BeforeLocalOrderChoices) ?? checkpoint.Document.Sync.LocalOrderChoices, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? checkpoint.Document.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? checkpoint.Document.Sync.Unavailable } },
                 Undo = forward ? checkpoint.Undo.Add(patch) : checkpoint.Undo.RemoveAt(checkpoint.Undo.Length - 1),
                 Redo = forward ? checkpoint.Redo.RemoveAt(checkpoint.Redo.Length - 1) : checkpoint.Redo.Add(patch) };
             return QueueSave();
@@ -244,10 +241,9 @@ internal sealed class PlanSession
                 { BeforeConflicts = document.Sync.Conflicts, AfterConflicts = conflicts,
                     BeforeLocalOrderChoices = document.Sync.LocalOrderChoices, AfterLocalOrderChoices = choices };
             PlanOperations.ValidateDocument(document with { State = state }, today);
-            patch = DateTransition(patch, document, ReleaseDates(document));
             var undo = checkpoint.Undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
-            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = document with { State = state, Dates = ReleaseDates(document), Sync = document.Sync with { Conflicts = conflicts, Publish = publish, LocalOrderChoices = choices } }, Undo = undo, Redo = [] };
-            return SaveAfterPlanningCommand(document, today);
+            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = document with { State = state, Sync = document.Sync with { Conflicts = conflicts, Publish = publish, LocalOrderChoices = choices } }, Undo = undo, Redo = [] };
+            return SaveAfterPlanningCommand(document, PlanOperationKind.ResolveConflict, today);
         }
     }
     public Task<PlanSaveResult> ResolveUnavailable(string identity, bool copyToNew, DateOnly today)
@@ -287,10 +283,9 @@ internal sealed class PlanSession
                 BeforeUnavailable = document.Sync.Unavailable, AfterUnavailable = unavailable,
                 BeforeConflicts = document.Sync.Conflicts, AfterConflicts = conflicts
             };
-            patch = DateTransition(patch, document, ReleaseDates(document));
             var undo = checkpoint.Undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
-            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = updated with { Dates = ReleaseDates(document) }, Undo = undo, Redo = [] };
-            return SaveAfterPlanningCommand(document, today);
+            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = updated, Undo = undo, Redo = [] };
+            return SaveAfterPlanningCommand(document, PlanOperationKind.ResolveConflict, today);
         }
     }
     internal string? ResetUnavailableReason => Document.Sync is { } sync && (sync.Publish is not null || !sync.Unverified.IsEmpty)
@@ -330,7 +325,6 @@ internal sealed class PlanSession
             {
                 // The read is baseline adoption; only the discard becomes an Undo step.
                 var state = merged.State with { Rows = remote.Baseline.Rows };
-                var dates = new PlanDateState(PlanDateHoldOrigin.Reset);
                 // Reset clears publication outcomes; Undo must still restore the order those failures requested.
                 var choices = merged.Sync.LocalOrderChoices;
                 foreach (var parent in merged.State.Rows)
@@ -340,10 +334,9 @@ internal sealed class PlanSession
                     DiscardedRows = merged.Baseline.Rows.Where(r => merged.Sync.Unavailable.Contains(r.Identity)).ToImmutableArray(),
                     BeforeUnavailable = merged.Sync.Unavailable, AfterUnavailable = [],
                     BeforeConflicts = merged.Sync.Conflicts, AfterConflicts = [],
-                    BeforeLocalOrderChoices = choices, AfterLocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty,
-                    BeforeDates = merged.Dates, AfterDates = dates
+                    BeforeLocalOrderChoices = choices, AfterLocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty
                 };
-                merged = merged with { State = state, Baseline = remote.Baseline, Dates = dates,
+                merged = merged with { State = state, Baseline = remote.Baseline,
                     Sync = merged.Sync with { Unavailable = [], Conflicts = [], Failures = [], LocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty } };
                 PlanOperations.ValidateDocument(merged, today);
                 undo = undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
@@ -355,7 +348,7 @@ internal sealed class PlanSession
     }
     private static PlanDocument ReadDate(PlanDocument document, DateOnly today) => document with
     {
-        State = document.State with { Settings = document.State.Settings with { StatusDate = today } }, Dates = new()
+        State = document.State with { Settings = document.State.Settings with { StatusDate = today } }
     };
     private static ImmutableArray<PlanPatch> RebaseHistory(PlanDocument original, ImmutableArray<PlanPatch> patches,
         PlanBaseline historyBaseline, ImmutableDictionary<string, ImmutableArray<string>> historyOrders, bool forward = false, DateOnly? readDay = null)
@@ -372,7 +365,6 @@ internal sealed class PlanSession
             if (readDay is { } day) { rebasedBefore = ReadDate(rebasedBefore, day); rebasedAfter = ReadDate(rebasedAfter, day); }
             var rebased = forward ? PlanOperations.Difference(rebasedAfter.State, rebasedBefore.State, patch.Kind)
                 : PlanOperations.Difference(rebasedBefore.State, rebasedAfter.State, patch.Kind);
-            if (readDay is null) rebased = rebased with { BeforeDates = patch.BeforeDates, AfterDates = patch.AfterDates };
             if (!patch.DiscardedRows.IsEmpty) rebased = rebased with
             {
                 DiscardedRows = (forward ? rebasedAfter : rebasedBefore).Baseline.Rows.Where(r => !(forward ? rebasedBefore : rebasedAfter).Baseline.Rows.Any(after => after.Identity == r.Identity)).ToImmutableArray(),
@@ -380,7 +372,7 @@ internal sealed class PlanSession
             };
             if (patch.BeforeLocalOrderChoices is not null) rebased = rebased with { BeforeLocalOrderChoices = forward ? rebasedAfter.Sync.LocalOrderChoices : rebasedBefore.Sync.LocalOrderChoices, AfterLocalOrderChoices = forward ? rebasedBefore.Sync.LocalOrderChoices : rebasedAfter.Sync.LocalOrderChoices };
             if (patch.BeforeConflicts.HasValue) rebased = rebased with { BeforeConflicts = forward ? rebasedAfter.Sync.Conflicts : rebasedBefore.Sync.Conflicts, AfterConflicts = forward ? rebasedBefore.Sync.Conflicts : rebasedAfter.Sync.Conflicts };
-            if (!rebased.Rows.IsEmpty || rebased.BeforeOrder.HasValue || rebased.BeforeSettings is not null || rebased.BeforeConflicts.HasValue || rebased.BeforeLocalOrderChoices is not null || rebased.BeforeDates is not null || !rebased.DiscardedRows.IsEmpty)
+            if (!rebased.Rows.IsEmpty || rebased.BeforeOrder.HasValue || rebased.BeforeSettings is not null || rebased.BeforeConflicts.HasValue || rebased.BeforeLocalOrderChoices is not null || !rebased.DiscardedRows.IsEmpty)
                 history.Add(rebased);
             current = before;
         }
@@ -508,18 +500,7 @@ internal sealed class PlanSession
     {
         lock (gate)
         {
-            if (checkpoint.Document.Dates.Recalculated is null && !checkpoint.Undo.Concat(checkpoint.Redo).Any(p =>
-                p.BeforeDates?.Recalculated is not null || p.AfterDates?.Recalculated is not null)) return CurrentSave();
-            PlanPatch ClearOrigin(PlanPatch patch) => patch with {
-                BeforeDates = patch.BeforeDates is { } before ? before with { Recalculated = null } : null,
-                AfterDates = patch.AfterDates is { } after ? after with { Recalculated = null } : null
-            };
-            checkpoint = checkpoint with {
-                Revision = checked(checkpoint.Revision + 1),
-                Document = checkpoint.Document with { Dates = checkpoint.Document.Dates with { Recalculated = null } },
-                Undo = checkpoint.Undo.Select(ClearOrigin).ToImmutableArray(), Redo = checkpoint.Redo.Select(ClearOrigin).ToImmutableArray()
-            };
-            return QueueSave();
+            return CurrentSave();
         }
     }
     private static bool InputReferences(string json, string identity)
