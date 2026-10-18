@@ -520,6 +520,76 @@ internal sealed partial class PlanPublisherTests
         Assert.That(issues.All(i => i.Added), Is.True);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
+    [Test]
+    public async Task FieldRequestsRunInWindowsOfFour()
+    {
+        await Start(65);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
+            .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
+        Scenario(mutationDelayMs: 50);
+        var reports = new List<RemoteProgress>();
+        var result = await publisher.PublishAsync(session, Today, progressReporter: new InlineProgress<RemoteProgress>(reports.Add));
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.All(i => i.Row.Actual == 3), Is.True);
+        var counts = reports.Where(p => p.Stage == "フィールド・担当者" && p.Total is not null).ToArray();
+        Assert.That(counts.Select(p => p.Completed), Is.Ordered);
+        Assert.That(counts.Last().Completed, Is.EqualTo(65));
+        Assert.That(counts.Last().Total, Is.EqualTo(65));
+        Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(4));
+        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 10, 10, 10, 10, 10, 5 }));
+    }
+
+    [TestCase("field-pushback")]
+    [TestCase("field-rate-rejected")]
+    [TestCase("field-rate-no-delay")]
+    public async Task FieldPushbackMakesRemainingRequestsSerial(string fault)
+    {
+        await Start(65);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
+            .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
+        Scenario(fault, mutationDelayMs: 50);
+        var deadlines = new List<DateTimeOffset?>();
+        runner.MutationStarting = () => deadlines.Add(session.Document.Sync.NotBefore);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.EqualTo(fault == "field-pushback"), result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Actual == 3), Is.EqualTo(fault == "field-pushback" ? 65 : 25));
+        Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(4));
+        Assert.That(runner.MutationConcurrency.Skip(4), Is.EqualTo(new[] { 1, 1, 1 }));
+        if (fault != "field-rate-no-delay")
+        {
+            Assert.That(deadlines.Skip(4).All(d => d is not null), Is.True);
+            Assert.That(runner.MutationStarted.Skip(4).Zip(deadlines.Skip(4)).All(p => p.First >= p.Second), Is.True);
+        }
+        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 10, 10, 10, 10, 10, 5 }));
+        Scenario(mutationDelayMs: 50);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
+            .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 4m)).ToImmutableArray()), Today);
+        runner.MutationConcurrency.Clear();
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(runner.MutationConcurrency.Take(4), Is.EqualTo(new[] { 1, 2, 3, 4 }),
+            "Serial fallback must not survive another explicit publish.");
+    }
+
+    [Test]
+    public async Task UnknownWindowPersistsTheLongestRetryDeadlineAndAllSiblingOutcomes()
+    {
+        await Start(65);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
+            .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
+        Scenario("window-retry-unknown", mutationDelayMs: 50);
+        var started = DateTimeOffset.UtcNow;
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Error, Does.Contain("GitHubの応答を確認できないため発行を中断しました。"));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(4));
+        Assert.That(session.Document.Sync.Publish!.Writes.Count(w => w.State == PlanWriteState.Dispatched), Is.EqualTo(40));
+        Assert.That(session.Document.Sync.Publish.Writes.Count(w => w.State == PlanWriteState.Pending), Is.EqualTo(25));
+        var deadline = session.Document.Sync.NotBefore;
+        Assert.That(deadline, Is.GreaterThanOrEqualTo(started.AddSeconds(4)));
+        Assert.That(deadline, Is.LessThanOrEqualTo(DateTimeOffset.UtcNow.AddSeconds(4)));
+        await Reopen();
+        Assert.That(session.Document.Sync.NotBefore, Is.EqualTo(deadline));
+    }
+
     [TestCase("gateway")]
     [TestCase("gateway-json")]
     public async Task FieldGatewayFailureSplitsAndRetainsTheReducedCeiling(string body)
@@ -527,17 +597,17 @@ internal sealed partial class PlanPublisherTests
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(body, gatewayAliasLimit: 6);
+        Scenario(body, gatewayAliasLimit: 6, mutationDelayMs: 50);
 
         var result = await publisher.PublishAsync(session, Today);
 
         Assert.That(result.Succeeded, Is.True, result.Error);
-        // The first ten split in half; subsequent requests retain the ceiling of five.
-        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 }));
+        // All four initial requests split; remaining requests retain the ceiling of five.
+        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 10, 10, 10, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 }));
         var remote = FakePlanEditor.Load(root);
         Assert.That(remote.Issues.All(i => i.Row.Actual == 3), Is.True);
-        Assert.That(remote.MutationBatches, Is.EqualTo(14));
-        Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(1));
+        Assert.That(remote.MutationBatches, Is.EqualTo(17));
+        Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(4));
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
         Assert.That(session.Document.Sync.Publish?.Writes.Any(w => w.State == PlanWriteState.Dispatched) ?? false, Is.False);
     }
@@ -669,7 +739,7 @@ internal sealed partial class PlanPublisherTests
         Assert.That(remote.Count(i => i.Row.Parent is not null), Is.EqualTo(20));
         Assert.That(remote.Sum(i => i.Row.Predecessors.Length), Is.EqualTo(19));
         Assert.That(remote.All(i => i.Added && i.Row.Status == "Backlog"), Is.True);
-        Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(1));
+        Assert.That(runner.MaximumConcurrentNonFieldMutations, Is.EqualTo(1));
         TestContext.Out.WriteLine($"Fresh24 {fault}: requests={runner.Count - before}; elapsed={watch.Elapsed.TotalSeconds:F3}s; creation wait={publisher.CreationWait.TotalSeconds:F3}s; max concurrent mutations={runner.MaximumConcurrentMutations}; batches={string.Join(',', publisher.EffectiveBatchSizes)}");
     }
     [Test]
@@ -987,9 +1057,9 @@ internal sealed partial class PlanPublisherTests
         TestContext.Out.WriteLine("Real fake-gh processes: " + (runner?.Count ?? 0));
         Directory.Delete(root, true);
     }
-    private void Scenario(string? fault = null, int batch = 1, int gatewayAliasLimit = 0)
+    private void Scenario(string? fault = null, int batch = 1, int gatewayAliasLimit = 0, int mutationDelayMs = 0)
     {
-        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, planFault = fault, faultBatch = batch, gatewayAliasLimit }));
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, planFault = fault, faultBatch = batch, gatewayAliasLimit, mutationDelayMs }));
         if (File.Exists(FakePlanEditor.StatePath(root))) FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { ReadAttempts = 0 });
     }
     private async Task Start(int count, Func<PlanFakeState, PlanFakeState>? fixture = null, ProjectPlanSettings? settings = null)
@@ -1269,12 +1339,13 @@ internal sealed partial class PlanPublisherTests
         var remote = FakePlanEditor.Load(root);
         Assert.That(remote.Issues.Single(i => i.Row.Identity == "I51").Row.Actual, Is.Null);
         Assert.That(remote.Issues.Single(i => i.Row.Identity == "I51").Row.Predecessors, Is.Empty);
-        Assert.That(remote.Issues.Single(i => i.Row.Identity == "I2").Row.Actual, Is.Null,
-            "A resource rejection must not be retried while another alias is unresolved.");
-        Assert.That(remote.Issues.Single(i => i.Row.Identity == "I1").Row.Actual,
-            Is.EqualTo(fault.StartsWith("global-", StringComparison.Ordinal) ? (decimal?)null : 3m));
+        Assert.That(remote.MutationBatches, Is.EqualTo(4));
+        Assert.That(remote.Issues.Count(i => i.Row.Actual == 3),
+            Is.EqualTo(fault.StartsWith("global-", StringComparison.Ordinal) ? 30 : 31));
         Assert.That(result.Error, Does.Contain("GitHubの応答を確認できないため発行を中断しました。"));
         var progress = session.Document.Sync.Publish!;
+        Assert.That(progress.Writes.Count(w => w.State == PlanWriteState.Succeeded),
+            Is.EqualTo(fault.StartsWith("global-", StringComparison.Ordinal) ? 30 : 31));
         Assert.That(progress.Writes.Any(w => w.State == PlanWriteState.Dispatched), Is.True);
         Assert.That(progress.Writes.Where(w => w.Identity == "I51").All(w => w.State == PlanWriteState.Pending), Is.True);
         var saved = PlanJson.Text(progress);
@@ -1694,9 +1765,9 @@ internal sealed partial class PlanPublisherTests
         Scenario(fault);
         var first = await publisher.PublishAsync(session, Today);
         Assert.That(first.Succeeded, Is.EqualTo(fault == "resource"));
-        var pending = fault switch { "resource" => 0, "after" => 41, _ => 1 };
+        var pending = fault switch { "resource" => 0, "after" => 11, _ => 1 };
         Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Actual != 3), Is.EqualTo(pending),
-            "An after-batch failure applies the first ten writes and leaves 41 of 51 unsent; partial rejects one alias, while resource rejection recovers.");
+            "An after-batch failure loses the first response while the other three requests of its window complete, leaving 11 of 51 unsent; partial rejects one alias, while resource rejection recovers.");
         Scenario();
         var opened = await PlanSession.OpenAsync(new(root), Project, Today);
         Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Loaded), opened.Error);
@@ -1905,8 +1976,12 @@ internal sealed partial class PlanPublisherTests
     }
     private sealed class CountingRunner(IGhProcessRunner inner) : IGhProcessRunner
     {
-        private int active;
+        private int active, tickets;
         public int MaximumConcurrentMutations { get; private set; }
+        public int MaximumConcurrentNonFieldMutations { get; private set; }
+        public List<int> MutationConcurrency { get; } = [];
+        public List<DateTimeOffset> MutationStarted { get; } = [];
+        public Action? MutationStarting { get; set; }
         public int Count { get; private set; }
         public List<string> Queries { get; } = [];
         public List<DateTimeOffset> Started { get; } = [];
@@ -1918,7 +1993,22 @@ internal sealed partial class PlanPublisherTests
             {
                 Count++; Started.Add(DateTimeOffset.UtcNow);
                 if (command.Arguments.Contains("graphql") && command.StandardInput is { } input) { using var json = JsonDocument.Parse(input); Queries.Add(json.RootElement.GetProperty("query").GetString()!); }
-                if (mutation) MaximumConcurrentMutations = Math.Max(MaximumConcurrentMutations, Interlocked.Increment(ref active));
+                if (mutation)
+                {
+                    // Calls arrive in dispatch order; the ticket lets the fake process them in that order.
+                    var payload = System.Text.Json.Nodes.JsonNode.Parse(command.StandardInput!)!.AsObject();
+                    payload["orderTicket"] = ++tickets;
+                    command = new GhCommand(command.Executable, command.Arguments, payload.ToJsonString(), command.Timeout);
+                    var concurrent = Interlocked.Increment(ref active);
+                    MaximumConcurrentMutations = Math.Max(MaximumConcurrentMutations, concurrent);
+                    MutationConcurrency.Add(concurrent);
+                    MutationStarted.Add(DateTimeOffset.UtcNow);
+                    MutationStarting?.Invoke();
+                    if (new[] { "createIssue", "addProjectV2ItemById", "addSubIssue", "removeSubIssue",
+                        "reprioritizeSubIssue", "addBlockedBy", "removeBlockedBy", "updateProjectV2ItemPosition" }
+                        .Any(name => command.StandardInput!.Contains(":" + name + "(", StringComparison.Ordinal)))
+                        MaximumConcurrentNonFieldMutations = Math.Max(MaximumConcurrentNonFieldMutations, concurrent);
+                }
             }
             try
             {

@@ -246,6 +246,14 @@ internal static class FakePlanEditor
             var data = new JsonObject(); var errors = new JsonArray(); var issues = state.Issues.ToList(); var nextId = state.NextId; var subOrders = state.SubOrders;
             File.AppendAllText(Path.Combine(root, "plan-mutations.jsonl"), JsonSerializer.Serialize(new { query, variables, started = DateTimeOffset.UtcNow }) + "\n");
             var matches = Regex.Matches(query, @"(w\d+):(\w+)\(input:\$(v\d+)\)");
+            if (fault is "field-rate-rejected" or "field-rate-no-delay" && state.MutationBatches <= 4)
+            {
+                Save(root, state);
+                foreach (Match match in matches) data[match.Groups[1].Value] = null;
+                var headers = fault == "field-rate-no-delay" ? "" : "\nRetry-After: " + (5 - state.MutationBatches);
+                Console.Write("HTTP/2 429 Limited" + headers + "\n\n" + new JsonObject { ["data"] = data }.ToJsonString());
+                return 1;
+            }
             if (fault is "before" or "before-and-read" && state.MutationBatches == faultBatch) { Save(root, state); return 1; }
             if (fault is "global-unknown" or "global-resource-unknown" && state.MutationBatches == faultBatch)
             {
@@ -403,6 +411,16 @@ internal static class FakePlanEditor
             { Write(new { data = (object?)null, errors = new[] { new { type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic resource failure with an uncertain creation" } } }); return 0; }
             if (interruptedPositions) return 1;
             if (fault is "after" or "autoadd-after" or "after-and-read" or "uncertain-verification" && state.MutationBatches == faultBatch) return 1;
+            if (fault is "field-pushback" or "window-retry-unknown" && state.MutationBatches <= 4)
+            {
+                var delay = 5 - state.MutationBatches;
+                var payload = fault == "window-retry-unknown"
+                    ? new JsonObject { ["errors"] = new JsonArray(new JsonObject { ["message"] = "Unknown outcome" }) }
+                    : new JsonObject { ["data"] = data };
+                Console.Write("HTTP/2 200 OK" +
+                    "\nRetry-After: " + delay + "\n\n" + payload.ToJsonString());
+                return 0;
+            }
             Write(new JsonObject { ["data"] = data, ["errors"] = errors.Count == 0 ? null : errors }); return 0;
         }
         if (node is null) throw new InvalidOperationException("Unsupported fake query: " + query);
