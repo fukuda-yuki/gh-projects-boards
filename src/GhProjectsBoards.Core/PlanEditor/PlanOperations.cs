@@ -647,13 +647,13 @@ internal static class PlanOperations
             if (!calculated.IsSummary && !r.Labels.ToHashSet().SetEquals(old.Labels)) fields.Add(PlanField.Labels);
             if (!calculated.IsSummary && !r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
             if (!calculated.IsSummary && !r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);
-            // Two independent guards, both required. A date GitHub does not hold cannot differ from it: a
-            // display-only start or end the scheduler derived for a row whose baseline date is absent is not an
-            // unpublished change (#236). And a row with a pending close or reopen settles its dates through its
-            // own operation, not through a date write (#231).
-            if (old.Start is not null && !pendingState && calculated.Start.Value != old.Start && !IsUnmappedCalculation(calculated, PlanField.Start, d.State.Settings))
+            // Two independent guards, both required. The plan publishes a date only when the plan holds one: a
+            // value the scheduler merely displayed for a row whose plan has no such date is not an unpublished
+            // change, while the first dates a PMO edit gives a task are (#236). And a row with a pending close or
+            // reopen settles its dates through its own operation, not through a date write (#231).
+            if (r.Start is not null && !pendingState && calculated.Start.Value != old.Start && !IsUnmappedCalculation(calculated, PlanField.Start, d.State.Settings))
                 fields.Add(PlanField.Start);
-            if (old.End is not null && !pendingState && calculated.End.Value != old.End && !IsUnmappedCalculation(calculated, PlanField.End, d.State.Settings))
+            if (r.End is not null && !pendingState && calculated.End.Value != old.End && !IsUnmappedCalculation(calculated, PlanField.End, d.State.Settings))
                 fields.Add(PlanField.End);
             foreach (var field in fields.Where(field => IsRecalculatedField(calculated, field)))
                 recalculated.Add((r.Identity, field));
