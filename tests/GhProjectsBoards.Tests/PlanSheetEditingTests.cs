@@ -19,6 +19,10 @@ internal sealed class PlanSheetEditingTests
     [TestCase("1/2", "2026-12-30", "2027-01-02")]
     [TestCase("12/30", "2027-01-02", "2026-12-30")]
     [TestCase("1/1", "2024-07-02", "2025-01-01")]
+    [TestCase("10月14日", "2026-10-05", "2026-10-14")]
+    [TestCase("１０月１４日", "2026-10-05", "2026-10-14")]
+    [TestCase("２・１０", "2026-10-05", "2027-02-10")]
+    [TestCase("２０２６・１０・１４", "2026-10-05", "2026-10-14")]
     public void DateInputUsesExplicitFormsAndNearestStatusYear(string input, string status, string expected)
     {
         var document = Document with { State = Document.State with { Settings = Document.State.Settings with { StatusDate = DateOnly.Parse(status) } } };
@@ -26,10 +30,48 @@ internal sealed class PlanSheetEditingTests
             Assert.That(PlanSheetEditing.Parse(document, field, input, Day), Is.EqualTo(DateOnly.Parse(expected)));
     }
     [TestCase("2/30"), TestCase("garbage"), TestCase("10-14"), TestCase("2026/2/30")]
+    [TestCase("2026年10月14日"), TestCase("10月14"), TestCase("10月"), TestCase("10/14日")]
     public void InvalidDateExplainsAllAcceptedForms(string input)
     {
         Assert.That(() => PlanSheetEditing.Parse(Document, PlanField.Start, input, Day), Throws.ArgumentException
             .With.Message.EqualTo("日付は 2026-10-14、2026/10/14 または 10/14 の形で入力してください。"));
+    }
+    [TestCase("8", 8)]
+    [TestCase("8h", 8)]
+    [TestCase("8H", 8)]
+    [TestCase("1d", 8)]
+    [TestCase("1.5h", 1.5)]
+    [TestCase("２４", 24)]
+    [TestCase("８", 8)]
+    [TestCase("８ｈ", 8)]
+    [TestCase("１ｄ", 8)]
+    public void EffortAcceptsTheDisplayedUnitTheDayUnitAndFullWidthDigits(string input, decimal expected)
+    {
+        foreach (var field in new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual })
+            Assert.That(PlanSheetEditing.Parse(Document, field, input, Day), Is.EqualTo(expected), field);
+    }
+    [TestCase("8x"), TestCase("1w"), TestCase("8hh"), TestCase("h"), TestCase("abc"), TestCase("８x")]
+    [TestCase("-8"), TestCase("-1d")]
+    [TestCase("79228162514264337593543950335d")]
+    public void RefusedEffortKeepsItsMessage(string input)
+        => Assert.That(() => PlanSheetEditing.Parse(Document, PlanField.Estimate, input, Day),
+            Throws.ArgumentException.With.Message.EqualTo("工数は0以上の数値で入力してください。"));
+    [Test]
+    public void FullWidthPredecessorNumbersResolveWhileLoginsStayAscii()
+    {
+        Assert.That(PlanSheetEditing.Parse(Document, PlanField.Predecessors, "２，３", Day), Is.EqualTo(new[] { "I2", "I3" }));
+        Assert.That(PlanSheetEditing.Parse(Document, PlanField.Predecessors, "１", Day), Is.EqualTo(new[] { "I1" }));
+        Assert.That(() => PlanSheetEditing.Parse(Document, PlanField.Predecessors, "４", Day),
+            Throws.ArgumentException.With.Message.EqualTo("先行タスクは計画内のIDで指定してください: 4"));
+        Assert.That(() => PlanSheetEditing.Parse(Document, PlanField.Assignees, "ａｌｉｃｅ", Day),
+            Throws.ArgumentException.With.Message.EqualTo("担当者を確認してください: ａｌｉｃｅ"));
+    }
+    [Test]
+    public void PastedFullWidthEffortAndDateUseTheSameNormalisation()
+    {
+        var command = PlanSheetEditing.Paste(Document, ["I1"], [PlanField.Remaining, PlanField.Start], new(0, 0), "８ｈ\t１０月１４日", Day);
+        Assert.That(command.Cells, Is.EqualTo(new PlanCellChange[] {
+            new("I1", PlanField.Remaining, 8m), new("I1", PlanField.Start, new DateOnly(2026, 10, 14)) }));
     }
     [Test]
     public void UndatedDocumentUsesSuppliedDayForTypedAndPastedShortDates()
