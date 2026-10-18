@@ -8,6 +8,41 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanMergeTests
 {
+    [TestCase("PCGXYZ", "PCGXYZAB", "PCGABXYZ", "AB")]
+    [TestCase("PXCYGZUV", "PXCYGZUVAB", "PXCYGABZUV", "AB")]
+    [TestCase("PCGXYZ", "PCGAXYZB", "PCGABXYZ", "B")]
+    [TestCase("PCGXYZ", "UPCGXYZ", "UPCGXYZ", "")]
+    [TestCase("PCGWXYZ", "PCGWXYZABQ", "PCGAQBWXYZ", "ABQ")]
+    [TestCase("PCGWXYZ", "PCGWXYZQBA", "PCGBAQWXYZ", "AQB")]
+    [TestCase("PCGXYZ", "XYZPCG", "XYZPCG", "")]
+    [TestCase("PCX", "PCXAB", "PCABX", "X")]
+    public void NewlyFoundChildrenFollowTheWholeSubtree(string original, string incoming, string expected, string moved)
+    {
+        PlanRow Row(char id) => new(id.ToString(), id.ToString(), "acme/repo") {
+            Parent = id switch { 'C' => "P", 'G' => "C", 'A' or 'B' => "P", 'Q' => "A", _ => null }
+        };
+        var rows = original.Select(Row).ToImmutableArray();
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), new(rows, []), new(rows, new()));
+        var remote = new PlanBaseline(incoming.Select(Row).ToImmutableArray(), []);
+        var result = PlanMerge.Merge(document, remote);
+        Assert.That(string.Concat(result.State.Rows.Select(r => r.Identity)), Is.EqualTo(expected));
+        Assert.That(PlanOperations.Changes(result, new(2026, 10, 18)).Fields
+            .Where(p => p.Value.Contains(PlanField.Order)).Select(p => p.Key), Is.EquivalentTo(moved.Select(c => c.ToString())));
+        Assert.That(PlanMerge.Merge(result, remote).State.Rows, Is.EqualTo(result.State.Rows));
+    }
+
+    [Test]
+    public void RefreshAddedIdentitiesFollowPlanOrderAndExcludeKnownAndCreatedIssues()
+    {
+        PlanRow Row(string id) => new(id, id, "acme/repo");
+        var before = new PlanDocument(new(new("github.com", 42), "P1"), new([Row("B")], []), new([Row("B"), Row("L")], new())) {
+            Sync = new() { Publish = new("run", [new("key", "local:new", PlanPublishStage.Create, "createIssue", "CreateIssueInput!", "{}", "") { ResultId = "C" }]) }
+        };
+        var after = before with { State = before.State with { Rows = [Row("N2"), Row("B"), Row("N1"), Row("L"), Row("C")] } };
+        Assert.That(PlanRefreshResult.FindAdded(before, after), Is.EqualTo(new[] { "N2", "N1" }));
+        Assert.That(new PlanRefreshResult(new(2026, 10, 18), new(2026, 10, 18), []).AddedTasks, Is.Empty);
+    }
+
     [Test]
     public void RefreshKeepsANewLocalRowAtItsInsertionAnchor()
     {

@@ -1252,6 +1252,62 @@ internal sealed partial class PlanPublisherTests
         Assert.That((reserved[1].Started - reserved[0].Started).TotalSeconds, Is.InRange(10, 13), "Ten created Issues reserve the next ten seconds start-to-start, even when the following batch contains only one Issue.");
         Assert.That(creates.Zip(reserved, (sent, reservation) => sent >= reservation.Started), Is.All.True, "No create batch reaches GitHub before its reserved start.");
     }
+    private async Task StartWithIssuesAddedOnGitHub()
+    {
+        await Start(6, state => state with {
+            Issues = state.Issues.Select(i => i with { Row = i.Row with { Parent = i.Row.Identity switch { "I2" or "I3" => "I1", "I5" or "I6" => "I4", _ => null } } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2", "I3"]).Add("I4", ["I5", "I6"])
+        });
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I5", PlanField.Title, "Edited before refresh")]), Today);
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with {
+            Issues = remote.Issues.Add(new(new("I7", "Added sub-issue", "acme/repo") { Parent = "I1" }, "", true)).Add(new(new("I8", "Added without parent", "acme/repo"), "", true)),
+            NextId = 9, SubOrders = remote.SubOrders.SetItem("I1", ["I2", "I3", "I7"])
+        });
+    }
+    private string[] OrderChanges() => session.Changes(Today).Fields.Where(p => p.Value.Contains(PlanField.Order)).Select(p => p.Key).ToArray();
+
+    [Test]
+    public async Task IssueAddedOnGitHubLandsUnderItsParentAndPublishesOnlyItsPosition()
+    {
+        await StartWithIssuesAddedOnGitHub();
+        var placed = new[] { "I1", "I2", "I3", "I7", "I4", "I5", "I6", "I8" };
+        var refresh = await publisher.RefreshAsync(session, Today);
+        Assert.That(refresh.Succeeded, Is.True, refresh.Error);
+        Assert.That(refresh.Refresh!.AddedTasks, Is.EqualTo(new[] { "I7", "I8" }));
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(placed));
+        Assert.That(OrderChanges(), Is.EqualTo(new[] { "I7" }));
+        Assert.That((await publisher.RefreshAsync(session, Today)).Refresh!.AddedTasks, Is.Empty, "A second refresh finds nothing new.");
+        await Reopen();
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(placed));
+        Assert.That(OrderChanges(), Is.EqualTo(new[] { "I7" }));
+        Assert.That((await session.Undo(Today)).Succeeded, Is.True);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I5").Title, Is.EqualTo("Task 5"));
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(placed), "Undo of an earlier edit keeps the placement.");
+        var mutations = File.Exists(Path.Combine(root, "plan-mutations.jsonl")) ? File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Length : 0;
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var positions = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Skip(mutations)
+            .Select(line => JsonDocument.Parse(line).RootElement.Clone())
+            .Where(r => r.GetProperty("query").GetString()!.Contains("updateProjectV2ItemPosition"))
+            .SelectMany(r => r.GetProperty("variables").EnumerateObject().Select(v => v.Value)).ToArray();
+        Assert.That(positions.Select(v => (v.GetProperty("itemId").GetString(), v.GetProperty("afterId").GetString())), Is.EqualTo(new[] { ("T-I7", "T-I3") }));
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Identity), Is.EqualTo(placed));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task ResetReturnsAnIssueAddedOnGitHubToGitHubOrder()
+    {
+        await StartWithIssuesAddedOnGitHub();
+        Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
+        var reset = await publisher.ResetAsync(session, Today);
+        Assert.That(reset.Succeeded, Is.True, reset.Error);
+        Assert.That(reset.Refresh!.AddedTasks, Is.Empty);
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8" }));
+        Assert.That(OrderChanges(), Is.Empty);
+    }
+
     [Test]
     public async Task MovingBlockDownPublishesOnlyThatBlockAndRemoteMatchesPlan()
     {

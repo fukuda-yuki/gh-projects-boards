@@ -67,6 +67,8 @@ internal sealed record ScheduledTask(PlanTask Input, PlanDate Start, PlanDate En
             return actual / (actual + Remaining.Value / scale);
         }
     }
+    public int MissingEstimates { get; init; }
+    public int MissingRemaining { get; init; }
     public bool DatesHeld { get; init; }
     public IReadOnlyDictionary<DateOnly, decimal>? PlannedHours { get; init; }
 }

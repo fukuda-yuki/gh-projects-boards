@@ -473,7 +473,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         refreshResult.Message = moved
             ? $"基準日を {Date(result.PreviousStatusDate)} から {Date(result.StatusDate)} に{direction}日程を再計算しました。"
             : $"基準日 {Date(result.StatusDate)} で日程を再計算しました。";
-        refreshResult.ActionButton = null;
+        refreshResult.ActionButton = null; refreshResult.Content = null;
         if (recalculation || result.ChangedTasks.Count > 0)
             refreshResult.Message += "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture);
         if (result.ChangedTasks.Count > 0)
@@ -481,6 +481,24 @@ internal sealed partial class PlanWorkspaceView : UserControl
             refreshResult.ActionButton = Button("変更したタスクだけ表示", "PlanRefreshChangedFilter", () => {
                 Show("tasks"); sheet?.FilterChangedTasks(result.ChangedTasks); return Task.CompletedTask;
             });
+        }
+        if (!result.AddedTasks.IsEmpty && workspace.Session is { } session)
+        {
+            string Name(string id) {
+                var number = session.Document.Sync.IssueLinks.TryGetValue(id, out var link) ? link.Caption[link.Caption.LastIndexOf('#')..] + " " : "";
+                return number + session.Document.State.Rows.FirstOrDefault(r => r.Identity == id)?.Title;
+            }
+            var added = result.AddedTasks;
+            refreshResult.Message += (refreshResult.Message.EndsWith('。') ? "" : "。") + "GitHub で追加された Issue " + added.Length.ToString("N0", culture) + ": "
+                + string.Join("、", added.Take(3).Select(Name)) + (added.Length > 3 ? " ほか " + (added.Length - 3).ToString("N0", culture) + " 件" : "");
+            var ids = added.ToHashSet();
+            // Both filters sit on one line under the message instead of stacking an action button over content.
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new(0, 0, 0, 12) };
+            if (refreshResult.ActionButton is { } changed) { refreshResult.ActionButton = null; buttons.Children.Add(changed); }
+            buttons.Children.Add(Button("追加された Issue を表示", "PlanRefreshAddedFilter", () => {
+                Show("tasks"); sheet?.FilterTasks(ids, "追加された Issue", includeSummaries: true); return Task.CompletedTask;
+            }));
+            refreshResult.Content = buttons;
         }
         refreshResult.IsOpen = true;
     }

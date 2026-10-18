@@ -201,19 +201,15 @@ internal static class PlanScheduler
                 if (invalid) result = Isolate(task, warnings, summary);
                 else if (summary)
                 {
-                    static decimal? Sum(IEnumerable<decimal?> values)
-                    {
-                        var known = values.ToArray();
-                        if (known.Any(value => value is null)) return null;
-                        decimal sum = 0;
-                        foreach (var value in known) sum += value!.Value;
-                        return sum;
-                    }
                     var starts = values.Where(v => v.Start.HasValue).Select(v => v.Start!.Value).ToArray();
                     var ends = values.Where(v => v.End.HasValue).Select(v => v.End!.Value).ToArray();
                     result = Create(task, starts.Length == 0 ? null : starts.Min(), ends.Length == 0 ? null : ends.Max(),
                         DateOrigin.Calculated, DateOrigin.Calculated, "子タスクの集計", warnings, true,
-                        Sum(values.Select(v => v.Row.Estimate)), Sum(values.Select(v => v.Row.Remaining)), Sum(values.Select(v => v.Row.Actual)));
+                        values.Sum(v => v.Row.Estimate ?? 0), values.Sum(v => v.Row.Remaining ?? 0), values.Sum(v => v.Row.Actual ?? 0));
+                    // A known sum travels with the number of leaf tasks it leaves out, so it is never read as complete.
+                    result = result with { Row = result.Row with {
+                        MissingEstimates = values.Sum(v => v.Row.IsSummary ? v.Row.MissingEstimates : v.Row.Estimate is null ? 1 : 0),
+                        MissingRemaining = values.Sum(v => v.Row.IsSummary ? v.Row.MissingRemaining : v.Row.Remaining is null ? 1 : 0) } };
                 }
                 else result = Leaf(task, dependencies, warnings);
             }

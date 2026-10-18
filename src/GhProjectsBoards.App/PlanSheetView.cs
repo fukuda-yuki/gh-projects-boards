@@ -328,11 +328,11 @@ internal sealed partial class PlanSheetView : Grid
         finally { rendering = wasRendering; }
     }
     internal void FilterChangedTasks(IReadOnlySet<string> identities) => FilterTasks(identities, "日程変更");
-    internal void FilterTasks(IReadOnlySet<string> identities, string label)
+    internal void FilterTasks(IReadOnlySet<string> identities, string label, bool includeSummaries = false)
     {
         CancelPendingFilter();
         acceptedFilter = label;
-        filterPredicate = row => identities.Contains(row.Identity) && !SummaryIds.Contains(row.Identity);
+        filterPredicate = row => identities.Contains(row.Identity) && (includeSummaries || !SummaryIds.Contains(row.Identity));
         rendering = true;
         try { filter.Text = acceptedFilter; }
         finally { rendering = false; }

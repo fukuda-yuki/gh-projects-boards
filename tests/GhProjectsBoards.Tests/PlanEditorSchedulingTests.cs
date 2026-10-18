@@ -243,12 +243,28 @@ internal sealed class PlanEditorSchedulingTests
     }
 
     [Test]
-    public void SummaryMissingEffortStaysUnknownAndDatesUseOnlyPresentChildren()
+    public void SummaryMissingEffortSumsKnownValuesAndDatesUseOnlyPresentChildren()
     {
         var result = Calculate([Task(), Task(2, null) with { Parent = "issue:1" }, Task(3) with { Parent = "issue:1" }], Settings)[0];
-        Assert.That(result.Estimate, Is.Null);
-        Assert.That(result.Actual, Is.Null);
+        Assert.That(result.Estimate, Is.EqualTo(8));
+        Assert.That(result.Actual, Is.Zero);
         Dates(result, "2026-10-05", "2026-10-05");
+    }
+
+    [TestCase(false, false, false, 8, 6, 1, 1)]
+    [TestCase(true, false, false, 0, 0, 2, 2)]
+    [TestCase(false, true, false, 8, 6, 2, 2)]
+    [TestCase(false, false, true, 8, 6, 1, 0)]
+    public void PartialSummaryCountsMissingLeaves(bool allMissing, bool nested, bool closed, int estimate, int remaining, int missingEstimate, int missingRemaining)
+    {
+        var rows = new List<PlanTask> { Task(), Task(2, allMissing ? null : 8) with { Parent = "issue:1", Actual = allMissing ? null : 2 },
+            Task(3, null) with { Parent = "issue:1", Closed = closed } };
+        if (nested) rows.AddRange([Task(4, null) with { Parent = "issue:3" }, Task(5, null) with { Parent = "issue:3" }]);
+        var result = Calculate(rows, Settings)[0];
+        Assert.That((result.Estimate, result.Remaining, result.Actual), Is.EqualTo(((decimal?)estimate, (decimal?)remaining, (decimal?)(allMissing ? 0 : 2))));
+        Assert.That((result.MissingEstimates, result.MissingRemaining), Is.EqualTo((missingEstimate, missingRemaining)));
+        Assert.That(PlanSheetText.Indicator(null, result, null, null, "", true),
+            Is.EqualTo($"見積のないタスク {missingEstimate}、未発行の変更あり"));
     }
 
     [Test]
@@ -598,7 +614,7 @@ internal sealed class PlanEditorSchedulingTests
         Assert.That(result.Warnings, Is.Empty);
     }
     [TestCase(false), TestCase(true)]
-    public void MissingSummaryEffortPreventsOverflowRegardlessOfChildOrder(bool missingFirst)
+    public void MissingSummaryEffortStillIsolatesOverflowRegardlessOfChildOrder(bool missingFirst)
     {
         var children = new[]
         {
@@ -611,10 +627,10 @@ internal sealed class PlanEditorSchedulingTests
         var result = Calculate(rows, Settings);
         var parent = result.Single(r => r.Input.RowId == 1);
         Assert.That(parent.Estimate, Is.Null);
-        Assert.That(parent.Remaining, Is.EqualTo(3));
-        Assert.That(parent.Warnings, Is.Empty);
-        Dates(parent, "2026-10-05", "2026-10-05");
-        Dates(result.Single(r => r.Input.RowId == 5), "2026-10-05", "2026-10-06");
+        Assert.That(parent.Remaining, Is.Null);
+        Assert.That(parent.Actual, Is.Null);
+        Assert.That(parent.Warnings, Does.Contain("工数の集計が範囲外"));
+        Assert.That(parent.StartReason, Is.EqualTo("入力エラー"));
     }
     [Test, Explicit("Deterministic timing experiment, not a CI timing gate")]
     public void ThousandTasksReportTwentyRecalculationSamples()

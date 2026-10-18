@@ -6,7 +6,18 @@ using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.Core.PlanEditor;
 
-internal sealed record PlanRefreshResult(DateOnly PreviousStatusDate, DateOnly StatusDate, ImmutableHashSet<string> ChangedTasks);
+internal sealed record PlanRefreshResult(DateOnly PreviousStatusDate, DateOnly StatusDate, ImmutableHashSet<string> ChangedTasks)
+{
+    public ImmutableArray<string> AddedTasks { get; init; } = [];
+    // Issues the read found for the first time; Issues this app created in the same reconciliation are not "added".
+    internal static ImmutableArray<string> FindAdded(PlanDocument before, PlanDocument after)
+    {
+        var known = before.State.Rows.Select(r => r.Identity).Concat(before.Baseline.Rows.Select(r => r.Identity))
+            .Concat(before.Sync.Publish?.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.ResultId is not null).Select(w => w.ResultId!) ?? [])
+            .ToHashSet(StringComparer.Ordinal);
+        return after.State.Rows.Where(r => !known.Contains(r.Identity)).Select(r => r.Identity).ToImmutableArray();
+    }
+}
 internal sealed record PlanPublishResult(bool Succeeded, string? Error, PlanPublishReview? Review)
 { public PlanRefreshResult? Refresh { get; init; } }
 internal sealed class PlanPublisher(GhConnectionService service, ConnectionContext context)
@@ -40,7 +51,8 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             var before = session.Document;
             await Reconcile(session, lease, today, token, progressReporter, refresh: true, reset: reset).ConfigureAwait(false);
             return new(true, null, null) { Refresh = new(before.State.Settings.StatusDate ?? today, today,
-                reset ? [] : PlanOperations.ChangedTaskDates(before, session.Document, today)) };
+                reset ? [] : PlanOperations.ChangedTaskDates(before, session.Document, today))
+                { AddedTasks = reset ? [] : PlanRefreshResult.FindAdded(before, session.Document) } };
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) when (Expected(ex)) {

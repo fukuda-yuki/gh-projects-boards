@@ -144,7 +144,7 @@ Isolate bad refreshed effort/dates to row warnings and retained GitHub dates, ex
 
 Use exact rational working hours internally, constructed from decimal inputs with BigInteger arithmetic from the standard library. Integer-minute rounding would change subminute effort; tolerances would risk changing true near-boundary work. Exact arithmetic preserves working-interval endpoints across chains and rate changes without either policy or a new dependency. The optional explicit status date overrides a caller-supplied today on each calculation; the local document persists that optional choice.
 
-Preserve missing effort in summaries instead of inventing zero totals. Summary predecessors propagate to descendants. Rates are (0, 100] percent; zero capacity is rejected rather than creating a schedule that cannot finish. Retained in-progress starts are historical, while remaining work starts no earlier than the effective 基準日. Deterministic reason tie-breaking and warning strings are owned by the scheduling contract.
+Never show missing effort as zero. A summary's Estimate and Remaining are the sums of known leaf values with the count of leaf tasks left out, as in the waterfall summary below (#245, owner approval 2026-10-18); a blank total hid the whole requirement when one task added mid-version had no estimate. Actual counts a missing value as zero, like Forecast. Summary predecessors propagate to descendants. Rates are (0, 100] percent; zero capacity is rejected rather than creating a schedule that cannot finish. Retained in-progress starts are historical, while remaining work starts no earlier than the effective 基準日. Deterministic reason tie-breaking and warning strings are owned by the scheduling contract.
 
 ### Local document and durability (#78 / #79 / #81)
 
@@ -219,7 +219,7 @@ The PMO reviews proposals and applies one existing `EditPlanCells` operation. Re
 
 ## One row order and explicit outline repair (#207)
 
-Project item order remains authoritative. Opening, refresh and reset never normalize it implicitly. Local commands preserve contiguous outlines; explicit undoable **階層順に並べ替え** repairs scattered hierarchies in stable parent-first order. External parents are top-level for traversal. A separately sorted display (option a) is rejected because displayed IDs, export and publish would disagree. No Order ID column is introduced. Moves reorder siblings; indent/outdent own reparenting.
+Project item order remains authoritative. Opening, refresh and reset never normalize it implicitly; the one exception is that refresh places an Issue found for the first time under its plan parent as an unpublished move of that row (#245, owner approval 2026-10-18), because Issues added during a version otherwise land under the last requirement. Local commands preserve contiguous outlines; explicit undoable **階層順に並べ替え** repairs scattered hierarchies in stable parent-first order. External parents are top-level for traversal. A separately sorted display (option a) is rejected because displayed IDs, export and publish would disagree. No Order ID column is introduced. Moves reorder siblings; indent/outdent own reparenting.
 
 ## Issue detail pane (#211)
 

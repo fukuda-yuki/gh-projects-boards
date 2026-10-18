@@ -162,12 +162,19 @@ internal static class PlanMerge
         }
         var order = MergeOrder((adoptOrder ? remote.Rows : document.State.Rows).Select(r => r.Identity),
             (adoptOrder ? document.State.Rows : remote.Rows).Select(r => r.Identity));
+        var added = remote.Rows.Where(r => !baseline.ContainsKey(r.Identity) && !localIds.Contains(r.Identity)
+            && r.Parent is { } parent && local.ContainsKey(parent)).Select(r => local[r.Identity]).ToImmutableArray();
+        var rows = order.Select(id => local[id]).ToImmutableArray();
+        if (!added.IsEmpty) {
+            var ids = added.Select(r => r.Identity).ToHashSet();
+            rows = new PlanOutline(rows.Where(r => !ids.Contains(r.Identity)).ToImmutableArray()).Import(added);
+        }
         // Unavailable rows remain in the baseline solely to preserve their last known content and identity.
         return document with
         {
             Baseline = remote with { Rows = remote.Rows.AddRange(document.Baseline.Rows.Where(r => unavailable.Contains(r.Identity)))
                 .Select(r => r with { ExtraValues = r.ExtraValues.RemoveRange(removed.Keys) }).ToImmutableArray() },
-            State = document.State with { Rows = order.Select(id => local[id]).ToImmutableArray() },
+            State = document.State with { Rows = rows },
             Sync = document.Sync with { Conflicts = conflicts.ToImmutableArray(), Unavailable = unavailable }
         };
     }
