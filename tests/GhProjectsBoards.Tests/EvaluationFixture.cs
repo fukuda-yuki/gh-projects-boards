@@ -161,7 +161,7 @@ internal static class EvaluationFixture
             var tasks = schedule.Where(t => phaseOf[t.Input.Identity] == phase).ToArray();
             var forecast = tasks.Max(t => t.End.Value);
             var due = plan.Milestones.Single(m => m.Phase == phase).Due;
-            return new PhaseMeasure(phase, Sum(tasks), tasks.Min(t => t.Start.Value), forecast, due, PlanScheduler.PublishedEndLateness(due, forecast, calendar) ?? 0);
+            return new PhaseMeasure(phase, Sum(tasks), tasks.Min(t => t.Start.Value), forecast, due, PlanScheduler.WorkingDaysBetween(due, forecast, calendar) ?? 0);
         }).ToArray();
         var holidays = calendar.Holidays.Dates.Select(d => d.Date).ToHashSet();
         var days = 0;

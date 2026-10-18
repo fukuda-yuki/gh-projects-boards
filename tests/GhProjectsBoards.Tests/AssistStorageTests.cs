@@ -63,16 +63,17 @@ internal sealed class AssistStorageTests
         tools.BeginTurn(); Assert.That(tools.References, Is.Empty);
     }
     [Test]
-    public async Task HeldDateRecalculationCountMatchesTheNoticeShownAfterApplying()
+    public async Task ProposalMoveCountMatchesTheEffectShownAfterApplying()
     {
         var session = await PlanSession.CreateAsync(new(Path.Combine(root, "held")),
-            AssistRulesTests.Document() with { Dates = new(PlanDateHoldOrigin.FirstTakeIn) }, AssistRulesTests.Today);
+            AssistRulesTests.Document(), AssistRulesTests.Today);
         sessions.Add(session);
         var tools = new AssistPlanTools(session, AssistRulesTests.Today, "");
-        var proposal = tools.ProposeChanges([new("B", PlanField.Title, JsonSerializer.SerializeToElement("変更"))]).Proposal!;
+        var proposal = tools.ProposeChanges([new("B", PlanField.Remaining, JsonSerializer.SerializeToElement(40m))]).Proposal!;
         var applied = await tools.ApplyProposal(proposal.Id);
-        Assert.That(applied.Recalculation, Is.Not.Null);
-        Assert.That(proposal.RecalculatedTasks, Is.EqualTo(applied.Recalculation!.ChangedTasks.Count).And.Positive);
+        Assert.That(applied.Recalculation, Is.Null, "An ordinary edit reports unpublished dates, not a whole-plan recalculation.");
+        Assert.That(applied.Succeeded, Is.True, applied.Error);
+        Assert.That(proposal.MovedTasks, Is.EqualTo(proposal.ScheduleEffect.Total).And.Positive);
     }
     [TestCase("edit"), TestCase("undo-redo"), TestCase("status-date"), TestCase("refresh"), TestCase("publish"), TestCase("reset")]
     public async Task EveryDocumentRevisionRefusesStaleProposal(string action)

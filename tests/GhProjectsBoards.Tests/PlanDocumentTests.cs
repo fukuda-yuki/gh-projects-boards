@@ -165,9 +165,9 @@ internal sealed class PlanDocumentTests
         Assert.That(Text(session.Document), Is.EqualTo(after));
     }
     [Test]
-    public async Task NoOpOutlineCommandsKeepHeldDatesAndHistoryUnchanged()
+    public async Task NoOpOutlineCommandsKeepDatesAndHistoryUnchanged()
     {
-        var initial = PlanOutlineTests.Document("p,a,c,b,q") with { Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
+        var initial = PlanOutlineTests.Document("p,a,c,b,q");
         var session = await Create(initial);
         var before = Text(session.Document);
         await session.Execute(new ArrangePlanOutline(), Today);

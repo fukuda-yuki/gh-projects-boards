@@ -5,43 +5,55 @@ namespace GhProjectsBoards.Core.PlanEditor;
 
 internal enum PlanLatenessLevel { None, Later, Overdue }
 internal enum PlanOverdueKind { Start, Finish }
+// Why a forecast end is later than the planned end (#236). 遅れの原因 contains 期限超過 and the tasks
+// late through their own remaining work; a task late only because a predecessor moved is not a cause.
+internal enum PlanLateCause { OwnRemaining, Predecessor }
 internal sealed record PlanTaskLateness(PlanLatenessLevel Level, PlanOverdueKind? OverdueKind,
-    DateOnly? MissedPublishedDate, int? DaysLater, bool StartDelayedByPredecessor,
-    int OverdueDescendantTasks = 0, int LaterDescendantTasks = 0);
+    DateOnly? MissedDate, int? DaysLater, bool OverEstimate, PlanLateCause? Cause, int? CausePredecessorRowId,
+    int OverdueDescendantTasks = 0, int LaterDescendantTasks = 0, int OverEstimateDescendantTasks = 0)
+{
+    public bool IsCause => Level == PlanLatenessLevel.Overdue || Cause == PlanLateCause.OwnRemaining;
+    public bool StartDelayedByPredecessor => Cause == PlanLateCause.Predecessor;
+}
 internal sealed record PlanLatenessResult(ImmutableDictionary<string, PlanTaskLateness> Tasks,
-    int OverdueTasks, int LaterTasks);
+    int OverdueTasks, int LaterTasks, int OverEstimateTasks, int CauseTasks);
 
 internal static class PlanLateness
 {
-    internal static PlanLatenessResult Classify(IReadOnlyList<ScheduledTask> tasks, PlanBaseline baseline,
-        PlanCalendar calendar, DateOnly statusDate)
+    // Lateness compares the plan with the 基準日 and the plan with the 見込終了 forecast (#236). It never
+    // compares against a previous publish: publishing only records what the plan already says.
+    internal static PlanLatenessResult Classify(IReadOnlyList<ScheduledTask> tasks, PlanCalendar calendar, DateOnly statusDate)
     {
-        var published = baseline.Rows.ToDictionary(row => row.Identity, StringComparer.Ordinal);
         var scheduled = tasks.ToDictionary(row => row.Input.Identity, StringComparer.Ordinal);
         var result = new Dictionary<string, PlanTaskLateness>(StringComparer.Ordinal);
         var childrenLeft = tasks.ToDictionary(row => row.Input.Identity, _ => 0, StringComparer.Ordinal);
         var overdueTasks = 0;
         var laterTasks = 0;
+        var overEstimateTasks = 0;
+        var causeTasks = 0;
         foreach (var row in tasks)
         {
             var input = row.Input;
             if (input.Parent is { } parent && childrenLeft.ContainsKey(parent)) childrenLeft[parent]++;
-            var old = published.GetValueOrDefault(input.Identity);
-            var days = PlanScheduler.PublishedEndLateness(old?.End, row.End.Value, calendar);
             PlanOverdueKind? kind = null;
             DateOnly? missed = null;
             if (!row.IsSummary && !input.IsComplete)
             {
-                if (old?.End < statusDate) { kind = PlanOverdueKind.Finish; missed = old.End; }
-                else if (input.Actual is null or 0 && old?.Start < statusDate) { kind = PlanOverdueKind.Start; missed = old.Start; }
+                if (row.End.Value is { } plannedEnd && plannedEnd < statusDate) { kind = PlanOverdueKind.Finish; missed = plannedEnd; }
+                else if (input.Actual is null or 0 && row.Start.Value is { } plannedStart && plannedStart < statusDate) { kind = PlanOverdueKind.Start; missed = plannedStart; }
             }
+            var days = PlanScheduler.WorkingDaysBetween(row.End.Value, row.ForecastEnd, calendar);
+            var cause = days is null ? (PlanLateCause?)null : row.ForecastStartReason?.EndsWith(" の終了後", StringComparison.Ordinal) == true
+                ? PlanLateCause.Predecessor : PlanLateCause.OwnRemaining;
             var level = kind is not null ? PlanLatenessLevel.Overdue : days.HasValue ? PlanLatenessLevel.Later : PlanLatenessLevel.None;
-            var predecessorDelay = row.Start.Value > old?.Start && row.StartReason.EndsWith(" の終了後", StringComparison.Ordinal);
-            result[input.Identity] = new(level, kind, missed, days, predecessorDelay);
+            var predecessor = cause == PlanLateCause.Predecessor ? PredecessorRowId(row, scheduled) : null;
+            result[input.Identity] = new(level, kind, missed, days, row.IsOverEstimate, cause, predecessor);
             if (!row.IsSummary)
             {
                 if (level == PlanLatenessLevel.Overdue) overdueTasks++;
                 else if (level == PlanLatenessLevel.Later) laterTasks++;
+                if (row.IsOverEstimate) overEstimateTasks++;
+                if (result[input.Identity].IsCause) causeTasks++;
             }
         }
 
@@ -57,24 +69,33 @@ internal static class PlanLateness
             result[parent] = ancestor with
             {
                 Level = (PlanLatenessLevel)Math.Max((int)ancestor.Level, (int)child.Level),
-                OverdueDescendantTasks = ancestor.OverdueDescendantTasks + (row.IsSummary ? child.OverdueDescendantTasks : child.Level == PlanLatenessLevel.Overdue ? 1 : 0),
-                LaterDescendantTasks = ancestor.LaterDescendantTasks + (row.IsSummary ? child.LaterDescendantTasks : child.Level == PlanLatenessLevel.Later ? 1 : 0)
+                OverdueDescendantTasks = ancestor.OverdueDescendantTasks + Count(row.IsSummary, child.OverdueDescendantTasks, child.Level == PlanLatenessLevel.Overdue),
+                LaterDescendantTasks = ancestor.LaterDescendantTasks + Count(row.IsSummary, child.LaterDescendantTasks, child.Level == PlanLatenessLevel.Later),
+                OverEstimateDescendantTasks = ancestor.OverEstimateDescendantTasks + Count(row.IsSummary, child.OverEstimateDescendantTasks, child.OverEstimate)
             };
             if (--childrenLeft[parent] == 0) ready.Enqueue(parent);
         }
-        return new(result.ToImmutableDictionary(StringComparer.Ordinal), overdueTasks, laterTasks);
+        return new(result.ToImmutableDictionary(StringComparer.Ordinal), overdueTasks, laterTasks, overEstimateTasks, causeTasks);
+
+        static int Count(bool summary, int descendants, bool itself) => summary ? descendants : itself ? 1 : 0;
     }
 
-    internal static string? EndReason(ScheduledTask task, DateOnly statusDate)
+    // The predecessor whose forecast end pushed this task's forecast start. The scheduler flattens a
+    // summary's predecessors into its descendants, so an inherited push may name no direct predecessor.
+    private static int? PredecessorRowId(ScheduledTask row, IReadOnlyDictionary<string, ScheduledTask> scheduled)
+        => row.Input.Predecessors.Where(scheduled.ContainsKey).Select(id => scheduled[id]).Where(p => p.ForecastEnd is not null)
+            .OrderByDescending(p => p.ForecastEnd!.Value.DayNumber).ThenBy(p => p.Input.RowId).Select(p => (int?)p.Input.RowId).FirstOrDefault();
+
+    internal static string? EndReason(ScheduledTask task)
     {
-        if (task.DatesHeld || task.IsSummary || task.Input.IsComplete || task.StartReason == "入力エラー") return null;
-        var work = task.Remaining;
-        if (work == 0) return null;
-        if (task.End.Origin == DateOrigin.Kept) return task.End.Value.HasValue ? "終了: 指定" : null;
-        if (!(work > 0)) return null;
-        var hours = work.Value.ToString("0.############################", CultureInfo.InvariantCulture);
-        return task.Input.Actual > 0
-            ? $"終了: 基準日 {statusDate.ToString("M/d", CultureInfo.InvariantCulture)} から見込み残存工数 {hours}h"
-            : $"終了: 開始から {hours}h";
+        if (task.IsSummary || task.Input.IsComplete || task.StartReason == "入力エラー") return null;
+        var remaining = task.Remaining;
+        if (remaining == 0) return null;
+        if (task.End.Origin == DateOrigin.Kept && task.End.Value == task.Input.End)
+            return task.End.Value.HasValue ? "終了: 指定" : null;
+        if (!(remaining > 0)) return null;
+        // The plan consumes the task from its start: actual work plus what is left (#236).
+        var hours = remaining.Value + (task.Input.Actual ?? 0);
+        return $"終了: 開始から {hours.ToString("0.############################", CultureInfo.InvariantCulture)}h";
     }
 }

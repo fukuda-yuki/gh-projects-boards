@@ -57,7 +57,7 @@ internal sealed class AssistPlanReader
             Assignees = rows[r.Identity].Assignees.Select(Person).ToArray()
         }).ToDictionary(r => r.Identity);
         var settings = document.State.Settings;
-        lateness = PlanLateness.Classify(schedule, document.Baseline,
+        lateness = PlanLateness.Classify(schedule,
             new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() }, settings.StatusDate ?? today);
         unpublished = PlanOperations.Changes(document, today);
     }
@@ -91,7 +91,7 @@ internal sealed class AssistPlanReader
             (filter.State switch {
                 "open" => !r.Closed, "closed" => r.Closed,
                 "overdue" => !scheduled[r.Identity].IsSummary && lateness.Tasks[r.Identity].Level == PlanLatenessLevel.Overdue,
-                "later-than-published" => !scheduled[r.Identity].IsSummary && lateness.Tasks[r.Identity].DaysLater.HasValue,
+                "later-than-published" => !scheduled[r.Identity].IsSummary && lateness.Tasks[r.Identity].Level == PlanLatenessLevel.Later,
                 "unpublished" => unpublished.Fields.ContainsKey(r.Identity),
                 "missing-estimate" => r.Estimate is null, "missing-remaining" => r.Remaining is null, _ => true
             })).Select(r => Reference(r.Identity)).ToArray();
@@ -121,7 +121,7 @@ internal sealed class AssistPlanReader
             }
             return new AssistTaskDetails(Reference(id), row.Parent is { } parent && references.TryGetValue(parent, out var requirement) ? requirement : null, task.IsSummary,
                 row.Phase, row.Closed, row.Assignees.Select(Person).ToArray(), task.Estimate, task.Actual, task.Remaining, task.Forecast,
-                task.Start, task.End, task.StartReason, PlanLateness.EndReason(task, document.State.Settings.StatusDate ?? today),
+                task.Start, task.End, task.StartReason, PlanLateness.EndReason(task),
                 row.StartNoEarlierThan, row.Fixed, differences, row.Predecessors.Where(references.ContainsKey).Select(Reference).ToArray(),
                 rows.Values.Where(r => r.Predecessors.Contains(id)).Select(r => Reference(r.Identity)).ToArray(),
                 task.Warnings, lateness.Tasks[id], unpublished.Fields.ContainsKey(id)) { MissingEstimates = task.MissingEstimates, MissingRemaining = task.MissingRemaining };

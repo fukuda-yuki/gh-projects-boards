@@ -69,6 +69,10 @@ internal sealed record ScheduledTask(PlanTask Input, PlanDate Start, PlanDate En
     }
     public int MissingEstimates { get; init; }
     public int MissingRemaining { get; init; }
-    public bool DatesHeld { get; init; }
+    // The 見込終了 forecast is derived and never stored or published (#236). A task with no dates or
+    // no effort has none; a closed task has none and its successors ignore it.
+    public DateOnly? ForecastStart { get; init; }
+    public DateOnly? ForecastEnd { get; init; }
+    public string? ForecastStartReason { get; init; }
     public IReadOnlyDictionary<DateOnly, decimal>? PlannedHours { get; init; }
 }

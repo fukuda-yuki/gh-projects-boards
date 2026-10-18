@@ -147,7 +147,7 @@ internal sealed class PlanCsvExportTests
     {
         var row = new PlanRow("I1", "設計", "acme/repo") { Closed = state == "closed", Fixed = state == "fixed" };
         var document = Columns(Document(row), "Indicator", "Title");
-        document = document with { Dates = new(PlanDateHoldOrigin.FirstTakeIn),
+        document = document with {
             State = document.State with { Rows = [state == "changed" ? row with { Title = "変更" } : row] },
             Sync = new() { Unverified = state == "unverified" ? ["I1"] : [], Failures = state == "failed" ? [new("I1", PlanField.Title, "VerificationMismatch")] : [] } };
         Assert.That(Read(PlanCsvExport.Create(document, Today))[1][1], Is.EqualTo(expected));

@@ -49,26 +49,26 @@ internal sealed class PlanColumnSettingsTests
     }
 
     [Test]
-    public async Task WidthChangeIsOneUndoAndKeepsHeldDatesUnlikeScheduleSettings()
+    public async Task WidthChangeIsOneUndoAndMovesNoDatesUnlikeScheduleSettings()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-width-" + Guid.NewGuid().ToString("N"));
         var row = new PlanRow("I1", "Task", "acme/repo") { Start = Day, End = Day.AddDays(3), Estimate = 8 };
         var d = new PlanDocument(new(new("github.com", 1), "P1"), new([row], []),
-            new([row], new() { SheetColumns = [new("Title", true, null, 280)] })) { Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
+            new([row], new() { SheetColumns = [new("Title", true, null, 280)] }));
         try {
             var session = await PlanSession.CreateAsync(new(root), d, Day);
             var before = PlanOperations.Schedule(session.Document, Day).Select(t => (t.Start, t.End)).ToArray();
             var saved = await session.Execute(new ReplacePlanSettings(PlanSheetColumns.Change(session.Document, "Title", width: 360, resize: true)), Day);
             Assert.That(saved.Succeeded, Is.True, saved.Error);
             Assert.That(session.UndoCount, Is.EqualTo(1));
-            Assert.That(session.Document.Dates, Is.EqualTo(d.Dates));
             Assert.That(PlanOperations.Schedule(session.Document, Day).Select(t => (t.Start, t.End)), Is.EqualTo(before));
+            Assert.That(saved.Recalculation, Is.Null, "Column presentation does not reschedule.");
             await session.Undo(Day);
             Assert.That(PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width, Is.EqualTo(280));
             Assert.That(session.UndoCount, Is.Zero);
-            await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectStart = Day.AddDays(7) }), Day);
-            Assert.That(session.Document.Dates.Held, Is.Null);
+            var moved = await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectStart = Day.AddDays(7) }), Day);
             Assert.That(PlanOperations.Schedule(session.Document, Day).Select(t => (t.Start, t.End)), Is.Not.EqualTo(before));
+            Assert.That(moved.Recalculation, Is.Not.Null, "A settings change that moves dates reports them for a filter.");
         } finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
 
@@ -306,13 +306,13 @@ internal sealed class PlanColumnSettingsTests
         var root=Path.Combine(Path.GetTempPath(),"ghpb-columns-"+Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         try {
-            var d=ExtraDocument() with {Dates=new(PlanDateHoldOrigin.FirstTakeIn)};
+            var d=ExtraDocument();
             var session=await PlanSession.CreateAsync(new(root),d,Day);
             var settings=PlanSheetColumns.Change(d,"Project:T",true,"メモ",true,width:180,resize:true);
             var saved=await session.Execute(new ReplacePlanSettings(settings),Day);
             Assert.That(saved.Succeeded,Is.True,saved.Error);
             Assert.That(session.UndoCount,Is.EqualTo(1));
-            Assert.That(session.Document.Dates.Held,Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
+            Assert.That(saved.Recalculation,Is.Null);
             var file=Path.Combine(root,"settings.json");
             await session.ExportSettingsAsync(file);
             var reopened=await PlanSession.OpenAsync(new(root),d.Project,Day);
@@ -324,7 +324,7 @@ internal sealed class PlanColumnSettingsTests
             Assert.That(imported.Applied,Is.True,imported.Error);
             Assert.That(PlanSheetColumns.All(session.Document).Single(c=>c.Key=="Project:T").Width,Is.EqualTo(180));
             Assert.That(session.UndoCount,Is.EqualTo(1));
-            Assert.That(session.Document.Dates.Held,Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
+            Assert.That(imported.Save?.Recalculation,Is.Null);
         } finally { Directory.Delete(root,true); }
     }
 }
