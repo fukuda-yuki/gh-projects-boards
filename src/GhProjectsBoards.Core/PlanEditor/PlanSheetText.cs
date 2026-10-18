@@ -18,7 +18,9 @@ internal static class PlanSheetText
         var typed = taskRow?.StartNoEarlierThan is not null || taskRow?.Fixed == true;
         if (remoteProblem.Length > 0) states.Add(remoteProblem);
         if (shown.Overdue && late?.MissedDate is { } missed) {
-            var date = Date(missed);
+            // The indicator tooltip names the day as M/d; the weekday belongs to the sheet's date cells
+            // and the 見込終了 column (docs/spec.md line 192 versus 174).
+            var date = missed.ToString("M/d", CultureInfo.InvariantCulture);
             var remaining = effort?.Remaining;
             var remainingText = remaining is { } work
                 ? $"（見込み残存工数 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
