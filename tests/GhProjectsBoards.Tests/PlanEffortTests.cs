@@ -149,6 +149,21 @@ internal sealed class PlanEffortTests
             StatusDate = Day, Columns = [new(PlanField.Remaining, "R", "Remaining", "NUMBER"), new(PlanField.End, "E", "End", "DATE")]
         }));
     }
+    // A read invents no dates (#236 rule 5), so the plan holds the end its start implies only because the edit
+    // that set that start laid it out. This does the same, and stamps only the end, because that is what
+    // Reschedule writes.
+    private static PlanDocument Laid(PlanDocument d)
+    {
+        var rows = d.State.Rows;
+        var settings = d.State.Settings;
+        var schedule = PlanScheduler.Calculate(rows.Select((r, i) => PlanOperations.TaskInput(r, i)).ToArray(),
+            new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
+                Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() },
+            Day, rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal));
+        var byId = schedule.ToDictionary(t => t.Input.Identity);
+        return d with { State = d.State with { Rows = rows.Select(r => r with { End = byId[r.Identity].End.Value }).ToImmutableArray() } };
+    }
     private static PlanRemoteSnapshot Remote(PlanDocument d) => new(d.Baseline, ImmutableDictionary<string, string>.Empty,
         d.State.Settings.Columns.Select(c => new ProjectFieldDefinition(new(d.Project.Scope, c.FieldId), d.Project, c.Name,
             "ProjectV2Field", c.DataType, FieldOwner.ProjectItem, [], ValueAvailability.Present)).ToImmutableArray(), 0, 0);
@@ -189,6 +204,10 @@ internal sealed class PlanEffortTests
         var columns = d.State.Settings.Columns.Add(new(PlanField.Start, "S", "Start", "DATE"));
         d = d with { State = d.State with { Settings = d.State.Settings with { Columns = mapped ? columns : [] },
             Rows = [row with { Title = "Updated" }] } };
+        // The start this row holds was given by a PMO edit, and that edit laid the end out. Without this the
+        // plan would hold no end at all and the automatic end field would be display-only, which under #236 is
+        // not an unpublished change.
+        d = Laid(d);
         var scheduled = PlanOperations.Schedule(d, Day).Single();
         Assert.That(scheduled.Start.Value, Is.EqualTo(Day));
         // #236 rule 2: an in-progress task consumes Actual + Remaining from its plan start, so 8h done plus
