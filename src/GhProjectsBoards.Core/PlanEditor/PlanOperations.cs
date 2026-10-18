@@ -251,6 +251,23 @@ internal static class PlanOperations
                 rows.RemoveAll(r => movingIds.Contains(r.Identity));
                 rows.InsertRange(move.Before is null ? rows.Count : rows.FindIndex(r => r.Identity == move.Before), moving);
                 break;
+            case DeletePlanRows delete:
+                kind = PlanOperationKind.Delete;
+                Require(!delete.Targets.IsDefaultOrEmpty && delete.Targets.Distinct().Count() == delete.Targets.Length &&
+                    delete.Targets.All(byId.ContainsKey), "削除する行を選択してください。");
+                var outline = new PlanOutline(state.Rows);
+                var deleting = delete.Targets.SelectMany(id => outline.Subtree(id)).Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+                var published = d.Baseline.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+                if (state.Rows.FirstOrDefault(r => deleting.Contains(r.Identity) && published.Contains(r.Identity)) is { } refused)
+                    throw new ArgumentException(PublishedRowRefusal(Position(state.Rows, refused.Identity)));
+                // A deleted predecessor no longer constrains its successors, and losing a child moves the
+                // parent roll-up; both are rescheduled below.
+                var survivors = rows.Where(r => !deleting.Contains(r.Identity)).Select(r => r.Predecessors.Any(deleting.Contains)
+                    ? r with { Predecessors = r.Predecessors.Where(id => !deleting.Contains(id)).ToImmutableArray() } : r).ToList();
+                rescheduled.UnionWith(survivors.Where(r => r.Predecessors.Length != byId[r.Identity].Predecessors.Length).Select(r => r.Identity));
+                rescheduled.UnionWith(state.Rows.Where(r => deleting.Contains(r.Identity) && r.Parent is not null && !deleting.Contains(r.Parent)).Select(r => r.Parent!));
+                rows = survivors;
+                break;
             case ReplacePlanSettings settings:
                 kind = PlanOperationKind.Settings;
                 // Only a change that can move dates reschedules: the calendar, the Project period or people rates.
@@ -464,6 +481,42 @@ internal static class PlanOperations
     }
     internal static bool IsLocalConstraint(string field, ProjectPlanSettings settings)
         => field is (PlanField.StartNoEarlierThan or PlanField.Fixed) && !settings.Columns.Any(c => c.Role == field);
+    // An Issue cannot be deleted from the plan: #231 owns 完了・中止・この版から外す, and a delete that
+    // reaches a published row is refused whole (named by the row it first reaches).
+    internal static string PublishedRowRefusal(int position)
+        => $"GitHub の Issue は削除できません（ID {position}）。完了・中止・この版から外す を使ってください";
+    // Rows a publish cannot create: a new row left without a title, and any new row that would be
+    // created inside one. Everything else still publishes; writes referencing these rows are held (#247).
+    internal static ImmutableHashSet<string> HeldRows(PlanDocument document)
+    {
+        var baseline = document.Baseline.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+        var rows = document.State.Rows;
+        var byId = rows.ToDictionary(r => r.Identity);
+        var untitled = UntitledNewRows(document).ToHashSet(StringComparer.Ordinal);
+        var held = new HashSet<string>(untitled, StringComparer.Ordinal);
+        foreach (var row in rows)
+        {
+            if (baseline.Contains(row.Identity) || held.Contains(row.Identity)) continue;
+            for (var parent = row.Parent; parent is not null && byId.TryGetValue(parent, out var above); parent = above.Parent)
+                if (untitled.Contains(parent)) { held.Add(row.Identity); break; }
+        }
+        return held.ToImmutableHashSet(StringComparer.Ordinal);
+    }
+    // The new rows the PMO has not titled yet. They are unpublished and cannot be published until
+    // they are titled or deleted (#247).
+    internal static ImmutableArray<string> UntitledNewRows(PlanDocument document)
+    {
+        var baseline = document.Baseline.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+        return document.State.Rows.Where(r => !baseline.Contains(r.Identity) && string.IsNullOrWhiteSpace(r.Title))
+            .Select(r => r.Identity).ToImmutableArray();
+    }
+    // A field change this publish cannot send because it would name a row no Issue exists for (#247).
+    internal static bool HoldsField(PlanRow row, PlanRow before, string field, ImmutableHashSet<string> held) => field switch
+    {
+        PlanField.Parent => row.Parent is not null && held.Contains(row.Parent),
+        PlanField.Predecessors => row.Predecessors.Any(held.Contains) || before.Predecessors.Any(held.Contains),
+        _ => false
+    };
     internal static bool IsRecalculatedField(ScheduledTask task, string field) => field switch
     {
         PlanField.Start => task.IsSummary || !(task.Start.Origin == DateOrigin.Kept && task.Start.Value == task.Input.Start

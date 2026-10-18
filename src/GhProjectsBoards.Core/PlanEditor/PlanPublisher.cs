@@ -276,7 +276,10 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
     private static PlanPublishResult Result(PlanSession session, DateOnly today, PlanPublishReview? review)
     {
         var sync = session.Document.Sync;
-        var complete = sync.Publish is null && session.Changes(today).TaskCount == 0 && sync.Unavailable.IsEmpty &&
+        // A row this publish cannot create yet (an untitled new row and its would-be children, #247) is
+        // unpublished by design, so it does not make an otherwise complete publish incomplete.
+        var held = PlanOperations.HeldRows(session.Document);
+        var complete = sync.Publish is null && session.Changes(today).Fields.Keys.All(held.Contains) && sync.Unavailable.IsEmpty &&
             PlanOperations.BlockingConflicts(session.Document).IsEmpty && sync.Failures.IsEmpty && sync.Unverified.IsEmpty;
         return new(complete, complete ? null : "未完了の変更があります。確認後に再発行してください。", review);
     }

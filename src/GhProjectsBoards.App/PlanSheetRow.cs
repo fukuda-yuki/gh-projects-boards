@@ -99,6 +99,7 @@ public sealed class PlanSheetRow : Grid
         idHandle.PreviewKeyDown += (_, args) => {
             if (Owner is not { } owner) return;
             if (args.Key == VirtualKey.Escape) { owner.CancelDrag(); args.Handled = true; }
+            else if (PlanSheetView.Down(VirtualKey.Control) && PlanSheetView.Minus(args.Key)) { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
             else if (owner.HandleOutlineShortcut(args.Key)) args.Handled = true;
         };
         line.Children.Add(idCell); line.Children.Add(indicator);
@@ -220,8 +221,11 @@ public sealed class PlanSheetRow : Grid
             cell.Visibility = summary && field != PlanField.Title ? Visibility.Collapsed : visible;
             var selected = owner.IsSelected(Identity, field);
             var conflict = owner.BlockingConflicts.Any(c => c.Identity == Identity && c.Field == field);
-            frames[i].BorderBrush = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : selected ? "SheetSelectionStrokeBrush" : "SheetSeparatorBrush");
-            frames[i].BorderThickness = selected || conflict ? new(2) : new(0, 0, 0, 1);
+            // An untitled inserted row cannot be published, so its title carries the same critical
+            // outline a conflict uses and the reason in its help text and tooltip (#247).
+            var untitled = field == PlanField.Title && owner.IsUntitledNewRow(Identity);
+            frames[i].BorderBrush = PlanSheetView.Brush(conflict || untitled ? "SystemFillColorCriticalBrush" : selected ? "SheetSelectionStrokeBrush" : "SheetSeparatorBrush");
+            frames[i].BorderThickness = selected || conflict || untitled ? new(2) : new(0, 0, 0, 1);
             frames[i].Background = PlanSheetView.Brush(conflict ? "LayerFillColorDefaultBrush" : selected || owner.IsSelectedRow(Identity) ? "SheetSelectionBrush"
                 : owner.IsChanged(Identity, field) && owner.Unpublished.InputKind(Identity, field) == PlanUnpublishedInputKind.Entered ? "SheetChangedBrush" : "LayerFillColorDefaultBrush");
             var changed = owner.IsChanged(Identity, field);
@@ -264,9 +268,9 @@ public sealed class PlanSheetRow : Grid
                 && owner.CellDate(Identity, field) > owner.PublishedEnd(Identity) ? "SystemFillColorCriticalBrush"
                 : owner.IsCalculated(Identity, field) ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
             cell.FontWeight = owner.Schedule.GetValueOrDefault(Identity)?.IsSummary == true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
-            cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict ? 4 : 1);
+            cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict || untitled ? 4 : 1);
             cell.Padding = field == PlanField.Title ? new(24 + depth * 12, 1, 4, 1) : new(4, 1, 4, 1);
-            var problem = owner.Problems.GetValueOrDefault((Identity, field)) ?? (remoteProblem.Length > 0 ? remoteProblem : null);
+            var problem = owner.Problems.GetValueOrDefault((Identity, field)) ?? (untitled ? "タイトルを入力してください" : remoteProblem.Length > 0 ? remoteProblem : null);
             var text = owner.Pending.GetValueOrDefault((Identity, field))?.Text ?? (cell.Editing ? owner.EditForm(Identity, field) : owner.Display(Identity, field));
             cell.Refresh(text);
             if (cell.TitleDisplay is { } titleDisplay) AutomationProperties.SetAutomationId(titleDisplay, "PlanTitleDisplay" + number);
@@ -734,7 +738,7 @@ internal sealed class PlanSheetCell : TextBox
         else if (!Editing && control && !PlanSheetView.Down(VirtualKey.Menu) && args.Key == VirtualKey.F2)
         { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
         else if (!control && args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
-        else if (!Editing && control && args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y)
+        else if (!Editing && control && (args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y || PlanSheetView.Minus(args.Key)))
         { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
         else if (!Editing && args.Key == VirtualKey.Delete) { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
         else if (!Editing && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right)
@@ -807,7 +811,7 @@ internal sealed class PlanSummaryCell : ContentControl
         else if (!control && args.Key is VirtualKey.Tab or VirtualKey.Enter) {
             args.Handled = true; owner.NavigateCell(field, args.Key == VirtualKey.Tab, shift);
         }
-        else if (!control && args.Key == VirtualKey.Delete || control && args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y) {
+        else if (!control && args.Key == VirtualKey.Delete || control && (args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y || PlanSheetView.Minus(args.Key))) {
             args.Handled = true; _ = owner.KeyboardCommand(args.Key);
         }
         else if (!control && args.Key == VirtualKey.Escape) { args.Handled = true; owner.CancelDrag(); }
