@@ -66,6 +66,51 @@ internal sealed class PlanSheetEditingTests
         Assert.That(() => PlanSheetEditing.Parse(Document, PlanField.Assignees, "ａｌｉｃｅ", Day),
             Throws.ArgumentException.With.Message.EqualTo("担当者を確認してください: ａｌｉｃｅ"));
     }
+    private static PlanDocument Linked(params (string Identity, string Caption)[] links)
+        => Document with { Sync = Document.Sync with {
+            IssueLinks = links.ToImmutableDictionary(l => l.Identity, l => new PlanIssueLink(l.Caption, "https://github.com/" + l.Caption)) } };
+    [Test]
+    public void IssueReferenceLinksTheRowCarryingThatIssueAndABareNumberStaysAPlanRow()
+    {
+        var document = Linked(("I1", "acme/repo#18"), ("I2", "acme/repo#19"), ("I3", "acme/repo#20"));
+        Assert.That(PlanSheetEditing.Parse(document, PlanField.Predecessors, "#19", Day), Is.EqualTo(new[] { "I2" }));
+        Assert.That(PlanSheetEditing.Parse(document, PlanField.Predecessors, "1", Day), Is.EqualTo(new[] { "I1" }));
+        Assert.That(PlanSheetEditing.Parse(document, PlanField.Predecessors, "３, #19", Day), Is.EqualTo(new[] { "I3", "I2" }));
+        Assert.That(PlanSheetEditing.Parse(document, PlanField.Predecessors, "＃１９", Day), Is.EqualTo(new[] { "I2" }));
+    }
+    [TestCase("#99", "Issue #99 はこの版にありません。")]
+    [TestCase("#abc", "先行タスクは計画内のIDか Issue 番号（#19）で指定してください: #abc")]
+    [TestCase("#", "先行タスクは計画内のIDか Issue 番号（#19）で指定してください: #")]
+    [TestCase("#0", "先行タスクは計画内のIDか Issue 番号（#19）で指定してください: #0")]
+    [TestCase("other/repo#99", "先行タスクは計画内のIDで指定してください: other/repo#99")]
+    [TestCase("abc", "先行タスクは計画内のIDで指定してください: abc")]
+    [TestCase("9", "先行タスクは計画内のIDで指定してください: 9")]
+    public void UnresolvableReferencesAreRefusedWithTheirOwnMessage(string input, string expected)
+        => Assert.That(() => PlanSheetEditing.Parse(
+                Linked(("I1", "acme/repo#18"), ("I2", "acme/repo#19"), ("I3", "acme/repo#20")),
+                PlanField.Predecessors, input, Day),
+            Throws.ArgumentException.With.Message.EqualTo(expected));
+    [Test]
+    public void IssueNumberCarriedByTwoRowsIsRefusedNamingBothCandidates()
+        => Assert.That(() => PlanSheetEditing.Parse(Linked(("I1", "acme/repo#19"), ("I2", "other/repo#19")),
+                PlanField.Predecessors, "#19", Day),
+            Throws.ArgumentException.With.Message.EqualTo("Issue #19 は複数の行にあります: acme/repo#19, other/repo#19"));
+    [Test]
+    public void IssueReferenceEditLeavesEveryOtherRowsPredecessorsUntouched()
+    {
+        var rows = ImmutableArray.Create(
+            new PlanRow("I1", "first", "acme/repo"),
+            new PlanRow("I2", "second", "acme/repo") { Predecessors = ["other/repo#99"] },
+            new PlanRow("I3", "third", "acme/repo"));
+        var document = PlanCsvImportTests.Empty() with {
+            Baseline = new(rows, []), State = new(rows, new()),
+            Sync = new() { IssueLinks = ImmutableDictionary<string, PlanIssueLink>.Empty.Add("I3", new("acme/repo#20", "https://github.com/acme/repo/issues/20")) } };
+        var resolved = PlanSheetEditing.Parse(document, PlanField.Predecessors, "#20", Day);
+        var after = PlanOperations.Apply(document,
+            new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Predecessors, resolved)]), Day).State;
+        Assert.That(after.Rows.Single(r => r.Identity == "I1").Predecessors, Is.EqualTo(new[] { "I3" }));
+        Assert.That(after.Rows.Single(r => r.Identity == "I2").Predecessors, Is.EqualTo(new[] { "other/repo#99" }));
+    }
     [Test]
     public void PastedFullWidthEffortAndDateUseTheSameNormalisation()
     {
