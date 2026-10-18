@@ -566,7 +566,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             case SaveConflictChoice.Reapply: await ReapplyAndReportAsync(); break;
             case SaveConflictChoice.SaveCopy: await CopyAndReportAsync(); break;
-            case SaveConflictChoice.Discard: await workspace.RetrySave(); await CommitPending(); ClearSaveFailures(); break;
         }
     }
     private async Task<bool> ReapplyAndReportAsync()
@@ -593,7 +592,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         panel.Children.Add(new TextBlock { TextWrapping = TextWrapping.Wrap,
             Text = "このウィンドウの編集は保持しています。保存されている計画を読み直して編集を適用するか、このウィンドウの内容をコピーとして保存してください。"
                 + (closing ? Environment.NewLine + "編集を破棄して閉じることもできます。" : "") });
-        panel.Children.Add(discardButton);
+        // Discarding is only a way out of closing; while the window stays open, nothing is thrown away.
+        if (closing) panel.Children.Add(discardButton);
         dialog.Content = panel;
         var result = await dialog.ShowAsync();
         if (discard) return SaveConflictChoice.Discard;
