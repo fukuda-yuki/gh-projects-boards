@@ -555,7 +555,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private async Task SavePlanCopyAsync()
     {
         if (workspace.Session is not { } session) return;
-        if (await PickFile("plan-copy") is not { } path) return;
+        if (await SelectFile("plan-copy") is not { } path) return;
         var result = await session.SaveCopyAsync(path);
         if (result.Succeeded) { ClearSaveFailures(); error.Text = "コピーとして保存しました: " + path; return; }
         ShowSaveFailure(result.Error ?? "コピーとして保存できませんでした。", conflict: true);
