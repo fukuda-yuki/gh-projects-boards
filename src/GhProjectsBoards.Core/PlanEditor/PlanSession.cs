@@ -38,12 +38,16 @@ internal sealed class PlanSession
     private PlanCheckpoint checkpoint;
     private string? fingerprint;
     private long savedRevision;
+    // The document as of the last successful save, so a refused save can tell which edits are this
+    // window's work since then (#248).
+    private PlanDocument savedDocument;
     private Task<PlanSaveResult>? pending;
     private PlanSaveResult lastSave;
     private PlanSession(PlanStore store, PlanCheckpoint checkpoint, string? fingerprint)
     {
         this.store = store; this.checkpoint = checkpoint; this.fingerprint = fingerprint;
         savedRevision = fingerprint is null ? -1 : checkpoint.Revision;
+        savedDocument = checkpoint.Document;
         lastSave = new(true, PlanSaveFailure.None, null, fingerprint);
     }
     public PlanDocument Document { get { lock (gate) return checkpoint.Document; } }
@@ -159,7 +163,7 @@ internal sealed class PlanSession
             lock (gate)
             {
                 lastSave = result;
-                if (result.Succeeded) { fingerprint = result.Fingerprint; savedRevision = captured.Revision; }
+                if (result.Succeeded) { fingerprint = result.Fingerprint; savedRevision = captured.Revision; savedDocument = captured.Document; }
                 if (!result.Succeeded || savedRevision == checkpoint.Revision) { pending = null; return result; }
             }
         }
@@ -174,6 +178,46 @@ internal sealed class PlanSession
         }
     }
     public Task<PlanSaveResult> RetrySaveAsync() { lock (gate) return savedRevision == checkpoint.Revision ? CurrentSave() : QueueSave(); }
+    // #248: the stored plan changed underneath this window. Read it again, reapply the edits this
+    // window made after its last successful save, and store the merged plan. Nothing is discarded.
+    public async Task<PlanReconcileResult> ReapplyStoredAsync(DateOnly today)
+    {
+        PlanDocument current; PlanDocument saved;
+        lock (gate)
+        {
+            if (remoteOperation) return new(false, "更新または発行が進行中です。");
+            current = checkpoint.Document; saved = savedDocument;
+        }
+        var loaded = await store.LoadAsync(current.Project).ConfigureAwait(false);
+        if (loaded.Status != PlanLoadStatus.Loaded || loaded.Checkpoint is null || loaded.Fingerprint is null)
+            return new(false, "保存されている計画を読み込めません。" + (loaded.Error ?? ""));
+        PlanDocument merged;
+        try
+        {
+            merged = loaded.Checkpoint.Document with { State = PlanMerge.ReapplyLocalEdits(loaded.Checkpoint.Document.State, saved.State, current.State) };
+            PlanOperations.ValidateDocument(merged, today);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        { return new(false, "このウィンドウの編集を読み直した計画に適用できません。" + ex.Message); }
+        Task<PlanSaveResult> save;
+        lock (gate)
+        {
+            if (!ReferenceEquals(checkpoint.Document, current)) return new(false, "計画が別の操作で変わりました。もう一度お試しください。");
+            checkpoint = checkpoint with { Revision = Math.Max(checkpoint.Revision, loaded.Checkpoint.Revision) + 1, Document = merged };
+            fingerprint = loaded.Fingerprint;
+            lastSave = new(true, PlanSaveFailure.None, null, fingerprint);
+            save = QueueSave();
+        }
+        var result = await save.ConfigureAwait(false);
+        return new(result.Succeeded, result.Succeeded ? null : result.Error ?? "保存できませんでした。");
+    }
+    // #248: keep this window's version at the path the PMO chose; the stored plan stays as it is.
+    public async Task<PlanSaveResult> SaveCopyAsync(string path)
+    {
+        PlanCheckpoint captured;
+        lock (gate) captured = checkpoint;
+        return await store.SaveCopyAsync(captured, path).ConfigureAwait(false);
+    }
     public PlanUnpublished Changes(DateOnly today) => PlanOperations.Changes(Document, today);
     public IReadOnlyList<ScheduledTask> Schedule(DateOnly today) => PlanOperations.Schedule(Document, today);
     internal Task<PlanSaveResult> SaveSync(PlanSync sync)

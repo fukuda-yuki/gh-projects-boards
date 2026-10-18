@@ -255,7 +255,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         foreach (var session in sessions.Values) RequireSave(await session.RetrySaveAsync());
         catalog = await SaveCatalog(catalog);
     }
-    private static void RequireSave(PlanSaveResult result) { if (!result.Succeeded) throw new IOException(result.Error); }
+    private static void RequireSave(PlanSaveResult result) { if (!result.Succeeded) throw new PlanSaveFailedException(result); }
     private async Task<PlanWorkspaceCatalog> SaveCatalog(PlanWorkspaceCatalog candidate)
     {
         Directory.CreateDirectory(store.Root);

@@ -52,7 +52,9 @@ public sealed partial class MainWindow : Window
         args.Cancel = true;
         if (closing) return;
         closing = true;
-        if (workspace is null || await workspace.StopAsync())
+        // A failed flush never traps the window: the workspace shows the ways out and reports
+        // whether one of them completed or the edit was explicitly discarded (#248).
+        if (workspace is null || await workspace.StopAsync() || await workspace.ResolveCloseConflictAsync())
         {
             // StopAsync may complete synchronously. Finish the native Closing
             // callback before allowing the final XAML/input-context teardown.

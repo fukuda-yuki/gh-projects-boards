@@ -59,6 +59,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Grid summaryArea = new();
     private PlanSummaryView? summaryView;
     private readonly Button retrySave;
+    private readonly Button conflictAction;
     private readonly TextBlock title = Id(new TextBlock { FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "OpenProjectName");
     private readonly Border unpublishedBadge = new() { CornerRadius = new(10), MinWidth = 20, Padding = new(6, 2, 6, 2), Background = PlanSheetView.Brush("SheetChangedMarkBrush") };
     private readonly TextBlock unpublishedLabel = new() { Text = "未発行のタスク", VerticalAlignment = VerticalAlignment.Center };
@@ -196,6 +197,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
         }, commitPending: false);
         retrySave.Visibility = Visibility.Collapsed;
         saveFailure.ActionButton = retrySave;
+        // A changed stored plan cannot be resolved by retrying, so the bar offers the way out instead (#248).
+        conflictAction = Button("対処する…", "PlanResolveSaveConflict", () => { _ = ResolveSaveConflictAsync(); return Task.CompletedTask; }, commitPending: false);
+        conflictAction.Visibility = Visibility.Collapsed;
+        saveFailure.Content = conflictAction;
         refreshFailure.ActionButton = Button("再試行", "PlanRetryRefresh", RefreshRemote);
         publishFailure.ActionButton = Button("再試行", "PlanRetryPublish", () => { RenderReview(); Show("publish"); return Task.CompletedTask; });
         refreshResult.Closed += (_, _) => sheet?.ClearChangedTasksFilter();
@@ -417,16 +422,19 @@ internal sealed partial class PlanWorkspaceView : UserControl
             + Environment.NewLine + "詳細: " + unreadable.Message;
         openFailure.IsOpen = true;
     }
-    private void ShowSaveFailure(string message)
+    private void ShowSaveFailure(string message, bool conflict = false)
     {
         sheet?.ClearSaveFailure();
         error.Text = "";
+        SaveConflictPending = conflict;
         saveFailure.Message = message; saveFailure.IsOpen = true;
-        retrySave.Visibility = Visibility.Visible;
+        retrySave.Visibility = conflict ? Visibility.Collapsed : Visibility.Visible;
+        conflictAction.Visibility = conflict ? Visibility.Visible : Visibility.Collapsed;
     }
     private void ClearSaveFailures()
     {
-        saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed;
+        SaveConflictPending = false;
+        saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; conflictAction.Visibility = Visibility.Collapsed;
         foreach (var entry in sheets.Values) entry.ClearSaveFailure();
     }
     private Task RefreshRemote() => ReadRemote(false);
@@ -534,6 +542,91 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (bar?.ActionButton is Button retry) retry.IsEnabled = !busy;
     }
     internal string WorkDescription => $"operation={operation.Status}, closing={closing}, pendingSettings={pendingSettings.Count}, sheets=[{string.Join("; ", sheets.Values.Select(s => s.WorkDescription))}]";
+    // #248: a save refused because another window stored this plan is not retryable; the two escapes
+    // (reload and reapply, or save as a copy) both keep this window's edit, and closing always has a choice.
+    internal bool SaveConflictPending { get; private set; }
+    private async Task ReapplyStoredPlanAsync()
+    {
+        if (workspace.Session is not { } session) return;
+        var result = await session.ReapplyStoredAsync(Today);
+        if (result.Succeeded) { ClearSaveFailures(); RenderTasks(); RenderSettings(); return; }
+        ShowSaveFailure(result.Error ?? "読み直した計画を保存できませんでした。", conflict: true);
+    }
+    private async Task SavePlanCopyAsync()
+    {
+        if (workspace.Session is not { } session) return;
+        if (await PickFile("plan-copy") is not { } path) return;
+        var result = await session.SaveCopyAsync(path);
+        if (result.Succeeded) { ClearSaveFailures(); error.Text = "コピーとして保存しました: " + path; return; }
+        ShowSaveFailure(result.Error ?? "コピーとして保存できませんでした。", conflict: true);
+    }
+    private async Task ResolveSaveConflictAsync()
+    {
+        switch (await ShowSaveConflictDialogAsync(closing: false))
+        {
+            case SaveConflictChoice.Reapply: await ReapplyAndReportAsync(); break;
+            case SaveConflictChoice.SaveCopy: await CopyAndReportAsync(); break;
+        }
+    }
+    private async Task<bool> ReapplyAndReportAsync()
+    {
+        await ReapplyStoredPlanAsync();
+        return !SaveConflictPending;
+    }
+    private async Task<bool> CopyAndReportAsync()
+    {
+        await SavePlanCopyAsync();
+        return !SaveConflictPending;
+    }
+    private enum SaveConflictChoice { Reapply, SaveCopy, Discard, Stay }
+    private async Task<SaveConflictChoice> ShowSaveConflictDialogAsync(bool closing)
+    {
+        var discard = false;
+        var dialog = Id(new ContentDialog { XamlRoot = XamlRoot, Title = "別のウィンドウがこの計画を保存しました",
+            PrimaryButtonText = closing ? "読み直して適用して閉じる" : "読み直して編集を適用",
+            SecondaryButtonText = closing ? "コピーとして保存して閉じる" : "コピーとして保存…",
+            CloseButtonText = closing ? "閉じない" : "あとで",
+            DefaultButton = ContentDialogButton.Primary }, "PlanSaveConflict");
+        var discardButton = Button(closing ? "編集を破棄して閉じる" : "編集を破棄", "PlanSaveConflictDiscard", () => { discard = true; dialog.Hide(); return Task.CompletedTask; }, commitPending: false);
+        var panel = new StackPanel { Spacing = 12 };
+        panel.Children.Add(new TextBlock { TextWrapping = TextWrapping.Wrap,
+            Text = "このウィンドウの編集は保持しています。保存されている計画を読み直して編集を適用するか、このウィンドウの内容をコピーとして保存してください。"
+                + (closing ? Environment.NewLine + "編集を破棄して閉じることもできます。" : "") });
+        // Discarding is only a way out of closing; while the window stays open, nothing is thrown away.
+        if (closing) panel.Children.Add(discardButton);
+        dialog.Content = panel;
+        var result = await dialog.ShowAsync();
+        if (discard) return SaveConflictChoice.Discard;
+        return result switch { ContentDialogResult.Primary => SaveConflictChoice.Reapply, ContentDialogResult.Secondary => SaveConflictChoice.SaveCopy, _ => SaveConflictChoice.Stay };
+    }
+    // Called by the window when a close could not flush. True means the window may close.
+    internal async Task<bool> ResolveCloseConflictAsync()
+    {
+        if (!SaveConflictPending)
+        {
+            // A retryable failure keeps its retry path, and the window can still be closed by choice.
+            var discard = false;
+            var dialog = Id(new ContentDialog { XamlRoot = XamlRoot, Title = "保存できませんでした",
+                PrimaryButtonText = "保存を再試行", CloseButtonText = "閉じない", DefaultButton = ContentDialogButton.Primary }, "PlanCloseFailure");
+            var discardButton = Button("編集を破棄して閉じる", "PlanCloseDiscard", () => { discard = true; dialog.Hide(); return Task.CompletedTask; }, commitPending: false);
+            var panel = new StackPanel { Spacing = 12 };
+            panel.Children.Add(new TextBlock { TextWrapping = TextWrapping.Wrap,
+                Text = (saveFailure.Message.Length > 0 ? saveFailure.Message : "保存できませんでした。") + Environment.NewLine + "編集を破棄して閉じることもできます。" });
+            panel.Children.Add(discardButton);
+            dialog.Content = panel;
+            var result = await dialog.ShowAsync();
+            if (discard) return true;
+            if (result != ContentDialogResult.Primary) return false;
+            try { await workspace.RetrySave(); await CommitPending(); ClearSaveFailures(); return true; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { ShowSaveFailure(ex.Message, ex is PlanSaveFailedException { Result.Failure: PlanSaveFailure.ChangedFile }); return false; }
+        }
+        var choice = await ShowSaveConflictDialogAsync(closing: true);
+        return choice switch {
+            SaveConflictChoice.Reapply => await ReapplyAndReportAsync(),
+            SaveConflictChoice.SaveCopy => await CopyAndReportAsync(),
+            SaveConflictChoice.Discard => true,
+            _ => false };
+    }
     internal async Task<bool> StopAsync()
     {
         if (!await DiscardDetailEdit()) return false;
@@ -551,7 +644,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             closing = false;
             SetPublishBusy(false); RenderTasks(); RenderReview();
-            if (ex is IOException or UnauthorizedAccessException) ShowSaveFailure(ex.Message);
+            if (ex is IOException or UnauthorizedAccessException) ShowSaveFailure(ex.Message, ex is PlanSaveFailedException { Result.Failure: PlanSaveFailure.ChangedFile });
             else error.Text = ex.Message;
             return false;
         }
@@ -606,7 +699,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
+                next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }),
+                    reapplyStoredPlan: ReapplyStoredPlanAsync, savePlanCopy: SavePlanCopyAsync);
                 next.CommandRowFocusRequested += () => {
                     if (!ReferenceEquals(sheet, next)) return;
                     if (DetailVisible && PlanSheetView.Down(Windows.System.VirtualKey.Shift)) FocusDetail(); else FocusCommandRow();
@@ -1077,11 +1171,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private async Task<string?> SelectFile(string purpose)
     {
         if (PickFile is { } pick) return await pick(purpose);
-        if (purpose is "export" or "csv-export")
+        if (purpose is "export" or "csv-export" or "plan-copy")
         {
             var csv = purpose == "csv-export";
+            var copy = purpose == "plan-copy";
             var title = string.Concat((workspace.Selected?.Title ?? "Project").Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).TrimEnd(' ', '.');
-            var picker = new FileSavePicker { SuggestedFileName = csv ? (title.Length == 0 ? "Project" : title) + ".csv" : "project-settings" };
+            var picker = new FileSavePicker { SuggestedFileName = csv ? (title.Length == 0 ? "Project" : title) + ".csv" : copy ? (title.Length == 0 ? "Project" : title) + "-copy" : "project-settings" };
             WinRT.Interop.InitializeWithWindow.Initialize(picker, WindowHandle);
             picker.FileTypeChoices.Add(csv ? "CSV" : "JSON", [csv ? ".csv" : ".json"]);
             return (await picker.PickSaveFileAsync())?.Path;

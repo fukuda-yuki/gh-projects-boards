@@ -64,7 +64,7 @@ internal sealed class PlanStore(string dataRoot)
             var old = await ReadExisting(path).ConfigureAwait(false);
             CheckInterrupted(path, old is null);
             if ((old is null ? null : Fingerprint(old)) != expectedFingerprint)
-                return new(false, PlanSaveFailure.ChangedFile, "保存元が別の操作で変更されました。現在の編集を保持して確認してください。", null);
+                return new(false, PlanSaveFailure.ChangedFile, "別のウィンドウまたは別のアプリがこの計画を保存したため、保存できませんでした。読み直して編集を適用するか、コピーとして保存してください。", null);
             // A new checkpoint must satisfy the same contract as reopening it, including every history state.
             var bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(checkpoint, PlanJson.Options);
             temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
@@ -75,7 +75,7 @@ internal sealed class PlanStore(string dataRoot)
             // Recheck noncooperating external editors immediately before replacement as well.
             var latest = await ReadExisting(path).ConfigureAwait(false);
             if ((latest is null ? null : Fingerprint(latest)) != expectedFingerprint)
-                return new(false, PlanSaveFailure.ChangedFile, "保存中に保存元が変更されました。", null);
+                return new(false, PlanSaveFailure.ChangedFile, "保存中に別のウィンドウまたは別のアプリがこの計画を保存しました。読み直して編集を適用するか、コピーとして保存してください。", null);
             if (old is null) File.Move(temporary, path); else File.Replace(temporary, path, path + ".bak");
             temporary = null;
             return new(true, PlanSaveFailure.None, null, Fingerprint(bytes));
@@ -95,6 +95,33 @@ internal sealed class PlanStore(string dataRoot)
         using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough);
         await stream.WriteAsync(bytes).ConfigureAwait(false);
         stream.Flush(flushToDisk: true);
+    }
+    // #248: keep this window's version when the stored plan cannot be replaced. The copy is a whole
+    // checkpoint at a path the PMO chose, and the stored plan is never read or changed here.
+    public async Task<PlanSaveResult> SaveCopyAsync(PlanCheckpoint checkpoint, string path)
+    {
+        string? temporary = null;
+        try
+        {
+            var bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(checkpoint, PlanJson.Options);
+            PlanJson.Validate(PlanJson.Read<PlanCheckpoint>(bytes), checkpoint.Document.Project);
+            temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            await WriteCandidate(temporary, bytes).ConfigureAwait(false);
+            var verified = await File.ReadAllBytesAsync(temporary).ConfigureAwait(false);
+            if (!bytes.AsSpan().SequenceEqual(verified)) throw new IOException("保存後の検証が一致しません。");
+            if (File.Exists(path)) File.Replace(temporary, path, null); else File.Move(temporary, path);
+            temporary = null;
+            return new(true, PlanSaveFailure.None, null, null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        { return new(false, PlanSaveFailure.Io, ex.Message, null); }
+        catch (Exception ex) when (PlanJson.IsDataError(ex))
+        { return new(false, PlanSaveFailure.InvalidFile, ex.Message, null); }
+        finally
+        {
+            if (temporary is not null)
+                try { File.Delete(temporary); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        }
     }
     internal static async Task ExportSettings(string path, ProjectPlanSettings settings)
     {
