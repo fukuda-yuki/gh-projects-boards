@@ -170,7 +170,7 @@ internal static class PlanScheduler
         private void Cycle(IEnumerable<string> ids)
         {
             var identities = ids.Distinct().ToArray();
-            throw new PlanCycleException("循環参照: " + string.Join(", ", identities.Select(id => byId[id].RowId).Order().Select(id => $"#{id}")), identities);
+            throw new PlanCycleException("循環参照: " + string.Join(", ", identities.Select(id => byId[id].RowId).Order().Select(id => $"ID {id}")), identities);
         }
 
         private Result Evaluate(string id)

@@ -2126,6 +2126,25 @@ internal sealed partial class PlanSheetHostedTests
         await Edit(2, PlanField.Remaining, "16");
         Assert.That(session.Document.State.Rows[1].Remaining, Is.EqualTo(16));
     }
+    [Test]
+    public async Task RefusedIndentNamesTheBlockingLinkAndClearsWithTheNextSelection()
+    {
+        // Row 2 depends on row 1, so indenting it under row 1 is refused (#241).
+        await Select(2, PlanField.Title);
+        var before = session.Document; var history = (session.UndoCount, session.RedoCount);
+        await Ui.ClickCommand("PlanSheetIndent"); await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text,
+                Is.EqualTo("ID 2 は ID 1 の後に始まるため、ID 1 の下にインデントできません。先にリンクを解除してください。"));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Visible));
+        });
+        Assert.That(session.Document, Is.SameAs(before));
+        Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo(history));
+        await Select(3, PlanField.Title);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length == 0);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Collapsed)));
+    }
     [TestCase(false), TestCase(true)]
     public async Task AutomationSelectionMovesKeyboardFocusSoAnotherCellCannotReclaimTheSelection(bool extend)
     {

@@ -105,7 +105,7 @@ internal sealed class PlanTaskLinksTests
             var before = session.Document; var undo = session.UndoCount; var redo = session.RedoCount;
             var (command, reason) = PlanTaskLinks.Prepare(before.State, ["a", "b"], false);
             Assert.That(reason, Is.Null);
-            Assert.That(() => session.Execute(command!, Today), Throws.TypeOf<PlanCycleException>().With.Message.EqualTo("循環参照: #1, #2"));
+            Assert.That(() => session.Execute(command!, Today), Throws.TypeOf<PlanCycleException>().With.Message.EqualTo("循環参照: ID 1, ID 2"));
             Assert.That(session.Document, Is.SameAs(before));
             Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo((undo, redo)));
         } finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
