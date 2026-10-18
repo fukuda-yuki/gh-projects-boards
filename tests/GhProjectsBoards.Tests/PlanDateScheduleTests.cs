@@ -79,11 +79,23 @@ internal sealed class PlanDateScheduleTests
     }
 
     [Test]
-    public void ATaskWithoutDatesGetsItsFirstDatesNoEarlierThanTheStatusDate()
+    public void ATaskWithNoDatesGetsItsFirstDatesWhenAnEditPlacesIt()
     {
-        ImmutableArray<PlanRow> rows = [new("I1", "New", "acme/repo") { Estimate = 16 }];
+        // #236 rule 5: a read gives a task with no dates none. Its first dates arrive with the PMO's own
+        // edit — here effort — and they are no earlier than the 基準日.
+        ImmutableArray<PlanRow> rows = [new("I1", "New", "acme/repo") { Start = D("2026-10-20"), End = D("2026-10-20") }];
+        var document = Document(rows);
 
-        Assert.That(Dates(Document(rows), "I1"), Is.EqualTo((Monday, D("2026-10-06"))));
+        var state = PlanOperations.Apply(document, new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Remaining, 16m)]), Monday).State;
+
+        Assert.That(Dates(document with { State = state }, "I1"), Is.EqualTo((D("2026-10-20"), D("2026-10-21"))));
+
+        ImmutableArray<PlanRow> undated = [new("I2", "Undated", "acme/repo")];
+        var untouched = Document(undated);
+        Assert.That(Dates(untouched, "I2"), Is.EqualTo(((DateOnly?)null, (DateOnly?)null)),
+            "A read leaves a task with no dates without one.");
+        var placed = PlanOperations.Apply(untouched, new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Estimate, 16m)]), Monday).State;
+        Assert.That(Dates(untouched with { State = placed }, "I2"), Is.EqualTo((Monday, D("2026-10-06"))));
     }
 
     [Test]

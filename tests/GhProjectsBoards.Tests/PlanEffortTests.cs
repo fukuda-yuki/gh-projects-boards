@@ -182,17 +182,22 @@ internal sealed class PlanEffortTests
     {
         var row = new PlanRow("I1", "Work", "acme/repo") { Estimate = 40, Actual = 8,
             Closed = closed, CloseDate = closed ? Day : null,
-            Start = closed ? Day.AddDays(7) : null, End = closed ? Day.AddDays(11) : null };
+            // #236: a task with no dates of its own gets none, so the open case states its plan start and the
+            // scheduler lays its end out from there.
+            Start = closed ? Day.AddDays(7) : Day, End = closed ? Day.AddDays(11) : null };
         var d = Document(row);
         var columns = d.State.Settings.Columns.Add(new(PlanField.Start, "S", "Start", "DATE"));
         d = d with { State = d.State with { Settings = d.State.Settings with { Columns = mapped ? columns : [] },
             Rows = [row with { Title = "Updated" }] } };
         var scheduled = PlanOperations.Schedule(d, Day).Single();
         Assert.That(scheduled.Start.Value, Is.EqualTo(Day));
-        Assert.That(scheduled.End.Value, Is.EqualTo(closed ? Day : Day.AddDays(3)));
+        // #236 rule 2: an in-progress task consumes Actual + Remaining from its plan start, so 8h done plus
+        // 32h left at 8h a day reaches 10/9.
+        Assert.That(scheduled.End.Value, Is.EqualTo(closed ? Day : Day.AddDays(4)));
         Assert.That(scheduled.Remaining, Is.EqualTo(closed ? 0 : 32));
+        // #236: the open row keeps the plan start it already has, so its end is the automatic field here.
         var expected = mapped ? closed ? new[] { PlanField.Title, PlanField.Start, PlanField.End, PlanField.Remaining }
-            : new[] { PlanField.Title, PlanField.Start, PlanField.End } : new[] { PlanField.Title };
+            : new[] { PlanField.Title, PlanField.End } : new[] { PlanField.Title };
         var changes = PlanOperations.Changes(d, Day);
         Assert.That(changes.Fields["I1"], Is.EquivalentTo(expected));
         Assert.That(changes.RecalculatedFields.Select(c => c.Field), Is.EquivalentTo(expected.Where(f => f != PlanField.Title)));
@@ -282,7 +287,7 @@ internal sealed class PlanEffortTests
     [Test]
     public void ReopeningClearsCloseDateAndSchedulesAgain()
     {
-        var d = Document(new("I1", "Work", "acme/repo") { Closed = true, CloseDate = Day.AddDays(-3), Remaining = 16 });
+        var d = Document(new("I1", "Work", "acme/repo") { Closed = true, CloseDate = Day.AddDays(-3), Remaining = 16, Start = Day });
         var remote = d.Baseline with { Rows = [d.Baseline.Rows[0] with { Closed = false, CloseDate = null }] };
         var merged = PlanMerge.Merge(d, remote);
         Assert.That(merged.State.Rows[0].CloseDate, Is.Null);

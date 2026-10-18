@@ -7,16 +7,17 @@
     "nodeId": "P1"
   },
   "baseline": {
-    "milestones": [],
     "rows": [
       {
         "identity": "I1",
         "title": "[Verified] Sandbox scope and GitHub CLI validation",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Done",
         "phase": null,
-        "milestoneTitle": null,
         "closed": true,
         "closeDate": null,
         "assignees": [],
@@ -28,18 +29,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I2",
-        "title": "週次比較: API実装の残作業",
+        "title": "\u9031\u6B21\u6BD4\u8F03: API\u5B9F\u88C5\u306E\u6B8B\u4F5C\u696D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -55,18 +56,18 @@
         "start": "2026-10-13",
         "end": "2026-10-13",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I3",
-        "title": "週次比較: 後続の結合確認",
+        "title": "\u9031\u6B21\u6BD4\u8F03: \u5F8C\u7D9A\u306E\u7D50\u5408\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -82,18 +83,18 @@
         "start": "2026-10-14",
         "end": "2026-10-14",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I4",
-        "title": "週次比較: 完了済みの前提作業",
+        "title": "\u9031\u6B21\u6BD4\u8F03: \u5B8C\u4E86\u6E08\u307F\u306E\u524D\u63D0\u4F5C\u696D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Done",
         "phase": null,
-        "milestoneTitle": null,
         "closed": true,
         "closeDate": null,
         "assignees": [
@@ -107,18 +108,18 @@
         "start": "2026-10-05",
         "end": "2026-10-06",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I5",
-        "title": "週次比較: 合意済みレビュー枠",
+        "title": "\u9031\u6B21\u6BD4\u8F03: \u5408\u610F\u6E08\u307F\u30EC\u30D3\u30E5\u30FC\u67A0",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -132,18 +133,18 @@
         "start": "2026-10-07",
         "end": "2026-10-07",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I8",
-        "title": "課題一覧の作成",
+        "title": "\u8AB2\u984C\u4E00\u89A7\u306E\u4F5C\u6210",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -155,18 +156,18 @@
         "start": "2026-10-15",
         "end": "2026-10-15",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I7",
-        "title": "対象業務の確認",
+        "title": "\u5BFE\u8C61\u696D\u52D9\u306E\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -180,18 +181,18 @@
         "start": "2026-10-13",
         "end": "2026-10-14",
         "startNoEarlierThan": "2026-10-13",
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I6",
-        "title": "要件整理",
+        "title": "\u8981\u4EF6\u6574\u7406",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -203,18 +204,18 @@
         "start": "2026-10-13",
         "end": "2026-10-16",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I12",
-        "title": "設計と準備",
+        "title": "\u8A2D\u8A08\u3068\u6E96\u5099",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -226,18 +227,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I13",
-        "title": "計画案の作成",
+        "title": "\u8A08\u753B\u6848\u306E\u4F5C\u6210",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -249,18 +250,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I9",
-        "title": "優先度の合意",
+        "title": "\u512A\u5148\u5EA6\u306E\u5408\u610F",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -274,18 +275,18 @@
         "start": "2026-10-15",
         "end": "2026-10-15",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I11",
-        "title": "要件承認",
+        "title": "\u8981\u4EF6\u627F\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -299,18 +300,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I14",
-        "title": "レビュー準備",
+        "title": "\u30EC\u30D3\u30E5\u30FC\u6E96\u5099",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -322,18 +323,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I10",
-        "title": "受入条件の確認",
+        "title": "\u53D7\u5165\u6761\u4EF6\u306E\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -347,18 +348,18 @@
         "start": "2026-10-16",
         "end": "2026-10-16",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I15",
-        "title": "設計レビュー",
+        "title": "\u8A2D\u8A08\u30EC\u30D3\u30E5\u30FC",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -370,18 +371,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I16",
-        "title": "指摘の反映",
+        "title": "\u6307\u6458\u306E\u53CD\u6620",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -393,18 +394,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I18",
-        "title": "実装と検証",
+        "title": "\u5B9F\u88C5\u3068\u691C\u8A3C",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -416,18 +417,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I20",
-        "title": "検証データの準備",
+        "title": "\u691C\u8A3C\u30C7\u30FC\u30BF\u306E\u6E96\u5099",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -439,18 +440,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I17",
-        "title": "設計承認",
+        "title": "\u8A2D\u8A08\u627F\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -462,18 +463,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I19",
-        "title": "実装作業",
+        "title": "\u5B9F\u88C5\u4F5C\u696D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -485,18 +486,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I21",
-        "title": "結合確認",
+        "title": "\u7D50\u5408\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -508,18 +509,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I22",
-        "title": "修正と再確認",
+        "title": "\u4FEE\u6B63\u3068\u518D\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -531,18 +532,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I24",
-        "title": "運用引き継ぎ",
+        "title": "\u904B\u7528\u5F15\u304D\u7D99\u304E",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -554,18 +555,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I23",
-        "title": "実装完了",
+        "title": "\u5B9F\u88C5\u5B8C\u4E86",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -577,18 +578,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I25",
-        "title": "手順書の作成",
+        "title": "\u624B\u9806\u66F8\u306E\u4F5C\u6210",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -600,18 +601,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I28",
-        "title": "引き継ぎ確認",
+        "title": "\u5F15\u304D\u7D99\u304E\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -623,18 +624,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I27",
-        "title": "運用リハーサル",
+        "title": "\u904B\u7528\u30EA\u30CF\u30FC\u30B5\u30EB",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -646,18 +647,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I29",
-        "title": "運用開始",
+        "title": "\u904B\u7528\u958B\u59CB",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -669,18 +670,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I26",
-        "title": "担当者への説明",
+        "title": "\u62C5\u5F53\u8005\u3078\u306E\u8AAC\u660E",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -692,9 +693,7 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       }
     ],
     "columns": [
@@ -820,19 +819,20 @@
       },
       {
         "id": "F-StartNoEarlierThan",
-        "name": "開始日指定",
+        "name": "\u958B\u59CB\u65E5\u6307\u5B9A",
         "dataType": "DATE",
         "options": []
       },
       {
         "id": "F-Fixed",
-        "name": "日程固定",
+        "name": "\u65E5\u7A0B\u56FA\u5B9A",
         "dataType": "SINGLE_SELECT",
         "options": []
       }
     ],
-    "repositoryLabels": [],
-    "repositoryMilestones": []
+    "milestones": [],
+    "repositoryMilestones": [],
+    "repositoryLabels": []
   },
   "state": {
     "rows": [
@@ -840,10 +840,12 @@
         "identity": "I1",
         "title": "[Verified] Sandbox scope and GitHub CLI validation",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Done",
         "phase": null,
-        "milestoneTitle": null,
         "closed": true,
         "closeDate": null,
         "assignees": [],
@@ -855,18 +857,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I2",
-        "title": "週次比較: API実装の残作業",
+        "title": "\u9031\u6B21\u6BD4\u8F03: API\u5B9F\u88C5\u306E\u6B8B\u4F5C\u696D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -882,18 +884,18 @@
         "start": "2026-10-13",
         "end": "2026-10-13",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I3",
-        "title": "週次比較: 後続の結合確認",
+        "title": "\u9031\u6B21\u6BD4\u8F03: \u5F8C\u7D9A\u306E\u7D50\u5408\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -909,18 +911,18 @@
         "start": "2026-10-14",
         "end": "2026-10-14",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I4",
-        "title": "週次比較: 完了済みの前提作業",
+        "title": "\u9031\u6B21\u6BD4\u8F03: \u5B8C\u4E86\u6E08\u307F\u306E\u524D\u63D0\u4F5C\u696D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Done",
         "phase": null,
-        "milestoneTitle": null,
         "closed": true,
         "closeDate": null,
         "assignees": [
@@ -934,18 +936,18 @@
         "start": "2026-10-05",
         "end": "2026-10-06",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I5",
-        "title": "週次比較: 合意済みレビュー枠",
+        "title": "\u9031\u6B21\u6BD4\u8F03: \u5408\u610F\u6E08\u307F\u30EC\u30D3\u30E5\u30FC\u67A0",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": null,
         "status": "Backlog",
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -959,18 +961,18 @@
         "start": "2026-10-06",
         "end": "2026-10-06",
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I6",
-        "title": "要件整理",
+        "title": "\u8981\u4EF6\u6574\u7406",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -982,18 +984,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I7",
-        "title": "対象業務の確認",
+        "title": "\u5BFE\u8C61\u696D\u52D9\u306E\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1007,18 +1009,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": "2026-10-13",
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I8",
-        "title": "課題一覧の作成",
+        "title": "\u8AB2\u984C\u4E00\u89A7\u306E\u4F5C\u6210",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1032,18 +1034,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I9",
-        "title": "優先度の合意",
+        "title": "\u512A\u5148\u5EA6\u306E\u5408\u610F",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1059,18 +1061,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I10",
-        "title": "受入条件の確認",
+        "title": "\u53D7\u5165\u6761\u4EF6\u306E\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1086,18 +1088,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I11",
-        "title": "要件承認",
+        "title": "\u8981\u4EF6\u627F\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1113,18 +1115,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I12",
-        "title": "設計と準備",
+        "title": "\u8A2D\u8A08\u3068\u6E96\u5099",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1136,18 +1138,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I13",
-        "title": "計画案の作成",
+        "title": "\u8A08\u753B\u6848\u306E\u4F5C\u6210",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1163,18 +1165,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": "2026-10-19",
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I14",
-        "title": "レビュー準備",
+        "title": "\u30EC\u30D3\u30E5\u30FC\u6E96\u5099",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1188,18 +1190,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I15",
-        "title": "設計レビュー",
+        "title": "\u8A2D\u8A08\u30EC\u30D3\u30E5\u30FC",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1215,18 +1217,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I16",
-        "title": "指摘の反映",
+        "title": "\u6307\u6458\u306E\u53CD\u6620",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1242,18 +1244,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I17",
-        "title": "設計承認",
+        "title": "\u8A2D\u8A08\u627F\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1269,18 +1271,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I18",
-        "title": "実装と検証",
+        "title": "\u5B9F\u88C5\u3068\u691C\u8A3C",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1292,18 +1294,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I19",
-        "title": "実装作業",
+        "title": "\u5B9F\u88C5\u4F5C\u696D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1319,18 +1321,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": "2026-10-26",
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I20",
-        "title": "検証データの準備",
+        "title": "\u691C\u8A3C\u30C7\u30FC\u30BF\u306E\u6E96\u5099",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1344,18 +1346,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I21",
-        "title": "結合確認",
+        "title": "\u7D50\u5408\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1371,18 +1373,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I22",
-        "title": "修正と再確認",
+        "title": "\u4FEE\u6B63\u3068\u518D\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1398,18 +1400,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I23",
-        "title": "実装完了",
+        "title": "\u5B9F\u88C5\u5B8C\u4E86",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1425,18 +1427,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I24",
-        "title": "運用引き継ぎ",
+        "title": "\u904B\u7528\u5F15\u304D\u7D99\u304E",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1448,18 +1450,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I25",
-        "title": "手順書の作成",
+        "title": "\u624B\u9806\u66F8\u306E\u4F5C\u6210",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1475,18 +1477,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": "2026-11-02",
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I26",
-        "title": "担当者への説明",
+        "title": "\u62C5\u5F53\u8005\u3078\u306E\u8AAC\u660E",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1500,18 +1502,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I27",
-        "title": "運用リハーサル",
+        "title": "\u904B\u7528\u30EA\u30CF\u30FC\u30B5\u30EB",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1527,18 +1529,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I28",
-        "title": "引き継ぎ確認",
+        "title": "\u5F15\u304D\u7D99\u304E\u78BA\u8A8D",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1554,18 +1556,18 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       },
       {
         "identity": "I29",
-        "title": "運用開始",
+        "title": "\u904B\u7528\u958B\u59CB",
         "repository": "acme/repo",
+        "milestoneTitle": null,
+        "labels": [],
+        "extraValues": {},
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "phase": null,
-        "milestoneTitle": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1581,12 +1583,11 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false,
-        "labels": [],
-        "extraValues": {}
+        "fixed": false
       }
     ],
     "settings": {
+      "sheetColumns": [],
       "phaseMilestones": {},
       "columns": [
         {
@@ -1622,13 +1623,13 @@
         {
           "role": "StartNoEarlierThan",
           "fieldId": "F-StartNoEarlierThan",
-          "name": "開始日指定",
+          "name": "\u958B\u59CB\u65E5\u6307\u5B9A",
           "dataType": "DATE"
         },
         {
           "role": "Fixed",
           "fieldId": "F-Fixed",
-          "name": "日程固定",
+          "name": "\u65E5\u7A0B\u56FA\u5B9A",
           "dataType": "SINGLE_SELECT"
         }
       ],
@@ -1645,12 +1646,10 @@
       "projectStart": null,
       "projectEnd": null,
       "defaultRepository": "acme/repo",
-      "statusDate": null,
-      "sheetColumns": []
+      "statusDate": null
     }
   },
   "sync": {
-    "localOrderChoices": {},
     "unverified": [],
     "failures": [
       {
@@ -2687,36 +2686,37 @@
       }
     ],
     "nativeOrders": {
-      "I9": [],
-      "I18": [],
       "I16": [],
-      "I21": [],
-      "I19": [],
-      "I6": [],
-      "I20": [],
-      "I1": [],
-      "I15": [],
-      "I26": [],
-      "I10": [],
-      "I8": [],
       "I11": [],
-      "I24": [],
-      "I3": [],
-      "I2": [],
-      "I14": [],
-      "I17": [],
-      "I28": [],
-      "I5": [],
-      "I13": [],
+      "I6": [],
+      "I18": [],
+      "I19": [],
       "I7": [],
-      "I12": [],
-      "I27": [],
-      "I25": [],
-      "I29": [],
-      "I4": [],
       "I23": [],
-      "I22": []
+      "I21": [],
+      "I17": [],
+      "I12": [],
+      "I3": [],
+      "I28": [],
+      "I14": [],
+      "I8": [],
+      "I22": [],
+      "I27": [],
+      "I10": [],
+      "I13": [],
+      "I26": [],
+      "I29": [],
+      "I25": [],
+      "I5": [],
+      "I4": [],
+      "I2": [],
+      "I24": [],
+      "I9": [],
+      "I20": [],
+      "I15": [],
+      "I1": []
     },
+    "localOrderChoices": {},
     "creationStarts": [
       {
         "started": "2026-10-06T15:29:10.3946669+00:00",
@@ -2737,14 +2737,10 @@
       "U1": "U1"
     },
     "issueLinks": {},
+    "inaccessibleCount": 0,
     "draftCount": 0,
     "pullRequestCount": 0,
-    "inaccessibleCount": 0,
     "conflicts": [],
     "unavailable": []
-  },
-  "dates": {
-    "held": null,
-    "recalculated": null
   }
 }

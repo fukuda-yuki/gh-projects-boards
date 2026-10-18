@@ -157,7 +157,9 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day));
         Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I3" }));
         Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(new[] { "I3", "I2" }));
-        Assert.That(session.Schedule(day).Single(r => r.Input.Identity == "I1").End.Value, Is.Null);
+        // #236: the read adopted GitHub's start for I1, and the plan lays that task's end out from the work it
+        // holds; GitHub's other ends are kept as they are, so nothing is an unpublished difference here.
+        Assert.That(session.Schedule(day).Single(r => r.Input.Identity == "I1").Start.Value, Is.EqualTo(Today.AddDays(-3)));
         Assert.That(session.Changes(day).TaskCount, Is.Zero);
         Assert.That((await publisher.ResetAsync(session, day.AddDays(1))).Succeeded, Is.True);
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day.AddDays(1)));
@@ -247,13 +249,14 @@ internal sealed partial class PlanPublisherTests
         var published = await publisher.PublishAsync(session, Today.AddDays(10));
         Assert.That(published.Succeeded, Is.True, published.Error);
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(picked));
-        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Start, Is.EqualTo(picked));
+        // #236: a 基準日 change never moves a task date, and a task with no dates of its own stays without one.
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Start, Is.Null);
         var refreshed = await publisher.RefreshAsync(session, Today.AddDays(3));
         Assert.That(refreshed.Succeeded, Is.True, refreshed.Error);
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(Today.AddDays(3)));
         Assert.That(refreshed.Refresh!.PreviousStatusDate, Is.EqualTo(picked));
         Assert.That(refreshed.Refresh.StatusDate, Is.EqualTo(Today.AddDays(3)));
-        Assert.That(refreshed.Refresh.ChangedTasks, Is.EquivalentTo(new[] { "I1" }));
+        Assert.That(refreshed.Refresh.ChangedTasks, Is.Empty, "A refresh reads dates; it does not move them.");
         Assert.That((await publisher.RefreshAsync(session, Today.AddDays(3))).Refresh!.ChangedTasks, Is.Empty);
     }
 

@@ -27,10 +27,10 @@ internal sealed class PlanProgressDateTests
             Assignees = ["U1"], Estimate = 8, Remaining = 8, Actual = 0, Predecessors = ["A"], Start = End.AddDays(1), End = End.AddDays(1)
         };
         ImmutableArray<PlanRow> baseline = [parent, task, next];
+        // #236: after the first take-in the plan shows GitHub's dates as they are, so the state carries them too.
         return new(new(new("github.com", 42), "P1"), new(baseline, []),
-            new(baseline.Select(r => r with { Start = null, End = null }).ToImmutableArray(),
-                new() { StatusDate = Start, People = [new("U1", "alice", 100, null)],
-                    Columns = [new(PlanField.Start, "S", "Start", "DATE"), new(PlanField.End, "E", "End", "DATE")] }));
+            new(baseline, new() { StatusDate = Start, People = [new("U1", "alice", 100, null)],
+                Columns = [new(PlanField.Start, "S", "Start", "DATE"), new(PlanField.End, "E", "End", "DATE")] }));
     }
     private static PlanRemoteSnapshot Remote(PlanBaseline baseline) => new(baseline,
         baseline.Rows.ToImmutableDictionary(r => r.Identity, r => "item-" + r.Identity), [], 0, 0);
@@ -65,7 +65,8 @@ internal sealed class PlanProgressDateTests
         if (local)
         {
             var undone = session.Document.State.Rows.Single(r => r.Identity == "A");
-            Assert.That((undone.Actual, undone.Remaining, undone.Start, undone.End), Is.EqualTo((0m, 16m, (DateOnly?)null, (DateOnly?)null)));
+            Assert.That((undone.Actual, undone.Remaining, undone.Start, undone.End), Is.EqualTo((0m, 16m, (DateOnly?)Start, (DateOnly?)End)),
+                "Undo restores the plan dates the read took in, not an empty pair (#236).");
         }
         else
         {
@@ -90,10 +91,11 @@ internal sealed class PlanProgressDateTests
             var schedule = session.Schedule(Status).ToDictionary(t => t.Input.Identity);
             // The plan end is the day Actual + Remaining is used up from the plan start, and a closed task
             // ends on its close date (#236); B has no dates of its own, so the 基準日 places it.
-            var plannedEnd = zeroOpen ? Start : End;
+            // A local edit reschedules the end from the work (#236); a refresh adopts the published dates.
+            var plannedEnd = local && zeroOpen ? Start : End;
             Assert.That((schedule["A"].Start.Value, schedule["A"].End.Value), Is.EqualTo((Start, plannedEnd)));
             Assert.That((schedule["P"].Start.Value, schedule["P"].End.Value), Is.EqualTo((Start, plannedEnd)));
-            Assert.That(schedule["B"].Start.Value, Is.EqualTo(Status));
+            Assert.That(schedule["B"].Start.Value, Is.EqualTo(End.AddDays(1)), "A's successor keeps its own plan start.");
             Assert.That(schedule["A"].Warnings, Does.Not.Contain("完了タスクの終了日なし").And.Not.Contain("進行中タスクの開始日なし"));
             var fields = session.Changes(Status).Fields.GetValueOrDefault("A");
             Assert.That(fields.IsDefaultOrEmpty || !fields.Contains(PlanField.Start), Is.True,
@@ -108,8 +110,9 @@ internal sealed class PlanProgressDateTests
     {
         var initial = Initial();
         var baseline = Progress(initial, complete ? "complete" : "in-progress");
+        // The PMO cleared A's dates before this read; a refresh adopts the progress around the clear.
         var document = initial with { Baseline = baseline, State = initial.State with {
-            Rows = initial.State.Rows.Select(r => r.Identity == "A" ? r with { Actual = 8, Remaining = complete ? 0 : 8 } : r).ToImmutableArray()
+            Rows = initial.State.Rows.Select(r => r.Identity == "A" ? r with { Actual = 8, Remaining = complete ? 0 : 8, Start = null, End = null } : r).ToImmutableArray()
         } };
         var remote = baseline with { Rows = baseline.Rows.Select(r => r.Identity == "A" ? r with { Actual = 9 } : r).ToImmutableArray() };
         var result = PlanMerge.Merge(document, remote).State.Rows.Single(r => r.Identity == "A");
@@ -151,8 +154,11 @@ internal sealed class PlanProgressDateTests
     public void RefreshDoesNotResolveAnExistingDateConflictWhenProgressArrives()
     {
         var initial = Initial();
-        var conflict = new PlanConflict("A", PlanField.Start, PlanValues.Get(initial.Baseline.Rows[1], PlanField.Start), "null", "\"2026-10-07\"");
-        var document = initial with { Sync = initial.Sync with { Conflicts = [conflict] } };
+        // The PMO cleared A's start locally and GitHub now carries a date: the refresh keeps the clear and the
+        // conflict, and adopts the progress around it (#236 annexes no date the PMO did not set).
+        var document = initial with {
+            State = initial.State with { Rows = initial.State.Rows.Select(r => r.Identity == "A" ? r with { Start = null } : r).ToImmutableArray() },
+            Sync = initial.Sync with { Conflicts = [new PlanConflict("A", PlanField.Start, PlanValues.Get(initial.Baseline.Rows[1], PlanField.Start), "null", "\"2026-10-07\"")] } };
         var merged = PlanMerge.Merge(document, Progress(initial, "complete"));
         Assert.That(merged.State.Rows.Single(r => r.Identity == "A").Start, Is.Null);
         Assert.That(merged.Sync.Conflicts.Single(c => c.Field == PlanField.Start).Local, Is.EqualTo("null"));

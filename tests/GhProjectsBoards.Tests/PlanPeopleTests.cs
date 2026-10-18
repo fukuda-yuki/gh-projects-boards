@@ -7,9 +7,23 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanPeopleTests
 {
     private static readonly DateOnly Day = new(2026, 10, 5);
-    private static PlanRow Row(string id, decimal? remaining = 4) => new(id, id, "acme/repo") { Assignees = ["U1"], Estimate = 4, Actual = 0, Remaining = remaining };
-    private static PlanDocument Document(ImmutableArray<PlanRow> rows, ProjectPlanSettings? settings = null) =>
-        new(new(new("github.com", 42), "P1"), new(rows, []), new(rows, settings ?? new() { StatusDate = Day, People = [new("U1", "alice", 50, 80)] }));
+    // Dates are plan values now (#236): a task with no dates of its own gets none, so a load fixture states its
+    // start and lets the scheduler lay the end out, as it always did.
+    private static PlanRow Row(string id, decimal? remaining = 4) => new(id, id, "acme/repo") { Assignees = ["U1"], Estimate = 4, Actual = 0, Remaining = remaining, Start = Day };
+    // Dates are plan values now (#236): a read shows the dates the plan holds, so the fixture lays the plan out
+    // once as a PMO edit would and stores the result, instead of expecting a read to place the work.
+    private static PlanDocument Document(ImmutableArray<PlanRow> rows, ProjectPlanSettings? settings = null)
+    {
+        var chosen = settings ?? new() { StatusDate = Day, People = [new("U1", "alice", 50, 80)] };
+        var schedule = PlanScheduler.Calculate(rows.Select((r, i) => PlanOperations.TaskInput(r, i)).ToArray(),
+            new PlanSettings { StatusDate = chosen.StatusDate, ProjectStart = chosen.ProjectStart,
+                Calendar = new() { CompanyDaysOff = chosen.CompanyDaysOff.ToHashSet(), ImportedHolidays = chosen.ImportedHolidays?.ToPreset() },
+                People = chosen.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() },
+            Day, rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal));
+        var byId = schedule.ToDictionary(t => t.Input.Identity);
+        var placed = rows.Select(r => r with { Start = byId[r.Identity].Start.Value, End = byId[r.Identity].End.Value }).ToImmutableArray();
+        return new(new(new("github.com", 42), "P1"), new(placed, []), new(placed, chosen));
+    }
 
     [TestCase(80, 56, 40, 96, -16)]
     [TestCase(100, 0, 0, 0, 100)]

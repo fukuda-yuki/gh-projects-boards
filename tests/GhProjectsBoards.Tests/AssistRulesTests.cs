@@ -159,12 +159,13 @@ internal sealed class AssistRulesTests
             "The reported count is exactly the schedule effect the card lists.");
     }
     [Test]
-    public void ProposalShowsScheduledCurrentDateRatherThanTheOldPublishedInput()
+    public void ProposalShowsThePlanValueRatherThanTheOldPublishedInput()
     {
         var d = Document();
         var proposal = AssistProposal.Create(d, 0, Today, [new("B", PlanField.Start, JsonSerializer.SerializeToElement("2026-10-26"))]).Proposal!;
-        // B has no start of its own, so the plan places it at the 基準日: that is the current value (#236).
-        Assert.That(proposal.Changes.Single().Current, Is.EqualTo("2026-10-15"));
+        // #236 rule 5: B has no dates of its own and no edit has placed it, so the plan shows none — the
+        // proposal's current value is that plan value, not an invented date.
+        Assert.That(proposal.Changes.Single().Current, Is.Empty);
     }
     [Test]
     public void TypedProposalAcceptsTheSameWholeOperationAsSheetInputIncludingDateAndAssigneeChanges()

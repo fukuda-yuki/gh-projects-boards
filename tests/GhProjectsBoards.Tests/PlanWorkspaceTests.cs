@@ -186,7 +186,7 @@ internal sealed class PlanWorkspaceTests
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
             var start = new DateOnly(2026, 10, 5);
             FakePlanEditor.Save(root, new([
-                new(new("I1", "Summary", "acme/repo") { Start = null, End = start.AddDays(1) }, "", true),
+                new(new("I1", "Summary", "acme/repo") { Start = start, End = start.AddDays(1) }, "", true),
                 new(new("I2", "Task", "acme/repo") { Parent = "I1", Start = start, End = start.AddDays(1), Remaining = 16 }, "", true)
             ], 3));
             var store = new PlanStore(root);
