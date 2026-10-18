@@ -81,21 +81,24 @@ internal sealed class PlanProgressDateTests
 
         void AssertRetained()
         {
-            var complete = progress == "closed";
+            var closed = progress == "closed";
             var zeroOpen = progress == "complete";
             var row = session!.Document.State.Rows.Single(r => r.Identity == "A");
-            Assert.That(row.Start, Is.EqualTo(Start));
-            Assert.That(row.End, Is.EqualTo(complete ? End : (DateOnly?)null));
+            Assert.That(row.Start, Is.EqualTo(Start), "Progress keeps the start the plan already had.");
             Assert.That(row.Fixed, Is.False);
             Assert.That(row.StartNoEarlierThan, Is.Null);
             var schedule = session.Schedule(Status).ToDictionary(t => t.Input.Identity);
-            Assert.That((schedule["A"].Start.Value, schedule["A"].End.Value), Is.EqualTo((zeroOpen ? Status : Start, complete ? End : Status)));
-            Assert.That((schedule["P"].Start.Value, schedule["P"].End.Value), Is.EqualTo((zeroOpen ? Status : Start, complete ? End : Status)));
-            Assert.That(schedule["B"].Start.Value, Is.EqualTo(complete || zeroOpen ? Status : Status.AddDays(1)));
+            // The plan end is the day Actual + Remaining is used up from the plan start, and a closed task
+            // ends on its close date (#236); B has no dates of its own, so the 基準日 places it.
+            var plannedEnd = zeroOpen ? Start : End;
+            Assert.That((schedule["A"].Start.Value, schedule["A"].End.Value), Is.EqualTo((Start, plannedEnd)));
+            Assert.That((schedule["P"].Start.Value, schedule["P"].End.Value), Is.EqualTo((Start, plannedEnd)));
+            Assert.That(schedule["B"].Start.Value, Is.EqualTo(Status));
             Assert.That(schedule["A"].Warnings, Does.Not.Contain("完了タスクの終了日なし").And.Not.Contain("進行中タスクの開始日なし"));
             var fields = session.Changes(Status).Fields.GetValueOrDefault("A");
-            Assert.That(fields.IsDefaultOrEmpty || !fields.Contains(PlanField.Start), Is.EqualTo(!zeroOpen));
-            if (complete) Assert.That(fields.IsDefaultOrEmpty || !fields.Contains(PlanField.End), Is.True);
+            Assert.That(fields.IsDefaultOrEmpty || !fields.Contains(PlanField.Start), Is.True,
+                "A keeps the published start, so it is not an unpublished difference.");
+            if (closed) Assert.That(fields.IsDefaultOrEmpty || !fields.Contains(PlanField.End), Is.True);
         }
     }
 

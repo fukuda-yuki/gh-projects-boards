@@ -120,7 +120,8 @@ internal sealed class PlanLatenessTests
             Assert.That(late.CausePredecessorRowId, Is.EqualTo(1));
             Assert.That(late.IsCause, Is.False, "A task late only because a predecessor moved is not a cause.");
             Assert.That(result.CauseTasks, Is.EqualTo(1), "Only the predecessor, overdue on its own dates.");
-            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +1 日（先行 1 の遅れによる）"));
+            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +2 日（先行 1 の遅れによる）"),
+                "The plan end is the successor's own day; the forecast reaches 10/9 from the predecessor's forecast end.");
         });
     }
 
@@ -340,19 +341,21 @@ internal sealed class PlanLatenessTests
     [Test]
     public void PredecessorEstimateEdit_DateDifferencesAreRecalculatedAndEffortIsEntered()
     {
+        // #236: an edit reschedules the edited task, its transitive successors and the roll-ups. Raising the
+        // predecessor's estimate to 32h pushes its end to 10/8 and the successor's start with it.
         var document = Document(Row("before") with { Estimate = 8, Start = Status, End = Status },
-            Row() with { Estimate = 8, Start = Status.AddDays(1), End = Status.AddDays(1), Predecessors = ["before"] });
+            Row() with { Estimate = 8, Start = Status.AddDays(2), End = Status.AddDays(2), Predecessors = ["before"] });
         Assert.That(PlanOperations.Changes(document, Status).TaskCount, Is.Zero);
         var state = PlanOperations.Apply(document, new EditPlanCells(PlanOperationKind.Cell,
-            [new("before", PlanField.Estimate, 16m)]), Status).State;
+            [new("before", PlanField.Estimate, 32m)]), Status).State;
+        Assert.That(PlanOperations.Schedule(document with { State = state }, Status)
+            .Single(t => t.Input.Identity == "task").Start.Value, Is.EqualTo(Status.AddDays(3)));
 
         var result = PlanOperations.Changes(document with { State = state }, Status);
 
         Assert.That(result.InputKind("task", PlanField.Start), Is.EqualTo(PlanUnpublishedInputKind.Recalculated));
-        Assert.That(result.InputKind("task", PlanField.End), Is.EqualTo(PlanUnpublishedInputKind.Recalculated));
         Assert.That(result.InputKind("before", PlanField.End), Is.EqualTo(PlanUnpublishedInputKind.Recalculated));
         Assert.That(result.InputKind("before", PlanField.Estimate), Is.EqualTo(PlanUnpublishedInputKind.Entered));
-        Assert.That(result.TaskCount, Is.EqualTo(2));
         Assert.That(result.Fields["task"], Is.EquivalentTo(new[] { PlanField.Start, PlanField.End }));
     }
 
@@ -363,7 +366,7 @@ internal sealed class PlanLatenessTests
         var document = Document(Row("before") with { Estimate = 8, Start = Status, End = Status },
             Row() with { Estimate = 8, Start = Status.AddDays(1), End = Status.AddDays(1), Predecessors = ["before"] });
         var state = PlanOperations.Apply(document, new EditPlanCells(PlanOperationKind.Cell,
-            [new("task", PlanField.Start, Status.AddDays(2)), new("before", PlanField.Estimate, predecessorDelayed ? 24m : 8m)]), Status).State;
+            [new("task", PlanField.Start, Status.AddDays(2)), new("before", PlanField.Estimate, predecessorDelayed ? 32m : 8m)]), Status).State;
         var updated = document with { State = state };
         var scheduled = PlanOperations.Schedule(updated, Status).Single(row => row.Input.Identity == "task");
         Assert.That(scheduled.Start.Value, Is.EqualTo(Status.AddDays(predecessorDelayed ? 3 : 2)));

@@ -259,8 +259,13 @@ internal static class PlanOperations
             default: throw new ArgumentException("未対応の計画操作です。");
         }
         state = state with { Rows = rows.ToImmutableArray() };
-        state = Reschedule(d, state, rescheduled, rescheduleAll, today);
-        try { ValidateDocument(d with { State = state }, today); }
+        try
+        {
+            // Reschedule runs the scheduler, which raises a cycle itself, so an indent that creates one must
+            // be translated here and not only in ValidateDocument (#241).
+            state = Reschedule(d, state, rescheduled, rescheduleAll, today);
+            ValidateDocument(d with { State = state }, today);
+        }
         catch (PlanCycleException cycle) when (indentRefusal is not null)
         {
             // The scheduler reports a cycle by identity; a refused indent must name the link to remove (#241).
@@ -289,9 +294,12 @@ internal static class PlanOperations
                 People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today, affected);
         var byId = scheduled.ToDictionary(t => t.Input.Identity);
         // Only the end is written: the plan start stays the live value of the row's own start, 開始日指定
-        // and predecessor finishes, so a typed start keeps its edit form and its classification.
-        return state with { Rows = state.Rows.Select(r => byId.TryGetValue(r.Identity, out var task) && affected.Contains(r.Identity)
+        // and predecessor finishes, so a typed start keeps its edit form and its classification. A task the
+        // scheduler laid no work out for keeps its own dates, so an explicit clear is never resurrected.
+        return state with { Rows = state.Rows.Select(r => byId.TryGetValue(r.Identity, out var task) && affected.Contains(r.Identity) && LaidOut(task)
             ? r with { End = task.End.Value } : r).ToImmutableArray() };
+        static bool LaidOut(ScheduledTask task) => !task.Input.IsComplete && !task.Input.Fixed
+            && (task.Input.EffectiveRemaining is > 0 || task.Input.Actual is > 0);
     }
     // The edited rows, every row that depends on them through a predecessor link or a roll-up, and the
     // summaries above them. Everything else keeps its plan dates.

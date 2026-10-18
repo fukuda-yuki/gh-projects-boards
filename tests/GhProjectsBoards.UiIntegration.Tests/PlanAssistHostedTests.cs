@@ -266,26 +266,25 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("Assist")]
-    public async Task AssistCardStatesTheHeldDateRecalculationApartFromItsOwnEffectAndMatchesTheNoticeAfterApplying()
+    public async Task AssistCardStatesItsOwnScheduleEffectAndApplyingATitleMoveShowsNoRecalculation()
     {
         var runtime = await EnableAssist();
-        Assert.That(workspace.Session!.Document.Dates.Held, Is.Not.Null, "The first take-in holds GitHub dates.");
+        // The first take-in takes GitHub's dates as the plan dates; there is no hold to release (#236).
+        var readDay = workspace.Session!.Document.State.Settings.StatusDate!.Value;
+        Assert.That(workspace.Session.Schedule(readDay).All(t => t.Start.Value == t.Input.Start && t.End.Value == t.Input.End), Is.True);
         await AskAssist();
-        var notice = ""; var effect = "";
+        var effect = "";
         await Ui.Run(() => {
-            notice = Ui.Find<TextBlock>("AssistRecalculation" + runtime.ProposalId).Text;
+            Assert.That(Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.StartsWith("適用すると、この変更で")), Is.False,
+                "A title proposal moves no dates, so the card states no moved-task count.");
             effect = Ui.Tree(Ui.Find<Border>("AssistProposal" + runtime.ProposalId)).OfType<TextBlock>().Single(t => t.Text.StartsWith("日程が変わるタスク")).Text;
         });
         Assert.That(effect, Is.EqualTo("日程が変わるタスク 0 件"), "A title proposal moves no dates of its own.");
         await Ui.Run(() => Ui.Click("AssistApply" + runtime.ProposalId));
-        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult") is { IsOpen: true, Title: "日程を再計算しました" });
-        await Ui.Run(() => {
-            var message = Ui.Find<InfoBar>("PlanRefreshResult").Message;
-            var day = message["基準日 ".Length..message.IndexOf(" で", StringComparison.Ordinal)];
-            var count = message[(message.LastIndexOf(' ') + 1)..];
-            Assert.That(count, Is.Not.EqualTo("0"));
-            Assert.That(notice, Is.EqualTo($"適用すると、計画全体を基準日 {day} で再計算します（この変更とは別に {count} 件の日付が変わります）。"));
-        });
+        await Ui.Until(() => workspace.Session.Document.State.Rows[0].Title == "提案したタイトル");
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False,
+            "An ordinary edit publishes unpublished dates instead of a whole-plan recalculation (#236)."));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

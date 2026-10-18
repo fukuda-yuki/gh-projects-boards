@@ -24,8 +24,9 @@ internal sealed class PlanEffortTests
         Assert.That(tasks[0].Remaining, Is.Zero);
         Assert.That(tasks[0].End.Value, Is.EqualTo(close));
         Assert.That(tasks[1].Warnings, Is.Empty);
-        Assert.That(tasks[1].Start.Value, Is.EqualTo(close.AddDays(1)));
-        Assert.That(tasks[1].End.Value, Is.EqualTo(close.AddDays(1)));
+        // The closed predecessor's end is its close day, and a successor may start on that day (#236).
+        Assert.That(tasks[1].Start.Value, Is.EqualTo(close));
+        Assert.That(tasks[1].End.Value, Is.EqualTo(close));
         var review = PlanPublishPlan.Build(d, Remote(d), Day, Guid.NewGuid().ToString("N"));
         Assert.That(review.Changes.Select(c => c.Field), Is.EquivalentTo(mapped
             ? new[] { PlanField.End, PlanField.Remaining } : new[] { PlanField.End }));
@@ -131,12 +132,14 @@ internal sealed class PlanEffortTests
         Assert.That(row.IsZeroRemainingOpen, Is.EqualTo(zero));
     }
     [Test]
-    public void ReestimatedOverrunSchedulesRemainingAtPersonsRateAfterStatusDate()
+    public void ReestimatedOverrunConsumesActualAndRemainingAtThePersonsRateFromItsStart()
     {
-        var result = PlanScheduler.Calculate([new("I1", 1) { Estimate = 40, Actual = 56, Remaining = 8,
-            Start = Day.AddDays(-7), Assignees = ["U1"] }], new() { People = [new("U1", 50)] }, Day).Single();
-        Assert.That(result.Start.Value, Is.EqualTo(Day.AddDays(-7)));
-        Assert.That(result.End.Value, Is.EqualTo(Day.AddDays(1)));
+        // #236 rule 2: an in-progress task keeps its start and its end is the day Actual + Remaining is used
+        // up from there. At 50% (4h a day) 8h done + 8h left reaches 10/8, and the load carries only the 8h left.
+        var result = PlanScheduler.Calculate([new("I1", 1) { Estimate = 40, Actual = 8, Remaining = 8,
+            Start = Day, Assignees = ["U1"] }], new() { People = [new("U1", 50)] }, Day).Single();
+        Assert.That(result.Start.Value, Is.EqualTo(Day));
+        Assert.That(result.End.Value, Is.EqualTo(Day.AddDays(3)));
         Assert.That(result.PlannedHours!.Values.Sum(), Is.EqualTo(8));
     }
     private static PlanDocument Document(PlanRow row)

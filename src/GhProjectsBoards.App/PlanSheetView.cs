@@ -45,7 +45,7 @@ internal sealed partial class PlanSheetView : Grid
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
     private PlanDocument? presentedDocument;
     private DateOnly presentedToday;
-    private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0);
+    private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0, 0, 0);
     internal int OverdueTasks => lateness.OverdueTasks;
     internal int LaterTasks => lateness.LaterTasks;
     private Dictionary<string, string> peopleNames = new();
@@ -587,7 +587,7 @@ internal sealed partial class PlanSheetView : Grid
             var nextNonWorkingDates = calendar.Holidays.Dates.Select(d => d.Date).Concat(calendar.ImportedHolidays?.Dates.Select(d => d.Date) ?? []).Concat(calendar.CompanyDaysOff).ToHashSet();
             if (!nonWorkingDates.SetEquals(nextNonWorkingDates)) timelineKey = null;
             nonWorkingDates = nextNonWorkingDates;
-            lateness = PlanLateness.Classify(scheduled, document.Baseline, calendar, document.State.Settings.StatusDate ?? today);
+            lateness = PlanLateness.Classify(scheduled, calendar, document.State.Settings.StatusDate ?? today);
             Unpublished = PlanOperations.Changes(document, today, scheduled);
             SummaryIds = Rows.Values.Where(r => r.Parent is not null && Rows.ContainsKey(r.Parent)).Select(r => r.Parent!).ToHashSet();
             folded.IntersectWith(SummaryIds);

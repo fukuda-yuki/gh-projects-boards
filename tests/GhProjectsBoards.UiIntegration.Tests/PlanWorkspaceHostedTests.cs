@@ -152,14 +152,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Count, Is.EqualTo(4));
-            Assert.That(workspace.Session!.Document.Dates.Held, Is.Not.Null);
             Ui.Click("PlanRedo");
         });
         await Ui.Idle();
-        await Ui.Run(() => {
-            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
-            Assert.That(workspace.Session!.Document.Dates.Held, Is.Null);
-        });
+        await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

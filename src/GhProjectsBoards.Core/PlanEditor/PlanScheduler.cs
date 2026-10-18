@@ -71,7 +71,9 @@ internal static class PlanScheduler
         public DateOnly Date => DateOnly.FromDayNumber(Day);
         public static Point Morning(DateOnly day) => new(day.DayNumber, 9);
     }
-    private sealed record Result(ScheduledTask Row, Point? Start, Point? End, bool Valid = true);
+    // EndDayOnly marks an end that is a stored plan day rather than an endpoint this calculation derived.
+    // A successor may start on that day; an exact internal finish still decides its interval.
+    private sealed record Result(ScheduledTask Row, Point? Start, Point? End, bool Valid = true, bool EndDayOnly = false);
 
     private sealed class Calculation
     {
@@ -212,7 +214,8 @@ internal static class PlanScheduler
                         DateOrigin.Calculated, DateOrigin.Calculated, "子タスクの集計", warnings, true,
                         values.Sum(v => v.Row.Estimate ?? 0), values.Sum(v => v.Row.Remaining ?? 0), values.Sum(v => v.Row.Actual ?? 0));
                     // A known sum travels with the number of leaf tasks it leaves out, so it is never read as complete.
-                    result = result with { Row = result.Row with {
+                    // A summary's rolled-up end is a plan day too, so its successors may start on it.
+                    result = result with { EndDayOnly = true, Row = result.Row with {
                         MissingEstimates = values.Sum(v => v.Row.IsSummary ? v.Row.MissingEstimates : v.Row.Estimate is null ? 1 : 0),
                         MissingRemaining = values.Sum(v => v.Row.IsSummary ? v.Row.MissingRemaining : v.Row.Remaining is null ? 1 : 0) } };
                 }
@@ -292,9 +295,10 @@ internal static class PlanScheduler
             if (settings.ProjectStart is { } project) Consider(Point.Morning(project), "プロジェクト開始日");
             if (task.StartNoEarlierThan is { } specified)
                 Consider(Point.Morning(specified), "開始日指定 " + specified.ToString("M/d", CultureInfo.InvariantCulture));
-            // Reverse row order lets the smallest row ID win equal predecessor endpoints.
+            // Reverse row order lets the smallest row ID win equal predecessor endpoints. A predecessor whose
+            // end is a stored plan day lets its successor start on that day, so a read leaves the pair alone.
             foreach (var (before, result) in dependencies.AsEnumerable().Reverse())
-                if (result.End is { } finish) Consider(finish, $"{before.RowId} の終了後");
+                if (result.End is { } finish) Consider(result.EndDayOnly ? Point.Morning(finish.Date) : finish, $"{before.RowId} の終了後");
             Point? start = task.Start is { } s ? Point.Morning(s) : null;
             Point? end = task.End is { } e ? new Point(e.DayNumber, 18) : null;
             var complete = task.IsComplete;
@@ -311,7 +315,7 @@ internal static class PlanScheduler
                     WarnConflict(start);
                 }
                 return Create(task, start, end, task.KeptDates.Start != task.Start ? DateOrigin.Calculated : DateOrigin.Kept, complete ? DateOrigin.Calculated : DateOrigin.Kept,
-                    complete ? "完了" : task.Fixed ? "日程固定" : "工数なし", warnings);
+                    complete ? "完了" : task.Fixed ? "日程固定" : "工数なし", warnings) with { EndDayOnly = true };
             }
             var work = task.EffectiveRemaining!.Value;
             var person = task.Assignees.Distinct(StringComparer.Ordinal).ToArray() is [var single] && people.TryGetValue(single, out var p) ? p : null;
@@ -344,9 +348,10 @@ internal static class PlanScheduler
                 planned = work;
             }
             remainingStart = Normalize(remainingStart);
+            var endDayOnly = false;
             if (plannedEnd is { } kept && start is { } startPoint && startPoint.Day > kept.Day)
                 plannedEnd = null; // the start moved past it, so the successor follows its predecessor
-            if (plannedEnd is not null) end = plannedEnd;
+            if (plannedEnd is not null) { end = plannedEnd; endDayOnly = true; }
             else end = AddWork(remainingStart, planned, rate, out _);
             // People load follows the forecast: what is left is placed no earlier than the 基準日.
             var loadFloor = Normalize(start is { } current && current.CompareTo(Point.Morning(statusDate)) > 0 ? current : Point.Morning(statusDate));
@@ -354,7 +359,7 @@ internal static class PlanScheduler
             if (work > 0) AddWork(loadFloor, work, rate, out daily);
             else daily = new Dictionary<DateOnly, decimal> { [loadFloor.Date] = 0 };
             var scheduled = Create(task, start, end, startOrigin, DateOrigin.Calculated, reason, warnings);
-            return scheduled with { Row = scheduled.Row with { PlannedHours = daily } };
+            return scheduled with { EndDayOnly = endDayOnly, Row = scheduled.Row with { PlannedHours = daily } };
 
             void WarnConflict(Point? value)
             {

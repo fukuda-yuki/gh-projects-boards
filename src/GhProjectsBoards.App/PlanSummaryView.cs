@@ -363,14 +363,14 @@ internal sealed class PlanSummaryView : UserControl
         for (var i = 0; i < labels.Length; i++) Cell(header, TableText(labels[i], "SummaryTaskHeader_" + i, numeric: i is >= 2 and <= 6), i);
         table.Children.Add(header);
         var calendar = new PlanCalendar { CompanyDaysOff = document!.State.Settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset() };
-        var lateness = PlanLateness.Classify(schedule.Values.ToArray(), document.Baseline, calendar, day);
+        var lateness = PlanLateness.Classify(schedule.Values.ToArray(), calendar, day);
         var rowIds = document!.State.Rows.Select((row, index) => (row.Identity, Id: index + 1)).ToDictionary(r => r.Identity, r => r.Id);
         var publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
         var selectedRows = document.State.Rows.Where(r => ids.Contains(r.Identity)).ToArray();
         foreach (var row in selectedRows.Take(200)) {
             var task = schedule[row.Identity]; var states = new List<string>();
             var late = lateness.Tasks[row.Identity];
-            if (late.MissedPublishedDate is { } missed) {
+            if (late.MissedDate is { } missed) {
                 var remainingText = task.Remaining is { } work ? $"（見込み残存工数 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
                 states.Add(late.OverdueKind == PlanOverdueKind.Finish
                     ? $"期限超過: 完了予定 {missed.ToString("M/d", CultureInfo.InvariantCulture)} を過ぎて未完了{remainingText}"
