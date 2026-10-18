@@ -118,8 +118,9 @@ internal static class PlanMerge
             // Closed, Cancelled and CloseDate are GitHub-owned unless the PMO has a pending state change
             // (#231): the read must confirm that write instead of discarding it before it is published.
             var pendingState = l.Closed != b.Closed || l.Cancelled != b.Cancelled;
-            var merged = l with { CloseDate = r.Closed ? r.CloseDate : l.CloseDate };
-            if (!pendingState) merged = merged with { Closed = r.Closed, Cancelled = r.Cancelled };
+            var merged = l;
+            if (!pendingState) merged = merged with { Closed = r.Closed, Cancelled = r.Cancelled, CloseDate = r.Closed ? r.CloseDate : null };
+            else if (l.Closed && r.Closed) merged = merged with { CloseDate = r.CloseDate };
             // Date adoption needs the merged progress state, regardless of enum declaration order.
             foreach (var field in PlanValues.Fields(b, l, r).OrderBy(field => field is PlanField.Start or PlanField.End))
             {
