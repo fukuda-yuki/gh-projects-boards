@@ -45,6 +45,10 @@ internal static class PlanSnapshot
                 MilestoneTitle = issue.Milestone.Value?.Title,
                 Labels = (issue.Labels.Value ?? []).Select(l => l.Name).Order(StringComparer.Ordinal).ToImmutableArray(),
                 Closed = issue.State.Value == IssueState.Closed,
+                // #231: NOT_PLANNED and DUPLICATE read as 中止; COMPLETED (or a closed Issue with no
+                // reason) reads as 完了.
+                Cancelled = issue.State.Value == IssueState.Closed
+                    && issue.StateReason.Value is IssueStateReason.NotPlanned or IssueStateReason.Duplicate,
                 CloseDate = issue.State.Value == IssueState.Closed && issue.ClosedAt.Value is { } closedAt
                     ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(closedAt, timeZone ?? TimeZoneInfo.Local).DateTime) : null,
                 Assignees = native.Assignees.Select(x => x.Id.NodeId).Order(StringComparer.Ordinal).ToImmutableArray(),

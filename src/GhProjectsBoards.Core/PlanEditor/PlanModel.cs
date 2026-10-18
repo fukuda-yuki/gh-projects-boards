@@ -24,6 +24,11 @@ internal sealed record PlanTask(string Identity, int RowId)
     public DateOnly? GitHubEnd { get; init; }
     public DateOnly? StartNoEarlierThan { get; init; }
     public bool IsComplete => Closed;
+    // #231: 中止 (closed as not planned) and この版から外す (pending removal) leave the schedule, the
+    // totals and the load, and stop constraining their successors.
+    public bool Cancelled { get; init; }
+    public bool Removed { get; init; }
+    public bool Inactive => Cancelled || Removed;
     public decimal? EffectiveRemaining => Closed ? 0 : Remaining ?? (Estimate is >= 0 && Actual is null or >= 0 ? Math.Max(Estimate.Value - (Actual ?? 0), 0) : null);
     public (DateOnly? Start, DateOnly? End) KeptDates => Closed && CloseDate is { } close
         ? (Start > close ? close : Start, close) : (Start, End);

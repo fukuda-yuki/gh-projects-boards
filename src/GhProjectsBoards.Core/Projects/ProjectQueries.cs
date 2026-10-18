@@ -57,7 +57,7 @@ internal static class ProjectQueries
                 __typename
                 ... on Node { id }
                 ... on Issue {
-                  labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
+                  labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
                   repository { id nameWithOwner owner { id } }
                 }
               }

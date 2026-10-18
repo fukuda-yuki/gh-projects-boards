@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Collections.Immutable;
 namespace GhProjectsBoards.Core.PlanEditor;
-internal enum PlanPublishStage { Create, Add, Fields, Hierarchy, Dependencies, Order }
+internal enum PlanPublishStage { Create, Add, Fields, State, Hierarchy, Dependencies, Order }
 internal enum PlanWriteState { Pending, Dispatched, Succeeded, Failed }
 internal sealed record PlanReviewChange(string Identity, string Field, string? Before, string? After);
 internal sealed record PlanWrite(string Key, string Identity, PlanPublishStage Stage, string Mutation, string InputType, string Input, string Selection)
@@ -31,6 +31,9 @@ internal static class PlanPublishPlan
                 "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" => (PlanPublishStage.Fields, "projectV2Item { id }"),
                 "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => (PlanPublishStage.Fields, "assignable { __typename }"),
                 "addLabelsToLabelable" or "removeLabelsFromLabelable" => (PlanPublishStage.Fields, "labelable { __typename }"),
+                // #231: the row-state commands.
+                "closeIssue" or "reopenIssue" => (PlanPublishStage.State, "issue { id }"),
+                "archiveProjectV2Item" => (PlanPublishStage.State, "item { id }"),
                 "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" => (PlanPublishStage.Hierarchy, "issue { id }"),
                 "addBlockedBy" or "removeBlockedBy" => (PlanPublishStage.Dependencies, "issue { id }"),
                 "updateProjectV2ItemPosition" => (PlanPublishStage.Order, "items { totalCount }"),
@@ -53,7 +56,8 @@ internal static class PlanPublishPlan
                 "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => "assignableId",
                 "addBlockedBy" or "removeBlockedBy" => "issueId",
                 "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" => "subIssueId",
-                "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" or "updateProjectV2ItemPosition" => "itemId", _ => null
+                "closeIssue" or "reopenIssue" => "issueId",
+                "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" or "updateProjectV2ItemPosition" or "archiveProjectV2Item" => "itemId", _ => null
             };
             if (target is not null) PlanOperations.Require(input.RootElement.GetProperty(target).GetString() == (target == "itemId" ? "item:" : "") + write.Identity, "発行対象が行と一致しません。");
             if (input.RootElement.TryGetProperty("projectId", out var project))
@@ -85,6 +89,15 @@ internal static class PlanPublishPlan
             if (held.Contains(row.Identity)) continue;
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
+            // この版から外す archives the item and nothing else: the row leaves the plan, so its other
+            // differences are not written (#231).
+            if (!isNew && row.Removed)
+            {
+                changes.Add(new(row.Identity, PlanField.Removed, PlanValues.Get(before, PlanField.Removed), "true"));
+                Add(row.Identity, PlanPublishStage.State, "archiveProjectV2Item", "ArchiveProjectV2ItemInput",
+                    new { itemId = "item:" + row.Identity }, "item { id }");
+                continue;
+            }
             if (isNew)
             {
                 if (!PlanOperations.Repository(row.Repository)) throw new InvalidOperationException("リポジトリを設定してください。");
@@ -102,6 +115,9 @@ internal static class PlanPublishPlan
                 var bv = PlanValues.Get(before, field); var av = PlanValues.Get(row, field);
                 if (bv == av) continue;
                 if (isNew && field is PlanField.Repository or PlanField.Title) continue;
+                // A pending close or reopen sends its state write alone; the closed end and the remaining
+                // work follow the close day the read reports (#231).
+                if (!isNew && before.Closed != row.Closed && field is PlanField.Start or PlanField.End or PlanField.Remaining) continue;
                 // A relationship to a row this publish does not create cannot be sent (#247).
                 if (PlanOperations.HoldsField(row, before, field, held)) continue;
                 changes.Add(new(row.Identity, field, isNew ? null : bv, av));
@@ -141,8 +157,22 @@ internal static class PlanPublishPlan
                             if (labelAt >= 0) writes[labelAt] = writes[labelAt] with { Field = field };
                         }
                         break;
-                    case PlanField.Repository: case PlanField.Closed:
+                    case PlanField.Repository:
                         throw new InvalidOperationException("この変更は発行できません: " + field);
+                    case PlanField.Cancelled:
+                        // The reason travels with the state write below, so it adds no write of its own (#231).
+                        continue;
+                    case PlanField.Removed:
+                        // Only a published row can be removed, and that is handled before the field loop (#231).
+                        continue;
+                    case PlanField.Closed:
+                        // #231: 完了にする closes as COMPLETED, 中止にする as NOT_PLANNED, 未完了に戻す reopens.
+                        if (row.Closed)
+                            Add(row.Identity, PlanPublishStage.State, "closeIssue", "CloseIssueInput",
+                                new { issueId = row.Identity, stateReason = row.Cancelled ? "NOT_PLANNED" : "COMPLETED" }, "issue { id }");
+                        else
+                            Add(row.Identity, PlanPublishStage.State, "reopenIssue", "ReopenIssueInput", new { issueId = row.Identity }, "issue { id }");
+                        break;
                     case PlanField.Status:
                         var statusField = remote.Fields.SingleOrDefault(f => f.Name == "Status" && f.DataType == "SINGLE_SELECT" && f.ValueOwner == Projects.FieldOwner.ProjectItem && f.Availability == Projects.ValueAvailability.Present)
                             ?? throw new InvalidOperationException("Status の列を確認してください。");
@@ -202,6 +232,7 @@ internal static class PlanPublishPlan
             }
         }
         var oldOrder = document.Baseline.Rows.Select(r => r.Identity).ToArray();
+        var removed = rows.Where(r => r.Removed).Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
         var moved = PlanOrder.Moved(oldOrder, rows.Select(r => r.Identity));
         foreach (var parent in rows.Where(r => r.Parent is not null).Select(r => r.Parent!).Distinct())
         {
@@ -209,8 +240,8 @@ internal static class PlanPublishPlan
             // The same comparison decides the unpublished count, the review line and these writes.
             if (PlanOperations.SiblingOrderChange(document, parent) is not { } sibling) continue;
             var children = sibling.After;
-            // An order that names a row this publish does not create is held whole (#247).
-            if (children.Any(held.Contains)) continue;
+            // An order that names a row this publish does not create or is removing is held whole (#247, #231).
+            if (children.Any(id => held.Contains(id) || removed.Contains(id))) continue;
             changes.Add(new(parent, PlanField.SubIssueOrder, PlanJson.Text(sibling.Before), PlanJson.Text(children)));
             for (var i = 0; i < children.Length; i++)
             {
@@ -223,13 +254,13 @@ internal static class PlanPublishPlan
         for (var i = 0; i < rows.Length; i++)
         {
             var id = rows[i].Identity;
-            if (held.Contains(id)) continue;
+            if (held.Contains(id) || removed.Contains(id)) continue;
             if (!moved.Contains(id) && baseline.ContainsKey(id)) continue;
             changes.Add(new(id, PlanField.Order, baseline.ContainsKey(id) ? Array.IndexOf(oldOrder, id).ToString(CultureInfo.InvariantCulture) : null, i.ToString(CultureInfo.InvariantCulture)));
-            // Positioning depends on the item before it; a row this publish does not create is skipped
-            // so the anchor is the nearest row that will exist (#247).
+            // Positioning depends on the item before it; a row this publish does not create, or is
+            // removing, is skipped so the anchor is the nearest row that stays in the plan (#247, #231).
             var anchor = i;
-            while (anchor > 0 && held.Contains(rows[anchor - 1].Identity)) anchor--;
+            while (anchor > 0 && (held.Contains(rows[anchor - 1].Identity) || removed.Contains(rows[anchor - 1].Identity))) anchor--;
             Add(id, PlanPublishStage.Order, "updateProjectV2ItemPosition", "UpdateProjectV2ItemPositionInput",
                 new { projectId = document.Project.NodeId, itemId = "item:" + id, afterId = anchor == 0 ? null : "item:" + rows[anchor - 1].Identity }, "items { totalCount }");
         }

@@ -324,6 +324,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var issue = new IssueReadModel(item.ContentId, new(Id(repository), Id(Property(repository, "owner")),
                         Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
                         ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content),
+                            StateReason = ReadStateReason(content),
                             Labels = ReadIssueLabels(content),
                             Milestone = Property(content, "milestone").ValueKind == JsonValueKind.Null ? new(ValueAvailability.Empty)
                                 : new(ValueAvailability.Present, ReadMilestone(Property(content, "milestone"), Id(repository))) };
@@ -713,6 +714,23 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 JsonValueKind.String when value.GetString() == "OPEN" => new(ValueAvailability.Present, IssueState.Open),
                 JsonValueKind.String when value.GetString() == "CLOSED" => new(ValueAvailability.Present, IssueState.Closed),
                 JsonValueKind.String => new(ValueAvailability.Unsupported),
+                JsonValueKind.Undefined => new(ValueAvailability.NotLoaded),
+                _ => new(ValueAvailability.Unavailable)
+            };
+        }
+        // #231: the state reason separates 中止 (NOT_PLANNED or DUPLICATE) from 完了 (COMPLETED). An open
+        // Issue legitimately has none, so absence is empty rather than a read failure.
+        private static ReadValue<IssueStateReason?> ReadStateReason(JsonElement node)
+        {
+            var value = Optional(node, "stateReason");
+            return value.ValueKind switch
+            {
+                JsonValueKind.String when value.GetString() == "COMPLETED" => new(ValueAvailability.Present, IssueStateReason.Completed),
+                JsonValueKind.String when value.GetString() == "NOT_PLANNED" => new(ValueAvailability.Present, IssueStateReason.NotPlanned),
+                JsonValueKind.String when value.GetString() == "DUPLICATE" => new(ValueAvailability.Present, IssueStateReason.Duplicate),
+                JsonValueKind.String when value.GetString() == "REOPENED" => new(ValueAvailability.Present, IssueStateReason.Reopened),
+                JsonValueKind.String => new(ValueAvailability.Unsupported),
+                JsonValueKind.Null => new(ValueAvailability.Empty),
                 JsonValueKind.Undefined => new(ValueAvailability.NotLoaded),
                 _ => new(ValueAvailability.Unavailable)
             };

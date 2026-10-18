@@ -109,6 +109,7 @@ internal static class FakePlanEditor
             var item = JsonSerializer.SerializeToNode(new { __typename = "ProjectV2Item", id = ItemId("T-" + row.Identity), type = "ISSUE", isArchived = issue.Archived, project = new { id = projectId },
                 content = new { __typename = "Issue", id = row.Identity, number = int.Parse(row.Identity[1..]), url = "https://github.com/" + row.Repository + "/issues/" + row.Identity[1..], title = row.Title,
                     state = row.Closed ? "CLOSED" : "OPEN",
+                    stateReason = row.Closed ? row.Cancelled ? "NOT_PLANNED" : "COMPLETED" : null,
                     labels = Page(state.Labels.Where(l => l.Repository == row.Repository && row.Labels.Contains(l.Name)).Take(100).Select(l => (object)new { id = l.Id, name = l.Name }), row.Labels.Length, row.Labels.Length>100, row.Labels.Length>100 ? "100" : null),
                     milestone = state.Milestones.SingleOrDefault(m => m.Repository == row.Repository && m.Title == row.MilestoneTitle) is { } member ? Milestone(member) : null,
                     closedAt = row.Closed && row.CloseDate is { } closeDate ? new DateTimeOffset(closeDate.ToDateTime(new TimeOnly(12, 0)),
@@ -389,8 +390,24 @@ internal static class FakePlanEditor
                         children.Insert(children.IndexOf(siblingId!) + (after ? 1 : 0), childId);
                         subOrders = subOrders.SetItem(identity, children.ToImmutableArray());
                     }
-                    else throw new InvalidOperationException("Unsupported fake mutation: " + mutation);
-                    issues[index] = issue with { Row = row }; id = selection == "projectV2Item" ? ItemId("T-" + identity) : identity;
+                    // #231: a per-row state failure keeps that row's write pending and lets the rest publish.
+                    if (fault == "close-denied" && mutation == "closeIssue" && input.GetProperty("issueId").GetString() == "I2")
+                    { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "FORBIDDEN", message = "Synthetic close failure" })); data[alias] = null; continue; }
+                    // #231: 完了にする / 中止にする / 未完了に戻す / この版から外す.
+                    if (mutation == "closeIssue")
+                        row = row with { Closed = true, Cancelled = input.GetProperty("stateReason").GetString() == "NOT_PLANNED",
+                            CloseDate = DateOnly.FromDateTime(DateTime.Now) };
+                    else if (mutation == "reopenIssue") row = row with { Closed = false, Cancelled = false, CloseDate = null };
+                    else if (mutation == "archiveProjectV2Item")
+                    {
+                        issue = issue with { Archived = true }; selection = "item"; id = ItemId("T-" + identity);
+                    }
+                    else if (mutation is not ("updateIssue" or "addLabelsToLabelable" or "removeLabelsFromLabelable" or "updateProjectV2ItemPosition"
+                        or "addAssigneesToAssignable" or "removeAssigneesFromAssignable" or "addBlockedBy" or "removeBlockedBy"
+                        or "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue") && !mutation.Contains("ItemFieldValue"))
+                        throw new InvalidOperationException("Unsupported fake mutation: " + mutation);
+                    issues[index] = issue with { Row = row };
+                    if (selection != "item") id = selection == "projectV2Item" ? ItemId("T-" + identity) : identity;
                 }
                 if (fault == "link-already-exists" && mutation is "addSubIssue" or "addBlockedBy")
                 { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "UNPROCESSABLE", message = "Relationship already exists" })); data[alias] = null; continue; }
