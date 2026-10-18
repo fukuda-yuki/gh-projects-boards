@@ -145,7 +145,8 @@ internal static class PlanOperations
         var rows = state.Rows.ToList();
         var byId = rows.ToDictionary(r => r.Identity);
         PlanOperationKind kind;
-        string? indentParent = null;
+        // The row the PMO selected and the sibling it would land under. Both are named by a refusal.
+        (string Parent, string Root)? indentRefusal = null;
         switch (command)
         {
             case FillPlanCells fill:
@@ -224,7 +225,8 @@ internal static class PlanOperations
                 }
                 else
                 {
-                    Require(first > 0, "直前の同階層タスクがありません。"); newParent = indentParent = siblings[first - 1].Identity;
+                    Require(first > 0, "直前の同階層タスクがありません。");
+                    newParent = siblings[first - 1].Identity; indentRefusal = (newParent, selected[0].Identity);
                 }
                 var ids = selected.Select(r => r.Identity).ToHashSet();
                 rows = indent.Outdent ? new PlanOutline(state.Rows).Outdent(indent.Targets).ToList()
@@ -251,36 +253,38 @@ internal static class PlanOperations
         }
         state = state with { Rows = rows.ToImmutableArray() };
         try { ValidateDocument(d with { State = state }, today); }
-        catch (PlanCycleException cycle) when (indentParent is not null)
+        catch (PlanCycleException cycle) when (indentRefusal is not null)
         {
             // The scheduler reports a cycle by identity; a refused indent must name the link to remove (#241).
-            if (IndentRefusal(d with { State = state }, indentParent, cycle) is { } reason) throw new PlanCycleException(reason, cycle.Identities);
+            if (IndentRefusal(d with { State = state }, indentRefusal.Value, cycle) is { } reason) throw new PlanCycleException(reason, cycle.Identities);
             throw;
         }
         return (state, kind);
     }
     // An indent adds one relation: the new parent above its new subtree. A link between them in either
-    // direction makes the schedule impossible, and that link is what the PMO has to clear.
-    private static string? IndentRefusal(PlanDocument candidate, string parent, PlanCycleException cycle)
+    // direction makes the schedule impossible, and that link is what the PMO has to clear. The sentence
+    // names the row being indented, the sibling it cannot go under and the direction of the link.
+    private static string? IndentRefusal(PlanDocument candidate, (string Parent, string Root) indent, PlanCycleException cycle)
     {
         var rows = EffectiveRows(candidate);
-        var parentId = Position(rows, parent);
-        if (parentId == 0) return null;
-        var subtree = Descendants(rows, parent);
+        var parentId = Position(rows, indent.Parent);
+        var rootId = Position(rows, indent.Root);
+        if (parentId == 0 || rootId == 0) return null;
+        var subtree = Descendants(rows, indent.Parent);
         var byId = rows.ToDictionary(r => r.Identity);
         foreach (var identity in cycle.Identities)
         {
             if (!byId.TryGetValue(identity, out var row)) continue;
             foreach (var predecessor in row.Predecessors)
             {
-                var dependent = predecessor == parent && subtree.Contains(identity) ? identity
-                    : identity == parent && subtree.Contains(predecessor) ? parent : null;
+                var dependent = predecessor == indent.Parent && subtree.Contains(identity) ? identity
+                    : identity == indent.Parent && subtree.Contains(predecessor) ? indent.Parent : null;
                 if (dependent is null) continue;
-                var before = dependent == parent ? predecessor : parent;
+                var before = dependent == indent.Parent ? predecessor : indent.Parent;
                 var beforeId = Position(rows, before);
-                var dependentId = dependent == parent ? parentId : Position(rows, dependent);
+                var dependentId = dependent == indent.Parent ? parentId : Position(rows, dependent);
                 if (beforeId == 0 || dependentId == 0) continue;
-                return $"ID {dependentId} は ID {beforeId} の後に始まるため、ID {parentId} の下にインデントできません。先にリンクを解除してください。";
+                return $"ID {dependentId} は ID {beforeId} の後に始まるため、ID {rootId} を ID {parentId} の下にインデントできません。先にリンクを解除してください。";
             }
         }
         return null;

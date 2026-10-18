@@ -2136,7 +2136,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text,
-                Is.EqualTo("ID 2 は ID 1 の後に始まるため、ID 1 の下にインデントできません。先にリンクを解除してください。"));
+                Is.EqualTo("ID 2 は ID 1 の後に始まるため、ID 2 を ID 1 の下にインデントできません。先にリンクを解除してください。"));
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Visible));
         });
         Assert.That(session.Document, Is.SameAs(before));
@@ -2144,6 +2144,12 @@ internal sealed partial class PlanSheetHostedTests
         await Select(3, PlanField.Title);
         await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length == 0);
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Collapsed)));
+        // The arrow keys move the selection through MoveSelection, which must dismiss the refusal too.
+        await Select(2, PlanField.Title);
+        await Ui.ClickCommand("PlanSheetIndent"); await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        await Ui.Run(() => sheet.MoveSelection(Windows.System.VirtualKey.Down, false));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length == 0);
     }
     [TestCase(false), TestCase(true)]
     public async Task AutomationSelectionMovesKeyboardFocusSoAnotherCellCannotReclaimTheSelection(bool extend)

@@ -19,17 +19,17 @@ internal sealed class PlanIndentRefusalTests
     [Test]
     public void SuccessorIndentedUnderItsPredecessorNamesBothRowsAndTheLink() =>
         Assert.That(Refusal(Document(Row("a"), Row("b", null, "a")), "b"),
-            Is.EqualTo("ID 2 は ID 1 の後に始まるため、ID 1 の下にインデントできません。先にリンクを解除してください。"));
+            Is.EqualTo("ID 2 は ID 1 の後に始まるため、ID 2 を ID 1 の下にインデントできません。先にリンクを解除してください。"));
 
     [Test]
-    public void NewParentLinkedAfterItsNewChildNamesItsOwnLink() =>
+    public void NewParentLinkedAfterItsNewChildStillNamesTheIndentedRowAndItsDestination() =>
         Assert.That(Refusal(Document(Row("a", null, "b"), Row("b")), "b"),
-            Is.EqualTo("ID 1 は ID 2 の後に始まるため、ID 1 の下にインデントできません。先にリンクを解除してください。"));
+            Is.EqualTo("ID 1 は ID 2 の後に始まるため、ID 2 を ID 1 の下にインデントできません。先にリンクを解除してください。"));
 
     [Test]
     public void DescendantLinkToTheNewParentIsNamedByItsOwnRowId() =>
         Assert.That(Refusal(Document(Row("a"), Row("b"), Row("c", "b", "a")), "b"),
-            Is.EqualTo("ID 3 は ID 1 の後に始まるため、ID 1 の下にインデントできません。先にリンクを解除してください。"));
+            Is.EqualTo("ID 3 は ID 1 の後に始まるため、ID 2 を ID 1 の下にインデントできません。先にリンクを解除してください。"));
 
     [Test]
     public void LinkOutsideTheNewSubtreeDoesNotRefuseTheIndent()
@@ -57,7 +57,7 @@ internal sealed class PlanIndentRefusalTests
             var before = session.Document; var undo = session.UndoCount; var redo = session.RedoCount;
             Assert.That(() => session.Execute(new IndentPlanRows(["b"]), Today),
                 Throws.TypeOf<PlanCycleException>().With.Message
-                    .EqualTo("ID 2 は ID 1 の後に始まるため、ID 1 の下にインデントできません。先にリンクを解除してください。"));
+                    .EqualTo("ID 2 は ID 1 の後に始まるため、ID 2 を ID 1 の下にインデントできません。先にリンクを解除してください。"));
             Assert.That(session.Document, Is.SameAs(before));
             Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo((undo, redo)));
         }
