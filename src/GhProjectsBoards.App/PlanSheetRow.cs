@@ -738,6 +738,13 @@ internal sealed class PlanSheetCell : TextBox
         else if (!Editing && control && !PlanSheetView.Down(VirtualKey.Menu) && args.Key == VirtualKey.F2)
         { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
         else if (!control && args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
+        else if (!Editing && shift && !control && args.Key == VirtualKey.Space)
+        {
+            // Excel's Shift+Space takes the whole row: the anchor row when nothing is extended, otherwise
+            // every row of the range the cell selection already spans (#240).
+            args.Handled = true;
+            owner.SelectWholeRow(row.Identity, true);
+        }
         else if (!Editing && control && (args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y || PlanSheetView.Minus(args.Key)))
         { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
         else if (!Editing && args.Key == VirtualKey.Delete) { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
@@ -815,6 +822,10 @@ internal sealed class PlanSummaryCell : ContentControl
             args.Handled = true; _ = owner.KeyboardCommand(args.Key);
         }
         else if (!control && args.Key == VirtualKey.Escape) { args.Handled = true; owner.CancelDrag(); }
+        else if (!control && shift && args.Key == VirtualKey.Space) {
+            // A requirement row takes its whole row the same way an ordinary cell does (#240).
+            args.Handled = true; owner.SelectWholeRow(row.Identity, true);
+        }
         else if (!control && (args.Key == VirtualKey.F2 || args.Key == VirtualKey.Space
             || args.Key is >= VirtualKey.Number0 and <= VirtualKey.Z
             || args.Key is >= VirtualKey.NumberPad0 and <= VirtualKey.Divide

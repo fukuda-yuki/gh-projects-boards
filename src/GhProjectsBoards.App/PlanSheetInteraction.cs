@@ -22,6 +22,10 @@ internal sealed partial class PlanSheetView
 {
     private string selected = "", anchor = "";
     private string selectedField = PlanField.Title, anchorField = PlanField.Title;
+    // #240: a whole-row selection must be distinguishable from a rectangle that happens to cover every
+    // column, so it is explicit state set by the ID cells or Shift+Space, never inferred from the range.
+    private bool wholeRowSelection;
+    private const string TitleNotCleared = "タスク名は消せません。行ごと消すときは 行を削除";
     private Column[]? fieldColumns;
     private string[] visibleFields = [];
     private string[] Fields
@@ -80,6 +84,7 @@ internal sealed partial class PlanSheetView
     {
         if (!RowIds.Contains(identity) || !Fields.Contains(field)) return;
         var previousRange = Range;
+        wholeRowSelection = false;
         selected = identity; selectedField = field;
         if (!extend) { anchor = identity; anchorField = field; }
         // A refusal explains the operation it refused; choosing a row or cell dismisses it (#241).
@@ -173,11 +178,15 @@ internal sealed partial class PlanSheetView
         overdue > 0 ? $"期限超過 {overdue}" + (later > 0 ? $" · 予定より遅れ {later}" : "") : later > 0 ? $"予定より遅れ {later}" : "";
     internal void MoveSelection(VirtualKey key, bool extend)
     {
+        // Excel keeps a whole-row selection whole while it extends vertically: Shift+Down after
+        // Shift+Space still selects rows for Delete (#240). Any other move narrows back to cells.
+        var wholeRow = wholeRowSelection && extend && key is VirtualKey.Up or VirtualKey.Down;
         var row = Math.Max(0, RowIds.IndexOf(selected)); var column = Math.Max(0, Array.IndexOf(Fields, selectedField));
         if (key == VirtualKey.Up) row--; if (key == VirtualKey.Down) row++;
         if (key == VirtualKey.Left) column--; if (key == VirtualKey.Right) column++;
         if (Fields.Length == 0) return;
         Select(RowIds[Math.Clamp(row, 0, RowIds.Count - 1)], Fields[Math.Clamp(column, 0, Fields.Length - 1)], extend);
+        if (wholeRow) SelectWholeRow(selected, true);
         FocusSelected();
     }
     internal event Action? CommandRowFocusRequested;
@@ -269,7 +278,12 @@ internal sealed partial class PlanSheetView
                 case VirtualKey.C: await Copy(rows, fields); break;
                 case VirtualKey.V: await Paste(range, visible, columns); break;
                 case VirtualKey.D: await Fill(PlanOperationKind.CtrlD); break;
-                case VirtualKey.Delete: await Clear(rows, fields); break;
+                case VirtualKey.Delete:
+                    // #240: a whole-row selection removes the rows; a cell range clears, and never タスク名.
+                    if (!wholeRowSelection) { await Clear(rows, fields); break; }
+                    var rowTargets = rows.Where(Rows.ContainsKey).ToArray();
+                    if (rowTargets.Length > 0) await DeleteRows(rowTargets);
+                    break;
                 case VirtualKey.Z: await ChangeHistory(false); break;
                 case VirtualKey.Y: await ChangeHistory(true); break;
                 default: if (deleting) await DeleteRows(rows); break;
@@ -434,7 +448,11 @@ internal sealed partial class PlanSheetView
     {
         if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
         RequireNoPending(rows, fields);
+        var skippedTitle = fields.Contains(PlanField.Title);
         Check(await Session.Execute(new ClearPlanCells(rows.ToImmutableArray(), fields.ToImmutableArray()), Today)); Refresh();
+        // Core skips タスク名; say so, because the rest of the range did clear (#240). The line goes when
+        // the PMO chooses another row or cell, like every other refusal in the sheet.
+        if (skippedTitle) error.Text = TitleNotCleared;
     }
     private async Task Insert()
     {
@@ -452,6 +470,7 @@ internal sealed partial class PlanSheetView
         if (rows.Count == 0) throw new ArgumentException("削除する行を選択してください。");
         if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
         Check(await Session.Execute(new DeletePlanRows([.. rows]), Today));
+        wholeRowSelection = false;
         Refresh();
     }
     internal void RevealAddedRow(string identity)
@@ -460,7 +479,7 @@ internal sealed partial class PlanSheetView
         rendering = true;
         try { filter.Text = ""; }
         finally { rendering = false; }
-        selected = anchor = identity; selectedField = anchorField = PlanField.Title; Refresh(); FocusSelected();
+        selected = anchor = identity; selectedField = anchorField = PlanField.Title; wholeRowSelection = false; Refresh(); FocusSelected();
     }
     private async Task Indent(bool outdent)
     {
@@ -553,6 +572,7 @@ internal sealed partial class PlanSheetView
         if (operation.Fill)
         {
             selected = operation.End; anchor = operation.Source; selectedField = anchorField = operation.Field;
+            wholeRowSelection = false;
             selection.Text = $"{Range.RowCount}行へコピー"; RefreshRealized();
         }
         else
