@@ -57,11 +57,22 @@ internal static class EvaluationFixture
             Actual = r.Parent is null ? null : 0, Assignees = r.Person is null ? [] : [r.Person],
             Predecessors = r.Predecessors.Select(k => identities[k]).ToImmutableArray(), StartNoEarlierThan = r.Start
         }).ToImmutableArray();
+        // #236 makes a PMO change the thing that reschedules, so the simulation lays the whole plan out as one
+        // such change instead of relying on a read to move dates.
+        IReadOnlyList<ScheduledTask> Layout(ImmutableArray<PlanRow> source, DateOnly day)
+        {
+            var settings = Document(plan, source, day).State.Settings;
+            return PlanScheduler.Calculate(source.Select((r, i) => PlanOperations.TaskInput(r, i)).ToArray(),
+                new PlanSettings { StatusDate = day, ProjectStart = settings.ProjectStart,
+                    Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
+                    People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() },
+                day, source.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal));
+        }
         var snapshots = new List<Snapshot>();
         var last = statusDates.Max();
         for (var day = plan.ProjectStart; day <= last; day = day.AddDays(1))
         {
-            var schedule = PlanOperations.Schedule(Document(plan, rows, day), day).ToDictionary(t => t.Input.Identity);
+            var schedule = Layout(rows, day).ToDictionary(t => t.Input.Identity);
             if (statusDates.Contains(day)) snapshots.Add(Publish(day));
             var updated = rows.ToDictionary(r => r.Identity);
             var visited = new HashSet<string>();
@@ -93,8 +104,7 @@ internal static class EvaluationFixture
 
         Snapshot Publish(DateOnly statusDate)
         {
-            var document = Document(plan, rows, statusDate);
-            var scheduled = PlanOperations.Schedule(document, statusDate).ToDictionary(t => t.Input.Identity);
+            var scheduled = Layout(rows, statusDate).ToDictionary(t => t.Input.Identity);
             var published = rows.Select(r => r with { Start = scheduled[r.Identity].Start.Value, End = scheduled[r.Identity].End.Value }).ToImmutableArray();
             return new(statusDate, published, Document(plan, published, statusDate));
         }

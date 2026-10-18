@@ -99,7 +99,7 @@ internal sealed class PlanSummaryTests
     [Test]
     public void MonthlyLoadKeepsDailyOverloadAndUsesSuppliedSchedule()
     {
-        var d = Document(new PlanRow("A", "One", "a/b") { Assignees = ["U1"], Remaining = 8 }, new("B", "Two", "a/b") { Assignees = ["U1"], Remaining = 8 });
+        var d = Document(new PlanRow("A", "One", "a/b") { Assignees = ["U1"], Remaining = 8, Start = Day }, new("B", "Two", "a/b") { Assignees = ["U1"], Remaining = 8, Start = Day });
         var scheduled = PlanOperations.Schedule(d, Day);
         var supplied = scheduled.Select(t => t with { PlannedHours = new Dictionary<DateOnly, decimal> { [Day] = 8 } }).ToArray();
         var result = PlanSummary.Calculate(d, supplied, Day);

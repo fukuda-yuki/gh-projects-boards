@@ -52,7 +52,7 @@ internal static class PlanOperations
         { GitHubStart = baseline.GetValueOrDefault(r.Identity)?.Start, GitHubEnd = baseline.GetValueOrDefault(r.Identity)?.End }).ToArray(),
             new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
                 Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
-                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today);
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today, firstDates: false);
     }
     // The tasks whose plan dates the change between two documents moves. A task the change does not
     // reach keeps its dates, so this is exactly the rescheduled subtree (#236).

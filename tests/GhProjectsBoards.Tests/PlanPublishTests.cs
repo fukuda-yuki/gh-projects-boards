@@ -526,7 +526,7 @@ internal sealed class PlanPublishTests
         var day = new DateOnly(2026, 10, 5);
         var scope = new ConnectionScope("github.com", 42); var project = new ScopedId(scope, "P1");
         var parent = new PlanRow("P", "Parent", "acme/repo") { Estimate = 99, Remaining = 99 };
-        var child = new PlanRow("C", "Child", "acme/repo") { Parent = "P", Estimate = 8, Remaining = 8 };
+        var child = new PlanRow("C", "Child", "acme/repo") { Parent = "P", Estimate = 8, Remaining = 8, Start = day, End = day };
         var mappings = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Start, PlanField.End }
             .Select(f => new PlanColumnMapping(f, "F" + f, f.ToString(), f is PlanField.Start or PlanField.End ? "DATE" : "NUMBER")).ToImmutableArray();
         var settings = new ProjectPlanSettings { StatusDate = day, Columns = mappings };
@@ -536,7 +536,8 @@ internal sealed class PlanPublishTests
             mappings.Select(m => new ProjectFieldDefinition(new(scope, m.FieldId), project, m.Name, "ProjectV2Field", m.DataType, FieldOwner.ProjectItem, [], ValueAvailability.Present)).ToImmutableArray(), 0, 0) { SubIssueOrders = ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("P", ["C"]) };
         var plan = PlanPublishPlan.Build(document, remote, day, "run");
         Assert.That(plan.Changes.Where(c => c.Identity == "P").Select(c => c.Field), Is.EquivalentTo(new[] { PlanField.Start, PlanField.End }));
-        Assert.That(plan.Writes, Has.Length.EqualTo(4));
+        // The child's own dates are unchanged (#236 keeps them), so the summary's rolled-up pair is the difference.
+        Assert.That(plan.Writes, Has.Length.EqualTo(2));
         Assert.That(plan.Changes.All(c => c.After == "\"2026-10-05\""), Is.True);
     }
     [TestCase(PlanPublishStage.Fields, 49, 5, "number")]

@@ -187,7 +187,7 @@ internal sealed class PlanLivePreflightTests
         }));
     }
     [Test]
-    public void LiveWorkloadPreservesBaselineDatesAndIncludesDerivedDateWrites()
+    public void LiveWorkloadPreservesBaselineDatesWithoutDerivedDateWrites()
     {
         var day = new DateOnly(2026, 10, 6); var scope = new ConnectionScope("github.com", 42); var project = new ScopedId(scope, "P1");
         var fields = new[] { ("Estimate", "NUMBER"), ("Remaining", "NUMBER"), ("Actual", "NUMBER"), ("Start date", "DATE"), ("Target date", "DATE") }
@@ -203,7 +203,8 @@ internal sealed class PlanLivePreflightTests
         var review = PlanPublishPlan.Build(document, new(baseline, ImmutableDictionary<string, string>.Empty, fields, 0, 0), day, Guid.NewGuid().ToString("N"));
         Assert.That(review.Changes.All(c => c.Identity.StartsWith("owned-", StringComparison.Ordinal)), Is.True);
         Assert.That(review.Changes.Count(c => c.Field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual), Is.EqualTo(300));
-        Assert.That(review.Changes.Count(c => c.Field is PlanField.Start or PlanField.End), Is.EqualTo(200));
+        // #236: an untouched plan date is never rewritten, so only the entered effort is published.
+        Assert.That(review.Changes.Count(c => c.Field is PlanField.Start or PlanField.End), Is.Zero);
         const int fieldAliasLimit = 10;
         var expectedBatches = (review.Writes.Length + fieldAliasLimit - 1) / fieldAliasLimit;
         Assert.That(PlanPublishPlan.Batches(review.Writes).Count(), Is.EqualTo(expectedBatches),

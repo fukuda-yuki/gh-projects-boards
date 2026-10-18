@@ -6,8 +6,8 @@ namespace GhProjectsBoards.Core.PlanEditor;
 internal static class PlanScheduler
 {
     public static IReadOnlyList<ScheduledTask> Calculate(IReadOnlyList<PlanTask> tasks, PlanSettings settings, DateOnly today,
-        IReadOnlySet<string>? reschedule = null)
-        => new Calculation(tasks, settings, today, reschedule).Run();
+        IReadOnlySet<string>? reschedule = null, bool firstDates = true)
+        => new Calculation(tasks, settings, today, reschedule, firstDates).Run();
 
     internal static int? WorkingDaysBetween(DateOnly? from, DateOnly? to, PlanCalendar calendar)
     {
@@ -84,6 +84,9 @@ internal static class PlanScheduler
         // Identities a PMO edit reschedules. Every other task keeps its plan dates, so a read, a 基準日
         // change and a reset move nothing (#236).
         private readonly IReadOnlySet<string> reschedule;
+        // A read shows GitHub's dates as they are, so a task with no dates of its own gets none until a PMO
+        // edit reaches it (#236 rule 5). The rescheduling pass lays the first dates out.
+        private readonly bool firstDates;
         private readonly Dictionary<string, PlanTask> byId = new(StringComparer.Ordinal);
         private readonly Dictionary<string, List<string>> children = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string[]> ancestors = new(StringComparer.Ordinal);
@@ -94,10 +97,11 @@ internal static class PlanScheduler
         private readonly HashSet<string> active = new(StringComparer.Ordinal);
         private readonly List<string> path = [];
 
-        public Calculation(IReadOnlyList<PlanTask> tasks, PlanSettings settings, DateOnly today, IReadOnlySet<string>? reschedule = null)
+        public Calculation(IReadOnlyList<PlanTask> tasks, PlanSettings settings, DateOnly today, IReadOnlySet<string>? reschedule = null, bool firstDates = true)
         {
             this.tasks = tasks;
             this.reschedule = reschedule ?? new HashSet<string>(StringComparer.Ordinal);
+            this.firstDates = firstDates;
             this.settings = settings;
             statusDate = settings.StatusDate ?? today;
             calendar = new PlanCalendar { Holidays = settings.Calendar.Holidays, ImportedHolidays = settings.Calendar.ImportedHolidays, CompanyDaysOff = settings.Calendar.CompanyDaysOff };
@@ -320,6 +324,11 @@ internal static class PlanScheduler
             var work = task.EffectiveRemaining!.Value;
             var person = task.Assignees.Distinct(StringComparer.Ordinal).ToArray() is [var single] && people.TryGetValue(single, out var p) ? p : null;
             Hours rate = (Hours)(person?.Rate ?? 100m) / 100;
+            // A read shows exactly the dates the plan holds: a task with no dates of its own gets none, and a
+            // task holding one endpoint keeps just that one. A PMO edit lays the plan out (#236 rules 1 and 5).
+            // The people load still follows the forecast, so it plans what is left from the plan start or 基準日.
+            if (!firstDates && !reschedule.Contains(task.Identity) && task.Start is null && task.End is null)
+                return Create(task, null, null, DateOrigin.Kept, DateOrigin.Kept, "日付未定", warnings);
             // An in-progress task keeps its start and consumes Actual + Remaining from there, so its planned
             // end can lie before the 基準日: the plan shows the work as late instead of moving it to today.
             var inProgress = task.Actual > 0 && start is not null;

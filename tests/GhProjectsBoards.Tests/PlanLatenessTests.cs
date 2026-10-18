@@ -398,21 +398,19 @@ internal sealed class PlanLatenessTests
     }
 
     [Test]
-    public void SummaryDatesMatchingOwnInputs_AreStillRecalculated()
+    public void SummaryDateDifferencesAreAlwaysRecalculated()
     {
+        // A summary's dates are always the scheduler's roll-up, so its difference is a calculation even when
+        // it equals the summary's own inputs. The child states its plan start (#236).
         var document = Document(Row("summary") with { Start = Status.AddDays(1), End = Status.AddDays(1) },
-            Row() with { Parent = "summary", Estimate = 8 });
+            Row() with { Parent = "summary", Estimate = 8, Start = Status.AddDays(1) });
         document = document with { Baseline = document.Baseline with
             { Rows = document.Baseline.Rows.Select(row => row with { Start = Status, End = Status }).ToImmutableArray() } };
-        Assert.That(PlanOperations.Changes(document, Status).TaskCount, Is.Zero);
-        var state = PlanOperations.Apply(document,
-            new ReplacePlanSettings(document.State.Settings with { StatusDate = Status.AddDays(1) }), Status).State;
-        var updated = document with { State = state };
-        var summary = PlanOperations.Schedule(updated, Status).Single(row => row.Input.Identity == "summary");
+        var summary = PlanOperations.Schedule(document, Status).Single(row => row.Input.Identity == "summary");
         Assert.That(summary.Start.Value, Is.EqualTo(summary.Input.Start));
         Assert.That(summary.End.Value, Is.EqualTo(summary.Input.End));
 
-        var result = PlanOperations.Changes(updated, Status);
+        var result = PlanOperations.Changes(document, Status);
 
         Assert.Multiple(() =>
         {

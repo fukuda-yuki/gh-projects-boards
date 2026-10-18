@@ -19,8 +19,9 @@ internal sealed class PlanMilestoneTests
         var d = Document(new("S", "Summary", "a/b") { MilestoneTitle = "Release" },
             new("C", "Closed", "a/b") { Parent = "S", MilestoneTitle = "Release", Closed = true, CloseDate = Day, End = Day.AddDays(20) },
             new("K", "Kept", "a/b") { MilestoneTitle = "Release", Phase = "SA", Start = Day, End = Day.AddDays(5) },
-            new("O", "Open", "a/b") { MilestoneTitle = "Release", Remaining = 16 },
-            new("N", "Other", "a/b") { Remaining = 80 });
+            // #236: a task with no dates of its own gets none, so the open rows state their plan start.
+            new("O", "Open", "a/b") { MilestoneTitle = "Release", Remaining = 16, Start = Day },
+            new("N", "Other", "a/b") { Remaining = 80, Start = Day });
         var scheduled = PlanOperations.Schedule(d, Day);
         var result = PlanSummary.Calculate(d, scheduled, Day);
         var m = result.Milestones.Single(m => m.Milestone.Title == "Release");
