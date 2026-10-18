@@ -79,6 +79,8 @@ internal sealed partial class PlanSheetView
         var previousRange = Range;
         selected = identity; selectedField = field;
         if (!extend) { anchor = identity; anchorField = field; }
+        // A refusal explains the operation it refused; choosing a row or cell dismisses it (#241).
+        error.Text = "";
         EnsureColumnVisible(field);
         // First selection can precede the horizontal viewport's initial layout.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {

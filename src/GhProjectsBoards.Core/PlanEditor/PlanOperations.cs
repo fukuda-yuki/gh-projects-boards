@@ -143,6 +143,8 @@ internal static class PlanOperations
         var rescheduled = new HashSet<string>(StringComparer.Ordinal);
         var rescheduleAll = false;
         PlanOperationKind kind;
+        // The row the PMO selected and the sibling it would land under. Both are named by a refusal.
+        (string Parent, string Root)? indentRefusal = null;
         switch (command)
         {
             case FillPlanCells fill:
@@ -223,7 +225,8 @@ internal static class PlanOperations
                 }
                 else
                 {
-                    Require(first > 0, "直前の同階層タスクがありません。"); newParent = siblings[first - 1].Identity;
+                    Require(first > 0, "直前の同階層タスクがありません。");
+                    newParent = siblings[first - 1].Identity; indentRefusal = (newParent, selected[0].Identity);
                 }
                 var ids = selected.Select(r => r.Identity).ToHashSet();
                 rescheduled.UnionWith(ids);
@@ -257,7 +260,13 @@ internal static class PlanOperations
         }
         state = state with { Rows = rows.ToImmutableArray() };
         state = Reschedule(d, state, rescheduled, rescheduleAll, today);
-        ValidateDocument(d with { State = state }, today);
+        try { ValidateDocument(d with { State = state }, today); }
+        catch (PlanCycleException cycle) when (indentRefusal is not null)
+        {
+            // The scheduler reports a cycle by identity; a refused indent must name the link to remove (#241).
+            if (IndentRefusal(d with { State = state }, indentRefusal.Value, cycle) is { } reason) throw new PlanCycleException(reason, cycle.Identities);
+            throw;
+        }
         return (state, kind);
     }
     // Start and end are plan values: only a PMO edit that reaches a task rewrites them, and that edit
@@ -314,6 +323,47 @@ internal static class PlanOperations
         for (var parent = row.Parent; parent is not null && byId.TryGetValue(parent, out var above); parent = above.Parent)
             result.UnionWith(above.Predecessors);
         return result;
+    }
+    // An indent adds one relation: the new parent above its new subtree. A link between them in either
+    // direction makes the schedule impossible, and that link is what the PMO has to clear. The sentence
+    // names the row being indented, the sibling it cannot go under and the direction of the link.
+    private static string? IndentRefusal(PlanDocument candidate, (string Parent, string Root) indent, PlanCycleException cycle)
+    {
+        var rows = EffectiveRows(candidate);
+        var parentId = Position(rows, indent.Parent);
+        var rootId = Position(rows, indent.Root);
+        if (parentId == 0 || rootId == 0) return null;
+        var subtree = Descendants(rows, indent.Parent);
+        var byId = rows.ToDictionary(r => r.Identity);
+        foreach (var identity in cycle.Identities)
+        {
+            if (!byId.TryGetValue(identity, out var row)) continue;
+            foreach (var predecessor in row.Predecessors)
+            {
+                var dependent = predecessor == indent.Parent && subtree.Contains(identity) ? identity
+                    : identity == indent.Parent && subtree.Contains(predecessor) ? indent.Parent : null;
+                if (dependent is null) continue;
+                var before = dependent == indent.Parent ? predecessor : indent.Parent;
+                var beforeId = Position(rows, before);
+                var dependentId = dependent == indent.Parent ? parentId : Position(rows, dependent);
+                if (beforeId == 0 || dependentId == 0) continue;
+                return $"ID {dependentId} は ID {beforeId} の後に始まるため、ID {rootId} を ID {parentId} の下にインデントできません。先にリンクを解除してください。";
+            }
+        }
+        return null;
+    }
+    private static int Position(ImmutableArray<PlanRow> rows, string identity)
+    {
+        for (var index = 0; index < rows.Length; index++) if (rows[index].Identity == identity) return index + 1;
+        return 0;
+    }
+    private static HashSet<string> Descendants(ImmutableArray<PlanRow> rows, string parent)
+    {
+        var children = rows.Where(r => r.Parent is not null).ToLookup(r => r.Parent!);
+        var found = new HashSet<string>(); var pending = new Stack<string>(); pending.Push(parent);
+        while (pending.TryPop(out var id))
+            foreach (var child in children[id]) if (found.Add(child.Identity)) pending.Push(child.Identity);
+        return found;
     }
     private static List<PlanRow> Selected(List<PlanRow> rows, ImmutableArray<string> ids)
     {

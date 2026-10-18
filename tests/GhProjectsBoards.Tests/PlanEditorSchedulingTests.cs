@@ -217,7 +217,7 @@ internal sealed class PlanEditorSchedulingTests
     public void CyclesRejectWholeCalculationWithRowIds(PlanTask[] tasks, int[] ids)
     {
         var error = Assert.Throws<PlanCycleException>(() => Calculate(tasks, Settings));
-        Assert.That(error!.Message, Is.EqualTo("循環参照: " + string.Join(", ", ids.Select(id => $"#{id}"))));
+        Assert.That(error!.Message, Is.EqualTo("循環参照: " + string.Join(", ", ids.Select(id => $"ID {id}"))));
     }
 
     [Test]
