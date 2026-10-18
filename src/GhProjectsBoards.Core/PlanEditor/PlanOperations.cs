@@ -536,9 +536,11 @@ internal static class PlanOperations
             if (!calculated.IsSummary && !r.Labels.ToHashSet().SetEquals(old.Labels)) fields.Add(PlanField.Labels);
             if (!calculated.IsSummary && !r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
             if (!calculated.IsSummary && !r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);
-            if (calculated.Start.Value != old.Start && !IsUnmappedCalculation(calculated, PlanField.Start, d.State.Settings))
+            // A date GitHub does not hold cannot differ from it: a display-only start or end the scheduler
+            // derived for a row whose baseline date is absent is not an unpublished change (#236).
+            if (old.Start is not null && calculated.Start.Value != old.Start && !IsUnmappedCalculation(calculated, PlanField.Start, d.State.Settings))
                 fields.Add(PlanField.Start);
-            if (calculated.End.Value != old.End && !IsUnmappedCalculation(calculated, PlanField.End, d.State.Settings))
+            if (old.End is not null && calculated.End.Value != old.End && !IsUnmappedCalculation(calculated, PlanField.End, d.State.Settings))
                 fields.Add(PlanField.End);
             foreach (var field in fields.Where(field => IsRecalculatedField(calculated, field)))
                 recalculated.Add((r.Identity, field));
