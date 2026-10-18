@@ -98,4 +98,23 @@ internal static class PlanLateness
         var hours = remaining.Value + (task.Input.Actual ?? 0);
         return $"終了: 開始から {hours.ToString("0.############################", CultureInfo.InvariantCulture)}h";
     }
+
+    // The descendants this task's own lateness pushed later (#236 part B): the identity set behind 後続を表示.
+    internal static ImmutableArray<string> LaterDescendants(IReadOnlyList<ScheduledTask> tasks, string identity, PlanLatenessResult result)
+    {
+        var children = tasks.Where(t => t.Input.Parent is not null).GroupBy(t => t.Input.Parent!, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.Select(t => t.Input.Identity).ToArray(), StringComparer.Ordinal);
+        var found = ImmutableArray.CreateBuilder<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal) { identity };
+        var queue = new Queue<string>();
+        queue.Enqueue(identity);
+        while (queue.Count > 0)
+            foreach (var child in children.GetValueOrDefault(queue.Dequeue()) ?? [])
+                if (seen.Add(child))
+                {
+                    queue.Enqueue(child);
+                    if (result.Tasks.TryGetValue(child, out var late) && late.Level == PlanLatenessLevel.Later) found.Add(child);
+                }
+        return found.ToImmutable();
+    }
 }

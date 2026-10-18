@@ -19,7 +19,7 @@ internal static class PlanSheetColumns
     internal static readonly (string Key, string Name)[] Standard = [
         ("Id", "ID"), ("Indicator", "状態"), ("Title", "タスク名"), ("Phase", "工程"), ("Assignees", "担当者"),
         ("Estimate", "見積 h"), ("Remaining", "残 h"), ("Actual", "実績 h"), ("Start", "開始日"), ("End", "終了日"),
-        ("Predecessors", "先行"), ("StartNoEarlierThan", "開始日指定"), ("Fixed", "日程固定"), ("Status", "ステータス")];
+        ("ForecastEnd", "見込終了"), ("Predecessors", "先行"), ("StartNoEarlierThan", "開始日指定"), ("Fixed", "日程固定"), ("Status", "ステータス")];
     internal static bool IsExtra(string key) => key.StartsWith("Project:", StringComparison.Ordinal) && key.Length > 8;
     internal static bool IsMappedExtra(PlanDocument document, string key)
         => IsExtra(key) && (document.State.Settings.Columns.Any(c => c.FieldId == key[8..])
@@ -50,9 +50,9 @@ internal static class PlanSheetColumns
             var mapping = settings.Columns.SingleOrDefault(c => c.Role.ToString() == key);
             var source = mapping?.Name ?? key switch { "Title" => "Title", "Assignees" => "Assignees", "Predecessors" => "Blocked by", "Status" => "Status", _ => "—" };
             var type = key switch { "Title" => "テキスト", "Assignees" => "担当者", "Predecessors" => "関係",
-                "Estimate" or "Remaining" or "Actual" => "数値", "Start" or "End" or "StartNoEarlierThan" => "日付",
+                "Estimate" or "Remaining" or "Actual" => "数値", "Start" or "End" or "StartNoEarlierThan" or "ForecastEnd" => "日付",
                 "Phase" or "Status" or "Fixed" => "単一選択", _ => "—" };
-            result.Add(new(key, name, source, key == "Indicator" ? "計算" : key == "Id" ? "読み取りのみ" : "編集できる", i < 11, null) { Type = type });
+            result.Add(new(key, name, source, key is "Indicator" or "ForecastEnd" ? "計算" : key == "Id" ? "読み取りのみ" : "編集できる", i < 12, null) { Type = type });
         }
         var mapped = settings.Columns.Select(c => c.FieldId).ToHashSet();
         foreach (var f in document.Baseline.Columns.Where(f => !mapped.Contains(f.Id) && !(f.Name == "Status" && f.DataType == "SINGLE_SELECT") && f.DataType is "TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT" or "ITERATION"))

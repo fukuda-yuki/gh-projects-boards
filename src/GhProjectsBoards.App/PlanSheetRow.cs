@@ -57,7 +57,7 @@ public sealed class PlanSheetRow : Grid
     private string? boundIdentity;
     private double chartOffset = double.NaN;
     private sealed record ChartPresentation(string Identity, int Number, int RowIndex, DateOnly? Start, DateOnly? End,
-        bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? PublishedEnd,
+        bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? ForecastEnd,
         bool ShowLabels, DateOnly FirstDay, double DateInset, double DayWidth, double Viewport, double Height, ElementTheme Theme, Brush ThemeBrush);
     private sealed class DependencyVisual
     {
@@ -265,7 +265,7 @@ public sealed class PlanSheetRow : Grid
             }
             cell.FontStyle = Windows.UI.Text.FontStyle.Normal;
             cell.Foreground = PlanSheetView.Brush(field == PlanField.End && late?.Level == PlanLatenessLevel.Overdue
-                && owner.CellDate(Identity, field) > owner.PublishedEnd(Identity) ? "SystemFillColorCriticalBrush"
+                ? "SystemFillColorCriticalBrush"
                 : owner.IsCalculated(Identity, field) ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
             cell.FontWeight = owner.Schedule.GetValueOrDefault(Identity)?.IsSummary == true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
             cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict || untitled ? 4 : 1);
@@ -322,11 +322,16 @@ public sealed class PlanSheetRow : Grid
         var effort = owner.Schedule.GetValueOrDefault(Identity);
         var typed = taskRow?.StartNoEarlierThan is not null || taskRow?.Fixed == true;
         var unpublished = owner.Unpublished.Fields.ContainsKey(Identity);
-        var stateText = PlanSheetText.Indicator(taskRow, effort, late, remoteProblem, unpublished);
-        indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : late?.Level == PlanLatenessLevel.Overdue ? "\uE814"
-            : late?.Level == PlanLatenessLevel.Later ? "\uE7BA" : effort?.IsOverEstimate == true || effort?.IsZeroRemainingOpen == true ? "\uE7BA" : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
+        var stateText = PlanSheetText.Indicator(taskRow, effort, late, remoteProblem, unpublished, owner.Marks);
+        // Outlined marks only, never filled (#236 part B): red 期限超過, yellow 予定より遅れ and 見積超過.
+        var overdueMark = owner.Marks.Overdue && late?.Level == PlanLatenessLevel.Overdue;
+        var yellowMark = owner.Marks.Later && late?.Level == PlanLatenessLevel.Later
+            || owner.Marks.OverEstimate && (effort?.IsOverEstimate == true || effort?.IsZeroRemainingOpen == true);
+        indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : overdueMark || yellowMark ? "\uE7BA"
+            : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
         indicator.FontFamily = new FontFamily(indicator.Glyph == "\u2022" ? "Segoe UI" : "Segoe Fluent Icons");
-        indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || late?.Level is PlanLatenessLevel.Overdue or PlanLatenessLevel.Later ? "SystemFillColorCriticalBrush" : done ? "IndicatorDoneBrush" : typed ? "IndicatorTypedBrush" : "SheetChangedMarkBrush");
+        indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || overdueMark ? "SystemFillColorCriticalBrush"
+            : yellowMark ? "SystemFillColorCautionBrush" : done ? "IndicatorDoneBrush" : typed ? "IndicatorTypedBrush" : "SheetChangedMarkBrush");
         indicator.Visibility = owner.IndicatorVisible ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetAutomationId(indicator, "PlanIndicator" + number);
         AutomationProperties.SetName(indicator, stateText); ToolTipService.SetToolTip(indicator, stateText);
@@ -371,7 +376,7 @@ public sealed class PlanSheetRow : Grid
         DrawDependencies(owner, number, rowIndex);
         decimal? completeFraction = !task.IsSummary && task.Input.IsComplete ? 1m : task.WorkCompleteFraction;
         var presentation = new ChartPresentation(Identity, number, rowIndex, task.Start.Value, task.End.Value,
-            task.IsSummary, task.IsMilestone, completeFraction, owner.LatenessOf(Identity), owner.PublishedEnd(Identity),
+            task.IsSummary, task.IsMilestone, completeFraction, owner.LatenessOf(Identity), owner.ForecastEndOf(Identity),
             owner.ShowLatenessLabels, owner.FirstDay, owner.ChartDateInset, owner.DayWidth, owner.ChartViewport, owner.RowHeight,
             ActualTheme, PlanSheetView.Brush("GanttTaskBrush"));
         if (presentation != chartPresentation) {
@@ -547,9 +552,11 @@ public sealed class PlanSheetRow : Grid
                 Fill = PlanSheetView.Brush("GanttTaskBrush") }, "PlanProgress" + number);
             Canvas.SetLeft(progress, x); Canvas.SetTop(progress, (owner.RowHeight - 14) / 2); taskChart.Children.Add(progress);
         }
-        if (!milestone && late is { } count && owner.PublishedEnd(Identity) is { } published) {
-            var lateX = Math.Max(x, ChartX(owner, published) + owner.DayWidth);
-            var lateWidth = x + width - lateX;
+        if (!milestone && late is { } count && owner.ForecastEndOf(Identity) is { } forecast && forecast > end) {
+            // The slip runs from the day after the plan end to the forecast end (#236 part B). It is the
+            // plan-versus-forecast gap, never a comparison with what was published.
+            var lateX = ChartX(owner, end) + owner.DayWidth;
+            var lateWidth = ChartX(owner, forecast) + owner.DayWidth - lateX;
             if (lateWidth <= 0) return;
             Shape segment = task.IsSummary
                 ? new Polygon { Width = lateWidth, Height = 10, Points = [new(0, 0), new(lateWidth, 0), new(lateWidth, 10), new(Math.Max(0, lateWidth - 4), 6), new(0, 6)] }

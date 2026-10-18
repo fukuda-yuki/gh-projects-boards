@@ -508,6 +508,8 @@ internal static class PlanOperations
     internal static string? ReadOnlyReason(PlanRow row, bool summary, string field)
     {
         if (field == PlanField.Repository) return "この列は読み取り専用です。";
+        // 見込終了 is the forecast (#236 part B): a derived value, never an input.
+        if (field == "ForecastEnd") return "見込終了は先行関係と見込み残存工数から計算します（編集不可）";
         if (summary && field is not (PlanField.Title or PlanField.Repository or PlanField.Parent))
             return SummaryReadOnlyReason(field);
         return row.Closed && field is PlanField.Remaining or PlanField.End

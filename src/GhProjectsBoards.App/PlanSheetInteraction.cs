@@ -129,9 +129,8 @@ internal sealed partial class PlanSheetView
         var hasSelection = Schedule.TryGetValue(selected, out var task);
         emptyHint.Visibility = hasSelection ? Visibility.Collapsed : Visibility.Visible;
         detailToggle.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
-        totals.Text = hasSelection ? "" : LatenessCounts(OverdueTasks, LaterTasks);
-        totals.Visibility = totals.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        AutomationProperties.SetName(totals, totals.Text);
+        successorLink.Visibility = Visibility.Collapsed; successorLink.Content = "";
+        predecessorLink.Visibility = Visibility.Collapsed; predecessorLink.Content = "";
         var late = LatenessOf(selected);
         slip.Text = "";
         latenessDetail.Text = "";
@@ -144,9 +143,23 @@ internal sealed partial class PlanSheetView
                 var missedDate = missed.ToString("M/d", CultureInfo.InvariantCulture);
                 slip.Text = kind == PlanOverdueKind.Finish ? $"完了予定 {missedDate} を過ぎて未完了" : $"開始予定 {missedDate} を過ぎて未着手";
                 if (late.DaysLater is { } days) slip.Text += $" · +{days} 日";
-            } else if (late.DaysLater is { } days && PublishedEnd(selected) is { } published) {
-                slip.Text = $"発行済み {published.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日";
-                if (!task.IsSummary && late.StartDelayedByPredecessor) latenessDetail.Text = "先行の遅れによる";
+            } else if (late.DaysLater is { } days && task.End.Value is { } planned) {
+                // The plan end and the forecast end are what the lateness compares (#236); publishing no
+                // longer defines it, so the earlier "発行済み" wording is retired.
+                slip.Text = $"見込終了 {ForecastLabel(selected)} · {planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日";
+            }
+            if (!task.IsSummary && task.End.Value is { } end && ForecastEndOf(selected) is { } forecast && forecast > end) {
+                var delayed = LaterDescendantsOf(selected).Length;
+                if (delayed > 0) {
+                    successorLink.Content = $"この遅れで後続 {delayed} タスクが予定より遅れ · 後続を表示";
+                    successorLink.Visibility = Visibility.Visible;
+                    AutomationProperties.SetName(successorLink, $"後続を表示（{delayed} タスク）");
+                }
+            }
+            if (late.CausePredecessorRowId is { } cause) {
+                predecessorLink.Content = $"先行 {cause} の遅れによる · {cause} へ移動";
+                predecessorLink.Visibility = Visibility.Visible;
+                AutomationProperties.SetName(predecessorLink, $"先行 {cause} へ移動");
             }
         }
         slipPill.Background = late?.Level == PlanLatenessLevel.Overdue ? Brush("GanttLateTintBrush") : null;
@@ -176,6 +189,8 @@ internal sealed partial class PlanSheetView
     }
     private static string LatenessCounts(int overdue, int later) =>
         overdue > 0 ? $"期限超過 {overdue}" + (later > 0 ? $" · 予定より遅れ {later}" : "") : later > 0 ? $"予定より遅れ {later}" : "";
+    private string ForecastLabel(string identity) => ForecastEndOf(identity) is { } day
+        ? PlanSheetView.DateText(day) : "—";
     internal void MoveSelection(VirtualKey key, bool extend)
     {
         // Excel keeps a whole-row selection whole while it extends vertically: Shift+Down after
@@ -506,6 +521,18 @@ internal sealed partial class PlanSheetView
     private readonly DispatcherTimer dragScroll = new() { Interval = TimeSpan.FromMilliseconds(40) };
     private void InitializeInteraction()
     {
+        // The selection line's impact links (#236 part B): filter to the delayed successors, or move to the
+        // predecessor that caused the delay.
+        successorLink.Click += (_, _) => {
+            if (selected.Length == 0) return;
+            var ids = LaterDescendantsOf(selected).ToHashSet(StringComparer.Ordinal);
+            if (ids.Count > 0) FilterTasks(ids, $"後続 {ids.Count}", dimAncestors: true);
+        };
+        predecessorLink.Click += (_, _) => {
+            if (LatenessOf(selected)?.CausePredecessorRowId is not { } rowId || IdentityOfRow(rowId) is not { Length: > 0 } identity) return;
+            ClearIdentityFilter();
+            SelectAndFocus(identity, PlanField.Title, false);
+        };
         AddHandler(PointerMovedEvent, new PointerEventHandler((_, args) => {
             if (drag is not { } operation || args.Pointer.PointerId != operation.PointerId) return;
             UpdateDrag(args.GetCurrentPoint(this).Position); args.Handled = true;

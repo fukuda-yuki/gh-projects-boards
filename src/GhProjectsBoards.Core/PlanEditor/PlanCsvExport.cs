@@ -43,7 +43,9 @@ internal static class PlanCsvExport
                 }
                 return field switch {
                     "Indicator" => Text(PlanSheetText.Indicator(row, task, lateness.Tasks.GetValueOrDefault(row.Identity),
-                        PlanSheetText.RemoteProblem(document.Sync, row.Identity), changes.Fields.ContainsKey(row.Identity))),
+                        PlanSheetText.RemoteProblem(document.Sync, row.Identity), changes.Fields.ContainsKey(row.Identity),
+                        PlanMarkVisibility.From(document.State.Settings))),
+                    "ForecastEnd" => Text(PlanSheetText.ForecastEnd(task, lateness.Tasks.GetValueOrDefault(row.Identity))),
                     PlanField.Estimate => Number(task.Estimate), PlanField.Remaining => Number(task.Remaining), PlanField.Actual => Number(task.Actual),
                     PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value), PlanField.StartNoEarlierThan => Date(row.StartNoEarlierThan),
                     PlanField.Assignees => Text(string.Join(", ", row.Assignees.Select(Assignee))),

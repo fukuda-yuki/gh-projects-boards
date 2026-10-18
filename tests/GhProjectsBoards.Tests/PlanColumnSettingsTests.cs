@@ -284,7 +284,9 @@ internal sealed class PlanColumnSettingsTests
         d=d with {State=d.State with {Settings=PlanSheetColumns.Change(d,"Project:T",name:"",rename:true)}};
         Assert.That(PlanSheetColumns.All(d)[0].Name,Is.EqualTo("Notes"));
         d=d with {State=d.State with {Settings=d.State.Settings with {SheetColumns=[]}}};
-        Assert.That(PlanSheetColumns.All(d).Where(c=>c.Visible).Count(),Is.EqualTo(11));
+        // The default visible set is ID through 先行, with the read-only 見込終了 after 終了日 (#236 part B).
+        Assert.That(PlanSheetColumns.All(d).Where(c=>c.Visible).Count(),Is.EqualTo(12));
+        Assert.That(PlanSheetColumns.All(d).Single(c => c.Key == "ForecastEnd").Name, Is.EqualTo("見込終了"));
         Assert.That(d.State.Rows[0].ExtraValues.Count,Is.EqualTo(2));
     }
 

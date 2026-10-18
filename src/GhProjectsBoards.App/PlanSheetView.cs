@@ -48,6 +48,24 @@ internal sealed partial class PlanSheetView : Grid
     private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0, 0, 0);
     internal int OverdueTasks => lateness.OverdueTasks;
     internal int LaterTasks => lateness.LaterTasks;
+    internal int CauseTasks => lateness.CauseTasks;
+    internal int OverEstimateTasks => lateness.OverEstimateTasks;
+    private IReadOnlySet<string> Set(Func<PlanTaskLateness, bool> matches) =>
+        lateness.Tasks.Where(pair => matches(pair.Value)).Select(pair => pair.Key).ToHashSet(StringComparer.Ordinal);
+    // The four status-bar filters (#236 part B) are identity sets over the same classification the marks use.
+    internal IReadOnlySet<string> OverdueSet => Set(late => late.Level == PlanLatenessLevel.Overdue);
+    internal IReadOnlySet<string> LaterSet => Set(late => late.Level == PlanLatenessLevel.Later);
+    internal IReadOnlySet<string> CauseSet => Set(late => late.IsCause);
+    internal IReadOnlySet<string> OverEstimateSet => Set(late => late.OverEstimate);
+    internal PlanMarkVisibility Marks => PlanMarkVisibility.From(Session.Document.State.Settings);
+    internal DateOnly? ForecastEndOf(string identity) => Schedule.GetValueOrDefault(identity)?.ForecastEnd;
+    internal int? WorkingDaysLater(string identity) => LatenessOf(identity)?.DaysLater;
+    // Ancestor requirement rows a lateness filter keeps for context: shown, but dimmed.
+    private HashSet<string> filterContext = [];
+    internal bool IsFilterContext(string identity) => filterContext.Contains(identity);
+    internal ImmutableArray<string> LaterDescendantsOf(string identity) =>
+        PlanLateness.LaterDescendants(Schedule.Values.OrderBy(t => t.Input.RowId).ToArray(), identity, lateness);
+    internal string IdentityOfRow(int rowId) => Schedule.Values.FirstOrDefault(t => t.Input.RowId == rowId)?.Input.Identity ?? "";
     private Dictionary<string, string> peopleNames = new();
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<string>>.Empty);
     private ImmutableArray<string> untitledNewRows = [];
@@ -57,11 +75,11 @@ internal sealed partial class PlanSheetView : Grid
     internal static readonly Column[] Columns = [
         new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 224), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
         new(PlanField.Estimate, "見積 h", 56), new(PlanField.Remaining, "残 h", 56), new(PlanField.Actual, "実績 h", 56),
-        new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new(PlanField.Predecessors, "先行", 64),
+        new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ForecastEnd", "見込終了", 96), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.StartNoEarlierThan, "開始日指定", 100), new(PlanField.Fixed, "日程固定", 80), new(PlanField.Status, "ステータス", 100)];
     internal bool IndicatorVisible { get; private set; } = true;
     internal readonly HashSet<string?> Hidden = [PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status];
-    internal Column[] VisibleColumns { get; private set; } = Columns.Take(11).ToArray();
+    internal Column[] VisibleColumns { get; private set; } = Columns.Take(12).ToArray();
     internal double RowHeight { get; private set; } = 28;
     private double? dividerWidth;
     private PlanSheetDivider divider = null!;
@@ -106,14 +124,15 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Canvas chartBackground = Id(new Canvas { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left }, "PlanChartBackground");
     private readonly Canvas chartStatus = new() { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left };
     private HashSet<DateOnly> nonWorkingDates = [];
-    private Dictionary<string, DateOnly?> publishedEnds = [];
-    internal DateOnly? PublishedEnd(string identity) => publishedEnds.GetValueOrDefault(identity);
     private readonly TextBlock selection = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis }, "PlanSheetSelection");
     private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
     private readonly TextBlock latenessDetail = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetLatenessDetail");
     private readonly TextBlock emptyHint = Id(new TextBlock { Text = "タスクを選択すると、開始日と終了日の根拠を表示します", Foreground = Brush("TextFillColorSecondaryBrush"), TextTrimming = TextTrimming.CharacterEllipsis }, "PlanSheetEmptyHint");
-    private readonly TextBlock totals = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), HorizontalAlignment = HorizontalAlignment.Right }, "PlanSheetTotals");
+    // The selection line's two impact links (#236 part B): what this task's lateness delayed, and the
+    // predecessor that delayed it. One button per action, shown only when the lateness has that cause.
+    private readonly HyperlinkButton successorLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0, Visibility = Visibility.Collapsed }, "PlanSelectionSuccessorFilter");
+    private readonly HyperlinkButton predecessorLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0, Visibility = Visibility.Collapsed }, "PlanSelectionPredecessorLink");
     private readonly Border slipPill = new() { Background = Brush("GanttLateTintBrush"), CornerRadius = new(11), Padding = new(8, 2, 8, 2), Visibility = Visibility.Collapsed };
     private readonly HyperlinkButton issueLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0 }, "PlanSheetIssue");
     internal readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 170, Language = "ja-JP", DateFormat = "{year.full}/{month.integer(2)}/{day.integer(2)} ({dayofweek.abbreviated})" }, "PlanStatusDate");
@@ -200,11 +219,13 @@ internal sealed partial class PlanSheetView : Grid
         slipPill.Child = slip;
         explanation.Children.Add(reason); explanation.Children.Add(slipPill); SetColumn(slipPill, 1);
         explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 2);
+        var impact = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        impact.Children.Add(successorLink); impact.Children.Add(predecessorLink);
+        explanation.Children.Add(impact); SetColumn(impact, 3);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
         InitializeDetailToggle(selectedLine);
         selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
         selectedLine.Children.Add(emptyHint); SetColumnSpan(emptyHint, 3);
-        selectedLine.Children.Add(totals); SetColumn(totals, 4);
         AutomationProperties.SetName(emptyHint, emptyHint.Text);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(selectedLine); SetRow(selectedLine, 2);
@@ -344,22 +365,32 @@ internal sealed partial class PlanSheetView : Grid
         try { filter.Text = acceptedFilter; }
         finally { rendering = wasRendering; }
     }
-    internal void FilterChangedTasks(IReadOnlySet<string> identities) => FilterTasks(identities, "日程変更");
-    internal void FilterTasks(IReadOnlySet<string> identities, string label, bool includeSummaries = false)
+    internal void FilterTasks(IReadOnlySet<string> identities, string label, bool includeSummaries = false, bool dimAncestors = false)
     {
         CancelPendingFilter();
         acceptedFilter = label;
-        filterPredicate = row => identities.Contains(row.Identity) && (includeSummaries || !SummaryIds.Contains(row.Identity));
+        // Ancestor requirement rows stay visible as context when a count filter is applied (#236 part B).
+        filterContext = dimAncestors ? AncestorsOf(identities) : [];
+        filterPredicate = row => identities.Contains(row.Identity) && (includeSummaries || !SummaryIds.Contains(row.Identity))
+            || filterContext.Contains(row.Identity);
         rendering = true;
         try { filter.Text = acceptedFilter; }
         finally { rendering = false; }
         Refresh();
     }
-    internal void ClearChangedTasksFilter()
+    private HashSet<string> AncestorsOf(IReadOnlySet<string> identities)
+    {
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var identity in identities)
+            for (var parent = Rows.GetValueOrDefault(identity)?.Parent; parent is not null; parent = Rows.GetValueOrDefault(parent)?.Parent)
+                if (!found.Add(parent)) break;
+        return found;
+    }
+    internal void ClearIdentityFilter()
     {
         if (filterPredicate is null) return;
         CancelPendingFilter();
-        acceptedFilter = ""; filterPredicate = null;
+        acceptedFilter = ""; filterPredicate = null; filterContext = [];
         rendering = true;
         try { filter.Text = ""; }
         finally { rendering = false; }
@@ -603,7 +634,6 @@ internal sealed partial class PlanSheetView : Grid
             PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
             var scheduled = PlanOperations.Schedule(document, today);
             Schedule = scheduled.ToDictionary(r => r.Input.Identity);
-            publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
             var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
             var nextNonWorkingDates = calendar.Holidays.Dates.Select(d => d.Date).Concat(calendar.ImportedHolidays?.Dates.Select(d => d.Date) ?? []).Concat(calendar.CompanyDaysOff).ToHashSet();
             if (!nonWorkingDates.SetEquals(nextNonWorkingDates)) timelineKey = null;
@@ -736,6 +766,9 @@ internal sealed partial class PlanSheetView : Grid
         return field switch {
             PlanField.Labels => string.Join(", ", row.Labels),
             PlanField.Start => Date(computed.Start.Value), PlanField.End => Date(computed.End.Value),
+            // 見込終了 is read-only and derived (#236 part B): the date plus the working days it is later.
+            "ForecastEnd" => computed.ForecastEnd is { } forecast ? DateText(forecast)
+                + (lateness.Tasks.GetValueOrDefault(identity)?.DaysLater is { } later ? "  +" + later : "") : "",
             PlanField.Estimate => computed.Estimate is { } estimate ? estimate.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Remaining => computed.Remaining is { } remaining ? remaining.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Actual => computed.Actual is { } actual ? actual.ToString(CultureInfo.CurrentCulture) + "h" : "",
