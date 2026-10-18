@@ -18,6 +18,25 @@ internal sealed class PlanRowStateTests
         => new(Project, new([.. rows], []), new([.. rows], new() { DefaultRepository = "acme/repo", StatusDate = Today, ProjectStart = Today }));
     private static PlanRow Open(string id, string title = "Task") => new(id, title, "acme/repo");
     private static PlanRow Closed(string id, string title = "Task") => new(id, title, "acme/repo") { Closed = true, CloseDate = Today.AddDays(-1) };
+    // A read must not invent dates (#236 rule 5): a row that has never had dates shows none until a PMO edit
+    // gives it effort, dates or a predecessor. So a fixture that needs scheduled dates lays them out the way
+    // such an edit does, exactly as the plan-people and evaluation fixtures do.
+    // It stamps only the end, because that is what the edit path writes: Reschedule writes the end and leaves
+    // the start as the live value of the row's own start, 開始日指定 and predecessor finishes, so a typed start
+    // keeps its edit form and its classification.
+    private static PlanDocument Laid(PlanDocument document)
+    {
+        var rows = document.State.Rows;
+        var settings = document.State.Settings;
+        var schedule = PlanScheduler.Calculate(rows.Select((r, i) => PlanOperations.TaskInput(r, i)).ToArray(),
+            new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
+                Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() },
+            Today, rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal));
+        var byId = schedule.ToDictionary(t => t.Input.Identity);
+        var placed = rows.Select(r => r with { End = byId[r.Identity].End.Value }).ToImmutableArray();
+        return document with { State = document.State with { Rows = placed } };
+    }
     private static ScheduledTask Task(PlanDocument document, string identity) => PlanOperations.Schedule(document, Today).Single(t => t.Input.Identity == identity);
     private async Task<PlanSession> Start(PlanDocument document) => await PlanSession.CreateAsync(new(root), document, Today);
 
@@ -41,7 +60,7 @@ internal sealed class PlanRowStateTests
     public async Task CancellingARowTakesItOutOfTheScheduleAndStopsConstrainingItsSuccessor()
     {
         var successor = Open("B") with { Predecessors = ["A"], Remaining = 8 };
-        var session = await Start(Initial(Open("A") with { Estimate = 16 }, successor));
+        var session = await Start(Laid(Initial(Open("A") with { Estimate = 16 }, successor)));
         var before = Task(session.Document, "B").Start.Value;
         Assert.That(before, Is.GreaterThan(Today), "The successor waits for the task that precedes it.");
         Assert.That((await session.Execute(new ClosePlanRows(["A"], Cancelled: true), Today)).Succeeded, Is.True);
