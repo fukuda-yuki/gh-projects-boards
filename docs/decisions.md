@@ -136,7 +136,7 @@ Windows App SDK 2.5.1, DWrite 2.1.0, Widgets 2.0.5 and Search 2.5.5 carry the sa
 
 ### Core scheduling representation (#78)
 
-Use the UI-independent `PlanEditor` namespace. Keep nullable day inputs and baseline dates separate from derived date cells; working-hour endpoints exist only inside recalculation. Reuse the bundled holiday reader and validated holiday CSV parser without extending legacy planning metadata.
+Use the UI-independent `PlanEditor` namespace. Keep nullable day inputs, the plan's own dates and baseline dates separate from derived forecast cells; working-hour endpoints exist only inside a calculation. Reuse the bundled holiday reader and validated holiday CSV parser without extending legacy planning metadata.
 
 The [current scheduling contract](spec.md#current-planning-editor-scheduling-contract-78) keeps ordinary zero-effort entry reachable as a milestone: an open task with no planned/performed positive work and at least one zero effort value is a milestone, including zero Estimate with calculated zero Remaining. Only closed Issues are complete; zero Remaining after positive planned/performed work remains open and marked. Fixed dates still take precedence over calculating a milestone.
 
@@ -144,7 +144,7 @@ Isolate bad refreshed effort/dates to row warnings and retained GitHub dates, ex
 
 Use exact rational working hours internally, constructed from decimal inputs with BigInteger arithmetic from the standard library. Integer-minute rounding would change subminute effort; tolerances would risk changing true near-boundary work. Exact arithmetic preserves working-interval endpoints across chains and rate changes without either policy or a new dependency. The optional explicit status date overrides a caller-supplied today on each calculation; the local document persists that optional choice.
 
-Never show missing effort as zero. A summary's Estimate and Remaining are the sums of known leaf values with the count of leaf tasks left out, as in the waterfall summary below (#245, owner approval 2026-10-18); a blank total hid the whole requirement when one task added mid-version had no estimate. Actual counts a missing value as zero, like Forecast. Summary predecessors propagate to descendants. Rates are (0, 100] percent; zero capacity is rejected rather than creating a schedule that cannot finish. Retained in-progress starts are historical, while remaining work starts no earlier than the effective 基準日. Deterministic reason tie-breaking and warning strings are owned by the scheduling contract.
+Never show missing effort as zero. A summary's Estimate and Remaining are the sums of known leaf values with the count of leaf tasks left out, as in the waterfall summary below (#245, owner approval 2026-10-18); a blank total hid the whole requirement when one task added mid-version had no estimate. Actual counts a missing value as zero, like Forecast. Summary predecessors propagate to descendants. Rates are (0, 100] percent; zero capacity is rejected rather than creating a schedule that cannot finish. A retained in-progress start is historical and a planned start is a floor, so the plan keeps its own dates; remaining work starts no earlier than the effective 基準日 only in the 見込終了 forecast (#236). Deterministic reason tie-breaking and warning strings are owned by the scheduling contract.
 
 ### Local document and durability (#78 / #79 / #81)
 

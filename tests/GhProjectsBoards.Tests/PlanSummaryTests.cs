@@ -173,10 +173,9 @@ internal sealed class PlanSummaryTests
     }
 
     [Test]
-    public void ClosedTaskForecastUsesCloseDateEvenWhilePublishedDatesAreHeld()
+    public void ClosedTaskForecastUsesCloseDateInsteadOfTheStoredEnd()
     {
         var d = Document(new PlanRow("I", "Closed", "a/b") { Closed = true, CloseDate = Day, End = Day.AddDays(4) });
-        d = d with { Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
         Assert.That(Calculate(d).ForecastFinish, Is.EqualTo(Day));
     }
 

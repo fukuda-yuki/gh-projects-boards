@@ -87,12 +87,9 @@ internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray
   public ImmutableArray<PlanRepositoryOption> RepositoryMilestones { get; init; } = [];
   public ImmutableArray<PlanRepositoryOption> RepositoryLabels { get; init; } = []; }
 internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings);
-internal enum PlanDateHoldOrigin { FirstTakeIn, Reset }
-internal sealed record PlanDateState(PlanDateHoldOrigin? Held = null, PlanDateHoldOrigin? Recalculated = null);
 internal sealed record PlanDocument(ScopedId Project, PlanBaseline Baseline, PlanState State)
 {
     public PlanSync Sync { get; init; } = new();
-    public PlanDateState Dates { get; init; } = new();
 }
 internal sealed record PlanCellChange(string Identity, string Field, object? Value);
 internal abstract record PlanCommand;
@@ -114,8 +111,6 @@ internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowC
     ImmutableArray<string>? BeforeOrder, ImmutableArray<string>? AfterOrder,
     ProjectPlanSettings? BeforeSettings, ProjectPlanSettings? AfterSettings)
 {
-    public PlanDateState? BeforeDates { get; init; }
-    public PlanDateState? AfterDates { get; init; }
     public ImmutableArray<PlanRow> DiscardedRows { get; init; } = [];
     public ImmutableArray<string>? BeforeUnavailable { get; init; }
     public ImmutableArray<string>? AfterUnavailable { get; init; }
@@ -131,8 +126,7 @@ internal sealed record PlanSaveResult(bool Succeeded, PlanSaveFailure Failure, s
 {
     public PlanRefreshResult? Recalculation { get; init; }
     public bool Retryable => Failure == PlanSaveFailure.Io;
-}
-internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);
+}internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);
 internal sealed record PlanOpenResult(PlanLoadStatus Status, PlanSession? Session, string? Error);
 internal sealed record PlanImportResult(bool Applied, ImmutableArray<string> Warnings, string? Error, PlanSaveResult? Save);
 internal sealed record PlanSiblingOrderChange(ImmutableArray<string> Before, ImmutableArray<string> After);
