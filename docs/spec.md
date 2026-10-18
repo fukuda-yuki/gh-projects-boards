@@ -313,7 +313,7 @@ Because the forecast never feeds the plan, it changes no date cell, no unpublish
 Lateness compares the plan with the forecast and never with a previous publish. `PlanLateness` exposes four identity sets, each reported as a count and usable as an exact-set filter:
 
 - **期限超過** (red outlined warning): an open task whose planned end is before the 基準日, or an open task with absent or zero Actual whose planned start is before the 基準日. A plan date on the 基準日 itself is not overdue. A summary carries it when a descendant is 期限超過.
-- **予定より遅れ** (yellow outlined warning): a task that is not 期限超過 whose forecast end is later than its planned end. The tooltip names the cause: 「自分の残による」 or 「先行 #193 の遅れによる」. A 日程固定 task and an in-progress task can be late this way; a task without effort cannot.
+- **予定より遅れ** (yellow outlined warning): a task that is not 期限超過 whose forecast end is later than its planned end. The tooltip names the cause: 「自分の残による」 or 「先行 193 の遅れによる」. A 日程固定 task and an in-progress task can be late this way; a task without effort cannot.
 - **見積超過** (yellow outlined warning): Actual + Remaining above 見積. When the task is also 期限超過, the red mark wins and the tooltip names both.
 - **遅れの原因**: 期限超過, plus every 予定より遅れ caused by the task's own remaining work. A task late only because a predecessor moved is not a cause.
 
