@@ -215,6 +215,7 @@ internal sealed class PlanColumnSettingsTests
         Assert.That(PlanSheetEditing.Parse(d, "Project:D", "１０月１４日", Day), Is.EqualTo(new DateOnly(2026, 10, 14)));
         Assert.That(() => PlanSheetEditing.Parse(d, "Project:N", "８ｈ", Day),
             Throws.ArgumentException.With.Message.EqualTo("数値を入力してください。"));
+        Assert.That(PlanSheetEditing.Parse(d, PlanField.Labels, "ＢＵＧ，urgent", Day, "I1"), Is.EqualTo(new[] { "bug", "urgent" }));
     }
     [TestCase("Project:S","Unknown"), TestCase("MilestoneTitle","Other"),TestCase("Labels","new")]
     public void UnknownOrOtherRepositoryNamesAreRejected(string key,string input)

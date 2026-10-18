@@ -33,7 +33,8 @@ internal static class PlanSheetEditing
             var name = field == PlanField.Labels ? "ラベル" : "マイルストーン";
             var emptyMessage = $"{repository} に{name}がありません。{name}は GitHub で作成します。";
             if (field == PlanField.MilestoneTitle) return PlanExtraEditing.Select(name, options, text, emptyMessage);
-            return text.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            // The list separator is folded too, so the IME's `，` separates labels.
+            return PlanInput.Fold(text).Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
                 .Select(label => PlanExtraEditing.Select(name, options, label, emptyMessage)!).Distinct().Order(StringComparer.Ordinal).ToImmutableArray();
         }
         if (PlanSheetColumns.IsExtra(field)) return PlanExtraEditing.Parse(document, field, text, today);
