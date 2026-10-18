@@ -11,6 +11,8 @@ internal sealed record PlanPublishResult(bool Succeeded, string? Error, PlanPubl
 { public PlanRefreshResult? Refresh { get; init; } }
 internal sealed class PlanPublisher(GhConnectionService service, ConnectionContext context)
 {
+    // GitHub prefers serial requests; use the owner-measured bound and back off on pushback.
+    private const int FieldConcurrencyLimit = 4;
     public List<int> EffectiveBatchSizes { get; } = [];
     public TimeSpan CreationWait { get; private set; }
     public DateTimeOffset? CreationPhaseStarted { get; private set; }
@@ -280,6 +282,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             CreationWait = TimeSpan.Zero; CreationPhaseStarted = null; EffectiveBatchSizes.Clear();
             progressReporter?.Report(new("最新情報の確認"));
             var remote = await Reconcile(session, lease, today, token).ConfigureAwait(false);
+            var serialFields = false;
             // Creation outcomes are adopted before the remaining writes are planned from current local inputs.
             while (true)
             {
@@ -327,7 +330,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     foreach (var stage in byKey.Values.Select(w => w.Stage).Distinct()) ReportWrites(stage);
                 }
                 var reducedLimits = new Dictionary<PlanPublishStage, int>();
-                async Task SendBatch(ImmutableArray<PlanWrite> group)
+                async Task<ApiRequest> PrepareBatch(ImmutableArray<PlanWrite> group)
                 {
                     token.ThrowIfCancellationRequested();
                     ReportWrites(group[0].Stage);
@@ -350,16 +353,10 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                         RequireSave(await session.SaveSync(session.Document.Sync with
                         { CreationStarts = PlanCreationPacing.Reserve(session.Document.Sync.CreationStarts, group.Length, DateTimeOffset.UtcNow) }).ConfigureAwait(false));
                     }
-                    await Save(group.Select(w => w with { State = PlanWriteState.Dispatched, Error = null }));
-                    var request = ApiRequest.GraphQl("mutation PlanPublish(" + string.Join(',', declarations) + "){" + string.Join(' ', selections) + "}", variables);
-                    EffectiveBatchSizes.Add(group.Length);
-                    var response = await lease.SendAsync(request, token).ConfigureAwait(false);
-                    var results = ReadBatch(group, response);
-                    await Save(results);
-                    if (response.RetryAfter is { } delay && delay > TimeSpan.Zero)
-                    {
-                        RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = DateTimeOffset.UtcNow + delay }).ConfigureAwait(false));
-                    }
+                    return ApiRequest.GraphQl("mutation PlanPublish(" + string.Join(',', declarations) + "){" + string.Join(' ', selections) + "}", variables);
+                }
+                static (bool Gateway, bool Resource) Recovery(ImmutableArray<PlanWrite> group, ApiResult response)
+                {
                     // A missing outcome is not an alias rejection; later writes would widen the uncertainty.
                     // Field writes set absolute values or membership, so a gateway failure can use the same bounded split recovery.
                     var fieldGatewayRecovery = group.Length > 1 && group[0].Stage == PlanPublishStage.Fields &&
@@ -370,11 +367,55 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                         responseBody.TryGetProperty("errors", out var responseErrors) && responseErrors.ValueKind == JsonValueKind.Array &&
                         responseErrors.GetArrayLength() > 0 && responseErrors.EnumerateArray().All(e => e.ValueKind == JsonValueKind.Object &&
                             e.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "RESOURCE_LIMITS_EXCEEDED");
-                    if (!fieldGatewayRecovery && results.Any(w => w.State == PlanWriteState.Dispatched &&
-                        !(resourceRecovery && w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
-                        throw new InvalidOperationException("GitHubの応答を確認できないため発行を中断しました。最新の情報に更新で確認してから再発行してください。");
-                    if (response.RetryAfter is { } wait && wait > TimeSpan.Zero)
+                    return (fieldGatewayRecovery, resourceRecovery);
+                }
+                async Task SendBatch(ImmutableArray<PlanWrite> group)
+                    => await SendWindow([group]).ConfigureAwait(false);
+                async Task SendWindow(IReadOnlyList<ImmutableArray<PlanWrite>> groups)
+                {
+                    var requests = new List<ApiRequest>();
+                    foreach (var group in groups) requests.Add(await PrepareBatch(group).ConfigureAwait(false));
+                    await Save(groups.SelectMany(g => g).Select(w => w with { State = PlanWriteState.Dispatched, Error = null }));
+                    foreach (var group in groups) EffectiveBatchSizes.Add(group.Length);
+                    // Only transport overlaps. All progress and durable state changes stay on this flow.
+                    var responses = await Task.WhenAll(requests.Select(request => lease.SendAsync(request, token))).ConfigureAwait(false);
+                    var results = groups.Select((group, i) => ReadBatch(group, responses[i])).ToArray();
+                    await Save(results.SelectMany(r => r));
+                    var now = DateTimeOffset.UtcNow;
+                    var notBefore = session.Document.Sync.NotBefore;
+                    for (var i = 0; i < groups.Count; i++)
+                    {
+                        var response = responses[i];
+                        if (response.RetryAfter is { } delay && delay > TimeSpan.Zero)
+                        {
+                            var deadline = now + delay;
+                            if (notBefore is null || deadline > notBefore) notBefore = deadline;
+                        }
+                        var recovery = Recovery(groups[i], response);
+                        if (groups[i][0].Stage == PlanPublishStage.Fields &&
+                            (response.RetryAfter > TimeSpan.Zero || response.Failure == FailureKind.RateLimited ||
+                             recovery.Gateway || results[i].Any(w => w.State != PlanWriteState.Succeeded &&
+                                 w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
+                            serialFields = true;
+                    }
+                    if (notBefore != session.Document.Sync.NotBefore)
+                        RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = notBefore }).ConfigureAwait(false));
+                    // Check the whole window before any split retry can dispatch another request.
+                    for (var i = 0; i < groups.Count; i++)
+                    {
+                        var recovery = Recovery(groups[i], responses[i]);
+                        if (!recovery.Gateway && results[i].Any(w => w.State == PlanWriteState.Dispatched &&
+                            !(recovery.Resource && w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
+                            throw new InvalidOperationException("GitHubの応答を確認できないため発行を中断しました。最新の情報に更新で確認してから再発行してください。");
+                    }
+                    if (notBefore is { } until && until - DateTimeOffset.UtcNow is var wait && wait > TimeSpan.Zero)
                         await Task.Delay(wait, token).ConfigureAwait(false);
+                    for (var i = 0; i < groups.Count; i++)
+                        await HandleResponse(groups[i], responses[i], results[i]).ConfigureAwait(false);
+                }
+                async Task HandleResponse(ImmutableArray<PlanWrite> group, ApiResult response, ImmutableArray<PlanWrite> results)
+                {
+                    var fieldGatewayRecovery = Recovery(group, response).Gateway;
                     foreach (var already in results.Where(w => w.Stage == PlanPublishStage.Add && w.Error == "AlreadyPresent: Content already exists in this project"))
                     {
                         var issue = progress.Writes.Single(w => w.Identity == already.Identity && w.Stage == PlanPublishStage.Create).ResultId!;
@@ -408,8 +449,14 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                             await SendBatch(part.ToImmutableArray()).ConfigureAwait(false);
                     }
                 }
+                var window = new List<ImmutableArray<PlanWrite>>();
                 foreach (var batch in PlanPublishPlan.Batches(progress.Writes.Where(w => w.State != PlanWriteState.Succeeded)))
                 {
+                    if (batch[0].Stage != PlanPublishStage.Fields && window.Count > 0)
+                    {
+                        await SendWindow(window).ConfigureAwait(false);
+                        window.Clear();
+                    }
                     var ready = ImmutableArray.CreateBuilder<PlanWrite>();
                     foreach (var write in batch)
                     {
@@ -433,11 +480,23 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     while (!remainingReady.IsEmpty)
                     {
                         var size = Math.Min(remainingReady.Length, reducedLimits.GetValueOrDefault(batch[0].Stage, remainingReady.Length));
-                        await SendBatch(remainingReady.Take(size).ToImmutableArray()).ConfigureAwait(false);
+                        var group = remainingReady.Take(size).ToImmutableArray();
                         remainingReady = remainingReady.RemoveRange(0, size);
+                        if (batch[0].Stage == PlanPublishStage.Fields && !serialFields)
+                        {
+                            window.Add(group);
+                            if (window.Count == FieldConcurrencyLimit)
+                            {
+                                await SendWindow(window).ConfigureAwait(false);
+                                window.Clear();
+                            }
+                        }
+                        else await SendBatch(group).ConfigureAwait(false);
                     }
                     if (batch[0].Stage == PlanPublishStage.Create && progress.Writes.Any(w => batch.Any(b => b.Key == w.Key) && w.State != PlanWriteState.Succeeded)) break;
                 }
+
+                if (window.Count > 0) await SendWindow(window).ConfigureAwait(false);
 
                 progressReporter?.Report(new("検証"));
                 await ReconcileCreations(session, lease, token).ConfigureAwait(false);

@@ -132,7 +132,27 @@ internal static class FakeGhProgram
         if (query is not null && input is not null && settings.TryGetProperty("planEditor", out var planEditor) && planEditor.GetBoolean())
         {
             using var planPayload = JsonDocument.Parse(input);
-            return await FakePlanEditor.Handle(query, planPayload.RootElement.GetProperty("variables"), directory, settings);
+            // Protect the fake's whole read-modify-write transaction across child processes.
+            // A ticketed mutation also waits for its predecessor, so batch-numbered faults hit the
+            // same request regardless of which concurrently started process wins the lock.
+            var ticket = planPayload.RootElement.TryGetProperty("orderTicket", out var ticketNode) ? ticketNode.GetInt32() : 0;
+            var orderPath = Path.Combine(directory, "plan-order.txt");
+            var orderDeadline = DateTime.UtcNow.AddSeconds(3);
+            FileStream stateLock;
+            while (true)
+            {
+                try { stateLock = new FileStream(Path.Combine(directory, "plan-state.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
+                catch (IOException) { await Task.Delay(10); continue; }
+                var last = File.Exists(orderPath) ? int.Parse(File.ReadAllText(orderPath)) : 0;
+                if (ticket <= last + 1 || DateTime.UtcNow > orderDeadline) break;
+                stateLock.Dispose(); await Task.Delay(5);
+            }
+            using (stateLock)
+            {
+                if (ticket > 0) File.WriteAllText(orderPath, ticket.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if (mutation && settings.TryGetProperty("mutationDelayMs", out var delay)) await Task.Delay(delay.GetInt32());
+                return await FakePlanEditor.Handle(query, planPayload.RootElement.GetProperty("variables"), directory, settings);
+            }
         }
         if (!api || mutation) return 2;
         if (args[1] == "user")
