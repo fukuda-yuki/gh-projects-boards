@@ -109,7 +109,7 @@ internal sealed class PlanEditorSchedulingTests
     }
 
     [TestCase(null, "2026-10-05", true)]
-    [TestCase("2026-10-06", "2026-10-07", false)]
+    [TestCase("2026-10-06", "2026-10-06", false)]
     public void CompleteEndConstrainsSuccessorOnlyWhenPresent(string? end, string successor, bool warning)
     {
         var results = Calculate([Task() with { Closed = true, CloseDate = end is null ? null : D(end) }, Task(2) with { Predecessors = ["issue:1"] }], Settings);
@@ -168,8 +168,9 @@ internal sealed class PlanEditorSchedulingTests
         };
         var results = Calculate([predecessor, successor], Settings with { StatusDate = Monday.AddDays(2) });
         Dates(results[0], "2026-10-05", "2026-10-06");
-        // A 日程固定 successor keeps its typed pair; an automatic in-progress one consumes Actual + Remaining from its start.
-        Dates(results[1], start, fixedDates ? "2026-10-07" : start);
+        // A 日程固定 successor keeps its typed pair. An automatic in-progress one keeps its own start too
+        // (rule 6), and the plan end it already stores survives the calculation (#236).
+        Dates(results[1], start, "2026-10-07");
         Assert.That(results[1].Start.Origin, Is.EqualTo(DateOrigin.Kept));
         Assert.That(results[1].End.Origin, Is.EqualTo(fixedDates ? DateOrigin.Kept : DateOrigin.Calculated));
         Assert.That(results[1].Warnings.Contains("先行タスクより前に開始"), Is.EqualTo(warning));
@@ -227,7 +228,8 @@ internal sealed class PlanEditorSchedulingTests
         var result = Calculate(rows, Settings);
         Assert.That((result[0].Estimate, result[0].Remaining, result[0].Actual), Is.EqualTo((16m, 16m, 2m)));
         Dates(result[0], "2026-10-05", "2026-10-06");
-        Dates(result[4], "2026-10-06", "2026-10-07");
+        // The summary's rolled-up end is a plan day, so its successor may start on it (#236).
+        Dates(result[4], "2026-10-06", "2026-10-06");
         Assert.That(result[0].StartReason, Is.EqualTo("子タスクの集計"));
         Assert.That(result[0].IsSummary, Is.True);
         Assert.That(result[0].Input.Estimate, Is.EqualTo(999));
@@ -427,8 +429,9 @@ internal sealed class PlanEditorSchedulingTests
     {
         var input = Task(work: estimate) with { Remaining = remaining, Actual = actual, Closed = closed, CloseDate = closed ? Monday.AddDays(-3) : null, Start = Monday.AddDays(-4), End = Monday.AddDays(-3) };
         var result = Run(input);
-        // Zero work sits on the plan's own date, so a マイルストーン no longer moves to the 基準日 on every read.
-        Dates(result, closed ? "2026-10-01" : "2026-10-01", closed ? "2026-10-02" : "2026-10-01");
+        // Zero work sits on the plan's own date, and a stored plan end survives the calculation, so neither
+        // a マイルストーン nor an in-progress task is pulled to the 基準日 or re-laid out (#236).
+        Dates(result, "2026-10-01", closed || actual > 0 ? "2026-10-02" : "2026-10-01");
         Assert.That(result.IsZeroRemainingOpen, Is.EqualTo(!closed && !milestone));
         Assert.That(result.IsMilestone, Is.EqualTo(milestone));
         Assert.That(result.StartReason, Is.EqualTo(closed ? "完了" : "開始日を維持"));

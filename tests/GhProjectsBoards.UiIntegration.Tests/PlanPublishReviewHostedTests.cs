@@ -271,12 +271,11 @@ internal sealed class PlanPublishReviewHostedTests
     }
 
     [TestCase(false, -1), TestCase(true, -1), TestCase(false, 0), TestCase(true, 0), TestCase(false, 1), Category("PlanReadDate")]
-    public async Task ReviewNamesCalculationDateAndFirstTakeInOrigin(bool refresh, int dayOffset)
+    public async Task ReviewNamesCalculationDateWithoutARecalculationOrigin(bool refresh, int dayOffset)
     {
         readDay = Today.AddDays(dayOffset);
         await Open(1);
         Assert.That(workspace.Session!.Document.State.Settings.StatusDate, Is.EqualTo(readDay));
-        Assert.That(workspace.Session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
         await Ui.Run(async () => {
             await workspace.Session.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = readDay }), Today);
             var title = Ui.Find<TextBox>("PlanCell1_Title");
@@ -289,20 +288,19 @@ internal sealed class PlanPublishReviewHostedTests
         await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text.Length > 0);
         await Ui.Idle();
         Assert.That(workspace.Session.Document.State.Rows[0].Title, Is.EqualTo("Edited"));
-        Assert.That(workspace.Session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
         if (refresh)
         {
             var beforeRefresh = "";
             await Ui.Run(() => beforeRefresh = Ui.Find<TextBlock>("PlanPublishStatusDate").Text);
             await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanRefresh"); });
-            await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && workspace.Session!.Document.Dates.Recalculated is null);
+            await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && workspace.Session!.Document.State.Settings.StatusDate == readDay);
             await Ui.Run(() => Ui.Click("PlanPublish"));
             await Ui.Ready<TextBlock>("PlanPublishStatusDate");
             await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text != beforeRefresh);
             await Ui.Idle();
         }
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
-            Is.EqualTo(DateMessage(dayOffset) + (refresh ? "" : "（最初の取り込みのあとの再計算）"))));
+        // The date hold is removed (#236): the review names the 基準日 and no recalculation origin.
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text, Is.EqualTo(DateMessage(dayOffset))));
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-publish-date-" + refresh));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }

@@ -66,12 +66,9 @@ internal sealed partial class PlanWorkspaceView
         var statusDate = document.State.Settings.StatusDate ?? today;
         var pastStatusDate = statusDate < today;
         var dateText = statusDate.ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"));
-        publishStatusDate.Text = (pastStatusDate
+        publishStatusDate.Text = pastStatusDate
             ? "注意: 基準日 " + dateText + " は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。"
-            : "日付は基準日 " + dateText + " で計算したものです。") + (document.Dates.Recalculated switch {
-                PlanDateHoldOrigin.FirstTakeIn => "（最初の取り込みのあとの再計算）",
-                PlanDateHoldOrigin.Reset => "（GitHub の状態に戻したあとの再計算）", _ => ""
-            });
+            : "日付は基準日 " + dateText + " で計算したものです。";
         publishStatusDate.Foreground = PlanSheetView.Brush(pastStatusDate ? "SheetChangedMarkBrush" : "TextFillColorPrimaryBrush");
         AutomationProperties.SetName(publishStatusDate, publishStatusDate.Text);
         var conflicts = PlanOperations.BlockingConflicts(document);
@@ -114,7 +111,7 @@ internal sealed partial class PlanWorkspaceView
             var result = scheduled[row.Identity];
             var current = row with { Start = result.Start.Value, End = result.End.Value };
             // Same rule as PlanOperations.Changes: a closed task publishes its Remaining as 0.
-            if (document.Dates.Held is null && row.Closed && !result.IsSummary) current = current with { Remaining = 0 };
+            if (row.Closed && !result.IsSummary) current = current with { Remaining = 0 };
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
             if (isNew) { Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}")); Group(row.Identity).HasWritableChanges = true; }

@@ -322,7 +322,7 @@ public sealed class PlanSheetRow : Grid
         var effort = owner.Schedule.GetValueOrDefault(Identity);
         var typed = taskRow?.StartNoEarlierThan is not null || taskRow?.Fixed == true;
         var unpublished = owner.Unpublished.Fields.ContainsKey(Identity);
-        var stateText = PlanSheetText.Indicator(taskRow, effort, late, owner.PublishedEnd(Identity), remoteProblem, unpublished);
+        var stateText = PlanSheetText.Indicator(taskRow, effort, late, remoteProblem, unpublished);
         indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : late?.Level == PlanLatenessLevel.Overdue ? "\uE814"
             : late?.Level == PlanLatenessLevel.Later ? "\uE7BA" : effort?.IsOverEstimate == true || effort?.IsZeroRemainingOpen == true ? "\uE7BA" : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
         indicator.FontFamily = new FontFamily(indicator.Glyph == "\u2022" ? "Segoe UI" : "Segoe Fluent Icons");

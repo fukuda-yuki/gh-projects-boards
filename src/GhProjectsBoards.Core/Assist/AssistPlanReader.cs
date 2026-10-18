@@ -73,7 +73,7 @@ internal sealed class AssistPlanReader
     {
         if (filter.Requirement is { } requirement) _ = Reference(requirement);
         if (filter.From > filter.To) throw new ArgumentException("日付範囲が不正です。");
-        if (filter.State is not (null or "open" or "closed" or "overdue" or "later-than-published" or "unpublished" or "missing-estimate" or "missing-remaining"))
+        if (filter.State is not (null or "open" or "closed" or "overdue" or "later" or "unpublished" or "missing-estimate" or "missing-remaining"))
             throw new ArgumentException("タスクの状態フィルターが不正です。");
         bool Under(PlanRow row, string ancestor)
         {
@@ -91,7 +91,7 @@ internal sealed class AssistPlanReader
             (filter.State switch {
                 "open" => !r.Closed, "closed" => r.Closed,
                 "overdue" => !scheduled[r.Identity].IsSummary && lateness.Tasks[r.Identity].Level == PlanLatenessLevel.Overdue,
-                "later-than-published" => !scheduled[r.Identity].IsSummary && lateness.Tasks[r.Identity].Level == PlanLatenessLevel.Later,
+                "later" => !scheduled[r.Identity].IsSummary && lateness.Tasks[r.Identity].Level == PlanLatenessLevel.Later,
                 "unpublished" => unpublished.Fields.ContainsKey(r.Identity),
                 "missing-estimate" => r.Estimate is null, "missing-remaining" => r.Remaining is null, _ => true
             })).Select(r => Reference(r.Identity)).ToArray();

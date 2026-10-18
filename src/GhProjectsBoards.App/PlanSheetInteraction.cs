@@ -135,7 +135,7 @@ internal sealed partial class PlanSheetView
                 var counts = LatenessCounts(late.OverdueDescendantTasks, late.LaterDescendantTasks);
                 latenessDetail.Text = counts.Length > 0 ? "配下: " + counts : "";
             }
-            if (!task.IsSummary && late.OverdueKind is { } kind && late.MissedPublishedDate is { } missed) {
+            if (!task.IsSummary && late.OverdueKind is { } kind && late.MissedDate is { } missed) {
                 var missedDate = missed.ToString("M/d", CultureInfo.InvariantCulture);
                 slip.Text = kind == PlanOverdueKind.Finish ? $"完了予定 {missedDate} を過ぎて未完了" : $"開始予定 {missedDate} を過ぎて未着手";
                 if (late.DaysLater is { } days) slip.Text += $" · +{days} 日";
@@ -158,7 +158,7 @@ internal sealed partial class PlanSheetView
         } else { issueLink.Content = ""; issueLink.NavigateUri = null; issueLink.Visibility = Visibility.Collapsed; }
         AutomationProperties.SetName(issueLink, issueLink.Content?.ToString() ?? "");
         reason.Text = task is not null ? (task.StartReason is "子タスクの集計" or "完了" or "日程固定" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason) : "";
-        if (task is not null && PlanLateness.EndReason(task, StatusDate) is { } endReason) reason.Text += " · " + endReason;
+        if (task is not null && PlanLateness.EndReason(task) is { } endReason) reason.Text += " · " + endReason;
         if (task?.Warnings.Count > 0) reason.Text += " · " + string.Join(" / ", task.Warnings);
         var remoteProblem = RemoteProblem(selected);
         if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;

@@ -278,6 +278,8 @@ internal static class PlanOperations
         state = state with { Rows = rows.ToImmutableArray() };
         try
         {
+            // Reschedule runs the scheduler, which raises a cycle itself, so an indent that creates one must
+            // be translated here and not only in ValidateDocument (#241).
             state = Reschedule(d, state, rescheduled, rescheduleAll, today);
             ValidateDocument(d with { State = state }, today);
         }
@@ -288,6 +290,64 @@ internal static class PlanOperations
             throw;
         }
         return (state, kind);
+    }
+    // Start and end are plan values: only a PMO edit that reaches a task rewrites them, and that edit
+    // reaches the edited task, its transitive successors and the summary roll-ups (#236).
+    private static readonly HashSet<string> ScheduleFields = new(StringComparer.Ordinal)
+        { PlanField.Start, PlanField.End, PlanField.Estimate, PlanField.Remaining, PlanField.Actual,
+          PlanField.Predecessors, PlanField.Fixed, PlanField.StartNoEarlierThan, PlanField.Parent };
+    private static bool ScheduleSettings(ProjectPlanSettings before, ProjectPlanSettings after)
+        => before.ProjectStart != after.ProjectStart || before.ProjectEnd != after.ProjectEnd
+            || !before.CompanyDaysOff.SequenceEqual(after.CompanyDaysOff) || before.ImportedHolidays != after.ImportedHolidays
+            || !before.People.SequenceEqual(after.People);
+    private static PlanState Reschedule(PlanDocument d, PlanState state, IReadOnlyCollection<string> edited, bool all, DateOnly today)
+    {
+        var affected = Affected(state, edited, all);
+        if (affected.Count == 0) return state;
+        var settings = state.Settings;
+        var scheduled = PlanScheduler.Calculate(state.Rows.Select((r, i) => TaskInput(r, i)).ToArray(),
+            new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
+                Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today, affected);
+        var byId = scheduled.ToDictionary(t => t.Input.Identity);
+        // Only the end is written: the plan start stays the live value of the row's own start, 開始日指定
+        // and predecessor finishes, so a typed start keeps its edit form and its classification. A task the
+        // scheduler laid no work out for keeps its own dates, so an explicit clear is never resurrected.
+        return state with { Rows = state.Rows.Select(r => byId.TryGetValue(r.Identity, out var task) && affected.Contains(r.Identity) && LaidOut(task)
+            ? r with { End = task.End.Value } : r).ToImmutableArray() };
+        static bool LaidOut(ScheduledTask task) => !task.Input.IsComplete && !task.Input.Fixed
+            && (task.Input.EffectiveRemaining is > 0 || task.Input.Actual is > 0);
+    }
+    // The edited rows, every row that depends on them through a predecessor link or a roll-up, and the
+    // summaries above them. Everything else keeps its plan dates.
+    private static ImmutableHashSet<string> Affected(PlanState state, IReadOnlyCollection<string> edited, bool all)
+    {
+        var rows = state.Rows;
+        var present = rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+        if (all) return present.ToImmutableHashSet(StringComparer.Ordinal);
+        var byId = rows.ToDictionary(r => r.Identity);
+        var queue = new Queue<string>(edited.Where(present.Contains));
+        var affected = new HashSet<string>(queue, StringComparer.Ordinal);
+        while (queue.TryDequeue(out var id))
+        {
+            foreach (var next in rows)
+            {
+                if (affected.Contains(next.Identity)) continue;
+                if (next.Parent == id || EffectivePredecessors(byId, next).Contains(id))
+                {
+                    affected.Add(next.Identity);
+                    queue.Enqueue(next.Identity);
+                }
+            }
+        }
+        return affected.ToImmutableHashSet(StringComparer.Ordinal);
+    }
+    private static HashSet<string> EffectivePredecessors(IReadOnlyDictionary<string, PlanRow> byId, PlanRow row)
+    {
+        var result = new HashSet<string>(row.Predecessors, StringComparer.Ordinal);
+        for (var parent = row.Parent; parent is not null && byId.TryGetValue(parent, out var above); parent = above.Parent)
+            result.UnionWith(above.Predecessors);
+        return result;
     }
     // An indent adds one relation: the new parent above its new subtree. A link between them in either
     // direction makes the schedule impossible, and that link is what the PMO has to clear. The sentence
@@ -329,61 +389,6 @@ internal static class PlanOperations
         while (pending.TryPop(out var id))
             foreach (var child in children[id]) if (found.Add(child.Identity)) pending.Push(child.Identity);
         return found;
-    }
-    // Start and end are plan values: only a PMO edit that reaches a task rewrites them, and that edit
-    // reaches the edited task, its transitive successors and the summary roll-ups (#236).
-    private static readonly HashSet<string> ScheduleFields = new(StringComparer.Ordinal)
-        { PlanField.Start, PlanField.End, PlanField.Estimate, PlanField.Remaining, PlanField.Actual,
-          PlanField.Predecessors, PlanField.Fixed, PlanField.StartNoEarlierThan, PlanField.Parent };
-    private static bool ScheduleSettings(ProjectPlanSettings before, ProjectPlanSettings after)
-        => before.ProjectStart != after.ProjectStart || before.ProjectEnd != after.ProjectEnd
-            || !before.CompanyDaysOff.SequenceEqual(after.CompanyDaysOff) || before.ImportedHolidays != after.ImportedHolidays
-            || !before.People.SequenceEqual(after.People);
-    private static PlanState Reschedule(PlanDocument d, PlanState state, IReadOnlyCollection<string> edited, bool all, DateOnly today)
-    {
-        var affected = Affected(state, edited, all);
-        if (affected.Count == 0) return state;
-        var settings = state.Settings;
-        var scheduled = PlanScheduler.Calculate(state.Rows.Select((r, i) => TaskInput(r, i)).ToArray(),
-            new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
-                Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
-                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today, affected);
-        var byId = scheduled.ToDictionary(t => t.Input.Identity);
-        // Only the end is written: the plan start stays the live value of the row's own start, 開始日指定
-        // and predecessor finishes, so a typed start keeps its edit form and its classification.
-        return state with { Rows = state.Rows.Select(r => byId.TryGetValue(r.Identity, out var task) && affected.Contains(r.Identity)
-            ? r with { End = task.End.Value } : r).ToImmutableArray() };
-    }
-    // The edited rows, every row that depends on them through a predecessor link or a roll-up, and the
-    // summaries above them. Everything else keeps its plan dates.
-    private static ImmutableHashSet<string> Affected(PlanState state, IReadOnlyCollection<string> edited, bool all)
-    {
-        var rows = state.Rows;
-        var present = rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
-        if (all) return present.ToImmutableHashSet(StringComparer.Ordinal);
-        var byId = rows.ToDictionary(r => r.Identity);
-        var queue = new Queue<string>(edited.Where(present.Contains));
-        var affected = new HashSet<string>(queue, StringComparer.Ordinal);
-        while (queue.TryDequeue(out var id))
-        {
-            foreach (var next in rows)
-            {
-                if (affected.Contains(next.Identity)) continue;
-                if (next.Parent == id || EffectivePredecessors(byId, next).Contains(id))
-                {
-                    affected.Add(next.Identity);
-                    queue.Enqueue(next.Identity);
-                }
-            }
-        }
-        return affected.ToImmutableHashSet(StringComparer.Ordinal);
-    }
-    private static HashSet<string> EffectivePredecessors(IReadOnlyDictionary<string, PlanRow> byId, PlanRow row)
-    {
-        var result = new HashSet<string>(row.Predecessors, StringComparer.Ordinal);
-        for (var parent = row.Parent; parent is not null && byId.TryGetValue(parent, out var above); parent = above.Parent)
-            result.UnionWith(above.Predecessors);
-        return result;
     }
     private static List<PlanRow> Selected(List<PlanRow> rows, ImmutableArray<string> ids)
     {

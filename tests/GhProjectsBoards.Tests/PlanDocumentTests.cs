@@ -72,7 +72,8 @@ internal sealed class PlanDocumentTests
         await session.Execute(new IndentPlanRows(["issue:2"]), Today);
         var scheduled = session.Schedule(Today).ToDictionary(r => r.Input.Identity);
         Assert.That(scheduled["issue:1"].Input.Predecessors, Is.EqualTo(new[] { "issue:3" }));
-        Assert.That(scheduled["issue:2"].Start.Value, Is.GreaterThan(scheduled["issue:3"].End.Value!.Value));
+        Assert.That(scheduled["issue:2"].Start.Value, Is.GreaterThanOrEqualTo(scheduled["issue:3"].End.Value!.Value),
+            "A start on the predecessor's end day is legal; 予定より遅れ is judged against the plan end (#236).");
         await session.Undo(Today);
         Assert.That(Text(session.Document), Is.EqualTo(before));
         await session.Redo(Today);
@@ -354,11 +355,13 @@ internal sealed class PlanDocumentTests
     }
 
     [Test]
-    public async Task CheckpointStoresInputsRatherThanCalculatedDatesOrCredentials()
+    public async Task CheckpointStoresPlanInputsWithoutCalculatedFieldsOrCredentials()
     {
         var initial = Initial(); var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Estimate = 16 });
         var session = await Create(initial with { State = initial.State with { Rows = rows } });
-        Assert.That(session.Schedule(Today)[0].End.Value, Is.EqualTo(Today.AddDays(1)));
+        // The end is a plan value (#236), so the calculation shows the stored day and the checkpoint holds it
+        // as an input; reasons, differences and the forecast are never persisted.
+        Assert.That(session.Schedule(Today)[0].End.Value, Is.EqualTo(Today));
         var json = await File.ReadAllTextAsync(new PlanStore(root).FileFor(Project));
         var node = JsonNode.Parse(json)!;
         Assert.That(node["document"]!["state"]!["rows"]![0]!["end"]!.GetValue<string>(), Is.EqualTo("2026-10-05"));

@@ -652,7 +652,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void ShowPlanningResult(PlanSaveResult save)
     {
-        if (showingRecalculation && workspace.Session?.Document.Dates.Held is not null) CloseRefreshResult();
         if (save.Recalculation is { } result) ShowRefreshResult(result, recalculation: true);
     }
     private void Check(PlanSaveResult save)
