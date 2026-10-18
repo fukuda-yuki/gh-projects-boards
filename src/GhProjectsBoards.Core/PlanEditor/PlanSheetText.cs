@@ -28,6 +28,7 @@ internal static class PlanSheetText
             if (late.LaterDescendantTasks > 0) descendants.Add($"予定より遅れ {late.LaterDescendantTasks}");
             if (descendants.Count > 0) states.Add("配下に" + string.Join("、", descendants));
         }
+        if (effort is { IsSummary: true, MissingEstimates: > 0 }) states.Add($"見積のないタスク {effort.MissingEstimates}");
         if (effort?.IsOverEstimate == true)
             states.Add(effort.Forecast is null ? "見積超過: 見込工数・差異が数値の範囲外です" : $"見積超過: 見込工数 {effort.Forecast:0.############################}h（見積工数 {effort.Estimate:0.############################}h、差異 {effort.Variance:+0.############################;-0.############################;0}h）");
         if (effort?.IsZeroRemainingOpen == true) states.Add("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません");

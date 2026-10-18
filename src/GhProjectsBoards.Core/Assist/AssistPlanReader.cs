@@ -27,7 +27,12 @@ internal sealed record AssistTaskDetails(AssistTaskReference Task, AssistTaskRef
     PlanDate Start, PlanDate End, string StartReason, string? EndReason,
     DateOnly? StartNoEarlierThan, bool Fixed, IReadOnlyList<AssistPublishedDifference> PublishedDifferences,
     IReadOnlyList<AssistTaskReference> Predecessors, IReadOnlyList<AssistTaskReference> Successors,
-    IReadOnlyList<string> Warnings, PlanTaskLateness Lateness, bool Unpublished);
+    IReadOnlyList<string> Warnings, PlanTaskLateness Lateness, bool Unpublished)
+{
+    // A summary's Estimate and Remaining are known sums; these say how many leaf tasks they leave out.
+    public int MissingEstimates { get; init; }
+    public int MissingRemaining { get; init; }
+}
 internal sealed record AssistOverload(string Identity, string Name, decimal? Remaining, decimal? Capacity, decimal? Allowance);
 internal sealed record AssistPlanSummary(DateOnly? Start, DateOnly? End, DateOnly StatusDate, SummaryPlan Measures,
     IReadOnlyList<AssistOverload> Overloads, IReadOnlyList<AssistTaskReference> Tasks);
@@ -119,7 +124,7 @@ internal sealed class AssistPlanReader
                 task.Start, task.End, task.StartReason, PlanLateness.EndReason(task, document.State.Settings.StatusDate ?? today),
                 row.StartNoEarlierThan, row.Fixed, differences, row.Predecessors.Where(references.ContainsKey).Select(Reference).ToArray(),
                 rows.Values.Where(r => r.Predecessors.Contains(id)).Select(r => Reference(r.Identity)).ToArray(),
-                task.Warnings, lateness.Tasks[id], unpublished.Fields.ContainsKey(id));
+                task.Warnings, lateness.Tasks[id], unpublished.Fields.ContainsKey(id)) { MissingEstimates = task.MissingEstimates, MissingRemaining = task.MissingRemaining };
         }).ToArray();
         return new(details.Length, 0, true, details);
     }

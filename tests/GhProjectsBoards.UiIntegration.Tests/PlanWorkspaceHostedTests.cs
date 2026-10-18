@@ -285,7 +285,51 @@ internal sealed partial class PlanWorkspaceHostedTests
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
             Assert.That(bar.Message, Is.EqualTo(advanceDate ? "基準日 10/7 (水) で日程を再計算しました。" : "基準日 10/6 (火) で日程を再計算しました。"));
             Assert.That(bar.ActionButton, Is.Null);
+            Assert.That(bar.Content, Is.Null);
         });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PlanReadDate")]
+    public async Task RefreshNamesIssuesAddedOnGitHubPlacesTheSubIssueAndShowsThePartialTotal()
+    {
+        readDay = new(2026, 10, 6);
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "R01 受注データの外部連携", "acme/repo"), "", true),
+            new(new("I2", "R01 PG-001 製造", "acme/repo") { Parent = "I1", Estimate = 16 }, "", true),
+            new(new("I3", "R02 出荷データの外部連携", "acme/repo"), "", true),
+            new(new("I6", "R02 SA-001 現行業務の調査", "acme/repo") { Parent = "I3", Estimate = 8 }, "", true)
+        ], 7));
+        await Open("R01 受注データの外部連携");
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with { NextId = 7, Issues = remote.Issues
+            .Add(new(new("I4", "R01 PG-005 不具合修正", "acme/repo") { Parent = "I1" }, "", true))
+            .Add(new(new("I5", "顧客からの問い合わせ対応", "acme/repo"), "", true)) });
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        await Ui.Ready<Button>("PlanRefreshAddedFilter");
+        await Ui.Run(() => {
+            Assert.That(workspace.Session!.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I4", "I3", "I6", "I5" }));
+            Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator3")), Does.Contain("未発行の変更あり"));
+            Assert.That(workspace.Session.Changes(readDay).Fields.Where(p => p.Value.Contains(PlanField.Order)).Select(p => p.Key), Is.EqualTo(new[] { "I4" }));
+            var links = workspace.Session.Document.Sync.IssueLinks;
+            string Number(string id) => links[id].Caption[links[id].Caption.LastIndexOf('#')..];
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.EndWith(
+                $"。GitHub で追加された Issue 2: {Number("I4")} R01 PG-005 不具合修正、{Number("I5")} 顧客からの問い合わせ対応"));
+            var total = Ui.Find<FrameworkElement>("PlanCell1_Estimate");
+            Assert.That(AutomationProperties.GetName(total), Does.Contain("16h（見積のないタスク 1 件を除く）"));
+            Assert.That(ToolTipService.GetToolTip(total), Is.EqualTo("見積工数 · 16h（見積のないタスク 1 件を除く）"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator1")), Does.Contain("見積のないタスク 1"));
+        });
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue245-added-issues"));
+        await Ui.Run(() => Ui.Click("PlanRefreshAddedFilter"));
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 3);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I4", "I5", "" }));
+            Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.EqualTo("追加された Issue"));
+            Ui.Find<InfoBar>("PlanRefreshResult").IsOpen = false;
+        });
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 7);
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

@@ -30,6 +30,16 @@ internal sealed class PlanCsvExportTests
     }
 
     [Test]
+    public void PartialSummaryExportsKnownEffortAndMissingEstimateIndicator()
+    {
+        var document = Columns(Document(new("P", "Parent", "acme/repo"),
+            new PlanRow("C", "Known", "acme/repo") { Parent = "P", Estimate = 120, Actual = 8 },
+            new PlanRow("N", "Missing", "acme/repo") { Parent = "P" }), "Estimate", "Remaining", "Actual", "Indicator");
+        var rows = Read(PlanCsvExport.Create(document, Today));
+        Assert.That(rows[1].Take(5), Is.EqualTo(new[] { "1", "120", "112", "8", "見積のないタスク 1" }));
+    }
+
+    [Test]
     public void HeadersFollowVisibleOrderAndDisplayNamesWithFixedIdentityColumns()
     {
         var document = Columns(Document(new PlanRow("I1", "設計", "acme/repo")), "Actual", "Id", "Title", "Repository");

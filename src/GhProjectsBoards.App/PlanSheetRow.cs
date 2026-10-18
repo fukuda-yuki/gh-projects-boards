@@ -289,12 +289,20 @@ public sealed class PlanSheetRow : Grid
                 AutomationProperties.SetAutomationId(cell, "");
                 display.Visibility = visible;
                 display.Height = cell.Height;
-                display.Text.Text = owner.Display(Identity, field);
+                var value = owner.Display(Identity, field);
+                var missing = field == PlanField.Estimate ? owner.Schedule.GetValueOrDefault(Identity)?.MissingEstimates ?? 0
+                    : field == PlanField.Remaining ? owner.Schedule.GetValueOrDefault(Identity)?.MissingRemaining ?? 0 : 0;
+                display.Text.Inlines.Clear();
+                if (missing > 0)
+                    display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = $"未{missing} ", FontSize = 11,
+                        Foreground = PlanSheetView.Brush("SystemFillColorCautionBrush") });
+                display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = value });
                 display.Text.Foreground = PlanSheetView.Brush(field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End
                     ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
                 AutomationProperties.SetAutomationId(display, $"PlanCell{number}_{field}");
                 var accessibleValue = field is PlanField.Start or PlanField.End && owner.CellDate(Identity, field) is { } accessibleDate
-                    ? PlanSheetView.DateText(accessibleDate, true) : display.Text.Text;
+                    ? PlanSheetView.DateText(accessibleDate, true)
+                    : missing > 0 ? $"{value}（{(field == PlanField.Estimate ? "見積" : "残")}のないタスク {missing} 件を除く）" : value;
                 AutomationProperties.SetName(display, $"ID {number} {PlanSheetView.FullName(column)} {accessibleValue} · {PlanOperations.SummaryReadOnlyReason(field)}");
                 var fullValue = field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : accessibleValue;
                 AutomationProperties.SetHelpText(display, string.Join(" · ", new[] { fullValue, AutomationProperties.GetHelpText(cell) }.Where(value => value.Length > 0)));
