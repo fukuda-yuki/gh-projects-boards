@@ -37,6 +37,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly StackPanel legend = Id(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 20, Margin = new(0, 0, 20, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanGanttLegend");
     private readonly Border statusBar = new() { Height = 28 };
     private readonly TextBlock statusCounts = Id(new TextBlock { Margin = new(20, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanStatusCounts");
+    private readonly StackPanel statusMarks = Id(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center }, "PlanStatusMarks");
     private readonly SelectorBarItem tasksTab = Id(new SelectorBarItem { Text = "計画" }, "PlanShowTasks");
     private readonly SelectorBarItem summaryTab = Id(new SelectorBarItem { Text = "サマリー" }, "PlanShowSummary");
     private readonly SelectorBar tabs = new();
@@ -203,7 +204,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         saveFailure.Content = conflictAction;
         refreshFailure.ActionButton = Button("再試行", "PlanRetryRefresh", RefreshRemote);
         publishFailure.ActionButton = Button("再試行", "PlanRetryPublish", () => { RenderReview(); Show("publish"); return Task.CompletedTask; });
-        refreshResult.Closed += (_, _) => sheet?.ClearChangedTasksFilter();
+        refreshResult.Closed += (_, _) => sheet?.ClearIdentityFilter();
         AutomationProperties.SetLiveSetting(refreshResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         failures.Children.Add(refreshResult);
         AutomationProperties.SetLiveSetting(csvExportResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
@@ -263,11 +264,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var statusContent = new Grid();
         statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         statusContent.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        statusContent.Children.Add(statusCounts);
+        var statusLine = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 0, VerticalAlignment = VerticalAlignment.Center };
+        statusLine.Children.Add(statusCounts); statusLine.Children.Add(statusMarks);
+        statusContent.Children.Add(statusLine);
         foreach (var (caption, fill, stroke, dashed) in new[] {
             ("実績工数", "GanttTaskBrush", "GanttTaskBrush", false),
             ("見込み残存工数", "GanttTaskTintBrush", "GanttTaskBrush", false),
-            ("発行済みの終了日からの遅れ", "GanttLateTintBrush", "GanttLateBrush", true),
+            ("計画の終了日から見込終了までの遅れ", "GanttLateTintBrush", "GanttLateBrush", true),
             ("非稼働日", "GanttNonWorkingBrush", "WorkspaceCardStrokeBrush", false) }) {
             var item = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
             var swatch = new Microsoft.UI.Xaml.Shapes.Rectangle { Width = 16, Height = 10, RadiusX = 2, RadiusY = 2, VerticalAlignment = VerticalAlignment.Center,
@@ -348,10 +351,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var requirements = rows.Count(r => parents.Contains(r.Identity));
         statusCounts.Text = string.Create(CultureInfo.GetCultureInfo("ja-JP"), $"要求事項 {requirements:N0} · タスク {rows.Length - requirements:N0}");
         // RenderTasks creates and refreshes the session's sheet before updating shell counts.
-        if (sheet?.Session == session) {
-            if (sheet.OverdueTasks > 0) statusCounts.Text += $" · 期限超過 {sheet.OverdueTasks.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"))}";
-            if (sheet.LaterTasks > 0) statusCounts.Text += $" · 予定より遅れ {sheet.LaterTasks.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"))}";
-        }
+        UpdateStatusMarks(session);
     }
     private static Button CommandButton(string text, string id, Symbol icon)
     {
@@ -474,21 +474,32 @@ internal sealed partial class PlanWorkspaceView : UserControl
     {
         showingRecalculation = recalculation;
         var culture = CultureInfo.GetCultureInfo("ja-JP");
-        string Date(DateOnly date) => date.ToString("M/d (ddd)", culture);
-        var moved = result.PreviousStatusDate != result.StatusDate;
-        var direction = result.StatusDate > result.PreviousStatusDate ? "進めて" : "戻して";
-        refreshResult.Title = recalculation ? "日程を再計算しました" : "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
-        refreshResult.Message = moved
-            ? $"基準日を {Date(result.PreviousStatusDate)} から {Date(result.StatusDate)} に{direction}日程を再計算しました。"
-            : $"基準日 {Date(result.StatusDate)} で日程を再計算しました。";
         refreshResult.ActionButton = null; refreshResult.Content = null;
-        if (recalculation || result.ChangedTasks.Count > 0)
-            refreshResult.Message += "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture);
-        if (result.ChangedTasks.Count > 0)
+        if (recalculation)
         {
-            refreshResult.ActionButton = Button("変更したタスクだけ表示", "PlanRefreshChangedFilter", () => {
-                Show("tasks"); sheet?.FilterChangedTasks(result.ChangedTasks); return Task.CompletedTask;
-            });
+            // A settings change reschedules the plan, so it keeps its own bar and reports the moved tasks.
+            refreshResult.Title = "日程を再計算しました";
+            refreshResult.Message = result.ChangedTasks.Count > 0
+                ? "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture) + "。発行すると GitHub に反映します。"
+                : "日程は変わっていません。";
+            if (result.ChangedTasks.Count > 0)
+                refreshResult.ActionButton = Button("変更したタスクだけ表示", "PlanRefreshChangedFilter", () => {
+                    Show("tasks"); sheet?.FilterTasks(result.ChangedTasks, "日程変更"); return Task.CompletedTask;
+                });
+        }
+        else
+        {
+            // #236: a refresh reads; it moves no date, so the bar reports the lateness it found instead of a
+            // 基準日 change or a changed-task count.
+            refreshResult.Title = "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
+            var counts = LatenessCounts();
+            refreshResult.Message = "日程は変えていません。" + (counts.Length > 0 ? " " + counts + "。" : " 遅れはありません。");
+            if (counts.Length > 0 && sheet?.CauseTasks > 0)
+                refreshResult.ActionButton = Button("遅れの原因を表示", "PlanRefreshCauseFilter", () => {
+                    Show("tasks"); sheet?.FilterTasks(sheet.CauseSet, "遅れの原因 " + sheet.CauseTasks.ToString("N0", culture), dimAncestors: true); return Task.CompletedTask;
+                });
+            else if (counts.Length > 0 && sheet is not null)
+                refreshResult.ActionButton = CountFilter("期限超過", "PlanRefreshOverdueFilter", sheet.OverdueSet, sheet.OverdueTasks);
         }
         if (!result.AddedTasks.IsEmpty && workspace.Session is { } session)
         {
@@ -510,11 +521,52 @@ internal sealed partial class PlanWorkspaceView : UserControl
         }
         refreshResult.IsOpen = true;
     }
+    // The status bar's lateness counts (#236 part B) are buttons over the same identity sets the marks use.
+    private CheckBox MarkSwitch(string label, string id, bool value, Func<ProjectPlanSettings, bool, ProjectPlanSettings> change)
+    {
+        var box = Id(new CheckBox { Content = label, IsChecked = value, MinWidth = 0 }, id);
+        AutomationProperties.SetName(box, label);
+        ToolTipService.SetToolTip(box, label + "を表示します。件数と絞り込みは変わりません。");
+        var generation = settingsGeneration;
+        box.Click += async (_, _) => {
+            if (rendering || generation != settingsGeneration) return;
+            await Run(() => ChangeSettings(s => change(s, box.IsChecked == true)));
+            RenderSettings();
+        };
+        return box;
+    }
+    private string LatenessCounts()
+    {
+        if (sheet is null) return "";
+        var culture = CultureInfo.GetCultureInfo("ja-JP");
+        var parts = new List<string>();
+        if (sheet.OverdueTasks > 0) parts.Add($"期限超過 {sheet.OverdueTasks.ToString("N0", culture)}");
+        if (sheet.LaterTasks > 0) parts.Add($"予定より遅れ {sheet.LaterTasks.ToString("N0", culture)}");
+        if (sheet.CauseTasks > 0) parts.Add($"遅れの原因 {sheet.CauseTasks.ToString("N0", culture)}");
+        if (sheet.OverEstimateTasks > 0) parts.Add($"見積超過 {sheet.OverEstimateTasks.ToString("N0", culture)}");
+        return string.Join(" · ", parts);
+    }
+    private Button CountFilter(string label, string id, IReadOnlySet<string> identities, int count)
+    {
+        var text = label + " " + count.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"));
+        return Button(text, id, () => {
+            Show("tasks"); sheet?.FilterTasks(identities, text, dimAncestors: true); return Task.CompletedTask;
+        });
+    }
+    private void UpdateStatusMarks(PlanSession session)
+    {
+        statusMarks.Children.Clear();
+        if (sheet?.Session != session) return;
+        if (sheet.OverdueTasks > 0) statusMarks.Children.Add(CountFilter("期限超過", "PlanStatusOverdueFilter", sheet.OverdueSet, sheet.OverdueTasks));
+        if (sheet.LaterTasks > 0) statusMarks.Children.Add(CountFilter("予定より遅れ", "PlanStatusLaterFilter", sheet.LaterSet, sheet.LaterTasks));
+        if (sheet.CauseTasks > 0) statusMarks.Children.Add(CountFilter("遅れの原因", "PlanStatusCauseFilter", sheet.CauseSet, sheet.CauseTasks));
+        if (sheet.OverEstimateTasks > 0) statusMarks.Children.Add(CountFilter("見積超過", "PlanStatusOverEstimateFilter", sheet.OverEstimateSet, sheet.OverEstimateTasks));
+    }
     private void CloseRefreshResult()
     {
         showingRecalculation = false;
         refreshResult.IsOpen = false;
-        sheet?.ClearChangedTasksFilter();
+        sheet?.ClearIdentityFilter();
     }
     private void UpdateCommandAvailability()
     {
@@ -791,6 +843,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 if (!result.Succeeded) throw new InvalidOperationException(result.Error);
                 await workspace.Refresh(OperationToken); RenderTasks(); RenderSettings();
             }));
+            settings.Children.Add(SettingsHeading("表示"));
+            // #236 part B: each lateness mark can be hidden. The sets, the counts and the filters stay.
+            settings.Children.Add(MarkSwitch("期限超過の印", "PlanShowOverdueMark", value.ShowOverdueMark,
+                (s, on) => s with { ShowOverdueMark = on }));
+            settings.Children.Add(MarkSwitch("予定より遅れの印", "PlanShowLaterMark", value.ShowLaterMark,
+                (s, on) => s with { ShowLaterMark = on }));
+            settings.Children.Add(MarkSwitch("見積超過の印", "PlanShowOverEstimateMark", value.ShowOverEstimateMark,
+                (s, on) => s with { ShowOverEstimateMark = on }));
             settings.Children.Add(SettingsHeading("カレンダー"));
             settings.Children.Add(Label("月–金  09:00–13:00 / 14:00–18:00"));
             var holidays = value.ImportedHolidays?.ToPreset() ?? PlanningContract.BundledHolidays();
