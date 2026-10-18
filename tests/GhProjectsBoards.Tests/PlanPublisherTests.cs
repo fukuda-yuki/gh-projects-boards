@@ -95,8 +95,12 @@ internal sealed partial class PlanPublisherTests
         await session.Execute(new InsertPlanRows([added]), Today);
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Actual, 4m)]), Today);
         var remote = FakePlanEditor.Load(root);
+        // Plan dates are working days (#236): the reset must show GitHub's dates exactly, so the fixture's
+        // dates must be ones the schedule can reproduce. Today-2/Today-1 are the weekend, which the
+        // scheduler normalises to the next working day and then recomputes the end from, so that pair can
+        // never be a fixed point of the schedule.
         FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Where(i => i.Row.Identity != "I3").Select(i => i with {
-            Row = i.Row with { Title = "Remote " + i.Row.Identity, Remaining = 16, Start = Today.AddDays(-2), End = Today.AddDays(-1) }
+            Row = i.Row with { Title = "Remote " + i.Row.Identity, Remaining = 16, Start = Today.AddDays(-3), End = Today }
         }).Reverse().ToImmutableArray() });
         await session.SaveSync(session.Document.Sync with { Failures = [new("I2", PlanField.Actual, "Verified failure")] });
         var day = Today.AddDays(7);
@@ -127,7 +131,7 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Changes(day).TaskCount, Is.Zero);
         Assert.That(session.Document.Sync.Failures, Is.Empty);
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "After reset")]), day);
-        Assert.That(session.Schedule(day).Any(t => t.Start.Value != Today.AddDays(-2)), Is.False, "A title edit moves no date.");
+        Assert.That(session.Schedule(day).Any(t => t.Start.Value != Today.AddDays(-3)), Is.False, "A title edit moves no date.");
         await session.Undo(day); // edit
         await session.Undo(day); // reset
         await session.Undo(day); // actual
