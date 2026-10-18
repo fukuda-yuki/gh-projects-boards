@@ -49,6 +49,21 @@ Coverage means the agreed behaviors that have a case. A line or branch percentag
 - Start each change with a short behavior list: normal behavior, boundaries, failures and prohibited side effects, each assigned to the lowest reliable boundary. The agent accountable for the change reviews the list for necessity, duplication and boundary. The owner receives a summary only when agreed behavior changes.
 - Work in short Red-Green-Refactor cycles and observe each Red for the intended reason; a build or environment failure is not a behavioral Red. A bug fix starts with a reproducer. When only a native or live check reproduces it, also add a lower-layer regression wherever that layer can detect the defect.
 
+### Operation perspectives
+
+Adopted by the owner on 2026-10-18 after defects that only appeared when an operation was mistaken, left half done, interrupted or met another change. Every Issue that adds or changes a user operation answers each perspective in its behavior list before implementation, marking a perspective that cannot apply with the reason. The PR shows the evidence for each answer, from the running app where the answer concerns what the PMO sees.
+
+| Perspective | Question |
+| --- | --- |
+| Take it back | Can the PMO reverse it from the screen without losing other work done since? |
+| Leave it half done | Where is an incomplete or invalid result (empty title, missing estimate) shown, and does it block anything else? |
+| Interrupted | After network loss, app close, crash or cancel during the operation, is anything lost or duplicated, and is recovery one clear step? |
+| Changed elsewhere | When GitHub or another window changed the same data meanwhile, is it detected, explained and resolvable? |
+| Real input | Japanese IME on, full-width characters, paste from Excel, keyboard only. |
+| Version scale | Time, scrolling and review length with about 1,000 rows. |
+| Failure message | Does it name the cause and the affected row, offer the way out, and disappear once the cause is gone? |
+| Restart | Do the result and its Undo survive closing and reopening? |
+
 ## Boundaries
 
 | Level | Scope | Execution |
