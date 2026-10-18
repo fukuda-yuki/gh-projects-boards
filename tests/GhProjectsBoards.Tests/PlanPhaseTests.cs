@@ -14,6 +14,7 @@ internal sealed class PlanPhaseTests
             new() { Columns = [new(PlanField.Phase, "F", "工程", "SINGLE_SELECT")] }));
 
     [TestCase(" sa ", "SA"), TestCase("ui", "UI"), TestCase(" ", null)]
+    [TestCase("ｓａ", "SA"), TestCase("ＵＩ", "UI"), TestCase("　ｓａ　", "SA")]
     public void PhaseInputNormalizesNamesAndWhitespace(string text, string? expected)
         => Assert.That(PlanSheetEditing.Parse(Document(), PlanField.Phase, text, Day), Is.EqualTo(expected));
 
@@ -22,6 +23,7 @@ internal sealed class PlanPhaseTests
     {
         var d = Document();
         Assert.That(() => PlanSheetEditing.Parse(d, PlanField.Phase, "SS", Day), Throws.ArgumentException.With.Message.EqualTo("工程は SA, UI のどれかを入力してください。"));
+        Assert.That(() => PlanSheetEditing.Parse(d, PlanField.Phase, "ｘｙ", Day), Throws.ArgumentException.With.Message.EqualTo("工程は SA, UI のどれかを入力してください。"));
         Assert.That(() => PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Phase, 12m)]), Day), Throws.ArgumentException);
         var unmapped = d with { State = d.State with { Settings = new() } };
         Assert.That(() => PlanOperations.Apply(unmapped, new ClearPlanCells(["I1"], [PlanField.Phase]), Day), Throws.ArgumentException);
