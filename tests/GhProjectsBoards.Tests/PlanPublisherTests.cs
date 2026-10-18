@@ -1064,6 +1064,70 @@ internal sealed partial class PlanPublisherTests
         Assert.That(File.Exists(Path.Combine(root, "plan-mutations.jsonl")), Is.False, "Nothing is sent for a row this publish cannot create.");
         Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(1));
     }
+    [Test]
+    public async Task ClosingAndCancellingRowsPublishTheirStateReason()
+    {
+        await Start(2);
+        await session.Execute(new ClosePlanRows(["I1"]), Today);
+        await session.Execute(new ClosePlanRows(["I2"], Cancelled: true), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.False, "expected the closed-task dates to follow; error=" + (result.Error ?? "<none>"));
+        var state = FakePlanEditor.Load(root);
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I1").Row.Closed, Is.True);
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I1").Row.Cancelled, Is.False);
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I2").Row.Cancelled, Is.True);
+        var sent = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(sent, Does.Contain("closeIssue"));
+        Assert.That(sent, Does.Contain("COMPLETED"));
+        Assert.That(sent, Does.Contain("NOT_PLANNED"));
+        // The closed-task follow-up writes (the close-day End and Remaining 0) are planned from the close
+        // day the read reports, not from the provisional local day.
+        await publisher.PublishAsync(session, Today);
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("updateProjectV2ItemFieldValue"));
+    }
+
+    [Test]
+    public async Task ReopeningAClosedIssueSendsReopenIssue()
+    {
+        await Start(1, state => state with { Issues = state.Issues.Select(i => i with {
+            Row = i.Row with { Closed = true, Cancelled = true, CloseDate = Today.AddDays(-1) } }).ToImmutableArray() });
+        Assert.That(session.Document.State.Rows.Single().Cancelled, Is.True, "the read reports 中止 from the state reason");
+        await session.Execute(new ReopenPlanRows(["I1"]), Today);
+        Assert.That(session.Document.State.Rows.Single().Closed, Is.False);
+        await publisher.PublishAsync(session, Today);
+        Assert.That(FakePlanEditor.Load(root).Issues.Single().Row.Closed, Is.False);
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("reopenIssue"));
+    }
+
+    [Test]
+    public async Task RemovingARowArchivesItsItemWithoutDeletingTheIssue()
+    {
+        await Start(1);
+        await session.Execute(new RemovePlanRows(["I1"]), Today);
+        await publisher.PublishAsync(session, Today);
+        var state = FakePlanEditor.Load(root);
+        Assert.That(state.Issues.Single().Archived, Is.True);
+        Assert.That(state.Issues.Single().Added, Is.True, "The Issue and its membership remain; only the item is archived.");
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("archiveProjectV2Item"));
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("deleteIssue"));
+    }
+
+    [Test]
+    public async Task OneRowsStateFailureStaysPendingAndDoesNotStopTheOthers()
+    {
+        await Start(2);
+        await session.Execute(new ClosePlanRows(["I1"]), Today);
+        await session.Execute(new ClosePlanRows(["I2"]), Today);
+        Scenario("close-denied");
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.False, "expected the failed row to keep the publish unfinished; error=" + (result.Error ?? "<none>"));
+        var state = FakePlanEditor.Load(root);
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I1").Row.Closed, Is.True, "The other row's state write is independent.");
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I2").Row.Closed, Is.False);
+        Assert.That(session.Document.Sync.Failures.Any(f => f.Identity == "I2" && f.Field == PlanField.Closed), Is.True, "The failed row keeps its reason.");
+        Assert.That(session.Changes(Today).Fields.ContainsKey("I2"), Is.True, "The failed row stays pending for the next publish.");
+        Assert.That(session.Document.Sync.Failures.Any(f => f.Identity == "I1"), Is.False, "The successful row is not recorded as a failure.");
+    }
     private static readonly DateOnly Today = new(2026, 10, 5);
     private static readonly ScopedId Project = new(new("github.com", 42), "P1");
     private string root = null!;

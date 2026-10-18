@@ -25,11 +25,14 @@ internal static class PlanField
     public const string SubIssueOrder = "SubIssueOrder";
     public const string Labels = "Labels";
     public const string MilestoneTitle = "MilestoneTitle";
-    public static readonly string[] All = [Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder, Labels, MilestoneTitle];
+    // #231: a task that is 中止 rather than 完了, and a task the PMO has taken out of this version.
+    public const string Cancelled = "Cancelled";
+    public const string Removed = "Removed";
+    public static readonly string[] All = [Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder, Labels, MilestoneTitle, Cancelled, Removed];
     public static bool IsDefined(string value) => All.Contains(value) || PlanSheetColumns.IsExtra(value);
 }
 
-internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, Delete, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset }
+internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, Delete, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset, Close, Cancel, Reopen, Remove }
 internal sealed record PlanColumnDefinition(string Id, string Name, string DataType)
 { public ImmutableArray<string> Options { get; init; } = []; }
 internal sealed record PlanColumnMapping(string Role, string FieldId, string Name, string DataType);
@@ -68,6 +71,10 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
     public string? Phase { get; init; }
     public bool Closed { get; init; }
     public DateOnly? CloseDate { get; init; }
+    // #231: 中止 (closed as not planned) and この版から外す (pending archive). Both leave the schedule,
+    // the totals and the load; the row keeps its values until the publish confirms it.
+    public bool Cancelled { get; init; }
+    public bool Removed { get; init; }
     public ImmutableArray<string> Assignees { get; init; } = [];
     public ImmutableArray<string> Predecessors { get; init; } = [];
     public string? Parent { get; init; }
@@ -106,6 +113,13 @@ internal sealed record MovePlanSubtrees(ImmutableArray<string> Targets, string? 
 internal sealed record ArrangePlanOutline() : PlanCommand;
 internal sealed record MovePlanRows(ImmutableArray<string> Targets, string? Before = null) : PlanCommand;
 internal sealed record DeletePlanRows(ImmutableArray<string> Targets) : PlanCommand;
+// #231: the four row-state commands. A requirement row stands for its whole subtree, and each command
+// applies to the rows of the selection it fits.
+internal sealed record ClosePlanRows(ImmutableArray<string> Targets, bool Cancelled = false) : PlanCommand;
+internal sealed record ReopenPlanRows(ImmutableArray<string> Targets) : PlanCommand;
+internal sealed record RemovePlanRows(ImmutableArray<string> Targets) : PlanCommand;
+internal enum PlanRowAction { Complete, Cancel, Reopen, Remove }
+internal sealed record PlanRowEligibility(ImmutableArray<string> Applies, ImmutableArray<(string Identity, string Reason)> Skipped);
 internal sealed record ReplacePlanSettings(ProjectPlanSettings Settings) : PlanCommand;
 internal sealed record PlanRowChange(string Identity, PlanRow? Before, PlanRow? After);
 internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowChange> Rows,

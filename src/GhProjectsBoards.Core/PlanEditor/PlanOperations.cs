@@ -10,6 +10,7 @@ internal static class PlanOperations
     {
         Parent = r.Parent, Predecessors = r.Predecessors.ToArray(), Assignees = r.Assignees.ToArray(),
         Estimate = r.Estimate, Remaining = r.Remaining, Actual = r.Actual, Closed = r.Closed, CloseDate = r.CloseDate,
+        Cancelled = r.Cancelled, Removed = r.Removed,
         Start = r.Start, End = r.End, StartNoEarlierThan = r.StartNoEarlierThan, Fixed = r.Fixed
     };
     internal static bool NeedsProgressDate(PlanRow before, PlanRow current, string field)
@@ -254,6 +255,30 @@ internal static class PlanOperations
                 rows.RemoveAll(r => movingIds.Contains(r.Identity));
                 rows.InsertRange(move.Before is null ? rows.Count : rows.FindIndex(r => r.Identity == move.Before), moving);
                 break;
+            case ClosePlanRows close:
+                // #231: 完了にする and 中止にする close the Issue; a requirement row takes its subtree.
+                kind = close.Cancelled ? PlanOperationKind.Cancel : PlanOperationKind.Close;
+                var closing = Eligible(d, close.Targets, close.Cancelled ? PlanRowAction.Cancel : PlanRowAction.Complete);
+                Require(!closing.Applies.IsEmpty, NothingEligible);
+                var closingIds = closing.Applies.ToHashSet(StringComparer.Ordinal);
+                // The local close day is provisional until the publish reads closedAt back.
+                var closedDay = d.State.Settings.StatusDate ?? today;
+                rows = rows.Select(r => closingIds.Contains(r.Identity) ? r with { Closed = true, Cancelled = close.Cancelled, CloseDate = closedDay } : r).ToList();
+                break;
+            case ReopenPlanRows reopen:
+                kind = PlanOperationKind.Reopen;
+                var reopening = Eligible(d, reopen.Targets, PlanRowAction.Reopen);
+                Require(!reopening.Applies.IsEmpty, NothingEligible);
+                var reopeningIds = reopening.Applies.ToHashSet(StringComparer.Ordinal);
+                rows = rows.Select(r => reopeningIds.Contains(r.Identity) ? r with { Closed = false, Cancelled = false, CloseDate = null } : r).ToList();
+                break;
+            case RemovePlanRows remove:
+                kind = PlanOperationKind.Remove;
+                var removing = Eligible(d, remove.Targets, PlanRowAction.Remove);
+                Require(!removing.Applies.IsEmpty, NothingEligible);
+                var removingIds = removing.Applies.ToHashSet(StringComparer.Ordinal);
+                rows = rows.Select(r => removingIds.Contains(r.Identity) ? r with { Removed = true } : r).ToList();
+                break;
             case DeletePlanRows delete:
                 kind = PlanOperationKind.Delete;
                 Require(!delete.Targets.IsDefaultOrEmpty && delete.Targets.Distinct().Count() == delete.Targets.Length &&
@@ -402,6 +427,7 @@ internal static class PlanOperations
     {
         PlanField.Labels => r.Labels, PlanField.MilestoneTitle => r.MilestoneTitle,
         PlanField.Title => r.Title, PlanField.Repository => r.Repository, PlanField.Status => r.Status, PlanField.Phase => r.Phase, PlanField.Closed => r.Closed,
+        PlanField.Cancelled => r.Cancelled, PlanField.Removed => r.Removed,
         PlanField.Assignees => r.Assignees, PlanField.Predecessors => r.Predecessors, PlanField.Parent => r.Parent,
         PlanField.Estimate => r.Estimate, PlanField.Remaining => r.Remaining, PlanField.Actual => r.Actual,
         PlanField.Start => r.Start, PlanField.End => r.End, PlanField.StartNoEarlierThan => r.StartNoEarlierThan, PlanField.Fixed => r.Fixed,
@@ -525,6 +551,31 @@ internal static class PlanOperations
         PlanField.Predecessors => row.Predecessors.Any(held.Contains) || before.Predecessors.Any(held.Contains),
         _ => false
     };
+    internal const string NothingEligible = "この操作ができる行がありません。";
+    // #231: which rows of a selection a row-state command applies to. A requirement row stands for its
+    // whole subtree, as with Link; the rest are skipped with the reason that makes them ineligible.
+    internal static PlanRowEligibility Eligible(PlanDocument document, ImmutableArray<string> targets, PlanRowAction action)
+    {
+        Require(!targets.IsDefaultOrEmpty && targets.Distinct().Count() == targets.Length &&
+            targets.All(id => document.State.Rows.Any(r => r.Identity == id)), "行を選択してください。");
+        var baseline = document.Baseline.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+        var outline = new PlanOutline(document.State.Rows);
+        var candidates = targets.SelectMany(id => outline.Subtree(id)).Select(r => r.Identity).Distinct(StringComparer.Ordinal).ToArray();
+        var applies = ImmutableArray.CreateBuilder<string>(); var skipped = ImmutableArray.CreateBuilder<(string Identity, string Reason)>();
+        foreach (var identity in candidates)
+        {
+            var row = document.State.Rows.Single(r => r.Identity == identity);
+            string? reason = null;
+            if (!baseline.Contains(identity)) reason = "未発行の行です";
+            else if (row.Removed) reason = "この版から外しています";
+            else if (action == PlanRowAction.Remove) { }
+            else if (action == PlanRowAction.Reopen) { if (!row.Closed) reason = "未完了の行です"; }
+            else if (!row.Closed) { }
+            else reason = row.Cancelled ? "すでに中止しています" : "すでに完了しています";
+            if (reason is null) applies.Add(identity); else skipped.Add((identity, reason));
+        }
+        return new(applies.ToImmutable(), skipped.ToImmutable());
+    }
     internal static bool IsRecalculatedField(ScheduledTask task, string field) => field switch
     {
         PlanField.Start => task.IsSummary || !(task.Start.Origin == DateOrigin.Kept && task.Start.Value == task.Input.Start
@@ -583,18 +634,22 @@ internal static class PlanOperations
             if (calculated.Input.Closed && !calculated.IsSummary) r = r with { Remaining = 0 };
             if (!baseline.TryGetValue(r.Identity, out var old)) { result[r.Identity] = [PlanField.NewTask]; continue; }
             var fields = ImmutableArray.CreateBuilder<string>();
-            foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Phase, PlanField.MilestoneTitle, PlanField.Closed, PlanField.Parent,
+            // A pending close or reopen carries the state write on its own: the closed end and the
+            // remaining work follow the close day the read reports, not the provisional local day (#231).
+            var pendingState = r.Closed != old.Closed;
+            foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Phase, PlanField.MilestoneTitle, PlanField.Closed, PlanField.Cancelled, PlanField.Removed, PlanField.Parent,
                 PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.StartNoEarlierThan, PlanField.Fixed })
-                if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryPublishExcluded(calculated.IsSummary, field) && !IsUnmappedCalculation(calculated, field, d.State.Settings) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
+                if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryPublishExcluded(calculated.IsSummary, field) && !IsUnmappedCalculation(calculated, field, d.State.Settings)
+                    && !(pendingState && field == PlanField.Remaining) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
             if (!calculated.IsSummary)
                 foreach (var extra in r.ExtraValues.Keys.Union(old.ExtraValues.Keys))
                     if (!PlanSheetColumns.IsMappedExtra(d, extra) && PlanValues.Get(r, extra) != PlanValues.Get(old, extra)) fields.Add(extra);
             if (!calculated.IsSummary && !r.Labels.ToHashSet().SetEquals(old.Labels)) fields.Add(PlanField.Labels);
             if (!calculated.IsSummary && !r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
             if (!calculated.IsSummary && !r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);
-            if (calculated.Start.Value != old.Start && !IsUnmappedCalculation(calculated, PlanField.Start, d.State.Settings))
+            if (!pendingState && calculated.Start.Value != old.Start && !IsUnmappedCalculation(calculated, PlanField.Start, d.State.Settings))
                 fields.Add(PlanField.Start);
-            if (calculated.End.Value != old.End && !IsUnmappedCalculation(calculated, PlanField.End, d.State.Settings))
+            if (!pendingState && calculated.End.Value != old.End && !IsUnmappedCalculation(calculated, PlanField.End, d.State.Settings))
                 fields.Add(PlanField.End);
             foreach (var field in fields.Where(field => IsRecalculatedField(calculated, field)))
                 recalculated.Add((r.Identity, field));

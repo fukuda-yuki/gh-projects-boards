@@ -133,7 +133,10 @@ internal static class PlanScheduler
                     if (predecessor == task.Identity || ancestors[task.Identity].Contains(predecessor) || ancestors[predecessor].Contains(task.Identity))
                         Cycle([task.Identity, predecessor]);
                 predecessors[task.Identity] = task.Predecessors.Concat(ancestors[task.Identity].SelectMany(a => byId[a].Predecessors))
-                    .Distinct(StringComparer.Ordinal).OrderBy(id => byId.TryGetValue(id, out var t) ? t.RowId : int.MaxValue).ToArray();
+                    .Distinct(StringComparer.Ordinal)
+                    // A 中止 or removed predecessor no longer constrains its successors, now or later (#231).
+                    .Where(id => !byId.TryGetValue(id, out var before) || !before.Inactive)
+                    .OrderBy(id => byId.TryGetValue(id, out var t) ? t.RowId : int.MaxValue).ToArray();
             }
         }
 
@@ -186,6 +189,16 @@ internal static class PlanScheduler
             var task = byId[id];
             var warnings = new HashSet<string>(StringComparer.Ordinal);
             if (task.Parent is { } parent && !byId.ContainsKey(parent)) warnings.Add("プロジェクト外の親タスク");
+            // #231: 中止 and この版から外す rows keep their inputs but produce no dates and no effort, so
+            // they never reach the totals or the people load.
+            if (task.Inactive)
+            {
+                var excluded = Create(task, null, null, DateOrigin.Kept, DateOrigin.Kept, "対象外", warnings);
+                excluded = excluded with { Row = excluded.Row with { Estimate = null, Remaining = null, Actual = null,
+                    MissingEstimates = 0, MissingRemaining = 0 } };
+                results.Add(id, excluded);
+                return excluded;
+            }
             if (task.Assignees.Distinct(StringComparer.Ordinal).Count() > 1) warnings.Add("担当者が複数");
             var dependencies = new List<(PlanTask Task, Result Result)>();
             foreach (var predecessor in predecessors[id])
@@ -216,8 +229,8 @@ internal static class PlanScheduler
                     // A known sum travels with the number of leaf tasks it leaves out, so it is never read as complete.
                     // A summary's rolled-up end is a plan day too, so its successors may start on it.
                     result = result with { EndDayOnly = true, Row = result.Row with {
-                        MissingEstimates = values.Sum(v => v.Row.IsSummary ? v.Row.MissingEstimates : v.Row.Estimate is null ? 1 : 0),
-                        MissingRemaining = values.Sum(v => v.Row.IsSummary ? v.Row.MissingRemaining : v.Row.Remaining is null ? 1 : 0) } };
+                        MissingEstimates = values.Where(v => !v.Row.Input.Inactive).Sum(v => v.Row.IsSummary ? v.Row.MissingEstimates : v.Row.Estimate is null ? 1 : 0),
+                        MissingRemaining = values.Where(v => !v.Row.Input.Inactive).Sum(v => v.Row.IsSummary ? v.Row.MissingRemaining : v.Row.Remaining is null ? 1 : 0) } };
                 }
                 else result = Leaf(task, dependencies, warnings);
             }

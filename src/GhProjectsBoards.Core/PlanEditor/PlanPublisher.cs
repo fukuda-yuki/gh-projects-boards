@@ -327,6 +327,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 static string StageName(PlanPublishStage stage) => stage switch {
                     PlanPublishStage.Create or PlanPublishStage.Add => "新規 Issue",
                     PlanPublishStage.Fields => "フィールド・担当者",
+                    PlanPublishStage.State => "完了・中止・この版から外す",
                     PlanPublishStage.Hierarchy => "親子関係",
                     PlanPublishStage.Dependencies => "先行タスク",
                     _ => "表示順" };
