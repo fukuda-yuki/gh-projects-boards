@@ -153,7 +153,10 @@ internal static class PlanOperations
                 var source = EffectiveRows(d).Single(r => r.Identity == fill.Source);
                 return Apply(d, new EditPlanCells(fill.Kind, fill.Targets.SelectMany(id => fill.Fields.Select(f => new PlanCellChange(id, f, Value(source, f)))).ToImmutableArray()), today);
             case ClearPlanCells clear:
-                return Apply(d, new EditPlanCells(PlanOperationKind.Clear, clear.Targets.SelectMany(id => clear.Fields.Select(f => new PlanCellChange(id, f, null))).ToImmutableArray()), today);
+                // Delete never removes a task name: an accidentally untitled row is the state that holds
+                // its own writes back at publish, so a title target is skipped rather than cleared (#240).
+                return Apply(d, new EditPlanCells(PlanOperationKind.Clear, clear.Targets.SelectMany(id => clear.Fields
+                    .Where(f => f != PlanField.Title).Select(f => new PlanCellChange(id, f, null))).ToImmutableArray()), today);
             case EditPlanCells edit:
                 kind = edit.Kind;
                 Require(kind is PlanOperationKind.Cell or PlanOperationKind.Paste or PlanOperationKind.Fill or PlanOperationKind.CtrlD or PlanOperationKind.Clear, "セル操作の種類が不正です。");

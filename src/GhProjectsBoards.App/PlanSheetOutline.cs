@@ -46,9 +46,12 @@ internal sealed partial class PlanSheetView
     {
         if (!Rows.ContainsKey(identity) || Fields.Length == 0) return;
         var previous = Range;
+        wholeRowSelection = true;
         selected = identity; selectedField = Fields[0];
         if (!extend) anchor = identity;
         anchorField = Fields[^1];
+        // A refusal explains the operation it refused; choosing another row dismisses it (#241, #240).
+        error.Text = "";
         UpdateReason(); RefreshOverviewCommands(); RefreshRealized(previous); FocusSelected();
     }
     internal bool HandleOutlineShortcut(VirtualKey key)
@@ -116,7 +119,7 @@ internal sealed partial class PlanSheetView
         var extend = (args.KeyModifiers & VirtualKeyModifiers.Shift) != 0;
         var current = MoveTargets;
         if (extend || !current.Contains(identity)) SelectWholeRow(identity, extend);
-        else { selectedField = Fields[0]; anchorField = Fields[^1]; RefreshRealized(); FocusSelected(); }
+        else { selectedField = Fields[0]; anchorField = Fields[^1]; wholeRowSelection = true; RefreshRealized(); FocusSelected(); }
         StartDrag(false, identity, selectedField, target, args);
         if (drag is not { } operation) return;
         operation.Move = true; operation.Targets = MoveTargets; operation.Narrow = !extend && current.Contains(identity);
