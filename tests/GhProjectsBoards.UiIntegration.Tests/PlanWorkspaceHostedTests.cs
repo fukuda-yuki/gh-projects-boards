@@ -126,10 +126,15 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Contain("日程は GitHub の値のままです。")));
         }
         // #236 part B: only a settings change that reschedules shows 日程を再計算しました and its filter; a
-        // cell edit no longer opens this bar, so the case drives the settings path it now owns.
+        // cell edit no longer opens this bar, so the case drives the settings path it now owns. Only a
+        // calendar, Project-period or people-rate change reschedules (PlanOperations.Apply), which a 基準日
+        // change is not, so the trigger is a rate change.
         await Ui.Run(async () => {
             var session = workspace.Session!;
-            await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = readDay.AddDays(1) }), readDay);
+            var settings = session.Document.State.Settings;
+            await session.Execute(new ReplacePlanSettings(settings with {
+                People = settings.People.Select(p => p.Identity == "U1" ? p with { Rate = 50 } : p).ToImmutableArray()
+            }), readDay);
         });
         // Core accepts the settings change at once; the workspace shows the notice when that save completes.
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult") is { IsOpen: true, Title: "日程を再計算しました" });
@@ -265,18 +270,25 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(bar.Content, Is.Null);
         });
         // The bar's lateness filter is an identity set over this sheet; whatever the delivered button is,
-        // it narrows the list and closing the bar restores the full plan.
-        if (Ui.Find<InfoBar>("PlanRefreshResult").ActionButton is Button offered)
+        // it narrows the list and closing the bar restores the full plan. The button is read on the UI
+        // thread: a XAML read from the test thread raises COMException.
+        string? offeredId = null, offeredLabel = null;
+        await Ui.Run(() => {
+            if (Ui.Find<InfoBar>("PlanRefreshResult").ActionButton is Button button) {
+                offeredId = AutomationProperties.GetAutomationId(button);
+                offeredLabel = button.Content as string ?? "";
+            }
+        });
+        if (offeredId is not null)
         {
-            var id = AutomationProperties.GetAutomationId(offered);
-            var label = offered.Content as string ?? "";
+            var label = offeredLabel ?? "";
             // The bar never offers a zero count: the 期限超過 fallback is absent when nothing is overdue,
             // and a count filter always names a nonzero set (docs/spec.md, #236 part B).
-            if (id != "PlanRefreshCauseFilter")
+            if (offeredId != "PlanRefreshCauseFilter")
                 Assert.That(int.TryParse(label.Split(' ')[^1].Replace(",", ""), System.Globalization.NumberStyles.Integer,
                     System.Globalization.CultureInfo.InvariantCulture, out var offeredCount) && offeredCount > 0,
                     Is.True, "A count filter in the bar must name a nonzero set: " + label);
-            await Ui.Run(() => Ui.Click(id));
+            await Ui.Run(() => Ui.Click(offeredId));
             await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
             await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-refresh-filter-" + closeBar + "-" + advanceDate));
         }
@@ -599,27 +611,32 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [TestCase(false, false, "")]
-    [TestCase(true, false, "期限超過 1")]
-    [TestCase(false, true, "予定より遅れ 1")]
-    [TestCase(true, true, "期限超過 1 · 予定より遅れ 1")]
+    [TestCase(true, false, "期限超過 1 · 遅れの原因 1")]
+    [TestCase(false, true, "予定より遅れ 1 · 遅れの原因 1")]
+    [TestCase(true, true, "期限超過 1 · 予定より遅れ 1 · 遅れの原因 2")]
     [Category("ShellChrome")]
     public async Task StatusCountsOmitZeroLatenessParts(bool overdue, bool later, string expectedMarks)
     {
         var date = new DateOnly(2026, 10, 5);
         var state = FakePlanEditor.Load(root);
         var row = state.Issues[0].Row with { Start = date, End = date.AddDays(2), Fixed = true };
+        // 遅れの原因 (#236 part B) is an overdue task or a task whose own remaining work pushes its forecast
+        // past its planned end, so the overdue row and the later row each contribute one cause.
         FakePlanEditor.Save(root, state with { Issues = [
             state.Issues[0] with { Row = row with { Start = overdue ? date.AddDays(-3) : date, End = overdue ? date.AddDays(-3) : date.AddDays(2) } },
-            new(row with { Identity = "I2", Title = "後続" }, "", true)] });
+            new(row with { Identity = "I2", Title = "後続" }, "", true),
+            new(row with { Identity = "I3", Title = "見込み超過", Start = date, End = date.AddDays(2), Remaining = 16 }, "", true)] });
         await Open();
         await Ui.Run(async () => {
             var session = workspace.Session!;
             await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = date }), date);
-            if (later) await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.End, date.AddDays(3))]), date);
+            // Pulling I3's end onto the 基準日 leaves its 16h forecast on the next day: a later task that is
+            // not overdue, so the two lateness levels are exercised independently.
+            if (later) await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I3", PlanField.End, date)]), date);
             Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh();
             // #236 part B keeps the requirement and task counts in the status text and moves the lateness
             // counts beside it as identity-set filter buttons, so a zero part is absent rather than "0".
-            Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 0 · タスク 2"));
+            Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 0 · タスク 3"));
             var marks = Ui.Tree(Ui.Find<StackPanel>("PlanStatusMarks")).OfType<Button>()
                 .Select(b => b.Content as string ?? "").Where(t => t.Length > 0).ToArray();
             Assert.That(string.Join(" · ", marks), Is.EqualTo(expectedMarks));
@@ -1969,7 +1986,10 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task SettingChangesRecalculateAndOneUndoRestoresThePreviousDates(string setting, string expected)
     {
         await Open();
-        await Ui.Run(async () => await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = new(2026, 10, 5) }), new(2026, 10, 5)));
+        // A 基準日 change alone does not reschedule (#236 part B): only a calendar, Project-period or rate
+        // change can move dates, so the setup that establishes the previous dates sets the Project period.
+        await Ui.Run(async () => await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
+            StatusDate = new(2026, 10, 5), ProjectStart = new(2026, 10, 5) }), new(2026, 10, 5)));
         var history = workspace.Session!.UndoCount;
         await Settings();
         if (setting == "rate") await Ui.Run(() => Ui.Find<NumberBox>("PlanRateU1").Value = 50);

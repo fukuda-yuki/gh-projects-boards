@@ -290,13 +290,13 @@ internal sealed partial class PlanPublishReviewHostedTests
         Assert.That(workspace.Session.Document.State.Rows[0].Title, Is.EqualTo("Edited"));
         if (refresh)
         {
-            var beforeRefresh = "";
-            await Ui.Run(() => beforeRefresh = Ui.Find<TextBlock>("PlanPublishStatusDate").Text);
             await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanRefresh"); });
             await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && workspace.Session!.Document.State.Settings.StatusDate == readDay);
             await Ui.Run(() => Ui.Click("PlanPublish"));
             await Ui.Ready<TextBlock>("PlanPublishStatusDate");
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text != beforeRefresh);
+            // A refresh leaves the 基準日 as the read day, so the line legitimately reads the same before and
+            // after it: what the reopen must show is the same delivered message with no recalculation origin.
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text == DateMessage(dayOffset));
             await Ui.Idle();
         }
         // The date hold is removed (#236): the review names the 基準日 and no recalculation origin.
