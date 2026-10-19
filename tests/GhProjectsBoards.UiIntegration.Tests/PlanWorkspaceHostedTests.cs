@@ -148,13 +148,18 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Click("PlanUndo");
         });
         await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<ListView>("PlanTasks").Items.Count, Is.EqualTo(4)));
+        // #236 part B: the recalculation notice is not closed by Undo - it is replaced when the next
+        // operation starts (PlanWorkspaceBusy closes it before running one). The subject survives as the
+        // notice not outliving its recalculation: a refresh replaces it, and Redo never brings it back.
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && Ui.Find<InfoBar>("PlanRefreshResult").IsOpen);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
-            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Count, Is.EqualTo(4));
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Title, Does.StartWith("最新の情報に更新しました（"));
             Ui.Click("PlanRedo");
         });
         await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False));
+        await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Title, Does.Not.StartWith("日程を再計算しました")));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
@@ -745,13 +750,18 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await Ui.Idle();
         if (people) { await Ui.Run(() => Ui.Click("PlanShowTasks")); await Ui.Idle(); }
+        // The rejected picker value can be applied by the pending-input flush, so the second assignment must
+        // target a date that is not already in force to be a real change, and Undo must restore whatever was
+        // accepted before it rather than the session's original date.
+        var accepted = workspace.Session.Document.State.Settings.StatusDate;
+        var target = accepted == new DateOnly(2026, 10, 20) ? new DateOnly(2026, 10, 21) : new DateOnly(2026, 10, 20);
         undo = workspace.Session.UndoCount;
-        await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(2026, 10, 20, 0, 0, 0, TimeSpan.Zero));
+        await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(target.ToDateTime(TimeOnly.MinValue)));
         await Ui.Idle();
-        Assert.That(workspace.Session.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 20)));
+        Assert.That(workspace.Session.Document.State.Settings.StatusDate, Is.EqualTo(target));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
-        Assert.That(workspace.Session.Document.State.Settings.StatusDate, Is.EqualTo(before));
+        Assert.That(workspace.Session.Document.State.Settings.StatusDate, Is.EqualTo(accepted));
         await Ui.Run(() => {
             var localSheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
             Assert.That(localSheet.Pending, Is.Empty, string.Join(";", localSheet.Pending.Select(p => $"{p.Key}: {p.Value.Text} original={p.Value.OriginalText}")));
