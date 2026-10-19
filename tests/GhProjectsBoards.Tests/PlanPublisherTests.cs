@@ -362,6 +362,25 @@ internal sealed partial class PlanPublisherTests
     }
 
     [Test]
+    public async Task TheReadCarriesIssueUpdatePermissionWithoutMakingItAPlanChange()
+    {
+        await Start(2);
+        Assert.That(session.Document.Sync.CannotUpdate, Is.Empty, "the fixture grants permission by default");
+        Scenario("no-update-permission");
+        var result = await publisher.RefreshAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(session.Document.Sync.CannotUpdate, Is.EqualTo(new[] { "I1" }));
+        // A permission observation is not a plan value: it is not unpublished work and cannot be published.
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero, "nothing about a permission observation is written");
+        // The observation follows the read, so restoring permission forgets the denial.
+        Scenario();
+        Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(session.Document.Sync.CannotUpdate, Is.Empty);
+    }
+
+    [Test]
     public async Task PublishingWithoutMovingRowsSendsNoSiblingReorder()
     {
         await Start(3, state => state with {

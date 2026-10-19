@@ -13,7 +13,9 @@ internal sealed record PlanRemoteSnapshot(PlanBaseline Baseline, ImmutableDictio
   public bool Scoped { get; init; }
   public ImmutableDictionary<string, string> PeopleNames { get; init; } = ImmutableDictionary<string, string>.Empty;
   public ImmutableDictionary<string, PlanIssueLink> IssueLinks { get; init; } = ImmutableDictionary<string, PlanIssueLink>.Empty;
-  public ImmutableDictionary<string, ImmutableArray<string>> SubIssueOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+  public ImmutableDictionary<string, ImmutableArray<string>> SubIssueOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty;
+  // #231: rows whose Issue the viewer cannot update, observed by this read.
+  public ImmutableArray<string> CannotUpdate { get; init; } = []; }
 internal static class PlanSnapshot
 {
     internal static string ReadDiagnostic(ProjectReadResult result) => $"{result.Outcome}: " + string.Join("; ",
@@ -53,7 +55,10 @@ internal static class PlanSnapshot
         { InaccessibleCount = p.UndeliveredItemCount + p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable),
           IssueLinks = p.Issues.Values.ToImmutableDictionary(i => i.Id.NodeId, i => new PlanIssueLink($"{i.Repository.NameWithOwner}#{i.Number}", i.Url)),
           PeopleNames = PeopleNames(p),
-          SubIssueOrders = p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId)).ToImmutableDictionary(i => i.Id.NodeId, i => i.Native!.SubIssues.Select(c => c.NodeId).ToImmutableArray()) };
+          SubIssueOrders = p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId)).ToImmutableDictionary(i => i.Id.NodeId, i => i.Native!.SubIssues.Select(c => c.NodeId).ToImmutableArray()),
+          // #231: only a definite false observation disables a command; an unavailable capability is not treated
+          // as a denial, so a read that could not see permission leaves the observation alone.
+          CannotUpdate = DeniedUpdates(p, items) };
     }
     // #201: assembles the scoped observation into the whole-Project snapshot shape the merge, verification
     // and adoption paths expect. The written rows and their items come from the read; a row outside the
@@ -86,8 +91,17 @@ internal static class PlanSnapshot
           IssueLinks = document.Sync.IssueLinks.SetItems(p.Issues.Values.ToImmutableDictionary(i => i.Id.NodeId, i => new PlanIssueLink($"{i.Repository.NameWithOwner}#{i.Number}", i.Url))),
           PeopleNames = document.Sync.PeopleNames.SetItems(PeopleNames(p)),
           SubIssueOrders = document.Sync.NativeOrders.SetItems(p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId))
-              .ToImmutableDictionary(i => i.Id.NodeId, i => i.Native!.SubIssues.Select(c => c.NodeId).ToImmutableArray())) };
+              .ToImmutableDictionary(i => i.Id.NodeId, i => i.Native!.SubIssues.Select(c => c.NodeId).ToImmutableArray())),
+          // #231: a scoped read observes permission only for the rows it covered, so an observation for a row
+          // outside the scope is carried over while the row stays in the plan, and dropped when it leaves. A row
+          // the read covered but did not deliver is gone, so its entry goes too.
+          CannotUpdate = document.Sync.CannotUpdate.Where(id => !observed.Any(r => r.Identity == id) && rows.Any(r => r.Identity == id))
+              .Concat(DeniedUpdates(p, items)).Distinct(StringComparer.Ordinal).ToImmutableArray() };
     }
+    // #231: the identities this read observed with a definite inability to update, keyed the way the rows are.
+    private static ImmutableArray<string> DeniedUpdates(ProjectReadModel p, ImmutableDictionary<string, string> items)
+        => p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId) && i.Capability?.CanUpdate == false)
+            .Select(i => i.Id.NodeId).Distinct(StringComparer.Ordinal).ToImmutableArray();
     private static ProjectReadModel RequireComplete(ProjectReadResult result, string message)
     {
         if (result.Outcome != ProjectReadOutcome.Complete || result.Project is not { FieldsComplete: true, ItemsComplete: true, MilestonesComplete: true } p)

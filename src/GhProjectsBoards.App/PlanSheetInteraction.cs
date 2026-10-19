@@ -184,6 +184,10 @@ internal sealed partial class PlanSheetView
             reason.Text = "競合: GitHub では " + PlanWorkspaceView.ReviewValue(Session.Document, selectedField, conflict.Remote);
         if (ReadOnlyReason(selected, selectedField) is { } readOnlyReason)
             reason.Text = readOnlyReason + (reason.Text.Length > 0 ? " · " + reason.Text : "");
+        // #231: the selected row's pending state command belongs on the selection line too, so the state is
+        // readable without hunting for the tag in the title cell.
+        if (RowStateTag(selected) is { } stateTag)
+            reason.Text = (reason.Text.Length > 0 ? reason.Text + " · " : "") + stateTag + "（未発行）";
         AutomationProperties.SetName(reason, reason.Text);
         ToolTipService.SetToolTip(reason, reason.Text);
     }

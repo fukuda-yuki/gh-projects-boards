@@ -42,6 +42,9 @@ internal static class PlanSheetText
         if (shown.OverEstimate && effort?.IsOverEstimate == true)
             states.Add(effort.Forecast is null ? "見積超過: 見込工数・差異が数値の範囲外です" : $"見積超過: 見込工数 {effort.Forecast:0.############################}h（見積工数 {effort.Estimate:0.############################}h、差異 {effort.Variance:+0.############################;-0.############################;0}h）");
         if (done) states.Add("完了");
+        // #231: the row's own pending state, named by the command that produced it.
+        if (taskRow?.Cancelled == true) states.Add("中止");
+        if (taskRow?.Removed == true) states.Add("この版から外す（未発行）");
         if (typed) states.Add(taskRow?.Fixed == true ? "日程固定" : "開始日を指定");
         if (unpublished) states.Add("未発行の変更あり");
         return string.Join("、", states);

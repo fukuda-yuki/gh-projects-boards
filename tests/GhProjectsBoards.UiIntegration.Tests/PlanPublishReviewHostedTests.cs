@@ -12,7 +12,7 @@ using NUnit.Framework;
 namespace GhProjectsBoards.UiIntegration.Tests;
 
 [TestFixture, NonParallelizable, Category("PlanPublishReview")]
-internal sealed class PlanPublishReviewHostedTests
+internal sealed partial class PlanPublishReviewHostedTests
 {
     private DateOnly readDay;
     private string? previousToday;

@@ -2856,6 +2856,7 @@
       "U1": "U1"
     },
     "issueLinks": {},
+    "cannotUpdate": [],
     "inaccessibleCount": 0,
     "draftCount": 0,
     "pullRequestCount": 0,
