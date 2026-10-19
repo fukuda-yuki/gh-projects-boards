@@ -1743,16 +1743,23 @@ internal sealed partial class PlanWorkspaceHostedTests
         FakePlanEditor.Save(root, new([
             new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2));
         await Open();
-        await Ui.Run(() => {
-            var cell = Ui.Find<TextBox>("PlanCell0_Title");
-            cell.Focus(FocusState.Programmatic); cell.Text = "変更した計画";
-            Ui.Click("PlanPublish");
-        });
+        // CommitText focuses another control to commit the cell. The publish button's click did not commit
+        // it, so the earlier run published with nothing pending and correctly wrote nothing; the premise is
+        // now asserted before the publish instead of inferred from the remote afterwards.
+        await CommitText("PlanCell0_Title", "変更した計画");
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text != "未発行 0 タスク",
+            () => "the title edit must be an unpublished change; unpublished=[" + Ui.Find<TextBlock>("PlanUnpublished").Text + "]");
+        var calls = Path.Combine(root, "plan-mutations.jsonl");
+        var before = File.Exists(calls) ? File.ReadAllLines(calls).Length : 0;
+        await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
         await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク",
             () => $"publication settled; unpublished=[{Ui.Find<TextBlock>("PlanUnpublished").Text}], publishEnabled={Ui.Find<Button>("PlanPublish").IsEnabled}, confirmEnabled={Ui.Find<Button>("PlanPublishConfirm").IsEnabled}");
-        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.GreaterThan(0));
+        var writes = File.Exists(calls) ? File.ReadAllLines(calls).Skip(before).ToArray() : [];
+        TestContext.Out.WriteLine($"Publish calls ({writes.Length}): " + string.Join(" ;; ",
+            writes.Select(w => w.Length > 200 ? w[..200] : w)));
+        Assert.That(writes.Any(w => w.Contains("updateIssue")), Is.True, "The publish must send the one change it was given.");
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("変更した計画"));
     }
 
