@@ -14,6 +14,8 @@ internal static class PlanSheetColumns
         => column?.DisplayName is not null ? column.Name : field switch {
             PlanField.Estimate => "見積工数", PlanField.Remaining => "見込み残存工数", PlanField.Actual => "実績工数",
             PlanField.Parent => "親タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
+            // #231: the row-state writes are reviewed by the command that produces them.
+            PlanField.Closed => "状態", PlanField.Cancelled => "中止にする", PlanField.Removed => "この版から外す",
             _ => column?.Name ?? Standard.FirstOrDefault(c => c.Key == field).Name ?? field
         };
     internal static readonly (string Key, string Name)[] Standard = [

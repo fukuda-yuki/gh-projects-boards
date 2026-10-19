@@ -115,6 +115,16 @@ internal sealed partial class PlanWorkspaceView
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
             if (isNew) { Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}")); Group(row.Identity).HasWritableChanges = true; }
+            else
+            {
+                // #231: the row-state operation in plain words, before its field differences.
+                if (before.Closed != row.Closed)
+                    Group(row.Identity).Lines.Add(new(row.Closed
+                        ? row.Cancelled ? "GitHub: Issue を完了としてではなく閉じます（中止）" : "GitHub: Issue を完了として閉じます"
+                        : "GitHub: Issue を再オープンします"));
+                if (!before.Removed && row.Removed)
+                    Group(row.Identity).Lines.Add(new("GitHub: プロジェクトからアーカイブします（Issue とフィールドの値は残ります）"));
+            }
             foreach (var field in PlanValues.Fields(before, current))
             {
                 if (PlanSheetColumns.IsMappedExtra(document, field)) continue;
@@ -283,8 +293,9 @@ internal sealed partial class PlanWorkspaceView
         return element.ValueKind switch {
             JsonValueKind.Array => element.GetArrayLength() == 0 ? "未入力" : string.Join("、", element.EnumerateArray().Select(e => Identity(e.GetString()!))),
             JsonValueKind.String => field == PlanField.Parent ? Identity(element.GetString()!) : element.GetString() is { Length: > 0 } text ? text : "未入力",
-            JsonValueKind.True => field == PlanField.Fixed ? "固定" : "完了",
-            JsonValueKind.False => field == PlanField.Fixed ? "指定なし" : "未完了",
+            // #231: the row-state fields read as the command's own words, never as a bare 完了.
+            JsonValueKind.True => field switch { PlanField.Fixed => "固定", PlanField.Cancelled => "中止にする", PlanField.Removed => "この版から外す", _ => "完了" },
+            JsonValueKind.False => field switch { PlanField.Fixed => "指定なし", PlanField.Cancelled => "中止にしない", PlanField.Removed => "この版に残す", _ => "未完了" },
             _ => element.ToString() };
     }
     private async Task Publish()
