@@ -488,6 +488,14 @@ internal sealed partial class PlanPublishReviewHostedTests
     [Test]
     public async Task RecycledConflictKeepsItsIssueAndResolutionReturnsToThatIssueWithoutWriting()
     {
+        // The review is a virtualized list: a group only exists as a realized container while it is in the
+        // viewport, and a container can be recycled between two UI turns. Every lookup below therefore waits
+        // for the realized group rather than assuming the container that was found a turn ago is still bound.
+        PlanPublishGroupView? RealizedGroup(string id) => Ui.Tree(view).OfType<PlanPublishGroupView>()
+            .FirstOrDefault(g => AutomationProperties.GetAutomationId(g) == id && g.IsLoaded && g.ActualHeight > 0);
+        bool RealizedResolve() =>
+            RealizedGroup("PlanPublishGroupI60") is { } group &&
+            Ui.Tree(group).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanResolveI60_Actual_True" && b.IsLoaded);
         await Open(60);
         await Ui.Run(async () => await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Paste,
             workspace.Session.Document.State.Rows.SelectMany(r => new[] {
@@ -503,7 +511,7 @@ internal sealed partial class PlanPublishReviewHostedTests
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.False);
             var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[59], ScrollIntoViewAlignment.Leading);
         });
-        await Ui.Ready<Button>("PlanResolveI60_Actual_True");
+        await Ui.Until(RealizedResolve);
         await Ui.Run(() => {
             var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[0], ScrollIntoViewAlignment.Leading);
         });
@@ -511,9 +519,9 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Run(() => {
             var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[59], ScrollIntoViewAlignment.Leading);
         });
-        await Ui.Ready<Button>("PlanResolveI60_Actual_True");
+        await Ui.Until(RealizedResolve);
         await Ui.Run(() => {
-            var group = Ui.Find<PlanPublishGroupView>("PlanPublishGroupI60");
+            var group = RealizedGroup("PlanPublishGroupI60")!;
             Assert.That(string.Join(" ", Ui.Tree(group).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("要求タスク 60").And.Contain("競合  GitHub: 2"));
             Ui.Click("PlanResolveI60_Actual_True");
         });
@@ -535,9 +543,10 @@ internal sealed partial class PlanPublishReviewHostedTests
             });
             throw;
         }
+        await Ui.Until(() => RealizedGroup("PlanPublishGroupI60") is not null);
         await Ui.Run(async () => {
             Assert.That(workspace.Session!.Document.State.Rows.Single(r => r.Identity == "I60").Actual, Is.EqualTo(2));
-            var group = Ui.Find<PlanPublishGroupView>("PlanPublishGroupI60");
+            var group = RealizedGroup("PlanPublishGroupI60")!;
             var list = Ui.Find<ListView>("PlanPublishLines");
             var bounds = group.TransformToVisual(list).TransformBounds(new(0, 0, group.ActualWidth, group.ActualHeight));
             Assert.That(bounds.Bottom, Is.GreaterThan(0));
