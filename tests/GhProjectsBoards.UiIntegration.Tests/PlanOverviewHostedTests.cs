@@ -153,15 +153,21 @@ internal sealed class PlanOverviewHostedTests
         var task = new PlanRow("I1", "基本設計書の作成", "acme/repo") {
             Estimate = 32, Actual = 16, Remaining = 16, Start = Today.AddDays(-5), Assignees = ["U1"] };
         var rows = ImmutableArray.Create(task,
-            task with { Identity = "I2", Title = "進捗未取得", Actual = null, Fixed = true, End = Today.AddDays(3) },
+            // #236: a stored date is a plan value and a read does not invent one, so the rows the geometry
+            // measures state the plan's own dates. I2 is fixed with both endpoints and I6 is a zero-work
+            // milestone on its date; without them those bars do not exist to measure.
+            task with { Identity = "I2", Title = "進捗未取得", Actual = null, Fixed = true, Start = Today.AddDays(3), End = Today.AddDays(3) },
             task with { Identity = "I3", Title = "完了", Remaining = 0, End = Today.AddDays(3) },
             new PlanRow("I4", "集計", "acme/repo"), task with { Identity = "I5", Parent = "I4" },
-            task with { Identity = "I6", Title = "承認", Estimate = 0, Actual = 0, Remaining = 0, Predecessors = ["I1"] });
+            task with { Identity = "I6", Title = "承認", Estimate = 0, Actual = 0, Remaining = 0, Predecessors = ["I1"], Start = Today, End = Today });
         if (variant is "large" or "balanced") rows = rows.SetItem(1, rows[1] with {
             Actual = decimal.MaxValue, Remaining = variant == "large" ? 1 : decimal.MaxValue });
         if (variant is "closed-summary" or "complete-summary") rows = rows.SetItem(3, rows[3] with {
             Closed = variant == "closed-summary", Actual = variant == "closed-summary" ? null : 8, Remaining = variant == "closed-summary" ? null : 0 });
-        if (variant is "lateness" or "overdue-summary") rows = rows.SetItem(1, rows[1] with { Start = Today, End = Today.AddDays(4) });
+        // #236 part B: the slip is the plan-versus-forecast gap, so the late rows are the ones whose plan end
+        // sits before the 基準日; a stored later end cannot create one.
+        if (variant is "lateness" or "overdue-summary") rows = rows.SetItem(1, rows[1] with { Start = Today.AddDays(-3), End = Today.AddDays(-3) });
+        if (variant == "overdue-summary") rows = rows.SetItem(4, rows[4] with { Start = Today.AddDays(-3), End = Today.AddDays(-3) });
         var baseline = rows.Select(r => r with { End = r.Identity is "I1" or "I4" || variant == "overdue-summary" && r.Identity == "I5" ? new(2026, 10, 2) : variant is "lateness" or "overdue-summary" && r.Identity == "I2" ? Today.AddDays(1) : r.End }).ToImmutableArray();
         var settings = session.Document.State.Settings with { CompanyDaysOff = [new(2026, 10, 7)],
             ImportedHolidays = new("test", "fixture", new string('a', 64), DateTimeOffset.UtcNow, 2026, 2027, [new(new(2026, 10, 8), "Imported holiday")]) };
@@ -241,14 +247,15 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(Ui.Find<Rectangle>("PlanProgress1").Width, Is.EqualTo(bar.Width / 2).Within(.1));
             Assert.That(Ui.Tree(sheet).Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PlanProgress2"), Is.False);
             Assert.That(Ui.Find<Rectangle>("PlanProgress3").Width, Is.EqualTo(Ui.Find<Rectangle>("PlanBar3").Width));
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain("完了 50%").And.Contain("+2 日"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain("完了 50%").And.Contain("+1 日"));
             foreach (var id in new[] { 1, 4 }) {
                 var late = Ui.Find<Shape>("PlanLate" + id);
-                // Slip starts after the inclusive published end, including the intervening weekend.
+                // #236 part B: the slip starts after the inclusive plan end (10/5) and runs to the forecast end.
                 Assert.That(late.TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport,
-                    Is.EqualTo(sheet.X(new(2026, 10, 3))).Within(.1));
+                    Is.EqualTo(sheet.X(new(2026, 10, 6))).Within(.1));
                 Assert.That(late.StrokeDashArray, Is.EqualTo(new double[] { 3, 2 }));
-                if (id == 1) Assert.That(Ui.Find<TextBlock>("PlanLateLabel" + id).Text, Is.EqualTo("+2日"));
+                // Only a 期限超過 row is labelled: these two are 予定より遅れ, so the count stays in the name.
+                Assert.That(Ui.Tree(sheet).Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PlanLateLabel" + id), Is.False);
             }
             Assert.That(Ui.Tree(sheet).Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PlanLate2"), Is.False);
             Assert.That(Ui.Find<Polygon>("PlanBar4").Fill, Is.SameAs(PlanSheetView.Brush("GanttSummaryBrush")));
@@ -262,7 +269,7 @@ internal sealed class PlanOverviewHostedTests
             if (scale == "日") Assert.That(Canvas.GetLeft(pill) + pill.ActualWidth / 2, Is.EqualTo(sheet.X(Today)).Within(1));
             AssertNoOverlap(TimelineLabels("PlanTimelineUpper").Cast<FrameworkElement>().Append(pill));
             Assert.That(TimelineLabels("PlanTimelineUpper").Select(t => t.Text), Does.Contain("2026年9月").And.Contain("10月"));
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<Polygon>("PlanBar4")), Does.Contain("集計").And.Contain("+2 日"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<Polygon>("PlanBar4")), Does.Contain("集計").And.Contain("+1 日"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<Polygon>("PlanBar6")), Does.Contain("マイルストーン"));
             foreach (var day in new[] { new DateOnly(2026, 10, 3), new(2026, 10, 7), new(2026, 10, 8), new(2026, 10, 12) }) {
                 var shade = Ui.Find<Rectangle>("PlanNonWorking" + day.ToString("yyyyMMdd"));
@@ -551,8 +558,10 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Idle();
         await Ui.Run(() => {
             foreach (var number in new[] { 1, 2, 4 }) {
-                var overdue = number == 1 || number == 4 && overdueSummary;
-                var days = number == 2 ? 1 : 2;
+                // I2 is 期限超過 (its plan end is before the 基準日) and so is the summary in its variant; I1
+                // and the ordinary summary are 予定より遅れ, which is the untinted dashed outline.
+                var overdue = number == 2 || number == 4 && overdueSummary;
+                var days = overdue ? 2 : 1;
                 var segment = Ui.Find<Shape>("PlanLate" + number);
                 Assert.That(segment.StrokeDashArray, Is.EqualTo(new double[] { 3, 2 }));
                 Assert.That(segment.IsHitTestVisible, Is.False, "The overlay must not intercept the bar tooltip.");
