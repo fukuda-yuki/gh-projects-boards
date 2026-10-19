@@ -216,14 +216,26 @@ internal sealed partial class PlanSheetHostedTests
         });
         await ShowDependencyRow(55);
         await Ui.Run(() => {
-            // Diagnostic while the 8 px between this crossing and its endpoint tip is unresolved: print the
-            // inputs both surfaces derive from, so the next run says which one moved. Remove when settled.
+            // Diagnostic while the 8 px between this crossing and its endpoint tip is unresolved: record the
+            // inputs both surfaces derive from, so the next run says which one moved. Written to the NUnit
+            // output *and* to a file, because the hosted harness does not surface TestContext.Out in its TRX
+            // (the output element is empty for this case). Remove both when settled.
             var plan = session.Schedule(Today).ToDictionary(t => t.Input.Identity);
-            var crossing = Ui.Tree(CurrentDependencyRow("I55")!).OfType<NativePath>().Single();
-            TestContext.Out.WriteLine($"8px-probe offset={sheet.ChartOffset} dayWidth={sheet.DayWidth} "
+            var row = CurrentDependencyRow("I55")!;
+            var path = Ui.Tree(row).OfType<NativePath>().Single();
+            var figure = ((PathGeometry)path.Data).Figures[0];
+            var canvasLeft = Canvas.GetLeft(path);
+            var chartLeft = row.TransformToVisual(sheet).TransformPoint(new(sheet.SheetViewport, 0)).X;
+            var actual = canvasLeft + figure.StartPoint.X;
+            var tip = Ui.Find<Polygon>("PlanArrowHead1_90_90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new(3, 6)).X;
+            var bar = Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X;
+            var probe = $"8px-probe offset={sheet.ChartOffset} dayWidth={sheet.DayWidth} "
                 + $"i1End={plan["I1"].End.Value:yyyy-MM-dd} i90Start={plan["I90"].Start.Value:yyyy-MM-dd} "
-                + $"crossingLeft={Canvas.GetLeft(crossing) + 2.0} expected={forwardX + 24} reverse={reverseX} tip={forwardX}");
-            AssertCrossingGeometry(CurrentDependencyRow("I55")!, [forwardX + 24, reverseX]);
+                + $"canvasLeft={canvasLeft} figureX={figure.StartPoint.X} actualScreenX={actual} chartLeft={chartLeft} "
+                + $"currentTip={tip} currentBar={bar} expectedForward={forwardX + 24} reverse={reverseX} oldTip={forwardX}";
+            TestContext.Out.WriteLine(probe);
+            try { System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ghpb-8px-probe.txt"), probe + Environment.NewLine); } catch (IOException) { }
+            AssertCrossingGeometry(row, [forwardX + 24, reverseX]);
         });
         await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Z));
         await Ui.Idle();
