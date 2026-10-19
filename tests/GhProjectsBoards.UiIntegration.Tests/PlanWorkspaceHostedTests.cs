@@ -1670,13 +1670,26 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task NewIssuePublicationReplacesReviewWithVisibleStages()
     {
         await Open();
-        var stages = new List<string>(); long callback = 0; var prematureVerification = false;
+        var stages = new List<string>();
+        var busySeen = false; var publishDisabled = false; var prematureVerification = false;
+        long nameCallback = 0, visibilityCallback = 0, enabledCallback = 0;
+        Button? publish = null;
         await Ui.Run(() => {
             var progress = Ui.Find<ContentControl>("PlanBusyPanel");
-            callback = progress.RegisterPropertyChangedCallback(AutomationProperties.NameProperty, (_, _) => {
+            // The panel is shown, renamed and hidden inside one publish, so polling its visibility races the
+            // publication and can miss it entirely. Its stages, its visibility and the publish command's
+            // availability are recorded from property changes, which observe the same facts.
+            nameCallback = progress.RegisterPropertyChangedCallback(AutomationProperties.NameProperty, (_, _) => {
                 var name = AutomationProperties.GetName(progress); stages.Add(name);
                 if (name.Contains("フィールド・担当者"))
                     prematureVerification |= Ui.Tree(progress).OfType<TextBlock>().Any(t => t.Text == "✓ 検証");
+            });
+            visibilityCallback = progress.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, (_, _) => {
+                if (progress.Visibility == Visibility.Visible) busySeen = true;
+            });
+            publish = Ui.Find<Button>("PlanPublish");
+            enabledCallback = publish.RegisterPropertyChangedCallback(Control.IsEnabledProperty, (_, _) => {
+                if (!publish.IsEnabled) publishDisabled = true;
             });
             var input = Ui.Find<TextBox>("PlanCell0_Title"); input.Focus(FocusState.Programmatic); input.Text = "新しい計画";
             // A title alone writes nothing in the fields-and-assignees phase, so the stage would not be
@@ -1685,17 +1698,25 @@ internal sealed partial class PlanWorkspaceHostedTests
             remaining.Focus(FocusState.Programmatic); remaining.Text = "8";
             Ui.Click("PlanPublish");
         });
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("新規 Issue")));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("新規 Issue")),
+            () => "review line 新規 Issue; stages=[" + string.Join(" | ", stages) + "]");
         Assert.That(FakePlanEditor.Load(root).Issues.Length, Is.EqualTo(1));
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
-        await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Visible);
-        await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanPublish").IsEnabled, Is.False));
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublish").IsEnabled && !Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
-        await Ui.Run(() => Ui.Find<ContentControl>("PlanBusyPanel").UnregisterPropertyChangedCallback(AutomationProperties.NameProperty, callback));
+        await Ui.Until(() => busySeen, () => "busy panel visible; stages=[" + string.Join(" | ", stages) + "]");
+        Assert.That(publishDisabled, Is.True, "The publish command is disabled while the publication runs.");
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublish").IsEnabled && !Ui.Find<Button>("PlanPublishConfirm").IsEnabled,
+            () => $"publication settled; unpublished=[{Ui.Find<TextBlock>("PlanUnpublished").Text}], publishEnabled={Ui.Find<Button>("PlanPublish").IsEnabled}, confirmEnabled={Ui.Find<Button>("PlanPublishConfirm").IsEnabled}, stages=[" + string.Join(" | ", stages) + "]");
+        await Ui.Run(() => {
+            var progress = Ui.Find<ContentControl>("PlanBusyPanel");
+            progress.UnregisterPropertyChangedCallback(AutomationProperties.NameProperty, nameCallback);
+            progress.UnregisterPropertyChangedCallback(UIElement.VisibilityProperty, visibilityCallback);
+            publish!.UnregisterPropertyChangedCallback(Control.IsEnabledProperty, enabledCallback);
+        });
+        TestContext.Out.WriteLine("Announced stages: [" + string.Join(" | ", stages) + "]");
         Assert.That(prematureVerification, Is.False);
         Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Title == "新しい計画" && i.Added), Is.EqualTo(1));
         foreach (var stage in new[] { "新規 Issue", "フィールド・担当者", "検証" })
-            Assert.That(stages.Any(s => s.Contains(stage)), Is.True, stage);
+            Assert.That(stages.Any(s => s.Contains(stage)), Is.True, stage + " in [" + string.Join(" | ", stages) + "]");
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-result"));
     }
 
