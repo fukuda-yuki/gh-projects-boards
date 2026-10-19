@@ -50,8 +50,12 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Ready<TextBox>("PlanCell2_Title");
     }
 
+    // #236: a stored date is a plan value and a read does not invent one, so the task rows the geometry
+    // measures state the plan's own dates. One day of work from the stated day is the plan this fixture had
+    // laid out before a read stopped laying dates out; the 開始日指定 input stays as the original entry.
     private static PlanRow TaskRow(string id, string title, string parent, DateOnly start) => new(id, title, "acme/repo") {
-        Parent = parent, Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"], StartNoEarlierThan = start
+        Parent = parent, Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"], StartNoEarlierThan = start,
+        Start = start, End = start
     };
 
     [TearDown]
@@ -155,8 +159,10 @@ internal sealed class PlanOverviewHostedTests
         var rows = ImmutableArray.Create(task,
             // #236: a stored date is a plan value and a read does not invent one, so the rows the geometry
             // measures state the plan's own dates. I2 is fixed with both endpoints and I6 is a zero-work
-            // milestone on its date; without them those bars do not exist to measure.
-            task with { Identity = "I2", Title = "進捗未取得", Actual = null, Fixed = true, Start = Today.AddDays(3), End = Today.AddDays(3) },
+            // milestone on its date; without them those bars do not exist to measure. I2's end covers the two
+            // days its remaining work needs from the fixed start, so its forecast ends on the plan end and the
+            // row stays out of the 予定より遅れ set this case measures on rows 1 and 4.
+            task with { Identity = "I2", Title = "進捗未取得", Actual = null, Fixed = true, Start = Today.AddDays(3), End = Today.AddDays(4) },
             task with { Identity = "I3", Title = "完了", Remaining = 0, End = Today.AddDays(3) },
             new PlanRow("I4", "集計", "acme/repo"), task with { Identity = "I5", Parent = "I4" },
             task with { Identity = "I6", Title = "承認", Estimate = 0, Actual = 0, Remaining = 0, Predecessors = ["I1"], Start = Today, End = Today });
@@ -208,8 +214,10 @@ internal sealed class PlanOverviewHostedTests
             Does.Contain("集計").And.Contain("完了 50%").And.Not.Contain("完了 100%")));
     }
 
+    // #236 part B: the slip is the plan-versus-forecast gap, so the case measures the forecast slip a 予定より
+    // 遅れ row carries; the published-end basis it used to measure is retired.
     [TestCase("日"), TestCase("週"), Category("GanttPhase3")]
-    public async Task GanttShowsProgressPublishedSlipAndCalendarAtTheirDateCoordinates(string scale)
+    public async Task GanttShowsProgressForecastSlipAndCalendarAtTheirDateCoordinates(string scale)
     {
         await MountGanttExample();
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = scale); await Ui.Idle();
