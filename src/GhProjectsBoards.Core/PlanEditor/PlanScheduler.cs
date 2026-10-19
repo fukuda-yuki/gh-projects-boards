@@ -73,7 +73,7 @@ internal static class PlanScheduler
     }
     // EndDayOnly marks an end that is a stored plan day rather than an endpoint this calculation derived.
     // A successor may start on that day; an exact internal finish still decides its interval.
-    private sealed record Result(ScheduledTask Row, Point? Start, Point? End, bool Valid = true, bool EndDayOnly = false);
+    private sealed record Result(ScheduledTask Row, Point? Start, Point? End, bool Valid = true, bool EndDayOnly = false, Point? ForecastFinish = null);
 
     private sealed class Calculation
     {
@@ -248,26 +248,29 @@ internal static class PlanScheduler
                 warnings.Add(summary ? "工数の集計が範囲外" : "日程が日付の範囲外");
                 result = Isolate(task, warnings, summary);
             }
-            result = result with { Row = Forecast(result, dependencies, values, summary) };
+            var (forecastRow, forecastFinish) = Forecast(result, dependencies, values, summary);
+            result = result with { Row = forecastRow, ForecastFinish = forecastFinish };
             results.Add(id, result);
             return result;
         }
 
         // The 見込終了 forecast: today's scheduler with remaining work placed no earlier than the 基準日,
         // propagated through predecessors. It never feeds the plan or a publish write (#236).
-        private ScheduledTask Forecast(Result result, List<(PlanTask Task, Result Result)> dependencies, Result[] children, bool summary)
+        private (ScheduledTask Row, Point? Finish) Forecast(Result result, List<(PlanTask Task, Result Result)> dependencies, Result[] children, bool summary)
         {
-            if (!result.Valid) return result.Row;
+            if (!result.Valid) return (result.Row, null);
             var task = result.Row.Input;
-            if (task.IsComplete) return result.Row;
+            if (task.IsComplete) return (result.Row, null);
             if (summary)
             {
                 var starts = children.Select(child => child.Row.ForecastStart).Where(v => v.HasValue).ToArray();
                 var ends = children.Select(child => child.Row.ForecastEnd).Where(v => v.HasValue).ToArray();
-                return result.Row with { ForecastStart = starts.Length == 0 ? null : starts.Min(), ForecastEnd = ends.Length == 0 ? null : ends.Max() };
+                var finishes = children.Select(child => child.ForecastFinish).Where(v => v.HasValue).Select(v => v!.Value).ToArray();
+                return (result.Row with { ForecastStart = starts.Length == 0 ? null : starts.Min(), ForecastEnd = ends.Length == 0 ? null : ends.Max() },
+                    finishes.Length == 0 ? null : finishes.Max());
             }
-            if (task.Start is null && task.End is null) return result.Row;
-            if (task.EffectiveRemaining is not { } work) return result.Row;
+            if (task.Start is null && task.End is null) return (result.Row, null);
+            if (task.EffectiveRemaining is not { } work) return (result.Row, null);
             try
             {
                 var floor = Point.Morning(statusDate);
@@ -275,17 +278,23 @@ internal static class PlanScheduler
                 if (result.Start is { } planned && planned.CompareTo(floor) >= 0) { floor = planned; reason = "開始日を維持"; }
                 // Reverse row order lets the smallest row ID win equal predecessor endpoints, as in the plan pass.
                 foreach (var (before, dependency) in dependencies.AsEnumerable().Reverse())
-                    if (dependency.Row.ForecastEnd is { } finish && Point.Morning(finish).CompareTo(floor) >= 0)
-                    { floor = Point.Morning(finish); reason = $"{before.RowId} の終了後"; }
+                    // The exact finish, not its day: a successor starts when its predecessor's work is used up,
+                    // as in the plan, so one person's chain does not overlap on the handoff day.
+                    if (dependency.ForecastFinish is { } finish && finish.CompareTo(floor) >= 0)
+                    { floor = finish; reason = $"{before.RowId} の終了後"; }
                 var start = Normalize(floor);
                 var person = task.Assignees.Distinct(StringComparer.Ordinal).ToArray() is [var single] && people.TryGetValue(single, out var p) ? p : null;
-                var end = work == 0 ? start : AddWork(start, work, (Hours)(person?.Rate ?? 100m) / 100, out _);
-                return result.Row with { ForecastStart = start.Date, ForecastEnd = end.Date, ForecastStartReason = reason };
+                IReadOnlyDictionary<DateOnly, decimal> daily = new Dictionary<DateOnly, decimal> { [start.Date] = 0 };
+                var end = work == 0 ? start : AddWork(start, work, (Hours)(person?.Rate ?? 100m) / 100, out daily);
+                // People load is the forecast's allocation, so work waiting on a late predecessor is planned
+                // after it instead of piling up on the 基準日 (#80, #236).
+                return (result.Row with { ForecastStart = start.Date, ForecastEnd = end.Date, ForecastStartReason = reason,
+                    PlannedHours = result.Row.PlannedHours is null ? null : daily }, end);
             }
             catch (Exception error) when (error is ArgumentOutOfRangeException or OverflowException)
             {
                 // An unrepresentable forecast is simply absent; it never becomes a plan value.
-                return result.Row;
+                return (result.Row, null);
             }
         }
         private Result Isolate(PlanTask task, HashSet<string> warnings, bool summary)
@@ -365,7 +374,10 @@ internal static class PlanScheduler
             {
                 if (task.Actual > 0) warnings.Add("進行中タスクの開始日なし");
                 remainingStart = earliest;
-                start = Normalize(remainingStart);
+                // A stored start that nothing pushed later is a plan value even on a weekend or holiday, so a
+                // read never rewrites a date GitHub holds (#236); a PMO edit that reschedules it normalises it.
+                var keptStart = task.Start is { } stored && !reschedule.Contains(task.Identity) && earliest.CompareTo(Point.Morning(stored)) == 0;
+                start = keptStart ? earliest : Normalize(remainingStart);
                 if (task.Start is { } plannedStart && start?.Date == plannedStart) startOrigin = DateOrigin.Kept;
                 planned = work;
             }
@@ -375,7 +387,7 @@ internal static class PlanScheduler
                 plannedEnd = null; // the start moved past it, so the successor follows its predecessor
             if (plannedEnd is not null) { end = plannedEnd; endDayOnly = true; }
             else end = AddWork(remainingStart, planned, rate, out _);
-            // People load follows the forecast: what is left is placed no earlier than the 基準日.
+            // Fallback load when no forecast can be derived; the forecast pass replaces it.
             var loadFloor = Normalize(start is { } current && current.CompareTo(Point.Morning(statusDate)) > 0 ? current : Point.Morning(statusDate));
             IReadOnlyDictionary<DateOnly, decimal> daily;
             if (work > 0) AddWork(loadFloor, work, rate, out daily);

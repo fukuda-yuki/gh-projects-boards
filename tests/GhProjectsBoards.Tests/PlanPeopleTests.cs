@@ -45,6 +45,18 @@ internal sealed class PlanPeopleTests
         Assert.That(PlanOperations.Schedule(d, Day).Select(s => (s.Start.Value, s.End.Value)), Is.All.EqualTo((Day, Day)));
         Assert.That(PlanJson.Text(d), Is.EqualTo(before));
     }
+    [Test]
+    public void LateWorkWaitingOnAPredecessorIsLoadedAfterItsForecastNotPiledOnTheStatusDate()
+    {
+        // Laid out on Day, then a week passes with nothing done: both tasks are late on their plan dates.
+        var laidOut = Document([Row("I1"), Row("I2") with { Predecessors = ["I1"] }]);
+        var later = Day.AddDays(8); // Tuesday; the Monday between is Sports Day
+        var d = laidOut with { State = laidOut.State with { Settings = laidOut.State.Settings with { StatusDate = later } } };
+        var load = PlanPeople.Calculate(d, later, later, PlanPeriodScale.Day, 2).People.Single(p => p.Identity == "U1").Periods;
+        // The remaining work follows the forecast: I1 from the 基準日, I2 after I1, not both on the 基準日.
+        Assert.That(load.Select(p => (p.Planned, p.Overloaded)), Is.EqualTo(new (decimal?, bool)[] { (4m, false), (4m, false) }));
+        Assert.That(load.Select(p => p.Tasks), Is.EqualTo(new[] { new[] { "I1" }, new[] { "I2" } }));
+    }
     [TestCase(PlanPeriodScale.Day, "2026-12-31", "2026-12-31", "2026-12-31")]
     [TestCase(PlanPeriodScale.Week, "2027-01-01", "2026-12-28", "2027-01-03")]
     [TestCase(PlanPeriodScale.Month, "2026-12-31", "2026-12-01", "2026-12-31")]
@@ -94,24 +106,21 @@ internal sealed class PlanPeopleTests
         Assert.That(PlanJson.Text(d), Is.EqualTo(before));
     }
     [Test]
-    public void DailyAllocationKeepsAWholeDaysWorkOnTheDayItsPlanStartFallsOn()
+    public void DailyAllocationRetainsWorkImmediatelyAcrossADayBoundary()
     {
         var d = Document([Row("I1", 3.999999999999999999999999999m),
             Row("I2", 0.000000000000000000000000002m) with { Predecessors = ["I1"] }]);
         var p = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Day, 2).People.Single(p => p.Identity == "U1");
-        // #236: a stored plan end lets its successor start on that end day, so both tasks load the first day and
-        // nothing is deferred to the next one. The person is a hair over the day's capacity, and the app reports
-        // that rather than levelling it: overload resolution stays a human decision.
-        Assert.That(p.Periods.Select(p => p.Planned), Is.EqualTo(new[] { 4.000000000000000000000000001m, 0m }));
+        Assert.That(p.Periods.Select(p => p.Planned), Is.EqualTo(new[] { 4m, 0.000000000000000000000000001m }));
     }
     [Test]
-    public void ASuccessorLoadsTheStoredEndDayOfItsPredecessor()
+    public void SameDayDependencyUsesTheSchedulersPartialDayAllocation()
     {
+        // The load follows the forecast's exact finish, so a successor starts when its predecessor's work is used
+        // up, not at the start of the predecessor's end day (#80, #236).
         var d = Document([Row("I1", 1), Row("I2", 5) with { Predecessors = ["I1"] }]);
         var p = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Day, 2).People.Single(p => p.Identity == "U1");
-        // #236: the plan is day-granular, so the successor starts on the predecessor's stored end day rather
-        // than mid-day, and the two tasks share that day's capacity.
-        Assert.That(p.Periods.Select(p => p.Planned), Is.EqualTo(new[] { 5m, 1m }));
+        Assert.That(p.Periods.Select(p => p.Planned), Is.EqualTo(new[] { 4m, 2m }));
         Assert.That(p.Periods[0].Tasks, Is.EqualTo(new[] { "I1", "I2" }));
     }
     [Test]

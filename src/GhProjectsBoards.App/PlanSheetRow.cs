@@ -117,8 +117,8 @@ public sealed class PlanSheetRow : Grid
             else if (args.Key == VirtualKey.F10 && PlanSheetView.Down(VirtualKey.Shift) || (int)args.Key == 93) { args.Handled = true; owner.ShowRowMenu(Identity, owner.FirstField, this); }
             else if (owner.HandleOutlineShortcut(args.Key)) args.Handled = true;
         };
-        // #231 slice B: the row menu opens from the parts of a row that are not an editable cell; inside a
-        // cell, Shift+F10 or the menu key opens the same menu and the native clipboard menu keeps right-click.
+        // #231 slice B: the row menu opens from the parts of a row that are not a cell, from a cell that is
+        // not being edited (with its clipboard items), and from Shift+F10 or the menu key inside any cell.
         foreach (var surface in new UIElement[] { idCell, indicator, fold }) surface.ContextRequested += (_, args) => {
             if (Owner is not { } owner) return;
             var position = args.TryGetPosition(this, out var point) ? point : (Point?)null;
@@ -177,12 +177,14 @@ public sealed class PlanSheetRow : Grid
         tagChip.Text = rowTag ?? "";
         tagChip.Visibility = rowTag is null ? Visibility.Collapsed : Visibility.Visible;
         tagChip.Foreground = PlanSheetView.Brush(rowTag == "中止にする" ? "SystemFillColorCautionBrush" : "TextFillColorSecondaryBrush");
+        tagChip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Cells[index].ReserveForTag(rowTag is null ? 0 : tagChip.DesiredSize.Width + 8);
         if (strikeLine is null) {
             strikeLine = new Border { Height = 1, VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Left, IsHitTestVisible = false };
             ((Grid)frames[index].Child).Children.Add(strikeLine);
         }
-        strikeLine.Visibility = rowTag == "中止にする" ? Visibility.Visible : Visibility.Collapsed;
+        strikeLine.Visibility = owner.IsCancelled(Identity) ? Visibility.Visible : Visibility.Collapsed;
         strikeLine.Background = PlanSheetView.Brush("TextFillColorSecondaryBrush");
         strikeLine.Width = Math.Max(0, frames[index].Width - 140);
         strikeLine.Margin = new(24 + depth * 12, 0, 0, 0);
@@ -392,11 +394,11 @@ public sealed class PlanSheetRow : Grid
         var yellowMark = owner.Marks.Later && late?.Level == PlanLatenessLevel.Later
             || owner.Marks.OverEstimate && (effort?.IsOverEstimate == true || effort?.IsZeroRemainingOpen == true);
         indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : overdueMark || yellowMark ? "\uE7BA"
-            : owner.RowStateTag(Identity) == "中止にする" || owner.RowStateTag(Identity) == "この版から外す" ? "\uE711"
+            : owner.IsDimmed(Identity) ? "\uE711"
             : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
         indicator.FontFamily = new FontFamily(indicator.Glyph == "\u2022" ? "Segoe UI" : "Segoe Fluent Icons");
         indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || overdueMark ? "SystemFillColorCriticalBrush"
-            : yellowMark || owner.RowStateTag(Identity) == "中止にする" ? "SystemFillColorCautionBrush"
+            : yellowMark || owner.IsCancelled(Identity) ? "SystemFillColorCautionBrush"
             : done ? "IndicatorDoneBrush" : typed ? "IndicatorTypedBrush" : "SheetChangedMarkBrush");
         indicator.Visibility = owner.IndicatorVisible ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetAutomationId(indicator, "PlanIndicator" + number);
@@ -655,8 +657,15 @@ internal sealed class PlanSheetCell : TextBox
     private readonly PlanSheetRow row;
     internal string Field { get; }
     internal bool Composing { get; private set; }
-    internal bool Editing { get; private set; }
+    // While editing, the text box keeps its own menu for the characters being typed; otherwise a right click
+    // opens the row menu (#231).
+    internal bool Editing { get => editing; private set { editing = value; ContextFlyout = value ? textMenu : null; } }
+    private bool editing;
+    private readonly Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase? textMenu;
     internal TextBlock? TitleDisplay { get; }
+    // Width the row-state tag takes at the right of the title, so the ellipsis ends before the tag (#231).
+    internal double TagReserve { get; private set; }
+    internal void ReserveForTag(double width) { if (TagReserve == width) return; TagReserve = width; RefreshDisplay(); }
     internal Grid? AssigneeDisplay { get; }
     internal TextBlock? AssigneeNameDisplay { get; }
     internal TextBlock? AssigneeCountDisplay { get; }
@@ -684,6 +693,7 @@ internal sealed class PlanSheetCell : TextBox
         }
         // Sheet Clear owns deletion, so the template has no delete button taking editor width.
         Style = (Style)Application.Current.Resources["PlanSheetCellStyle"];
+        textMenu = ContextFlyout; ContextFlyout = null;
         MinWidth = 0; MinHeight = 26; Height = 26; Padding = new(4, 2, 4, 2); FontSize = 13; BorderThickness = new(0); Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         if (field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Predecessors) TextAlignment = TextAlignment.Right;
         Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(this, FontNumeralAlignment.Tabular);
@@ -695,6 +705,11 @@ internal sealed class PlanSheetCell : TextBox
                 owner.UpdateInputProblem();
             }
             if (!Editing) SelectAll();
+        };
+        ContextRequested += (_, args) => {
+            if (Editing || row.Owner is not { } owner) return;
+            args.Handled = true;
+            owner.ShowRowMenu(row.Identity, Field, this, args.TryGetPosition(this, out var point) ? point : null, clipboard: true);
         };
         TextChanging += (_, _) => {
             // WinUI may deliver a programmatic text notification after Refresh returns.
@@ -794,7 +809,8 @@ internal sealed class PlanSheetCell : TextBox
         Opacity = Editing ? 1 : 0;
         display.Visibility = Editing ? Visibility.Collapsed : Visibility.Visible;
         display.Text = shownText; display.FontSize = FontSize; display.FontFamily = FontFamily;
-        display.FontWeight = FontWeight; display.Foreground = Foreground; display.Margin = Padding;
+        display.FontWeight = FontWeight; display.Foreground = Foreground;
+        display.Margin = new(Padding.Left, Padding.Top, Padding.Right + TagReserve, Padding.Bottom);
     }
     protected override void OnPreviewKeyDown(KeyRoutedEventArgs args)
     {

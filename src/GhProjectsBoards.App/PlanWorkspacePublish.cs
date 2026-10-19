@@ -118,18 +118,25 @@ internal sealed partial class PlanWorkspaceView
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
             if (isNew) { Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}")); Group(row.Identity).HasWritableChanges = true; }
-            else
+            // #231: the review names what the publish sends and nothing else. この版から外す archives the item
+            // alone; a close or reopen sends its state write, and its dates and remaining work follow the read.
+            var stateChange = !isNew && before.Closed != row.Closed;
+            if (!isNew && !before.Removed && row.Removed)
             {
-                // #231: the row-state operation in plain words, before its field differences.
-                if (before.Closed != row.Closed)
-                    Group(row.Identity).Lines.Add(new(row.Closed
-                        ? row.Cancelled ? "GitHub: Issue を完了としてではなく閉じます（中止）" : "GitHub: Issue を完了として閉じます"
-                        : "GitHub: Issue を再オープンします"));
-                if (!before.Removed && row.Removed)
-                    Group(row.Identity).Lines.Add(new("GitHub: プロジェクトからアーカイブします（Issue とフィールドの値は残ります）"));
+                Group(row.Identity).Lines.Add(new("GitHub: プロジェクトからアーカイブします（Issue とフィールドの値は残ります）"));
+                Group(row.Identity).HasWritableChanges = true;
+                continue;
+            }
+            if (stateChange)
+            {
+                Group(row.Identity).Lines.Add(new(row.Closed
+                    ? row.Cancelled ? "GitHub: Issue を完了としてではなく閉じます（中止）" : "GitHub: Issue を完了として閉じます"
+                    : "GitHub: Issue を再オープンします"));
+                Group(row.Identity).HasWritableChanges = true;
             }
             foreach (var field in PlanValues.Fields(before, current))
             {
+                if (stateChange && field is PlanField.Start or PlanField.End or PlanField.Remaining or PlanField.Cancelled) continue;
                 if (PlanSheetColumns.IsMappedExtra(document, field)) continue;
                 var conflict = conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
                 if (conflict is null && (PlanOperations.IsSummaryPublishExcluded(result.IsSummary, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings))) continue;

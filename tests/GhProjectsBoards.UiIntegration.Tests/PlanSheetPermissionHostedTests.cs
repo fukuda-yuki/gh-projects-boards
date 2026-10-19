@@ -51,10 +51,8 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(AutomationProperties.GetHelpText(Ui.Find<MenuFlyoutItem>("PlanRowComplete")),
                 Is.EqualTo("1行を除外します（" + PlanSheetView.NoPermissionReason + "）"));
         });
-        // Running it completes only the permitted row and says which one was left alone. The command is
-        // chosen from the overflow, the dispatch route the other hosted cases already drive; the row menu's
-        // enablement and hint are asserted above.
-        await ChooseRowCommand("PlanSheetCompleteRows");
+        // Running it from the open row menu completes only the permitted row and says which one was left alone.
+        await InvokeRowItem("PlanRowComplete");
         await Ui.Until(() => session.Document.State.Rows.Single(r => r.Identity == "I2").Closed);
         await Ui.Run(() => {
             Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Closed, Is.False, "the denied row is untouched");

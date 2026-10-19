@@ -1097,7 +1097,7 @@ internal sealed partial class PlanPublisherTests
         await session.Execute(new ClosePlanRows(["I1"]), Today);
         await session.Execute(new ClosePlanRows(["I2"], Cancelled: true), Today);
         var result = await publisher.PublishAsync(session, Today);
-        Assert.That(result.Succeeded, Is.False, "expected the closed-task dates to follow; error=" + (result.Error ?? "<none>"));
+        Assert.That(result.Succeeded, Is.True, result.Error);
         var state = FakePlanEditor.Load(root);
         Assert.That(state.Issues.Single(i => i.Row.Identity == "I1").Row.Closed, Is.True);
         Assert.That(state.Issues.Single(i => i.Row.Identity == "I1").Row.Cancelled, Is.False);
@@ -1107,9 +1107,12 @@ internal sealed partial class PlanPublisherTests
         Assert.That(sent, Does.Contain("COMPLETED"));
         Assert.That(sent, Does.Contain("NOT_PLANNED"));
         // The closed-task follow-up writes (the close-day End and Remaining 0) are planned from the close
-        // day the read reports, not from the provisional local day.
-        await publisher.PublishAsync(session, Today);
-        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("updateProjectV2ItemFieldValue"));
+        // day the read reports and sent by the same publish, so one publish leaves nothing behind.
+        Assert.That(sent, Does.Contain("updateProjectV2ItemFieldValue"));
+        Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(0));
+        // The end written is the day GitHub reports the close, not the provisional 基準日.
+        var closedRow = FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I1").Row;
+        Assert.That(closedRow.End, Is.EqualTo(closedRow.CloseDate));
     }
 
     [Test]
@@ -1136,6 +1139,10 @@ internal sealed partial class PlanPublisherTests
         Assert.That(state.Issues.Single().Added, Is.True, "The Issue and its membership remain; only the item is archived.");
         Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("archiveProjectV2Item"));
         Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("deleteIssue"));
+        // The archived row leaves the plan; it is not kept as an item GitHub can no longer return.
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Does.Not.Contain("I1"));
+        Assert.That(session.Document.Sync.Unavailable, Is.Empty);
+        Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(0));
     }
 
     [Test]

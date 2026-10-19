@@ -120,8 +120,8 @@ internal sealed class PlanLatenessTests
             Assert.That(late.CausePredecessorRowId, Is.EqualTo(1));
             Assert.That(late.IsCause, Is.False, "A task late only because a predecessor moved is not a cause.");
             Assert.That(result.CauseTasks, Is.EqualTo(1), "Only the predecessor, overdue on its own dates.");
-            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +2 日（先行 1 の遅れによる）"),
-                "The plan end is the successor's own day; the forecast reaches 10/9 from the predecessor's forecast end.");
+            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +3 日（先行 1 の遅れによる）"),
+                "The plan end is 10/7; the predecessor's forecast uses up 10/9, so the forecast reaches 10/13 (10/12 is Sports Day).");
         });
     }
 
@@ -227,7 +227,9 @@ internal sealed class PlanLatenessTests
         Assert.Multiple(() =>
         {
             Assert.That(Schedule(open).Single(t => t.Input.Identity == "before").ForecastEnd, Is.EqualTo(D("2026-10-09")));
-            Assert.That(Schedule(open).Single(t => t.Input.Identity == "after").ForecastStart, Is.EqualTo(D("2026-10-09")));
+            // The successor starts when the predecessor's forecast work is used up (10/9 at the end of the day),
+            // so on the next working day; 10/12 is Sports Day.
+            Assert.That(Schedule(open).Single(t => t.Input.Identity == "after").ForecastStart, Is.EqualTo(D("2026-10-13")));
             Assert.That(Schedule(closed).Single(t => t.Input.Identity == "after").ForecastStart, Is.EqualTo(D("2026-10-08")),
                 "A closed predecessor has no forecast, so its own end date constrains instead.");
         });

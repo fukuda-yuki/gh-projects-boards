@@ -351,7 +351,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             CreationWait = TimeSpan.Zero; CreationPhaseStarted = null; EffectiveBatchSizes.Clear();
             progressReporter?.Report(new("最新情報の確認"));
             var remote = await Reconcile(session, lease, today, token, publish: true).ConfigureAwait(false);
-            var serialFields = false;
+            var serialFields = false; var stateFollowed = false;
             // Creation outcomes are adopted before the remaining writes are planned from current local inputs.
             while (true)
             {
@@ -384,6 +384,9 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     remote = await ReadItems(session, lease, token, WriteScope(progress.Writes)
                         .AddRange(PublicationScope(session.Document, today))).ConfigureAwait(false);
                 var creating = progress.Writes.Any(w => w.Stage == PlanPublishStage.Create);
+                // #231: a close or reopen is followed in the same publish by the dates and remaining work that
+                // the close day GitHub reports implies, so the PMO publishes a 完了にする once.
+                var changingState = !stateFollowed && progress.Writes.Any(w => w.Mutation is "closeIssue" or "reopenIssue");
                 static string StageName(PlanPublishStage stage) => stage switch {
                     PlanPublishStage.Create or PlanPublishStage.Add => "新規 Issue",
                     PlanPublishStage.Fields => "フィールド・担当者",
@@ -578,8 +581,10 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 await ReconcileCreations(session, lease, token).ConfigureAwait(false);
                 remote = await ReadMemberships(session, lease, today, token).ConfigureAwait(false);
                 RequireSave(await session.AcceptPublished(remote, today).ConfigureAwait(false));
-                if (!creating || session.Document.Sync.Publish is not null || session.Document.Sync.Failures.Any(f => f.Field == PlanField.NewTask))
+                if (!creating && !changingState || session.Document.Sync.Publish is not null || session.Document.Sync.Failures.Any(f => f.Field == PlanField.NewTask)
+                    || !creating && !session.Document.Sync.Failures.IsEmpty)
                     return await CompletePublication(session, today, review).ConfigureAwait(false);
+                if (!creating) stateFollowed = true;
             }
         }
         catch (Exception ex) when (Expected(ex))

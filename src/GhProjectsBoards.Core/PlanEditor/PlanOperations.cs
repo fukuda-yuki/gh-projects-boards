@@ -170,6 +170,10 @@ internal static class PlanOperations
                 foreach (var c in edit.Cells)
                 {
                     Require(byId.ContainsKey(c.Identity), "編集先の行がありません。");
+                    // GitHub requires an Issue title, so a published row's title cannot be emptied here and then
+                    // stop the whole publish; only a new row may stay untitled until publish holds it (#247).
+                    if (c.Field == PlanField.Title && string.IsNullOrWhiteSpace(String(c.Value)) && d.Baseline.Rows.Any(r => r.Identity == c.Identity))
+                        throw new ArgumentException("GitHub の Issue のタスク名は空にできません。");
                     if (ReadOnlyReason(byId[c.Identity], summaries.Contains(c.Identity), c.Field) is { } reason)
                         throw new ArgumentException(reason);
                     if (PlanSheetColumns.IsExtra(c.Field) && PlanExtraEditing.ReadOnlyReason(d, byId[c.Identity], c.Field) is { } unavailable) throw new ArgumentException(unavailable);
@@ -356,7 +360,9 @@ internal static class PlanOperations
     {
         var rows = state.Rows;
         var present = rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
-        if (all) return present.ToImmutableHashSet(StringComparer.Ordinal);
+        // A settings change moves the tasks that have dates; a task without dates gets its first dates only
+        // from a PMO edit that reaches it (#236 rule 5).
+        if (all) return rows.Where(r => r.Start is not null || r.End is not null).Select(r => r.Identity).ToImmutableHashSet(StringComparer.Ordinal);
         var byId = rows.ToDictionary(r => r.Identity);
         var queue = new Queue<string>(edited.Where(present.Contains));
         var affected = new HashSet<string>(queue, StringComparer.Ordinal);

@@ -186,4 +186,45 @@ internal sealed class PlanReadDateTests
         Assert.That(session.Schedule(Day.AddDays(9)).Single().End.Value, Is.EqualTo(row.End));
         Assert.That(session.Changes(Day.AddDays(9)).TaskCount, Is.Zero);
     }
+
+    [Test]
+    public async Task AWeekendStartReadFromGitHubStaysAPlanValue()
+    {
+        // GitHub may hold a start on a Saturday; a read and a later 基準日 change show it as it is (#236).
+        var saturday = new DateOnly(2026, 10, 10);
+        var row = new PlanRow("I1", "Task", "acme/repo") { Start = saturday, End = saturday.AddDays(2), Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"] };
+        var document = Document() with { Baseline = new([row], []), State = Document().State with { Rows = [row] } };
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        Assert.That(session.Schedule(Day).Single().Start.Value, Is.EqualTo(saturday));
+        Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = Day.AddDays(14) }), Day);
+        Assert.That(session.Changes(Day.AddDays(14)).TaskCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task ACalendarChangeMovesDatedTasksButGivesAnUndatedTaskNoDates()
+    {
+        var document = Document();
+        var undatedWithWork = document.State.Rows[2] with { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        document = document with { Baseline = document.Baseline with { Rows = document.Baseline.Rows.SetItem(2, undatedWithWork) },
+            State = document.State with { Rows = document.State.Rows.SetItem(2, undatedWithWork) } };
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { CompanyDaysOff = [Day] }), Day);
+        var after = session.Document.State.Rows.Single(r => r.Identity == "I3");
+        Assert.That((after.Start, after.End), Is.EqualTo(((DateOnly?)null, (DateOnly?)null)), "A settings change is not a PMO edit of the undated task.");
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I2").End, Is.Not.EqualTo(Document().State.Rows[1].End), "The dated task follows the calendar.");
+    }
+
+    [Test]
+    public async Task APublishedTitleCannotBeEmptiedButANewRowMayStayUntitled()
+    {
+        var session = await PlanSession.CreateAsync(new(root), Document(), Day);
+        var before = PlanJson.Text(session.Document);
+        Assert.That(() => session.Execute(Edit(" "), Day), Throws.ArgumentException.With.Message.EqualTo("GitHub の Issue のタスク名は空にできません。"));
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        await session.Execute(new InsertPlanRows([PlanRow.New("Local", "acme/repo")]), Day);
+        var local = session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:", StringComparison.Ordinal));
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new(local.Identity, PlanField.Title, "")]), Day);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == local.Identity).Title, Is.Empty);
+    }
 }

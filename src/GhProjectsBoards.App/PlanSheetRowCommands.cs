@@ -23,7 +23,7 @@ internal sealed partial class PlanSheetView
     // The rows the row commands act on: the rows of the current selection, without the trailing input row.
     private ImmutableArray<string> MenuTargets() => CommandTargets;
 
-    internal void ShowRowMenu(string identity, string field, FrameworkElement target, Point? position = null)
+    internal void ShowRowMenu(string identity, string field, FrameworkElement target, Point? position = null, bool clipboard = false)
     {
         if (!Rows.ContainsKey(identity)) return;
         // Right-clicking outside the selection selects that cell, exactly like a left click, so the
@@ -33,6 +33,13 @@ internal sealed partial class PlanSheetView
         if (targets.IsEmpty) return;
         rowMenuIdentity = identity;
         rowMenu = new MenuFlyout { AreOpenCloseAnimationsEnabled = false };
+        if (clipboard) {
+            // A right click on a cell that is not being edited is a sheet gesture, as in Excel and MS Project:
+            // the clipboard items act on the selected cells, not on the text box's characters (#231).
+            AddClipboardItem("コピー", "PlanRowCopy", "Ctrl+C", Windows.System.VirtualKey.C);
+            AddClipboardItem("貼り付け", "PlanRowPaste", "Ctrl+V", Windows.System.VirtualKey.V);
+            rowMenu.Items.Add(new MenuFlyoutSeparator());
+        }
         AddRowItem("行を削除", "PlanRowDelete", "Ctrl+-", DeleteReason(targets), () => DeleteRows(targets));
         AddRowItem("完了にする", "PlanRowComplete", "", targets, PlanRowAction.Complete, () => RowStateReport(targets, PlanRowAction.Complete, "完了にしました"));
         AddRowItem("中止にする", "PlanRowCancel", "", targets, PlanRowAction.Cancel, () => RowStateReport(targets, PlanRowAction.Cancel, "中止にしました"));
@@ -43,6 +50,13 @@ internal sealed partial class PlanSheetView
         else rowMenu.ShowAt(target, new FlyoutShowOptions { Position = new Point(target.ActualWidth / 2, target.ActualHeight / 2) });
     }
 
+    private void AddClipboardItem(string label, string id, string shortcut, Windows.System.VirtualKey key)
+    {
+        var item = Id(new MenuFlyoutItem { Text = label, KeyboardAcceleratorTextOverride = shortcut }, id);
+        AutomationProperties.SetName(item, label);
+        item.Click += (_, _) => _ = KeyboardCommand(key);
+        rowMenu!.Items.Add(item);
+    }
     private void AddRowItem(string label, string id, string shortcut, string? refusal, Func<Task> run)
         => Add(label, id, shortcut, refusal is null, refusal, run);
     private void AddRowItem(string label, string id, string shortcut, ImmutableArray<string> targets, PlanRowAction action, Func<Task> run)
@@ -138,11 +152,17 @@ internal sealed partial class PlanSheetView
     {
         if (!Rows.TryGetValue(identity, out var row)) return null;
         var baseline = Session.Document.Baseline.Rows.FirstOrDefault(r => r.Identity == identity);
-        return TagFor(row, baseline is not null) ?? ReopenTagFor(row, baseline);
+        return TagFor(row, baseline) ?? ReopenTagFor(row, baseline);
     }
-    internal bool IsDimmed(string identity) => RowStateTag(identity) is "中止にする" or "この版から外す";
-    internal static string? TagFor(PlanRow row, bool published) => !published ? null : row.Removed ? "この版から外す"
-        : row.Cancelled ? "中止にする" : row.Closed ? "完了にする" : null;
+    // 中止 and この版から外す dim the row whether pending or already published (中止 stays in the plan).
+    internal bool IsDimmed(string identity) => Rows.TryGetValue(identity, out var row) && (row.Cancelled || row.Removed);
+    internal bool IsCancelled(string identity) => Rows.TryGetValue(identity, out var row) && row.Cancelled;
+    // Only a command that GitHub does not reflect yet carries a tag: a task already closed on GitHub is
+    // read with Closed set and is not "完了にする" again.
+    internal static string? TagFor(PlanRow row, PlanRow? baseline) => baseline is null ? null
+        : row.Removed && !baseline.Removed ? "この版から外す"
+        : row.Cancelled && !baseline.Cancelled ? "中止にする"
+        : row.Closed && !baseline.Closed ? "完了にする" : null;
     internal static string? ReopenTagFor(PlanRow row, PlanRow? baseline) => baseline is { Closed: true } && !row.Closed ? "未完了に戻す" : null;
     // A locally completed row is not closed on GitHub yet, so the GitHub-owned reason would mislead.
     internal bool IsPendingClose(string identity)

@@ -52,4 +52,30 @@ internal sealed partial class PlanPublishReviewHostedTests
         Assert.That(names, Has.Some.Contains("GitHub: Issue を完了としてではなく閉じます（中止）"));
         Assert.That(names, Has.Some.Contains("GitHub: Issue を完了として閉じます"));
     }
+
+    [Test, Category("PublishOutcome")]
+    public async Task ReviewListsOnlyTheWritesARowStateOperationSends()
+    {
+        // A close sends its state write alone and この版から外す only archives; the review must not promise
+        // date, remaining-work or close writes the publish does not send.
+        await Open(2);
+        await Ui.Run(async () => {
+            await workspace.Session!.Execute(new ClosePlanRows(["I1"]), Today);
+            await workspace.Session!.Execute(new ClosePlanRows(["I2"], Cancelled: true), Today);
+            await workspace.Session!.Execute(new RemovePlanRows(["I2"]), Today);
+            Ui.Click("PlanPublish");
+        });
+        var names = new List<string>();
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true });
+        await Ui.Run(() => {
+            for (var i = 0; i < 2; i++)
+                names.Add(new ListViewItemAutomationPeer((ListViewItem)Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(i)).GetName());
+        });
+        var closed = names.Single(n => n.Contains("GitHub: Issue を完了として閉じます"));
+        var removed = names.Single(n => n.Contains("アーカイブします"));
+        Assert.Multiple(() => {
+            Assert.That(closed, Does.Not.Contain("開始日").And.Not.Contain("終了日").And.Not.Contain("残"));
+            Assert.That(removed, Does.Not.Contain("閉じます").And.Not.Contain("状態").And.Not.Contain("中止にする"));
+        });
+    }
 }

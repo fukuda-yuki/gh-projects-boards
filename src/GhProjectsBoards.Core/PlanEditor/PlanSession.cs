@@ -437,6 +437,20 @@ internal sealed class PlanSession
             var promoted = progress.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.Identity.StartsWith("local:", StringComparison.Ordinal) && w.ResultId is not null && remote.Items.ContainsKey(w.ResultId))
                 .ToDictionary(w => w.Identity, w => w.ResultId!);
             string Id(string id) => promoted.GetValueOrDefault(id) ?? id;
+            // #231: an item this publish archived leaves the plan. The read no longer returns it, so without
+            // this it would be taken for an item that disappeared and kept as unavailable.
+            var archived = progress.Writes.Where(w => w.Mutation == "archiveProjectV2Item" && w.State != PlanWriteState.Pending
+                && PlanVerification.Verify(w, progress, remote, document.State.Settings)).Select(w => w.Identity).ToHashSet(StringComparer.Ordinal);
+            var closed = progress.Writes.Where(w => w.Mutation == "closeIssue" && w.State != PlanWriteState.Pending
+                && PlanVerification.Verify(w, progress, remote, document.State.Settings)).Select(w => w.Identity).ToHashSet(StringComparer.Ordinal);
+            PlanRow Reparent(PlanRow row, ImmutableArray<PlanRow> rows)
+            {
+                var parent = row.Parent;
+                while (parent is not null && archived.Contains(parent)) parent = rows.FirstOrDefault(r => r.Identity == parent)?.Parent;
+                return parent == row.Parent ? row : row with { Parent = parent };
+            }
+            ImmutableArray<PlanRow> Leave(ImmutableArray<PlanRow> rows)
+                => archived.Count == 0 ? rows : rows.Where(r => !archived.Contains(r.Identity)).Select(r => Reparent(r, rows)).ToImmutableArray();
             PlanRow Row(PlanRow row)
             {
                 var observed = promoted.ContainsKey(row.Identity) ? remote.Baseline.Rows.Single(r => r.Identity == Id(row.Identity)) : null;
@@ -446,16 +460,21 @@ internal sealed class PlanSession
                         if (PlanValues.Get(row, field) is "null" or "[]" or "false")
                             row = PlanValues.Set(row, field, PlanValues.Get(observed, field));
                 }
+                // #231: the close day GitHub reports replaces the provisional local one, so the closed end
+                // that follows in this publish is the day the Issue was actually closed.
+                var closedNow = observed is null && row.Closed && closed.Contains(row.Identity)
+                    ? remote.Baseline.Rows.FirstOrDefault(r => r.Identity == row.Identity && r.Closed) : null;
                 return row with { Identity = Id(row.Identity), Parent = row.Parent is null ? null : Id(row.Parent),
-                    Predecessors = row.Predecessors.Select(Id).ToImmutableArray(), Closed = observed?.Closed ?? row.Closed, CloseDate = observed is null ? row.CloseDate : observed.CloseDate };
+                    Predecessors = row.Predecessors.Select(Id).ToImmutableArray(), Closed = observed?.Closed ?? row.Closed,
+                    CloseDate = observed is not null ? observed.CloseDate : closedNow?.CloseDate ?? row.CloseDate };
             }
-            PlanState State(PlanState state) => state with { Rows = state.Rows.Select(Row).ToImmutableArray() };
+            PlanState State(PlanState state) => state with { Rows = Leave(state.Rows).Select(Row).ToImmutableArray() };
             var state = State(document.State);
             var histories = checkpoint.Undo;
-            // Creation is an irreversible history barrier. Later edits still remain individually undoable.
+            // Creation and archiving are irreversible history barriers. Later edits still remain individually undoable.
             var barrier = -1;
             for (var i = 0; i < histories.Length; i++)
-                if (histories[i].Rows.Any(r => promoted.ContainsKey(r.Identity) && r.Before is null)) barrier = i;
+                if (histories[i].Rows.Any(r => promoted.ContainsKey(r.Identity) && r.Before is null || archived.Contains(r.Identity))) barrier = i;
             PlanPatch Promote(PlanPatch p) => p with
             {
                 Rows = p.Rows.Select(r => new PlanRowChange(Id(r.Identity), r.Before is null ? null : Row(r.Before), r.After is null ? null : Row(r.After))).ToImmutableArray(),
@@ -509,11 +528,11 @@ internal sealed class PlanSession
                 baseline = baseline with { Rows = state.Rows.Select(r => r.Identity).Where(byIdentity.ContainsKey)
                     .Concat(baseline.Rows.Select(r => r.Identity).Where(id => !stateOrder.Contains(id))).Select(id => byIdentity[id]).ToImmutableArray() };
             }
-            var missing = document.Baseline.Rows.Where(r => !baseline.Rows.Any(x => x.Identity == r.Identity)).ToImmutableArray();
+            var missing = document.Baseline.Rows.Where(r => !archived.Contains(r.Identity) && !baseline.Rows.Any(x => x.Identity == r.Identity)).ToImmutableArray();
             baseline = baseline with { Rows = baseline.Rows.AddRange(missing) };
             // Hide this publish's own fields from the external-change merge, including unfinished writes.
             // Historical local values must remain undoable even after their remote baseline advances.
-            var original = document with { State = state, Baseline = document.Baseline with { Rows = document.Baseline.Rows.Select(Row).ToImmutableArray() } };
+            var original = document with { State = state, Baseline = document.Baseline with { Rows = Leave(document.Baseline.Rows).Select(Row).ToImmutableArray() } };
             var priorRows = original.Baseline.Rows.ToDictionary(r => r.Identity);
             foreach (var row in remote.Baseline.Rows.Where(r => promoted.Values.Contains(r.Identity))) priorRows[row.Identity] = row;
             original = original with { Baseline = original.Baseline with { Rows = priorRows.Values.ToImmutableArray() } };

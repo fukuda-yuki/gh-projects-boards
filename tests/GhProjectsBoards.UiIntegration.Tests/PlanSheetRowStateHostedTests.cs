@@ -13,21 +13,14 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 // themselves are covered by the Core and adapter suites; this file covers the surface the PMO operates.
 internal sealed partial class PlanSheetHostedTests
 {
-    // The commands are chosen from the overflow, the route the other hosted cases already drive, so these
-    // cases measure the mark and the status line; the row context menu's own reachability and reasons are
-    // the subject of the menu case.
-    private async Task ChooseRowCommand(string itemId)
-    {
-        await Ui.Run(() => Ui.Click("PlanSheetMore"));
-        await InvokeRowItem(itemId);
-    }
-    // The passing permission case opens the row menu and settles the UI before it invokes an overflow item.
-    // The mark cases do the same, which also states the command's state on the pointer route (#231).
-    private async Task AssertRowMenuCommand(string identity, string itemId)
+    // The mark cases follow the PMO's route: open the row menu (right-click or Shift+F10), check that the
+    // command is offered, and choose it from that menu (#231 intended steps).
+    private async Task ChooseFromRowMenu(string identity, string itemId)
     {
         await Ui.Run(() => sheet.ShowRowMenu(identity, PlanField.Title, sheet.Realized.Single(r => r.Identity == identity)));
         await Ui.Ready<MenuFlyoutItem>(itemId);
         await Ui.Run(() => Assert.That(Ui.Find<MenuFlyoutItem>(itemId).IsEnabled, Is.True, itemId));
+        await InvokeRowItem(itemId);
     }
     private static async Task InvokeRowItem(string itemId)
     {
@@ -118,8 +111,7 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Estimate = 8 };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
-        await AssertRowMenuCommand("I1", "PlanRowCancel");
-        await ChooseRowCommand("PlanSheetCancelRows");
+        await ChooseFromRowMenu("I1", "PlanRowCancel");
         var (row, tag) = await RowMark("I1", "中止にする");
         // Both marks are built with the row, so a failure in one must not hide the other.
         Assert.Multiple(() => {
@@ -141,8 +133,7 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Estimate = 8, Remaining = 8 };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
-        await AssertRowMenuCommand("I1", "PlanRowComplete");
-        await ChooseRowCommand("PlanSheetCompleteRows");
+        await ChooseFromRowMenu("I1", "PlanRowComplete");
         var (row, tag) = await RowMark("I1", "完了にする");
         Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("完了にする"));
@@ -160,8 +151,7 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
-        await AssertRowMenuCommand("I1", "PlanRowRemove");
-        await ChooseRowCommand("PlanSheetRemoveRows");
+        await ChooseFromRowMenu("I1", "PlanRowRemove");
         var (row, tag) = await RowMark("I1", "この版から外す");
         Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("この版から外す"));
@@ -170,5 +160,25 @@ internal sealed partial class PlanSheetHostedTests
         });
         // この版から外す hides the row from the version; it does not delete the Issue or the row before publish.
         await Ui.Until(() => session.Document.State.Rows.Single(r => r.Identity == "I1").Removed);
+    }
+
+    [Test]
+    public async Task ATaskAlreadyClosedOrCancelledOnGitHubCarriesNoPendingTag()
+    {
+        // Read from GitHub, not commanded here: the tag names a command still to publish, so a finished task
+        // shows only its done mark and a cancelled one stays dimmed and struck without a tag over its title.
+        var closed = new PlanRow("I1", "Closed", "acme/repo") { Fixed = true, Closed = true };
+        var cancelled = new PlanRow("I2", "Cancelled", "acme/repo") { Fixed = true, Closed = true, Cancelled = true };
+        await MountPresentation([closed, cancelled], [closed, cancelled]);
+        await Ui.Run(() => {
+            var rows = sheet.Realized.Where(r => r.IsBound).ToDictionary(r => r.Identity);
+            Assert.Multiple(() => {
+                Assert.That(sheet.RowStateTag("I1"), Is.Null);
+                Assert.That(sheet.RowStateTag("I2"), Is.Null);
+                Assert.That(rows["I1"].Opacity, Is.EqualTo(1));
+                Assert.That(rows["I2"].Opacity, Is.LessThan(1));
+                Assert.That(rows["I2"].StruckThrough, Is.True);
+            });
+        });
     }
 }
