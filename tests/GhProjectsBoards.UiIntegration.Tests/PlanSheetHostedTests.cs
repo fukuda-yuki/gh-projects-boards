@@ -700,26 +700,24 @@ internal sealed partial class PlanSheetHostedTests
         if (state is "moved" or "predecessor" or "long") await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-" + state));
     }
 
-    [TestCase(0, 0, "")]
-    [TestCase(1, 0, "期限超過 1")]
-    [TestCase(0, 1, "予定より遅れ 1")]
-    [TestCase(1, 1, "期限超過 1 · 予定より遅れ 1")]
+    [Test]
     [Category("SelectionLine")]
-    public async Task EmptySelectionShowsHintAndOnlyNonzeroTotals(int overdue, int later, string expected)
+    public async Task EmptySelectionShowsTheHintAndHidesItWhenARowIsSelected()
     {
+        // #236 part B: the Project-wide lateness counts are the status bar's filter buttons in the workspace,
+        // so a bare sheet no longer owns a totals line. This case keeps its own subject — the empty-selection
+        // hint — and the count buttons are exercised where they live.
         var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
-        var rows = ImmutableArray.Create(row, row with { Identity = "I2", Remaining = later == 1 ? 16 : 8 });
-        var baseline = ImmutableArray.Create(row with { End = overdue == 1 ? Today.AddDays(-3) : Today }, row with { Identity = "I2", End = Today });
+        var rows = ImmutableArray.Create(row, row with { Identity = "I2", Remaining = 16 });
+        var baseline = ImmutableArray.Create(row with { End = Today.AddDays(-3) }, row with { Identity = "I2", End = Today });
         await MountPresentation(rows, baseline);
         await Ui.Run(() => {
-            var hint = Ui.Find<TextBlock>("PlanSheetEmptyHint"); var totals = Ui.Find<TextBlock>("PlanSheetTotals");
+            var hint = Ui.Find<TextBlock>("PlanSheetEmptyHint");
             Assert.That(hint.Text, Is.EqualTo("タスクを選択すると、開始日と終了日の根拠を表示します"));
             Assert.That(hint.Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(hint), Is.EqualTo(hint.Text));
-            Assert.That(totals.Text, Is.EqualTo(expected));
-            Assert.That(totals.Visibility, Is.EqualTo(expected.Length == 0 ? Visibility.Collapsed : Visibility.Visible));
         });
-        if (overdue == 1 && later == 1) await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-empty"));
+        await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-empty"));
         await Select(1, PlanField.Title);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetEmptyHint").Visibility, Is.EqualTo(Visibility.Collapsed));
