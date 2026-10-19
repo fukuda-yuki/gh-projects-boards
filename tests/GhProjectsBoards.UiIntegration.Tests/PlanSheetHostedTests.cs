@@ -542,7 +542,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var row = new PlanRow("I1", "R05 顧客データの外部連携", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
         if (state is "completed" or "failed" or "unverified") row = row with { Closed = true, CloseDate = Today, Remaining = 0, Actual = 8, Start = Today, End = Today, StartNoEarlierThan = Today };
-        if (state == "typed") row = row with { StartNoEarlierThan = Today };
+        if (state == "typed") row = row with { StartNoEarlierThan = Today, End = new(2026, 10, 2) };
         // #236: an overdue row is overdue against the 基準日, so this state states the plan dates that put it
         // there; the published end no longer decides it.
         if (state == "late") row = row with { Start = new(2026, 10, 2), End = new(2026, 10, 2) };
@@ -848,7 +848,9 @@ internal sealed partial class PlanSheetHostedTests
     public async Task EnteredCellsHaveTintButRecalculatedDatesOnlyHaveCornersAndSelectionWins()
     {
         var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 16, Assignees = ["U1"] };
-        await MountPresentation([row with { Estimate = 16, Assignees = ["U2"] }, row with { Identity = "I2", Predecessors = ["I1"] }],
+        // The entered estimate must move the successor's re-derived dates off its baseline value (24h reaches
+        // 10/7 where 16h lands back on 10/6), otherwise there is no recalculated date to carry a corner.
+        await MountPresentation([row with { Estimate = 24, Assignees = ["U2"] }, row with { Identity = "I2", Predecessors = ["I1"] }],
             [row with { Start = Today, End = Today }, row with { Identity = "I2", Predecessors = ["I1"], Start = Today.AddDays(1), End = Today.AddDays(1) }],
             [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]);
         await Ui.Run(() => {
@@ -1701,9 +1703,13 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        await Ui.Run(() => { sheet.Width = 1248; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        // #236 part B: the twelve default columns measure 944 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
+        // 担当者 80 + 見積 56 + 残 56 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 96 + 先行 64) and the
+        // divider 6 px, so 944 + 6 + the 320 px Gantt minimum is a 1270 px sheet — the honest threshold the
+        // spec and manual now quote as about 1,300 effective pixels of window.
+        await Ui.Run(() => { sheet.Width = 1270; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        await Ui.Until(() => sheet.ActualWidth == 1248);
+        await Ui.Until(() => sheet.ActualWidth == 1270);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");

@@ -40,6 +40,26 @@ internal sealed class PlanClearTests
     }
 
     [Test]
+    public async Task ClearingARangeSpannedByTheComputedForecastColumnClearsTheEditableCells()
+    {
+        // #236 part B: the default columns now include the read-only 見込終了, so a range Delete spans a field
+        // the PMO cannot clear. It is skipped like タスク名: the editable cells still clear as one Undo step,
+        // and an explicit edit of the computed column is still refused.
+        var session = await Start();
+        var result = await session.Execute(new ClearPlanCells(["I1"],
+            [PlanField.Title, PlanField.Assignees, PlanField.Predecessors, "ForecastEnd"]), Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var row = session.Document.State.Rows.Single(r => r.Identity == "I1");
+        Assert.That(row.Title, Is.EqualTo("Task"), "A range Delete never blanks a task name.");
+        Assert.That(row.Assignees, Is.Empty, "The editable cells still clear beside the computed column.");
+        Assert.That(row.Predecessors, Is.Empty);
+        Assert.That(session.UndoCount, Is.EqualTo(1));
+        var refusal = Assert.ThrowsAsync<ArgumentException>(async () =>
+            await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", "ForecastEnd", new DateOnly(2026, 10, 9))]), Today));
+        Assert.That(refusal!.Message, Does.Contain("見込終了"), "An explicit edit of the computed column is still refused.");
+    }
+
+    [Test]
     public async Task ClearingOnlyTaskNameCellsChangesNothingAndAddsNoHistory()
     {
         var session = await Start();

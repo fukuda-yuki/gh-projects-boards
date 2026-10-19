@@ -23,6 +23,9 @@ internal static class PlanSheetColumns
         ("Estimate", "見積 h"), ("Remaining", "残 h"), ("Actual", "実績 h"), ("Start", "開始日"), ("End", "終了日"),
         ("ForecastEnd", "見込終了"), ("Predecessors", "先行"), ("StartNoEarlierThan", "開始日指定"), ("Fixed", "日程固定"), ("Status", "ステータス")];
     internal static bool IsExtra(string key) => key.StartsWith("Project:", StringComparison.Ordinal) && key.Length > 8;
+    // A column the scheduler owns: read-only for the PMO, so a clear skips it instead of refusing the whole
+    // range that spans it (#236 part B, 見込終了).
+    internal static bool IsComputed(string key) => key == "ForecastEnd";
     internal static bool IsMappedExtra(PlanDocument document, string key)
         => IsExtra(key) && (document.State.Settings.Columns.Any(c => c.FieldId == key[8..])
             || document.Baseline.Columns.Any(c => c.Id == key[8..] && c.Name == "Status" && c.DataType == "SINGLE_SELECT"));
