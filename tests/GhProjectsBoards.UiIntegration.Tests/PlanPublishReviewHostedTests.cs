@@ -208,6 +208,13 @@ internal sealed partial class PlanPublishReviewHostedTests
             var deleted = baseline with { Columns = baseline.Columns.RemoveAt(baseline.Columns.Length - 1),
                 Rows = baseline.Rows.Select(r => r with { ExtraValues = r.ExtraValues.Remove("Project:DeletedNote") }).ToImmutableArray() };
             await session.AcceptRefresh(new(deleted, ImmutableDictionary<string, string>.Empty, [], 0, 0), Today, refresh: false);
+            if (!datesAlreadyPublished)
+                // #236: a publish writes a date only when the plan value differs from the baseline, and a row
+                // read without dates has no plan dates at all. This variant therefore gives both rows dates
+                // the baseline lacks, which is what makes them writable here.
+                await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [
+                    new("I1", PlanField.Start, readDay), new("I1", PlanField.End, readDay.AddDays(1)),
+                    new("I2", PlanField.Start, readDay), new("I2", PlanField.End, readDay.AddDays(1))]), Today);
             if (edit) await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "書き込み対象")]), Today);
             Ui.Click("PlanPublish");
         });
