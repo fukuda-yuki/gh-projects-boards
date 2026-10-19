@@ -525,20 +525,23 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [TestCase("completed", "完了", "\uE73E")]
-    [TestCase("late", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8h）", "\uE814")]
+    [TestCase("late", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8h）", "\uE7BA")]
     [TestCase("typed", "開始日を指定", "\uE718")]
     [TestCase("fixed", "日程固定", "\uE718")]
     [TestCase("changed", "未発行の変更あり", "\u2022")]
     [TestCase("failed", "発行失敗", "\uEA39")]
     [TestCase("unverified", "GitHub で未確認", "\uEA39")]
-    [TestCase("summary", "配下に期限超過 1", "\uE814")]
+    [TestCase("summary", "配下に期限超過 1", "\uE7BA")]
     [Category("PlanSheetPhase2")]
     public async Task IndicatorPriorityAndSelectionExplainAllApplicableRowStates(string state, string expected, string glyph)
     {
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var row = new PlanRow("I1", "R05 顧客データの外部連携", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
         if (state is "completed" or "failed" or "unverified") row = row with { Closed = true, CloseDate = Today, Remaining = 0, Actual = 8, Start = Today, End = Today, StartNoEarlierThan = Today };
-        if (state is "typed" or "late") row = row with { StartNoEarlierThan = Today };
+        if (state == "typed") row = row with { StartNoEarlierThan = Today };
+        // #236: an overdue row is overdue against the 基準日, so this state states the plan dates that put it
+        // there; the published end no longer decides it.
+        if (state == "late") row = row with { Start = new(2026, 10, 2), End = new(2026, 10, 2) };
         if (state == "fixed") row = row with { Fixed = true, Start = Today, End = Today };
         var baseline = row with { End = state is "late" or "failed" or "unverified" ? new(2026, 10, 2) : state == "summary" ? new(2026, 10, 1) : row.End };
         var rows = ImmutableArray.Create(row);
@@ -563,23 +566,29 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.Not.Empty);
-            if (state is "typed" or "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日指定 10/5 · 終了: 開始から 8h"));
+            if (state == "typed") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日指定 10/5 · 終了: 開始から 8h"));
+            if (state == "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日を維持 · 終了: 指定"));
             Assert.That(Ui.Find<HyperlinkButton>("PlanSheetIssue").Content, Is.EqualTo("acme/repo#1"));
             var slip = Ui.Find<TextBlock>("PlanSheetSlip").Text;
-            if (state is "late" or "failed" or "unverified") {
-                Assert.That(slip, Is.EqualTo(state == "late" ? "完了予定 10/2 を過ぎて未完了 · +1 日" : "発行済み 10/2 から +1 日"));
+            if (state == "late") {
+                Assert.That(slip, Is.EqualTo("完了予定 10/2 を過ぎて未完了 · +1 日"));
                 var text = Ui.Find<TextBlock>("PlanStartReason");
                 var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
                 var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
                 Assert.That(gap, Is.InRange(8d, 12d), "The late pill follows the reason immediately.");
                 Assert.That(pill.CornerRadius.TopLeft, Is.GreaterThan(0));
             }
-            else if (state == "summary") Assert.That(slip, Is.EqualTo("発行済み 10/1 から +2 日"));
+            // A closed task has no forecast, so the delivered model shows no slip for it: the only thing the
+            // published end could have measured is gone with the moving dates.
+            else if (state is "failed" or "unverified") Assert.That(slip, Is.Empty);
+            else if (state == "summary") Assert.That(slip, Is.EqualTo("見込終了 10/5 (月) · 10/2 から +1 日"));
             else Assert.That(slip, Is.Empty);
             if (state is "failed" or "unverified") Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("完了").And.Contain("開始日を指定").And.Contain("未発行の変更あり"));
         });
     }
-    [TestCase("started", "終了: 基準日 10/5 から見込み残存工数 8h")]
+    // #236: the plan consumes a task from its own start — Actual + Remaining — so the end reason counts hours
+    // rather than naming a 基準日, and a task needs its own dates for the reason to exist.
+    [TestCase("started", "終了: 開始から 12h")]
     [TestCase("unstarted", "終了: 開始から 8h")]
     [TestCase("fixed", "終了: 指定")]
     [TestCase("complete", null)]
@@ -587,9 +596,10 @@ internal sealed partial class PlanSheetHostedTests
     [Category("SelectionLine")]
     public async Task SelectionExplainsEndReason(string state, string? expected)
     {
-        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"],
+            Start = Today, End = Today };
         if (state == "started") row = row with { Actual = 4 };
-        if (state == "fixed") row = row with { Fixed = true, Start = Today, End = Today };
+        if (state == "fixed") row = row with { Fixed = true };
         if (state == "complete") row = row with { Closed = true, CloseDate = Today, Actual = 8, Remaining = 0 };
         var rows = ImmutableArray.Create(row);
         if (state == "summary") rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
@@ -769,15 +779,15 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Mount(sheetHost);
     }
 
-    [TestCase("finish", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", true)]
-    [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", true, Category = "OverdueMissingWork")]
-    [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE814", false, Category = "OverdueMissingWork")]
-    [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE814", false)]
+    [TestCase("finish", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
+    [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE7BA", false, Category = "OverdueMissingWork")]
+    [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE7BA", false)]
     // #236 part B: the mark compares the plan with the forecast, so 予定より遅れ names the cause and the
     // working days it slipped; the retired 「発行済み M/d から」 basis no longer appears anywhere.
     [TestCase("later", "予定より遅れ: +1 日（自分の残による）", "\uE7BA", false)]
-    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", false)]
-    [TestCase("summary-overdue", "配下に期限超過 1", "\uE814", false)]
+    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", false)]
+    [TestCase("summary-overdue", "配下に期限超過 1", "\uE7BA", false)]
     [TestCase("summary-later", "配下に予定より遅れ 1", "\uE7BA", false)]
     [Category("SheetRowPresentation")]
     public async Task LatenessMarkerAndEndColorFollowOverdueAndOwnEndMovement(string state, string expected, string glyph, bool critical)
