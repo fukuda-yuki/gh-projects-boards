@@ -26,6 +26,15 @@ internal static class PlanSheetColumns
     // A column the scheduler owns: read-only for the PMO, so a clear skips it instead of refusing the whole
     // range that spans it (#236 part B, 見込終了).
     internal static bool IsComputed(string key) => key == "ForecastEnd";
+    // A column the PMO cannot put a value into, independent of the row it is on: the scheduler's computed
+    // 見込終了, the always read-only repository, or a standard role the Project does not map (工程 without an
+    // assigned single-select field, which the summary view tells the PMO to assign). A clear skips such a
+    // column the way it skips タスク名, so a range over the default columns still clears its editable cells
+    // (#236 part B). Row-level read-only cells — a summary's roll-up cells, a closed row's remaining work —
+    // are not covered here; clearing those stays a refusal.
+    internal static bool IsReadOnlyColumn(string key, ProjectPlanSettings settings) =>
+        IsComputed(key) || key == PlanField.Repository
+        || key == PlanField.Phase && !settings.Columns.Any(column => column.Role == PlanField.Phase);
     internal static bool IsMappedExtra(PlanDocument document, string key)
         => IsExtra(key) && (document.State.Settings.Columns.Any(c => c.FieldId == key[8..])
             || document.Baseline.Columns.Any(c => c.Id == key[8..] && c.Name == "Status" && c.DataType == "SINGLE_SELECT"));

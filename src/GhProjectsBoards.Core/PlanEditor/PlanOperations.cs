@@ -156,11 +156,12 @@ internal static class PlanOperations
             case ClearPlanCells clear:
                 // Delete never removes a task name: an accidentally untitled row is the state that holds
                 // its own writes back at publish, so a title target is skipped rather than cleared (#240).
-                // A computed read-only column is skipped for the same reason: a range over the default
-                // columns spans 見込終了, which is the schedule's value and not the PMO's to clear, so the
-                // rest of the range still clears instead of the whole command being refused (#236 part B).
+                // A read-only column is skipped for the same reason: a range over the default columns spans
+                // 見込終了 (the scheduler's value) and 工程 while the Project does not map it, so those are
+                // left alone and the rest of the range still clears instead of the whole command being
+                // refused (#236 part B). Row-level read-only cells still reach EditPlanCells and refuse.
                 return Apply(d, new EditPlanCells(PlanOperationKind.Clear, clear.Targets.SelectMany(id => clear.Fields
-                    .Where(f => f != PlanField.Title && !PlanSheetColumns.IsComputed(f)).Select(f => new PlanCellChange(id, f, null))).ToImmutableArray()), today);
+                    .Where(f => f != PlanField.Title && !PlanSheetColumns.IsReadOnlyColumn(f, d.State.Settings)).Select(f => new PlanCellChange(id, f, null))).ToImmutableArray()), today);
             case EditPlanCells edit:
                 kind = edit.Kind;
                 Require(kind is PlanOperationKind.Cell or PlanOperationKind.Paste or PlanOperationKind.Fill or PlanOperationKind.CtrlD or PlanOperationKind.Clear, "セル操作の種類が不正です。");
