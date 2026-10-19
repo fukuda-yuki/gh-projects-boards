@@ -143,7 +143,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue165-recalculation-" + reset));
         await Ui.Run(() => {
-            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Does.Contain("Undated task"));
+            // PlanTasks holds row identities, not titles: the undated row is I2 in this fixture.
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Does.Contain("I2"));
             Ui.Click("PlanUndo");
         });
         await Ui.Idle();
@@ -275,7 +276,13 @@ internal sealed partial class PlanWorkspaceHostedTests
                     Assert.That(int.TryParse(label.Split(' ')[^1].Replace(",", ""), System.Globalization.NumberStyles.Integer,
                         System.Globalization.CultureInfo.InvariantCulture, out var offeredCount) && offeredCount > 0,
                         Is.True, "A count filter in the bar must name a nonzero set: " + label);
-                Ui.Click(id);
+                // The bar's action button is identified by its visible text: the id on the logical button the
+                // InfoBar holds is not necessarily carried by the instance the tree realized, so looking it
+                // up by that id found nothing. Invoking the realized button is what a user does.
+                var realized = Ui.Tree(view).OfType<Button>().FirstOrDefault(b => b.Content as string == label && b.IsLoaded);
+                Assert.That(realized, Is.Not.Null, "The bar's filter button must be rendered: [" + label + "] id=" + id);
+                ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(realized!)
+                    .GetPattern(PatternInterface.Invoke)).Invoke();
                 filtered = true;
             }
         });
@@ -1724,6 +1731,29 @@ internal sealed partial class PlanWorkspaceHostedTests
         foreach (var stage in new[] { "最新情報の確認", "新規 Issue", "検証" })
             Assert.That(stages.Any(s => s.Contains(stage)), Is.True, stage + " in [" + string.Join(" | ", stages) + "]");
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-result"));
+    }
+
+    [Test]
+    public async Task PublicationOfOneChangedRowLeavesNothingUnpublished()
+    {
+        // Experiment that separates two readings of the new-Issue case's unfinished publication: with no
+        // drafts, pull requests, redacted or hidden items in the fixture, publishing one changed title must
+        // leave 0 unpublished tasks. Green means that case's [1] is its fixture's excluded items being
+        // counted; red means the publish's completion leaves a row behind, which would be a defect.
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2));
+        await Open();
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PlanCell0_Title");
+            cell.Focus(FocusState.Programmatic); cell.Text = "変更した計画";
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク",
+            () => $"publication settled; unpublished=[{Ui.Find<TextBlock>("PlanUnpublished").Text}], publishEnabled={Ui.Find<Button>("PlanPublish").IsEnabled}, confirmEnabled={Ui.Find<Button>("PlanPublishConfirm").IsEnabled}");
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.GreaterThan(0));
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("変更した計画"));
     }
 
     [TestCase(false), TestCase(true)]
