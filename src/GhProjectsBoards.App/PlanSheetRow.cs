@@ -45,7 +45,7 @@ public sealed class PlanSheetRow : Grid
     internal bool IsBound => Owner is not null;
     // The mark's raw wiring, so a case that sees no tag can say whether the element is missing, hidden, or
     // simply in an instance the sheet no longer displays.
-    internal string TagDiagnostics => $"cells={Cells.Length} chip={(tagChip is null ? "null" : tagChip.Visibility.ToString())} strike={(strikeLine is null ? "null" : strikeLine.Visibility.ToString())}";
+    internal string TagDiagnostics => $"cells={Cells.Length} chip={(tagChip is null ? "null" : tagChip.Visibility.ToString())} strike={(strikeLine is null ? "null" : strikeLine.Visibility.ToString())} paints={markPaints} lastTag={lastTag ?? "null"}";
     private readonly List<Border> frames = [];
     private readonly List<TextBlock?> markers = [];
     private readonly List<Button?> handles = [];
@@ -67,6 +67,8 @@ public sealed class PlanSheetRow : Grid
         return width + cell.Padding.Left + cell.Padding.Right + 4;
     }
     private string? boundIdentity;
+    private int markPaints;
+    private string? lastTag;
     private double chartOffset = double.NaN;
     private sealed record ChartPresentation(string Identity, int Number, int RowIndex, DateOnly? Start, DateOnly? End,
         bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? ForecastEnd,
@@ -152,6 +154,37 @@ public sealed class PlanSheetRow : Grid
         for (var i = 0; i < order.Length; i++)
             if (line.Children.IndexOf(order[i]) != i) { line.Children.Remove(order[i]); line.Children.Insert(i, order[i]); }
     }
+    // The pending-state mark for this row: a tag naming the command that produced it, and a strike line for
+    // 中止. It is painted from the sheet's model on every cell pass and can be repainted directly by the
+    // command, so the mark never depends on a layout pass reaching the cell loop (#231).
+    internal void RefreshStateMark()
+    {
+        if (Owner is not { } owner || boundIdentity is null) return;
+        var index = -1;
+        for (var i = 0; i < Cells.Length; i++) if (Cells[i].Field == PlanField.Title) { index = i; break; }
+        if (index < 0) return;
+        var depth = 0; var parent = owner.Rows.GetValueOrDefault(Identity)?.Parent;
+        while (parent is not null && owner.Rows.TryGetValue(parent, out var ancestor) && depth < 30) { depth++; parent = ancestor.Parent; }
+        var rowTag = owner.RowStateTag(Identity);
+        if (tagChip is null) {
+            tagChip = new TextBlock { FontSize = 11, HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 4, 0), IsHitTestVisible = false };
+            ((Grid)frames[index].Child).Children.Add(tagChip);
+        }
+        tagChip.Text = rowTag ?? "";
+        tagChip.Visibility = rowTag is null ? Visibility.Collapsed : Visibility.Visible;
+        tagChip.Foreground = PlanSheetView.Brush(rowTag == "中止にする" ? "SystemFillColorCautionBrush" : "TextFillColorSecondaryBrush");
+        if (strikeLine is null) {
+            strikeLine = new Border { Height = 1, VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left, IsHitTestVisible = false };
+            ((Grid)frames[index].Child).Children.Add(strikeLine);
+        }
+        strikeLine.Visibility = rowTag == "中止にする" ? Visibility.Visible : Visibility.Collapsed;
+        strikeLine.Background = PlanSheetView.Brush("TextFillColorSecondaryBrush");
+        strikeLine.Width = Math.Max(0, frames[index].Width - 140);
+        strikeLine.Margin = new(24 + depth * 12, 0, 0, 0);
+        markPaints++; lastTag = rowTag;
+    }
     internal void SetOwner(PlanSheetView? owner, string? identity)
     {
         if (owner is not null) ArgumentNullException.ThrowIfNull(identity);
@@ -174,8 +207,7 @@ public sealed class PlanSheetRow : Grid
         owner?.UpdateInputProblem();
     }
     private void ClearIds()
-    {
-        AutomationProperties.SetAutomationId(id, ""); AutomationProperties.SetAutomationId(idHandle, ""); AutomationProperties.SetAutomationId(indicator, "");
+    {        AutomationProperties.SetAutomationId(id, ""); AutomationProperties.SetAutomationId(idHandle, ""); AutomationProperties.SetAutomationId(indicator, "");
         AutomationProperties.SetAutomationId(selectionAccent, "");
         foreach (var cell in Cells) { AutomationProperties.SetAutomationId(cell, ""); cell.Rebind(); }
         foreach (var display in summaryCells.Values) AutomationProperties.SetAutomationId(display, "");
@@ -271,31 +303,9 @@ public sealed class PlanSheetRow : Grid
                 changeMarker.Fill = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : "SheetChangedMarkBrush");
             }
             // A row whose state command is pending carries a tag (the command's own name) so it is never
-            // confused with the outlined lateness marks, and 中止 is struck through. Both elements are built
-            // with the Title cell whatever the row's state, because the usual order is a mounted sheet and
-            // then the command; building them only when a tag already exists leaves them absent for good.
-            var rowTag = field == PlanField.Title ? owner.RowStateTag(Identity) : null;
-            if (field == PlanField.Title && tagChip is null) {
-                tagChip = new TextBlock { FontSize = 11, HorizontalAlignment = HorizontalAlignment.Right,
-                    VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 4, 0), IsHitTestVisible = false };
-                ((Grid)frames[i].Child).Children.Add(tagChip);
-            }
-            if (tagChip is not null) {
-                tagChip.Text = rowTag ?? "";
-                tagChip.Visibility = rowTag is null ? Visibility.Collapsed : Visibility.Visible;
-                tagChip.Foreground = PlanSheetView.Brush(rowTag == "中止にする" ? "SystemFillColorCautionBrush" : "TextFillColorSecondaryBrush");
-            }
-            if (field == PlanField.Title && strikeLine is null) {
-                strikeLine = new Border { Height = 1, VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Left, IsHitTestVisible = false };
-                ((Grid)frames[i].Child).Children.Add(strikeLine);
-            }
-            if (strikeLine is not null) {
-                strikeLine.Visibility = field == PlanField.Title && rowTag == "中止にする" ? Visibility.Visible : Visibility.Collapsed;
-                strikeLine.Background = PlanSheetView.Brush("TextFillColorSecondaryBrush");
-                strikeLine.Width = Math.Max(0, frames[i].Width - 140);
-                strikeLine.Margin = new(24 + depth * 12, 0, 0, 0);
-            }
+            // confused with the outlined lateness marks, and 中止 is struck through. The mark is painted by
+            // its own method so the command can repaint it without waiting for a cell pass (#231).
+            if (field == PlanField.Title) RefreshStateMark();
             cell.IsReadOnly = owner.ReadOnly(Identity, field);
             var showHandle = owner.IsRangeEnd(Identity, field) && !cell.Editing && !cell.IsReadOnly && owner.Display(Identity, field).Length > 0 && !owner.Pending.ContainsKey((Identity, field));
             if (showHandle && handles[i] is null) {
