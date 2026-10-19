@@ -1749,10 +1749,19 @@ internal sealed partial class PlanWorkspaceHostedTests
         FakePlanEditor.Save(root, new([
             new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2));
         await Open();
-        // Edit the baseline Issue itself. A cell of row 0 is not necessarily the baseline row: the plan also
-        // holds locally inserted rows, and editing one of those correctly publishes as a creation.
-        await Ui.Run(async () => await workspace.Session!.Execute(
-            new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "変更した計画")]), readDay));
+        // Edit the baseline Issue through the cell the app commits, not by index: row 0 is a locally
+        // inserted row in this fixture and a session command on I1 left no unpublished change, so the cell
+        // carrying the baseline title is located by its text and committed the way that other case commits.
+        var titleCell = "";
+        await Ui.Run(() => {
+            var cells = Ui.Tree(view).OfType<TextBox>()
+                .Select(t => (Id: AutomationProperties.GetAutomationId(t), Text: t.Text))
+                .Where(p => p.Id is not null && p.Id.StartsWith("PlanCell", StringComparison.Ordinal) && p.Id.EndsWith("_Title", StringComparison.Ordinal))
+                .ToArray();
+            TestContext.Out.WriteLine("Title cells: " + string.Join(" | ", cells.Select(c => c.Id + "=" + c.Text)));
+            titleCell = cells.Single(c => c.Text == "設計").Id;
+        });
+        await CommitText(titleCell, "変更した計画");
         await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text != "未発行 0 タスク",
             () => "the title edit must be an unpublished change; unpublished=[" + Ui.Find<TextBlock>("PlanUnpublished").Text + "]");
         // Decide defect or fixture before the publish: a row that carries a baseline Issue must be updated,
