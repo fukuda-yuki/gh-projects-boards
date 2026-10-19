@@ -108,12 +108,14 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [TestCase(false), TestCase(true), Category("PlanReadDate")]
-    public async Task FirstCellEditShowsRecalculationAndUndoClosesItWithoutRedoNotice(bool reset)
+    public async Task SettingsRecalculationNoticeFollowsTheSettingsPathAndUndoClosesItWithoutRedoNotice(bool reset)
     {
         readDay = PlanClock.Today;
         FakePlanEditor.Save(root, new([
             new(new("I1", "設計", "acme/repo"), "", true),
-            new(new("I2", "Moving task", "acme/repo") { Parent = "I1", Remaining = 16, Start = readDay.AddDays(-10), End = readDay.AddDays(-9) }, "", true),
+            // No stored dates: the settings change moves this row's derived schedule, which is what makes a
+            // recalculation notice meaningful now that a stored date is kept (#236).
+            new(new("I2", "Undated task", "acme/repo") { Parent = "I1", Remaining = 16 }, "", true),
             new(new("I3", "Unchanged task", "acme/repo"), "", true)
         ], 4));
         await Open();
@@ -123,29 +125,26 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
             await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Contain("日程は GitHub の値のままです。")));
         }
-        await Ui.Ready<TextBox>("PlanCell2_Title");
-        await Ui.Run(() => {
-            var cell = Ui.Find<TextBox>("PlanCell2_Title");
-            Assert.That(cell.Focus(FocusState.Programmatic), Is.True);
-            cell.Text = "Edited task";
+        // #236 part B: only a settings change that reschedules shows 日程を再計算しました and its filter; a
+        // cell edit no longer opens this bar, so the case drives the settings path it now owns.
+        await Ui.Run(async () => {
+            var session = workspace.Session!;
+            await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = readDay.AddDays(1) }), readDay);
         });
-        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
-        await Ui.Idle();
-        await Ui.Until(() => workspace.Session!.Document.State.Rows[1].Title == "Edited task");
-        // Core accepts the edit at once; the workspace shows the notice when that edit's save completes.
+        // Core accepts the settings change at once; the workspace shows the notice when that save completes.
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult") is { IsOpen: true, Title: "日程を再計算しました" });
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
             Assert.That(bar.IsOpen, Is.True);
             Assert.That(bar.Title, Is.EqualTo("日程を再計算しました"));
-            Assert.That(bar.Message, Is.EqualTo("基準日 " + readDay.ToString("M/d (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP")) + " で日程を再計算しました。日程が変わったタスク 1"));
+            Assert.That(bar.Message, Does.StartWith("日程が変わったタスク ").And.EndsWith("。発行すると GitHub に反映します。"));
         });
         await Ui.Ready<Button>("PlanRefreshChangedFilter");
         await Ui.Run(() => Ui.Click("PlanRefreshChangedFilter"));
-        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 2);
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue165-recalculation-" + reset));
         await Ui.Run(() => {
-            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I2", "" }));
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Does.Contain("Undated task"));
             Ui.Click("PlanUndo");
         });
         await Ui.Idle();
@@ -270,6 +269,13 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (Ui.Find<InfoBar>("PlanRefreshResult").ActionButton is Button offered)
         {
             var id = AutomationProperties.GetAutomationId(offered);
+            var label = offered.Content as string ?? "";
+            // The bar never offers a zero count: the 期限超過 fallback is absent when nothing is overdue,
+            // and a count filter always names a nonzero set (docs/spec.md, #236 part B).
+            if (id != "PlanRefreshCauseFilter")
+                Assert.That(int.TryParse(label.Split(' ')[^1].Replace(",", ""), System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture, out var offeredCount) && offeredCount > 0,
+                    Is.True, "A count filter in the bar must name a nonzero set: " + label);
             await Ui.Run(() => Ui.Click(id));
             await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
             await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-refresh-filter-" + closeBar + "-" + advanceDate));

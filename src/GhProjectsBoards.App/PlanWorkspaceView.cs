@@ -498,7 +498,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 refreshResult.ActionButton = Button("遅れの原因を表示", "PlanRefreshCauseFilter", () => {
                     Show("tasks"); sheet?.FilterTasks(sheet.CauseSet, "遅れの原因 " + sheet.CauseTasks.ToString("N0", culture), dimAncestors: true); return Task.CompletedTask;
                 });
-            else if (counts.Length > 0 && sheet is not null)
+            else if (counts.Length > 0 && sheet is { OverdueTasks: > 0 })
                 refreshResult.ActionButton = CountFilter("期限超過", "PlanRefreshOverdueFilter", sheet.OverdueSet, sheet.OverdueTasks);
         }
         if (!result.AddedTasks.IsEmpty && workspace.Session is { } session)
