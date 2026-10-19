@@ -126,16 +126,10 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Contain("日程は GitHub の値のままです。")));
         }
         // #236 part B: only a settings change that reschedules shows 日程を再計算しました and its filter; a
-        // cell edit no longer opens this bar, so the case drives the settings path it now owns. Only a
-        // calendar, Project-period or people-rate change reschedules (PlanOperations.Apply), which a 基準日
-        // change is not, so the trigger is a rate change.
-        await Ui.Run(async () => {
-            var session = workspace.Session!;
-            var settings = session.Document.State.Settings;
-            await session.Execute(new ReplacePlanSettings(settings with {
-                People = settings.People.Select(p => p.Identity == "U1" ? p with { Rate = 50 } : p).ToImmutableArray()
-            }), readDay);
-        });
+        // cell edit no longer opens this bar, so the case drives the settings path it now owns. A calendar
+        // change is one of the three reschedule triggers (PlanOperations.Apply) and needs no assignee.
+        await Settings();
+        await AddDay("PlanCompanyDaysOff", readDay);
         // Core accepts the settings change at once; the workspace shows the notice when that save completes.
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult") is { IsOpen: true, Title: "日程を再計算しました" });
         await Ui.Run(() => {
@@ -258,6 +252,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (advanceDate) readDay = new(2026, 10, 7);
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        var filtered = false;
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
             Assert.That(bar.Severity, Is.EqualTo(InfoBarSeverity.Informational));
@@ -268,27 +263,23 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(bar.Message, Does.StartWith("日程は変えていません。"));
             Assert.That(bar.Message, Does.Not.Contain("日程が変わったタスク").And.Not.Contain("基準日を"));
             Assert.That(bar.Content, Is.Null);
-        });
-        // The bar's lateness filter is an identity set over this sheet; whatever the delivered button is,
-        // it narrows the list and closing the bar restores the full plan. The button is read on the UI
-        // thread: a XAML read from the test thread raises COMException.
-        string? offeredId = null, offeredLabel = null;
-        await Ui.Run(() => {
-            if (Ui.Find<InfoBar>("PlanRefreshResult").ActionButton is Button button) {
-                offeredId = AutomationProperties.GetAutomationId(button);
-                offeredLabel = button.Content as string ?? "";
+            // The bar's lateness filter is an identity set over this sheet, and it is clicked in this same
+            // UI turn: the refresh's save completion re-renders the shell, which takes the closed bar's
+            // ActionButton out of the tree, so a later turn finds nothing to click.
+            if (bar.ActionButton is Button button) {
+                var id = AutomationProperties.GetAutomationId(button);
+                var label = button.Content as string ?? "";
+                // The bar never offers a zero count: the 期限超過 fallback is absent when nothing is
+                // overdue, and a count filter always names a nonzero set (docs/spec.md, #236 part B).
+                if (id != "PlanRefreshCauseFilter")
+                    Assert.That(int.TryParse(label.Split(' ')[^1].Replace(",", ""), System.Globalization.NumberStyles.Integer,
+                        System.Globalization.CultureInfo.InvariantCulture, out var offeredCount) && offeredCount > 0,
+                        Is.True, "A count filter in the bar must name a nonzero set: " + label);
+                Ui.Click(id);
+                filtered = true;
             }
         });
-        if (offeredId is not null)
-        {
-            var label = offeredLabel ?? "";
-            // The bar never offers a zero count: the 期限超過 fallback is absent when nothing is overdue,
-            // and a count filter always names a nonzero set (docs/spec.md, #236 part B).
-            if (offeredId != "PlanRefreshCauseFilter")
-                Assert.That(int.TryParse(label.Split(' ')[^1].Replace(",", ""), System.Globalization.NumberStyles.Integer,
-                    System.Globalization.CultureInfo.InvariantCulture, out var offeredCount) && offeredCount > 0,
-                    Is.True, "A count filter in the bar must name a nonzero set: " + label);
-            await Ui.Run(() => Ui.Click(offeredId));
+        if (filtered) {
             await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
             await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-refresh-filter-" + closeBar + "-" + advanceDate));
         }
@@ -625,7 +616,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         FakePlanEditor.Save(root, state with { Issues = [
             state.Issues[0] with { Row = row with { Start = overdue ? date.AddDays(-3) : date, End = overdue ? date.AddDays(-3) : date.AddDays(2) } },
             new(row with { Identity = "I2", Title = "後続" }, "", true),
-            new(row with { Identity = "I3", Title = "見込み超過", Start = date, End = date.AddDays(2), Remaining = 16 }, "", true)] });
+            new(row with { Identity = "I3", Title = "見込み超過", Start = date, End = date.AddDays(2), Estimate = 40, Remaining = 16 }, "", true)] });
         await Open();
         await Ui.Run(async () => {
             var session = workspace.Session!;
