@@ -254,6 +254,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
         var filtered = false;
+        string? offeredId = null, offeredLabel = null;
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
             Assert.That(bar.Severity, Is.EqualTo(InfoBarSeverity.Informational));
@@ -264,29 +265,34 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(bar.Message, Does.StartWith("日程は変えていません。"));
             Assert.That(bar.Message, Does.Not.Contain("日程が変わったタスク").And.Not.Contain("基準日を"));
             Assert.That(bar.Content, Is.Null);
-            // The bar's lateness filter is an identity set over this sheet, and it is clicked in this same
-            // UI turn: the refresh's save completion re-renders the shell, which takes the closed bar's
-            // ActionButton out of the tree, so a later turn finds nothing to click.
+            // The bar's lateness filter is an identity set over this sheet. Its id and label are read here,
+            // on the UI thread; the rendered button is found and invoked below, waiting for it to realise.
             if (bar.ActionButton is Button button) {
                 var id = AutomationProperties.GetAutomationId(button);
                 var label = button.Content as string ?? "";
+                offeredId = id; offeredLabel = label;
                 // The bar never offers a zero count: the 期限超過 fallback is absent when nothing is
                 // overdue, and a count filter always names a nonzero set (docs/spec.md, #236 part B).
                 if (id != "PlanRefreshCauseFilter")
                     Assert.That(int.TryParse(label.Split(' ')[^1].Replace(",", ""), System.Globalization.NumberStyles.Integer,
                         System.Globalization.CultureInfo.InvariantCulture, out var offeredCount) && offeredCount > 0,
                         Is.True, "A count filter in the bar must name a nonzero set: " + label);
-                // The bar's action button is identified by its visible text: the id on the logical button the
-                // InfoBar holds is not necessarily carried by the instance the tree realized, so looking it
-                // up by that id found nothing. Invoking the realized button is what a user does.
-                var realized = Ui.Tree(view).OfType<Button>().FirstOrDefault(b => b.Content as string == label && b.IsLoaded);
-                Assert.That(realized, Is.Not.Null, "The bar's filter button must be rendered: [" + label + "] id=" + id);
-                ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(realized!)
-                    .GetPattern(PatternInterface.Invoke)).Invoke();
                 filtered = true;
             }
         });
         if (filtered) {
+            // The InfoBar holds the logical action button; the tree materialises its own instance, and its
+            // id is not necessarily carried over. Wait for the rendered button (the search covers the whole
+            // window, not just the view subtree) and invoke it, which is what a user does.
+            Button? realized = null;
+            await Ui.Until(() => {
+                realized = Ui.Tree(Ui.Root).OfType<Button>().FirstOrDefault(b =>
+                    (b.Content as string == offeredLabel || AutomationProperties.GetName(b) == offeredLabel) && b.IsLoaded);
+                return realized is not null;
+            }, () => "the bar's filter must be rendered: [" + offeredLabel + "] id=" + offeredId
+                + "; buttons=[" + string.Join(" | ", Ui.Tree(Ui.Root).OfType<Button>().Select(b => AutomationProperties.GetName(b) + "/" + b.Content as string)) + "]");
+            await Ui.Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(realized!)
+                .GetPattern(PatternInterface.Invoke)).Invoke());
             await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
             await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-refresh-filter-" + closeBar + "-" + advanceDate));
         }
@@ -1743,25 +1749,22 @@ internal sealed partial class PlanWorkspaceHostedTests
         FakePlanEditor.Save(root, new([
             new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2));
         await Open();
-        // CommitText focuses another control to commit the cell. The publish button's click did not commit
-        // it, so the earlier run published with nothing pending and correctly wrote nothing; the premise is
-        // now asserted before the publish instead of inferred from the remote afterwards.
-        await CommitText("PlanCell0_Title", "変更した計画");
+        // Edit the baseline Issue itself. A cell of row 0 is not necessarily the baseline row: the plan also
+        // holds locally inserted rows, and editing one of those correctly publishes as a creation.
+        await Ui.Run(async () => await workspace.Session!.Execute(
+            new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "変更した計画")]), readDay));
         await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text != "未発行 0 タスク",
             () => "the title edit must be an unpublished change; unpublished=[" + Ui.Find<TextBlock>("PlanUnpublished").Text + "]");
         // Decide defect or fixture before the publish: a row that carries a baseline Issue must be updated,
-        // not created. The run showed a createIssue for a title change, which is either a duplicated Issue
-        // (defect) or a row that was never linked (fixture). The edited row's link state decides it.
+        // not created. The identity assertion is what makes that unambiguous.
         await Ui.Run(() => {
             var session = workspace.Session!;
             var baseline = session.Document.Baseline.Rows.Select(r => r.Identity).ToArray();
             var state = session.Document.State.Rows.Select(r => r.Identity).ToArray();
             TestContext.Out.WriteLine($"Before publish: state=[{string.Join(",", state)}], baseline=[{string.Join(",", baseline)}], planTasks=[{string.Join(",", Ui.Find<ListView>("PlanTasks").Items.Cast<string>())}]");
             var edited = session.Document.State.Rows.FirstOrDefault(r => r.Title == "変更した計画");
-            Assert.That(edited, Is.Not.Null, "The edit must have reached a plan row.");
-            TestContext.Out.WriteLine($"Edited row: {edited!.Identity}, inBaseline={baseline.Contains(edited.Identity)}");
-            Assert.That(baseline, Does.Contain(edited.Identity),
-                "Premise: the edited row must be an existing Issue, so the publish has to update it; a creation would duplicate it.");
+            Assert.That(edited?.Identity, Is.EqualTo("I1"),
+                "Premise: the experiment must edit the baseline Issue, not a locally inserted row.");
         });
         var calls = Path.Combine(root, "plan-mutations.jsonl");
         var before = File.Exists(calls) ? File.ReadAllLines(calls).Length : 0;
