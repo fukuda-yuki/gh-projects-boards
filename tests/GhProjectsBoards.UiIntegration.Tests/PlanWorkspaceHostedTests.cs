@@ -1749,6 +1749,20 @@ internal sealed partial class PlanWorkspaceHostedTests
         await CommitText("PlanCell0_Title", "変更した計画");
         await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text != "未発行 0 タスク",
             () => "the title edit must be an unpublished change; unpublished=[" + Ui.Find<TextBlock>("PlanUnpublished").Text + "]");
+        // Decide defect or fixture before the publish: a row that carries a baseline Issue must be updated,
+        // not created. The run showed a createIssue for a title change, which is either a duplicated Issue
+        // (defect) or a row that was never linked (fixture). The edited row's link state decides it.
+        await Ui.Run(() => {
+            var session = workspace.Session!;
+            var baseline = session.Document.Baseline.Rows.Select(r => r.Identity).ToArray();
+            var state = session.Document.State.Rows.Select(r => r.Identity).ToArray();
+            TestContext.Out.WriteLine($"Before publish: state=[{string.Join(",", state)}], baseline=[{string.Join(",", baseline)}], planTasks=[{string.Join(",", Ui.Find<ListView>("PlanTasks").Items.Cast<string>())}]");
+            var edited = session.Document.State.Rows.FirstOrDefault(r => r.Title == "変更した計画");
+            Assert.That(edited, Is.Not.Null, "The edit must have reached a plan row.");
+            TestContext.Out.WriteLine($"Edited row: {edited!.Identity}, inBaseline={baseline.Contains(edited.Identity)}");
+            Assert.That(baseline, Does.Contain(edited.Identity),
+                "Premise: the edited row must be an existing Issue, so the publish has to update it; a creation would duplicate it.");
+        });
         var calls = Path.Combine(root, "plan-mutations.jsonl");
         var before = File.Exists(calls) ? File.ReadAllLines(calls).Length : 0;
         await Ui.Run(() => Ui.Click("PlanPublish"));
