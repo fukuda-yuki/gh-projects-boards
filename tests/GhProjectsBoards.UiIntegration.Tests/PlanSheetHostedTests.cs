@@ -567,9 +567,11 @@ internal sealed partial class PlanSheetHostedTests
         var rows = ImmutableArray.Create(row);
         var baselines = ImmutableArray.Create(baseline);
         if (state == "summary") {
-            // #236: the descendant is 期限超過 against the 基準日 through its plan end, which the plan must hold.
-            rows = rows.Add(row with { Identity = "I2", Parent = "I1", End = new(2026, 10, 2) });
-            baselines = baselines.Add(row with { Identity = "I2", Parent = "I1", End = new(2026, 10, 2) });
+            // #236: the descendant is 期限超過 against the 基準日 through its plan dates, which the plan must
+            // hold. A stored end alone would be dropped when the calculated start moves past it, so the child
+            // keeps the start and end that put its plan end before 10/5.
+            rows = rows.Add(row with { Identity = "I2", Parent = "I1", Start = new(2026, 10, 2), End = new(2026, 10, 2) });
+            baselines = baselines.Add(row with { Identity = "I2", Parent = "I1", Start = new(2026, 10, 2), End = new(2026, 10, 2) });
         }
         var document = new PlanDocument(session.Document.Project, new(baselines, []), new(rows, session.Document.State.Settings)) {
             Sync = new() { Failures = state == "failed" ? [new("I1", PlanField.End, "Rejected")] : [], Unverified = state == "unverified" ? ["I1"] : [],
