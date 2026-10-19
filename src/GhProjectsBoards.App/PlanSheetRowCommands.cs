@@ -41,14 +41,17 @@ internal sealed partial class PlanSheetView
         else rowMenu.ShowAt(target, new FlyoutShowOptions { Position = new Point(target.ActualWidth / 2, target.ActualHeight / 2) });
     }
 
-    private void AddRowItem(string label, string id, string shortcut, string? reason, Func<Task> run)
-        => Add(label, id, shortcut, reason, run);
+    private void AddRowItem(string label, string id, string shortcut, string? refusal, Func<Task> run)
+        => Add(label, id, shortcut, refusal is null, refusal, run);
     private void AddRowItem(string label, string id, string shortcut, ImmutableArray<string> targets, PlanRowAction action, Func<Task> run)
     {
         var (allowed, denied) = Permitted(targets);
         var eligibility = allowed.IsEmpty ? new PlanRowEligibility([], []) : Eligibility(allowed, action);
         var combined = eligibility with { Skipped = eligibility.Skipped.AddRange(denied) };
-        Add(label, id, shortcut, !combined.Applies.IsEmpty ? SkipReason(combined) : NoEligibleReason(combined), run);
+        // A command that still applies to some selected rows stays enabled and says which rows it will
+        // skip and why; only a command that applies to none is disabled with its refusal (#231).
+        Add(label, id, shortcut, !combined.Applies.IsEmpty,
+            !combined.Applies.IsEmpty ? SkipReason(combined) : NoEligibleReason(combined), run);
     }
     internal const string NoPermissionReason = "この Issue を更新する権限がありません";
     internal bool CannotUpdate(string identity) => Session.Document.Sync.CannotUpdate.Contains(identity);
@@ -59,16 +62,16 @@ internal sealed partial class PlanSheetView
         var denied = targets.Where(CannotUpdate).ToArray();
         return ([.. targets.Where(id => !CannotUpdate(id))], [.. denied.Select(id => (id, NoPermissionReason))]);
     }
-    // One item shape for every command: a disabled item keeps focus and explains itself, so a reason is
-    // never silent (the sheet's command rows follow the same rule).
-    private void Add(string label, string id, string shortcut, string? reason, Func<Task> run)
+    // One item shape for every command: a disabled item keeps focus and explains itself, so its refusal is
+    // never silent, and an enabled item explains what it will leave alone.
+    private void Add(string label, string id, string shortcut, bool enabled, string? hint, Func<Task> run)
     {
-        var item = Id(new MenuFlyoutItem { Text = label, IsEnabled = reason is null, AllowFocusWhenDisabled = true,
+        var item = Id(new MenuFlyoutItem { Text = label, IsEnabled = enabled, AllowFocusWhenDisabled = true,
             KeyboardAcceleratorTextOverride = shortcut }, id);
         AutomationProperties.SetName(item, label);
-        if (reason is not null) { AutomationProperties.SetHelpText(item, reason); ToolTipService.SetToolTip(item, label + ": " + reason); }
+        if (hint is not null) { AutomationProperties.SetHelpText(item, hint); ToolTipService.SetToolTip(item, label + ": " + hint); }
         else ToolTipService.SetToolTip(item, label);
-        item.Click += async (_, _) => { if (reason is null) await Run(run, label); };
+        item.Click += async (_, _) => { if (enabled) await Run(run, label); };
         rowMenu!.Items.Add(item);
     }
 

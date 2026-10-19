@@ -52,7 +52,7 @@ internal sealed partial class PlanSheetHostedTests
                 Is.EqualTo("1行を除外します（" + PlanSheetView.NoPermissionReason + "）"));
         });
         // Running it completes only the permitted row and says which one was left alone.
-        await Ui.Run(() => Ui.Click("PlanRowComplete"));
+        await InvokeRowItem("PlanRowComplete");
         await Ui.Until(() => session.Document.State.Rows.Single(r => r.Identity == "I2").Closed);
         await Ui.Run(() => {
             Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Closed, Is.False, "the denied row is untouched");

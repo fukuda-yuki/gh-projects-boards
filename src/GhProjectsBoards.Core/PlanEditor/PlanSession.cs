@@ -381,7 +381,8 @@ internal sealed class PlanSession
                     BeforeLocalOrderChoices = choices, AfterLocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty
                 };
                 merged = merged with { State = state, Baseline = remote.Baseline,
-                    Sync = merged.Sync with { Unavailable = [], Conflicts = [], Failures = [], LocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty } };
+                    Sync = merged.Sync with { Unavailable = [], Conflicts = [], Failures = [], LocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty,
+                        CannotUpdate = CannotUpdate(original, remote, state.Rows) } };
                 PlanOperations.ValidateDocument(merged, today);
                 undo = undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
                 redo = [];
