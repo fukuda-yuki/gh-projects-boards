@@ -21,6 +21,14 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Ui.Click("PlanSheetMore"));
         await InvokeRowItem(itemId);
     }
+    // The passing permission case opens the row menu and settles the UI before it invokes an overflow item.
+    // The mark cases do the same, which also states the command's state on the pointer route (#231).
+    private async Task AssertRowMenuCommand(string identity, string itemId)
+    {
+        await Ui.Run(() => sheet.ShowRowMenu(identity, PlanField.Title, sheet.Realized.Single(r => r.Identity == identity)));
+        await Ui.Ready<MenuFlyoutItem>(itemId);
+        await Ui.Run(() => Assert.That(Ui.Find<MenuFlyoutItem>(itemId).IsEnabled, Is.True, itemId));
+    }
     private static async Task InvokeRowItem(string itemId)
     {
         await Ui.Ready<MenuFlyoutItem>(itemId);
@@ -110,6 +118,7 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Estimate = 8 };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
+        await AssertRowMenuCommand("I1", "PlanRowCancel");
         await ChooseRowCommand("PlanSheetCancelRows");
         var (row, tag) = await RowMark("I1", "中止にする");
         // Both marks are built with the row, so a failure in one must not hide the other.
@@ -132,6 +141,7 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Estimate = 8, Remaining = 8 };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
+        await AssertRowMenuCommand("I1", "PlanRowComplete");
         await ChooseRowCommand("PlanSheetCompleteRows");
         var (row, tag) = await RowMark("I1", "完了にする");
         Assert.Multiple(() => {
@@ -150,6 +160,7 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
+        await AssertRowMenuCommand("I1", "PlanRowRemove");
         await ChooseRowCommand("PlanSheetRemoveRows");
         var (row, tag) = await RowMark("I1", "この版から外す");
         Assert.Multiple(() => {
