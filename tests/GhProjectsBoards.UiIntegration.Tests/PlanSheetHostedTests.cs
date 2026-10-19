@@ -567,9 +567,11 @@ internal sealed partial class PlanSheetHostedTests
         var rows = ImmutableArray.Create(row);
         var baselines = ImmutableArray.Create(baseline);
         if (state == "summary") {
-            // #236: the descendant is 期限超過 against the 基準日 through its plan end, which the plan must hold.
-            rows = rows.Add(row with { Identity = "I2", Parent = "I1", End = new(2026, 10, 2) });
-            baselines = baselines.Add(row with { Identity = "I2", Parent = "I1", End = new(2026, 10, 2) });
+            // #236: the descendant is 期限超過 against the 基準日 through its plan dates, which the plan must
+            // hold. A stored end alone would be dropped when the calculated start moves past it, so the child
+            // keeps the start and end that put its plan end before 10/5.
+            rows = rows.Add(row with { Identity = "I2", Parent = "I1", Start = new(2026, 10, 2), End = new(2026, 10, 2) });
+            baselines = baselines.Add(row with { Identity = "I2", Parent = "I1", Start = new(2026, 10, 2), End = new(2026, 10, 2) });
         }
         var document = new PlanDocument(session.Document.Project, new(baselines, []), new(rows, session.Document.State.Settings)) {
             Sync = new() { Failures = state == "failed" ? [new("I1", PlanField.End, "Rejected")] : [], Unverified = state == "unverified" ? ["I1"] : [],
@@ -1742,13 +1744,15 @@ internal sealed partial class PlanSheetHostedTests
     {
         // #236 part B: the twelve default columns measure 944 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
         // 担当者 80 + 見積 56 + 残 56 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 96 + 先行 64) and the
-        // divider 6 px, so 944 + 6 + the 320 px Gantt minimum is a 1270 px sheet — the honest threshold the
-        // spec and manual now quote as about 1,300 effective pixels of window.
-        await Ui.Run(() => { sheet.Width = 1270; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        // divider 6 px. RefreshLayout lays the sheet out inside 20 px less than the control width (a reserve for
+        // its own chrome) and keeps the Gantt at its 320 px minimum, so the honest threshold is
+        // 944 + 6 + 320 + 20 = 1290 control px — the "about 1,300 effective pixels of window" the spec and
+        // manual quote. A 1270 px control leaves 930 px for the sheet and clips 先行.
+        await Ui.Run(() => { sheet.Width = 1290; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        // Layout rounds a 1270 effective-pixel width to the display's physical pixels, so accept the rounded
+        // Layout rounds a 1290 effective-pixel width to the display's physical pixels, so accept the rounded
         // width; the fit assertions below are the claim this case measures.
-        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1270) <= 1);
+        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1290) <= 1);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");

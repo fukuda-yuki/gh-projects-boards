@@ -159,10 +159,11 @@ internal sealed class PlanOverviewHostedTests
         var rows = ImmutableArray.Create(task,
             // #236: a stored date is a plan value and a read does not invent one, so the rows the geometry
             // measures state the plan's own dates. I2 is fixed with both endpoints and I6 is a zero-work
-            // milestone on its date; without them those bars do not exist to measure. I2's end covers the two
-            // days its remaining work needs from the fixed start, so its forecast ends on the plan end and the
-            // row stays out of the 予定より遅れ set this case measures on rows 1 and 4.
-            task with { Identity = "I2", Title = "進捗未取得", Actual = null, Fixed = true, Start = Today.AddDays(3), End = Today.AddDays(4) },
+            // milestone on its date; without them those bars do not exist to measure. I2's end is the day its
+            // remaining work reaches on this fixture's calendar (10/7 company day off, 10/8 imported holiday,
+            // 10/12 bundled holiday), so its forecast ends on its plan end and the row stays out of the
+            // 予定より遅れ set this case measures on rows 1 and 4.
+            task with { Identity = "I2", Title = "進捗未取得", Actual = null, Fixed = true, Start = Today.AddDays(3), End = new(2026, 10, 13) },
             task with { Identity = "I3", Title = "完了", Remaining = 0, End = Today.AddDays(3) },
             new PlanRow("I4", "集計", "acme/repo"), task with { Identity = "I5", Parent = "I4" },
             task with { Identity = "I6", Title = "承認", Estimate = 0, Actual = 0, Remaining = 0, Predecessors = ["I1"], Start = Today, End = Today });
