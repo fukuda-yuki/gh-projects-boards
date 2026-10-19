@@ -40,6 +40,9 @@ public sealed class PlanSheetRow : Grid
     // Read by the hosted UI cases and the verifier's run sheet: the pending state tag and its strike-through.
     internal string? StateTagText => tagChip is { Visibility: Visibility.Visible } ? tagChip.Text : null;
     internal bool StruckThrough => strikeLine is { Visibility: Visibility.Visible };
+    // A recycled row can stay in the sheet's realized set after it lost its owner; the mark cases need to
+    // tell "the row was never repainted" from "this instance is no longer the displayed one".
+    internal bool IsBound => Owner is not null;
     private readonly List<Border> frames = [];
     private readonly List<TextBlock?> markers = [];
     private readonly List<Button?> handles = [];

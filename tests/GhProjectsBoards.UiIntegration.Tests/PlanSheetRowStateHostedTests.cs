@@ -13,8 +13,6 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 // themselves are covered by the Core and adapter suites; this file covers the surface the PMO operates.
 internal sealed partial class PlanSheetHostedTests
 {
-    // The commands are chosen through the menu, the way a PMO reaches them, so the marks are produced by the
-    // same path the product repaints rather than by a direct session call the surface never makes.
     // The commands are chosen from the overflow, the route the other hosted cases already drive, so these
     // cases measure the mark and the status line; the row context menu's own reachability and reasons are
     // the subject of the menu case.
@@ -29,12 +27,24 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
             Ui.Popup<MenuFlyoutItem>(itemId)!).GetPattern(PatternInterface.Invoke)).Invoke());
     }
-    private async Task<(PlanSheetRow Row, string? Tag)> RowMark(string identity)
+    // Wait for the command's own report first: that separates "the command did not run" from "the mark did
+    // not appear", which a bare wait on the mark cannot. The assertion then names the layer that failed.
+    private async Task<(PlanSheetRow Row, string? Tag)> RowMark(string identity, string expected)
     {
-        await Ui.Until(() => sheet.Realized.Any(r => r.Identity == identity && r.StateTagText is not null));
-        PlanSheetRow row = null!; string? tag = null;
-        await Ui.Run(() => { row = sheet.Realized.Single(r => r.Identity == identity); tag = row.StateTagText; });
-        return (row, tag);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        PlanSheetRow? row = null; string? tag = null; var realized = 0; var bound = 0; string? model = null;
+        await Ui.Run(() => {
+            realized = sheet.Realized.Count;
+            row = sheet.Realized.FirstOrDefault(r => r.Identity == identity);
+            tag = row?.StateTagText;
+            bound = sheet.Realized.Count(r => r.IsBound);
+            model = sheet.RowStateTag(identity);
+        });
+        var status = "";
+        await Ui.Run(() => status = Ui.Find<TextBlock>("PlanSheetError").Text);
+        Assert.That(tag, Is.EqualTo(expected),
+            $"status='{status}' model='{model}' realized={realized} bound={bound} rowFound={row is not null} rowBound={row?.IsBound}");
+        return (row!, tag);
     }
 
     [Test]
@@ -94,7 +104,7 @@ internal sealed partial class PlanSheetHostedTests
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await ChooseRowCommand("PlanSheetCancelRows");
-        var (row, tag) = await RowMark("I1");
+        var (row, tag) = await RowMark("I1", "中止にする");
         // Both marks are built with the row, so a failure in one must not hide the other.
         Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("中止にする"));
@@ -116,7 +126,7 @@ internal sealed partial class PlanSheetHostedTests
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await ChooseRowCommand("PlanSheetCompleteRows");
-        var (row, tag) = await RowMark("I1");
+        var (row, tag) = await RowMark("I1", "完了にする");
         Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("完了にする"));
             Assert.That(row.Opacity, Is.EqualTo(1), "a completed row keeps its ordinary weight");
@@ -134,7 +144,7 @@ internal sealed partial class PlanSheetHostedTests
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await ChooseRowCommand("PlanSheetRemoveRows");
-        var (row, tag) = await RowMark("I1");
+        var (row, tag) = await RowMark("I1", "この版から外す");
         Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("この版から外す"));
             Assert.That(row.Opacity, Is.LessThan(1));
