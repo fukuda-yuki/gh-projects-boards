@@ -14,7 +14,9 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task WholeRowDeleteRemovesTheRowsWhileARangeDeleteKeepsTheTaskName()
     {
-        var first = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Assignees = ["U1"], Predecessors = ["I2"] };
+        // #236/#241: the plan must stay acyclic. I2 is blocked by I1 and I1 is free, so the range delete still
+        // has a predecessor to clear without asking any operation to reschedule a pre-existing cycle.
+        var first = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Assignees = ["U1"] };
         var second = new PlanRow("I2", "Other", "acme/repo") { Fixed = true, Assignees = ["U1"], Predecessors = ["I1"] };
         await MountPresentation([first, second], [first, second], [new("U1", "alice", 100, null)]);
         await Select(2, PlanField.Title);
