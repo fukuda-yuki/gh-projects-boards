@@ -38,7 +38,12 @@ internal sealed partial class PlanSheetView
             return visibleFields;
         }
     }
-    internal sealed record Edge(int From, int To, DateOnly End, DateOnly Start);
+    // #236: an edge names only the row pair. It used to carry the predecessor's end and the successor's start
+    // as copies taken when the edges were built, while the bars are drawn from the current schedule. An edit
+    // that reschedules an end (EndDayOnly lets a successor start on the stored end day) left the copy a day
+    // behind the bar, so the arrow pointed a day away from the bar it belongs to. Keeping the dates out of the
+    // type is what stops the second source coming back: every drawing path reads the schedule the bars use.
+    internal sealed record Edge(int From, int To);
     internal IReadOnlyList<Edge> Edges { get; private set; } = [];
     internal static bool Down(VirtualKey key) => (InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
     // Ctrl+-: the numeric keypad reports Subtract, the main row reports the OEM minus code (Excel's
@@ -68,7 +73,7 @@ internal sealed partial class PlanSheetView
         var indexes = RowIndexes;
         Edges = RowIds.Where(Rows.ContainsKey).SelectMany(id => Rows[id].Predecessors
             .Where(p => indexes.ContainsKey(p) && Schedule.GetValueOrDefault(p)?.End.Value is not null && Schedule[id].Start.Value is not null)
-            .Select(p => new Edge(indexes[p], indexes[id], Schedule[p].End.Value!.Value, Schedule[id].Start.Value!.Value))).ToArray();
+            .Select(p => new Edge(indexes[p], indexes[id]))).ToArray();
     }
     internal bool IsSelected(string identity, string field)
     {
