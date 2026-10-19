@@ -89,3 +89,13 @@ Use one unchanged baseline and one candidate with the identical harness and fixt
 ## Refresh and publish (#79)
 
 Use the product publisher measurement command and source/environment/artifact requirements in the [test policy](../tests/README.md#live-github). The baseline sandbox measurements, batch limits and targets are in [decisions](decisions.md#throughput-targets-for-79). Core throughput, hosted rendering and ordinary-desktop responsiveness are separate observations. Preserve failed attempts and report unavailable measurements explicitly.
+
+### Publication read scope (#201)
+
+Measured offline on the evaluation workload — a 基準日 change and a refresh, then 12 PMO edits and one publish, driven through the ordinary app against the isolated fake gh (`C:\w\rc2-plan\evidence\196\run-b-offline.ps1`). This is the **offline workload shape**, not a GitHub measurement: the fake serves reads locally, so the elapsed time mostly reflects local processing, and it is not comparable with the 318.9 s and 308 s GitHub figures.
+
+| Publish | Batches | Calls | Writes | Head |
+| --- | --- | --- | --- | --- |
+| 41.33 s | `[10,10,3]` | 117 | 3 | `4f6ce4f8` (before #201) |
+
+The read scope itself is evidenced by the request set rather than by the timing. An adapter run of a one-write publish records **no `ProjectItems` traversal**, exactly **two scoped item reads** — one before the writes and one after them — and those reads name only the written item id. Before #201 the same publish paid two complete Project traversals; at 1,042 items each is about 56 requests. The after-measurement needs the ordinary app and an idle desktop, so record it with the same script and the same workload shape before treating the elapsed-time change as measured.
