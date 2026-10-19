@@ -70,6 +70,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         var deleted = baseline with { Columns = baseline.Columns.RemoveAt(baseline.Columns.Length - 1),
             Rows = baseline.Rows.Select(r => r with { ExtraValues = r.ExtraValues.Remove("Project:DeletedNote") }).ToImmutableArray() };
         await session.AcceptRefresh(new(deleted, System.Collections.Immutable.ImmutableDictionary<string,string>.Empty, [], 0, 0), today, refresh: false);
+        // The case is about the deleted-extra line not blocking *other* changes, so there must be one:
+        // confirmation is disabled only when no writable change remains (docs/spec.md), and without this
+        // title change the deleted-field line was the entire review and 発行する correctly stayed disabled.
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new(identity, PlanField.Title, "別の変更")]), today);
         await Ui.Run(() => Ui.Click("PlanPublish"));
         var id = "PlanDiscardDeleted" + identity + "_Project:DeletedNote";
         await Ui.Ready<Button>(id);

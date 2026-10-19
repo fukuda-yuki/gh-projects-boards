@@ -1688,6 +1688,10 @@ internal sealed partial class PlanWorkspaceHostedTests
                     prematureVerification |= Ui.Tree(progress).OfType<TextBlock>().Any(t => t.Text == "✓ 検証");
             });
             var input = Ui.Find<TextBox>("PlanCell0_Title"); input.Focus(FocusState.Programmatic); input.Text = "新しい計画";
+            // A title alone writes nothing in the fields-and-assignees phase, so the stage would not be
+            // announced at all. The new Issue's effort gives that phase a write to report (#231).
+            var remaining = Ui.Find<TextBox>("PlanCell0_Remaining");
+            remaining.Focus(FocusState.Programmatic); remaining.Text = "8";
             Ui.Click("PlanPublish");
         });
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("新規 Issue")));
