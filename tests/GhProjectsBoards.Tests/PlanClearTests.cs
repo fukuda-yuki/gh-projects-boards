@@ -60,6 +60,27 @@ internal sealed class PlanClearTests
     }
 
     [Test]
+    public async Task ClearingARangeSpannedByAnUnmappedRoleClearsTheEditableCells()
+    {
+        // #236 part B: 工程 without an assigned single-select is a supported state (the summary view tells the
+        // PMO to assign it), so the sheet shows the column read-only. A range Delete over the default columns
+        // skips it like タスク名 and the computed 見込終了, and the editable cells beside it still clear as one
+        // Undo step; an explicit edit of the column stays refused.
+        var session = await Start();
+        var result = await session.Execute(new ClearPlanCells(["I1"],
+            [PlanField.Title, PlanField.Phase, PlanField.Assignees, PlanField.Predecessors, "ForecastEnd"]), Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var row = session.Document.State.Rows.Single(r => r.Identity == "I1");
+        Assert.That(row.Title, Is.EqualTo("Task"), "A range Delete never blanks a task name.");
+        Assert.That(row.Assignees, Is.Empty, "The editable cells still clear beside the read-only column.");
+        Assert.That(row.Predecessors, Is.Empty);
+        Assert.That(session.UndoCount, Is.EqualTo(1));
+        var refusal = Assert.ThrowsAsync<ArgumentException>(async () =>
+            await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Phase, "SA")]), Today));
+        Assert.That(refusal!.Message, Does.Contain("工程"), "An explicit edit of the unmapped column is still refused.");
+    }
+
+    [Test]
     public async Task ClearingOnlyTaskNameCellsChangesNothingAndAddsNoHistory()
     {
         var session = await Start();

@@ -148,7 +148,10 @@ internal sealed partial class PlanSheetHostedTests
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
             Assert.That(sheet.List.Items.Cast<string>(), Is.EqualTo(new[] { "I100", "" }));
-            Assert.That(Ui.Find<TextBox>("PlanCell100_End").Text, Is.EqualTo("10/6 (火)"));
+            // #236: the fixture's predecessor end (10/5) is a stored plan day, and a successor may start on its
+            // predecessor's end day, so I100's one day of work ends 10/5. The filtered row shows the plan's own
+            // dates rather than a recycled row's.
+            Assert.That(Ui.Find<TextBox>("PlanCell100_End").Text, Is.EqualTo("10/5 (月)"));
             Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("1 件"));
             Ui.Find<TextBox>("PlanSheetFilter").Text = "";
         });

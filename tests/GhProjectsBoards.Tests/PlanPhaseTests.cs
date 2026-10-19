@@ -26,7 +26,11 @@ internal sealed class PlanPhaseTests
         Assert.That(() => PlanSheetEditing.Parse(d, PlanField.Phase, "ｘｙ", Day), Throws.ArgumentException.With.Message.EqualTo("工程は SA, UI のどれかを入力してください。"));
         Assert.That(() => PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Phase, 12m)]), Day), Throws.ArgumentException);
         var unmapped = d with { State = d.State with { Settings = new() } };
-        Assert.That(() => PlanOperations.Apply(unmapped, new ClearPlanCells(["I1"], [PlanField.Phase]), Day), Throws.ArgumentException);
+        // #236 part B: 工程-unmapped is a supported state, so a range clear skips the column instead of
+        // refusing every editable cell beside it; an explicit edit of the column is still refused.
+        var cleared = PlanOperations.Apply(unmapped, new ClearPlanCells(["I1"], [PlanField.Phase]), Day).State;
+        Assert.That(cleared.Rows, Is.EqualTo(unmapped.State.Rows));
+        Assert.That(() => PlanOperations.Apply(unmapped, new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Phase, "SA")]), Day), Throws.ArgumentException.With.Message.EqualTo("工程のフィールドが未設定です。"));
     }
 
     [Test]
