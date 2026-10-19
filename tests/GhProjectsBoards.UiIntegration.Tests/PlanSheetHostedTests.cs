@@ -680,8 +680,10 @@ internal sealed partial class PlanSheetHostedTests
         if (state == "constraint") row = row with { StartNoEarlierThan = Today.AddDays(1) };
         var rows = ImmutableArray.Create(row); var baseline = ImmutableArray.Create(old);
         if (state == "predecessor") {
-            // The predecessor's forecast end must be later than this task's plan start for it to be the cause.
-            rows = rows.SetItem(0, row with { Predecessors = ["I2"] })
+            // A 日程固定 task is the shape that can be 予定より遅れ through a predecessor: it keeps its plan
+            // dates while its forecast start follows the predecessor's end. An unfixed task's plan start would
+            // follow the predecessor too, and its end with it, leaving no gap to show.
+            rows = rows.SetItem(0, row with { Fixed = true, Predecessors = ["I2"] })
                 .Add(row with { Identity = "I2", Start = Today.AddDays(2), End = Today.AddDays(2) });
             baseline = baseline.Add(row with { Identity = "I2", Start = Today.AddDays(2), End = Today.AddDays(2) });
         }
@@ -695,9 +697,12 @@ internal sealed partial class PlanSheetHostedTests
             baseline = baseline.Add(child);
         }
         if (state == "summary-counts") {
+            // One overdue child and one later child: the summary's roll-up end is 10/5 and its forecast 10/6,
+            // so the pill is tinted (a descendant is 期限超過) and both counts appear in the detail line.
+            var overdueChild = old with { Identity = "I2", Parent = "I1", Start = Today.AddDays(-3), End = Today.AddDays(-3) };
             var later = old with { Identity = "I3", Parent = "I1", Start = Today, End = Today, Remaining = 16 };
-            rows = rows.Add(later);
-            baseline = baseline.Add(later);
+            rows = rows.SetItem(1, overdueChild).Add(later);
+            baseline = baseline.SetItem(1, overdueChild).Add(later);
         }
         await MountPresentation(rows, baseline); await Select(1, PlanField.Title); await Ui.Idle();
         await Ui.Until(() => Ui.Find<HyperlinkButton>("PlanSheetIssue").ActualWidth > 0
