@@ -1703,9 +1703,13 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        await Ui.Run(() => { sheet.Width = 1248; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        // #236 part B: the twelve default columns measure 944 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
+        // 担当者 80 + 見積 56 + 残 56 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 96 + 先行 64) and the
+        // divider 6 px, so 944 + 6 + the 320 px Gantt minimum is a 1270 px sheet — the honest threshold the
+        // spec and manual now quote as about 1,300 effective pixels of window.
+        await Ui.Run(() => { sheet.Width = 1270; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        await Ui.Until(() => sheet.ActualWidth == 1248);
+        await Ui.Until(() => sheet.ActualWidth == 1270);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
