@@ -492,6 +492,17 @@ internal sealed class PlanSession
                 }).ToImmutableArray() };
             }
             var baseline = remote.Baseline;
+            // #201: a scoped read does not observe the Project's item order. When every position write of
+            // this attempt succeeded, the order the review asked for is the order GitHub holds, so the
+            // baseline advances to it and the next plan does not repeat the move. A failed position write
+            // keeps the previous order, so the next publish still sees the move.
+            if (remote.Scoped && writes.Any(w => w.Stage == PlanPublishStage.Order) && writes.Where(w => w.Stage == PlanPublishStage.Order).All(w => w.State == PlanWriteState.Succeeded))
+            {
+                var byIdentity = baseline.Rows.ToDictionary(r => r.Identity);
+                var stateOrder = state.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+                baseline = baseline with { Rows = state.Rows.Select(r => r.Identity).Where(byIdentity.ContainsKey)
+                    .Concat(baseline.Rows.Select(r => r.Identity).Where(id => !stateOrder.Contains(id))).Select(id => byIdentity[id]).ToImmutableArray() };
+            }
             var missing = document.Baseline.Rows.Where(r => !baseline.Rows.Any(x => x.Identity == r.Identity)).ToImmutableArray();
             baseline = baseline with { Rows = baseline.Rows.AddRange(missing) };
             // Hide this publish's own fields from the external-change merge, including unfinished writes.

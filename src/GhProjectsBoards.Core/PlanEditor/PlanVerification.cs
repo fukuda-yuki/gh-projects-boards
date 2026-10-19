@@ -51,6 +51,10 @@ internal static class PlanVerification
             case "addBlockedBy": return row.Predecessors.Contains(Id(Text("blockingIssueId"))!);
             case "removeBlockedBy": return !row.Predecessors.Contains(Id(Text("blockingIssueId"))!);
             case "updateProjectV2ItemPosition":
+                // #201: a scoped publication read observes the written items, not the Project's item order,
+                // so a position write whose item the read returns is taken as applied. A lost move is
+                // re-observed by the next complete read, and a failed move keeps the previous order below.
+                if (remote.Scoped) return remote.Items.ContainsKey(identity);
                 var order = remote.Baseline.Rows.Select(r => r.Identity).ToArray();
                 var index = Array.IndexOf(order, identity); var after = Text("afterId");
                 return after is null ? index == 0 : index > 0 && order[index - 1] == Id(after[5..]);

@@ -1767,7 +1767,12 @@ internal sealed partial class PlanPublisherTests
         var result = await publisher.PublishAsync(session, Today);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
         if (fault == "removed-during-write") {
-            Assert.That(result.Succeeded, Is.False); Assert.That(result.Error, Is.Not.Empty);
+            // #201: an item this publish does not write is not read by it, so its removal during the write
+            // is not seen here; it arrives with 最新の情報に更新 as an unavailable row.
+            Assert.That(result.Succeeded, Is.True, result.Error);
+            Assert.That(session.Document.Sync.Publish, Is.Null);
+            var refresh = await publisher.RefreshAsync(session, Today);
+            Assert.That(refresh.Succeeded, Is.True, refresh.Error);
             Assert.That(session.Document.Sync.Unavailable, Is.EqualTo(new[] { "I2" }));
         } else {
             Assert.That(result.Succeeded, Is.True, result.Error);
