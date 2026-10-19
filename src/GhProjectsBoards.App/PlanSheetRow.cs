@@ -466,10 +466,17 @@ public sealed class PlanSheetRow : Grid
             var successorMilestone = successor.IsMilestone && successor.Start.Value == successor.End.Value;
             var predecessor = owner.Schedule[owner.RowIds[edge.From]];
             var predecessorMilestone = predecessor.IsMilestone && predecessor.Start.Value == predecessor.End.Value;
-            var predecessorStart = predecessor.Start.Value ?? edge.End;
-            var predecessorWidth = predecessor.Start.Value is null ? 8 : predecessorMilestone ? 10 : Math.Max(2, (edge.End.DayNumber - predecessorStart.DayNumber + 1) * owner.DayWidth);
-            var x1 = ChartX(owner, predecessorStart) + predecessorWidth; var x2 = ChartX(owner, edge.Start);
-            var successorWidth = successorMilestone ? 10 : Math.Max(2, ((successor.End.Value ?? edge.Start).DayNumber - edge.Start.DayNumber + 1) * owner.DayWidth);
+            // #236: every coordinate here comes from the schedule the bars are drawn from. The edge carries only
+            // the row pair now, because its cached copies of these dates could lag the bar by a day once an edit
+            // rescheduled an end; an arrow a day off from the bar it points at is a wrong picture, not a rounded
+            // one. RefreshEdges only creates an edge when both dates are known, so the fallbacks are unreachable.
+            if ((predecessor.Start.Value ?? predecessor.End.Value) is not { } predecessorStart
+                || (successor.Start.Value ?? successor.End.Value) is not { } successorStart) continue;
+            var predecessorEnd = predecessor.End.Value ?? predecessorStart;
+            var successorEnd = successor.End.Value ?? successorStart;
+            var predecessorWidth = predecessor.Start.Value is null ? 8 : predecessorMilestone ? 10 : Math.Max(2, (predecessorEnd.DayNumber - predecessorStart.DayNumber + 1) * owner.DayWidth);
+            var x1 = ChartX(owner, predecessorStart) + predecessorWidth; var x2 = ChartX(owner, successorStart);
+            var successorWidth = successorMilestone ? 10 : Math.Max(2, (successorEnd.DayNumber - successorStart.DayNumber + 1) * owner.DayWidth);
             var inset = Math.Min(3, successorWidth / 2);
             // Clamp locally: adding a large date coordinate can invert equal bounds through rounding.
             var entry = x2 + Math.Clamp(Math.Max(x1 - x2 + 5, 5), inset, successorWidth - inset);
