@@ -21,14 +21,17 @@ internal static class FakePlanEditor
         var state = Load(root);
         var fault = scenario.TryGetProperty("planFault", out var faultNode) ? faultNode.GetString() : null;
         var faultBatch = scenario.TryGetProperty("faultBatch", out var batchNode) ? batchNode.GetInt32() : 1;
-        if ((fault == "readfailure" || fault is "after-and-read" or "before-and-read" && state.MutationBatches > 0) && query.Contains("ProjectItems")) { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
+        // #201: a publish reads and verifies only the items it writes, so a fault aimed at the Project's
+        // item read must reach both the complete item walk and the scoped publication read.
+        var itemRead = query.Contains("ProjectItems") || query.Contains("PlanPublishItems") || query.Contains("ProjectItemDetails");
+        if ((fault == "readfailure" || fault is "after-and-read" or "before-and-read" && state.MutationBatches > 0) && itemRead) { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
         if (query.Contains("ProjectFields")) { state = state with { ReadAttempts = state.ReadAttempts + 1 }; Save(root, state); }
         if ((fault == "verificationfailure" && state.MutationBatches >= faultBatch ||
-            fault == "uncertain-verification" && state.MutationBatches >= faultBatch) && query.Contains("ProjectItems"))
+            fault == "uncertain-verification" && state.MutationBatches >= faultBatch) && itemRead)
         { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
         if (fault == "uncertain-verification" && state.MutationBatches >= faultBatch && query.Contains("PlanCreationGuard"))
         { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
-        if (fault == "read-once" && state.ReadAttempts == 1 && query.Contains("ProjectItems"))
+        if (fault == "read-once" && state.ReadAttempts == 1 && itemRead)
         { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
         var workspace = scenario.TryGetProperty("workspace", out var ws) && ws.GetBoolean();
         if (workspace && query.Contains("Registration"))
@@ -133,6 +136,28 @@ internal static class FakePlanEditor
                 data["l"+index]=JsonSerializer.SerializeToNode(new { __typename="Issue", id, labels=Page(all.Skip(offset).Take(100).Select(l=>(object)new{id=l.Id,name=l.Name}),all.Length,offset+100<all.Length,offset+100<all.Length?(offset+100).ToString():null) });
             }
             Write(new JsonObject { ["data"]=data }); return 0;
+        }
+        if (query.Contains("PlanPublishItems"))
+        {
+            // #201: the publication read resolves only the requested Issue identities to their items.
+            // A churned read cannot deliver one of them, exactly as a churned item walk changes its total.
+            var churn = fault == "churn" && state.ReadAttempts <= faultBatch
+                || fault == "verification-churn" && state.MutationBatches > 0 && state.ReadAttempts <= 3;
+            var nodes = new List<object?>();
+            foreach (var id in variables.GetProperty("ids").EnumerateArray().Select(n => n.GetString()!).ToArray())
+            {
+                var issue = state.Issues.FirstOrDefault(i => i.Row.Identity == id);
+                if (issue is null || churn) { nodes.Add(null); churn = false; continue; }
+                // The same membership visibility the item walk applies, so the scoped read observes what a
+                // complete read would have observed for the same item.
+                var visible = issue.Added && !(fault == "membership-delay" && state.MutationBatches is > 0 and <= 4
+                    && state.ReadAttempts < 2 && int.Parse(issue.Row.Identity[1..]) % 2 == 0);
+                var owners = visible ? workspace ? new[] { "P1", "P2" } : new[] { "P1" } : [];
+                nodes.Add(new { __typename = "Issue", id,
+                    projectItems = Page(owners.Select(owner => (object)new { id = ItemIdFor(owner, "T-" + id), project = new { id = owner } }), owners.Length) });
+            }
+            Write(new { data = new { nodes = nodes.ToArray(), viewer = new { databaseId = 42 } } });
+            return 0;
         }
         object? node = null;
         if (query.Contains("PlanAddField"))

@@ -13,6 +13,9 @@ internal sealed partial class PlanWorkspaceView
     private readonly TextBlock publishBlockedReason = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishBlockedReason");
     private readonly TextBlock publishStatusDate = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishStatusDate");
     private readonly TextBlock publishSummary = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishSummary");
+    // #201: a publish reads and verifies only the items it writes, so it does not refresh the plan.
+    private readonly TextBlock publishScope = Id(new TextBlock { TextWrapping = TextWrapping.Wrap,
+        Text = "発行は計画を最新の情報に更新しません。他の変更は「最新の情報に更新」で取り込みます。" }, "PlanPublishScope");
     private readonly TextBlock publishResult = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishResult");
     private PlanDocument? publishedDocument;
     private Button openPublish = null!;
@@ -39,7 +42,7 @@ internal sealed partial class PlanWorkspaceView
         close.Click += (_, _) => { if (!closing && !publishing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
         var header = new StackPanel { Spacing = 8 };
-        header.Children.Add(actions); header.Children.Add(publishSummary); header.Children.Add(publishResult); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
+        header.Children.Add(actions); header.Children.Add(publishSummary); header.Children.Add(publishScope); header.Children.Add(publishResult); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
         AutomationProperties.SetLiveSetting(publishBlockedReason, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         AutomationProperties.SetLiveSetting(publishResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.Children.Add(header);
