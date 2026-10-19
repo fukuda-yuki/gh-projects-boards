@@ -43,6 +43,9 @@ public sealed class PlanSheetRow : Grid
     // A recycled row can stay in the sheet's realized set after it lost its owner; the mark cases need to
     // tell "the row was never repainted" from "this instance is no longer the displayed one".
     internal bool IsBound => Owner is not null;
+    // The mark's raw wiring, so a case that sees no tag can say whether the element is missing, hidden, or
+    // simply in an instance the sheet no longer displays.
+    internal string TagDiagnostics => $"cells={Cells.Length} chip={(tagChip is null ? "null" : tagChip.Visibility.ToString())} strike={(strikeLine is null ? "null" : strikeLine.Visibility.ToString())}";
     private readonly List<Border> frames = [];
     private readonly List<TextBlock?> markers = [];
     private readonly List<Button?> handles = [];

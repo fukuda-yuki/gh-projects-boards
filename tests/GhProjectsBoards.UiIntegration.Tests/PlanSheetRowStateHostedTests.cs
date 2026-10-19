@@ -33,9 +33,16 @@ internal sealed partial class PlanSheetHostedTests
     {
         await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
         PlanSheetRow? row = null; string? tag = null; var realized = 0; var bound = 0; string? model = null;
+        var sameIdentity = 0; var tags = ""; var wiring = "";
         await Ui.Run(() => {
             realized = sheet.Realized.Count;
-            row = sheet.Realized.FirstOrDefault(r => r.Identity == identity);
+            var matches = sheet.Realized.Where(r => r.Identity == identity).ToArray();
+            sameIdentity = matches.Length;
+            // A recycled row can keep its identity after it left the tree; the tags of every instance say
+            // whether the case read a stale one or the live row really is unmarked.
+            tags = string.Join(",", matches.Select(r => (r.StateTagText ?? "null") + (r.IsBound ? "" : "(unbound)")));
+            wiring = string.Join(" | ", matches.Select(r => r.TagDiagnostics));
+            row = matches.FirstOrDefault();
             tag = row?.StateTagText;
             bound = sheet.Realized.Count(r => r.IsBound);
             model = sheet.RowStateTag(identity);
@@ -43,7 +50,7 @@ internal sealed partial class PlanSheetHostedTests
         var status = "";
         await Ui.Run(() => status = Ui.Find<TextBlock>("PlanSheetError").Text);
         Assert.That(tag, Is.EqualTo(expected),
-            $"status='{status}' model='{model}' realized={realized} bound={bound} rowFound={row is not null} rowBound={row?.IsBound}");
+            $"status='{status}' model='{model}' realized={realized} bound={bound} sameIdentity={sameIdentity} tags=[{tags}] wiring=[{wiring}] rowFound={row is not null} rowBound={row?.IsBound}");
         return (row!, tag);
     }
 
