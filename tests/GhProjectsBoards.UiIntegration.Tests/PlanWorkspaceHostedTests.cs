@@ -1681,8 +1681,12 @@ internal sealed partial class PlanWorkspaceHostedTests
             // availability are recorded from property changes, which observe the same facts.
             nameCallback = progress.RegisterPropertyChangedCallback(AutomationProperties.NameProperty, (_, _) => {
                 var name = AutomationProperties.GetName(progress); stages.Add(name);
-                if (name.Contains("フィールド・担当者"))
-                    prematureVerification |= Ui.Tree(progress).OfType<TextBlock>().Any(t => t.Text == "✓ 検証");
+                // The verification tick must not appear before its own stage is announced. The stage
+                // vocabulary an ordinary publish announces is 最新情報の確認 / 新規 Issue / 検証: the
+                // fields-and-assignees and later phases report only when they have a write, so keying this
+                // on a fields stage would make the check vacuous.
+                if (!name.Contains("検証") && Ui.Tree(progress).OfType<TextBlock>().Any(t => t.Text == "✓ 検証"))
+                    prematureVerification = true;
             });
             visibilityCallback = progress.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, (_, _) => {
                 if (progress.Visibility == Visibility.Visible) busySeen = true;
@@ -1715,7 +1719,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         TestContext.Out.WriteLine("Announced stages: [" + string.Join(" | ", stages) + "]");
         Assert.That(prematureVerification, Is.False);
         Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Title == "新しい計画" && i.Added), Is.EqualTo(1));
-        foreach (var stage in new[] { "新規 Issue", "フィールド・担当者", "検証" })
+        // The delivered publish of this plan announces 最新情報の確認, 新規 Issue and 検証; the
+        // fields-and-assignees phase reports only when it has a write and this plan has none for it.
+        foreach (var stage in new[] { "最新情報の確認", "新規 Issue", "検証" })
             Assert.That(stages.Any(s => s.Contains(stage)), Is.True, stage + " in [" + string.Join(" | ", stages) + "]");
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-result"));
     }
