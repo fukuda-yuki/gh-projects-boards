@@ -124,7 +124,9 @@ internal sealed partial class PlanSheetView
         // The command's own feedback is the row marks and the selection line, so they are repainted here
         // rather than waiting for an unrelated layout pass (#231: a hosted run saw the tag stay absent).
         RefreshRealized();
-        foreach (var row in Realized) row.RefreshStateMark();
+        // Repaint only: the row's own cell pass owns building the mark, so a command never edits the live
+        // tree while a container is being realised (#231).
+        foreach (var row in Realized) row.RepaintStateMark();
         UpdateReason();
         // Say what happened and what was left alone; choosing another row or cell dismisses it.
         error.Text = skipped.Skipped.IsEmpty ? done : done + "。" + SkipReason(skipped);

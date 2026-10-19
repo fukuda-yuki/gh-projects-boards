@@ -155,11 +155,14 @@ public sealed class PlanSheetRow : Grid
             if (line.Children.IndexOf(order[i]) != i) { line.Children.Remove(order[i]); line.Children.Insert(i, order[i]); }
     }
     // The pending-state mark for this row: a tag naming the command that produced it, and a strike line for
-    // 中止. It is painted from the sheet's model on every cell pass and can be repainted directly by the
-    // command, so the mark never depends on a layout pass reaching the cell loop (#231).
-    internal void RefreshStateMark()
+    // 中止. The row's cell pass owns building the elements, because that is the moment the container is
+    // being realised; a command may only repaint them, so it never modifies the live tree mid-pass (#231).
+    internal void RefreshStateMark() => PaintStateMark(build: true);
+    internal void RepaintStateMark() => PaintStateMark(build: false);
+    private void PaintStateMark(bool build)
     {
         if (Owner is not { } owner || boundIdentity is null) return;
+        if (!build && tagChip is null && strikeLine is null) return;
         var index = -1;
         for (var i = 0; i < Cells.Length; i++) if (Cells[i].Field == PlanField.Title) { index = i; break; }
         if (index < 0) return;
