@@ -196,6 +196,13 @@ internal sealed partial class PlanSheetView : Grid
         Overflow("下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD), "Ctrl+D").Icon = CommandIcon("F0 M2,1 H14 V5 H2 Z M3,2 V4 H13 V2 Z M7,7 H9 V11 H12 L8,15 L4,11 H7 Z");
         Overflow("クリア", "PlanSheetClear", Symbol.Clear, () => KeyboardCommand(VirtualKey.Delete), "Delete", queued: false);
         commands.SecondaryCommands.Add(new AppBarSeparator());
+        // #231: the row-state commands from the keyboard. The row context menu is the pointer route; both use
+        // the same targets, eligibility and reasons.
+        completeRows = Overflow("完了にする", "PlanSheetCompleteRows", Symbol.Accept, () => RowStateReport(CommandTargets, PlanRowAction.Complete, "完了にしました"), queued: false);
+        cancelRows = Overflow("中止にする", "PlanSheetCancelRows", Symbol.Cancel, () => RowStateReport(CommandTargets, PlanRowAction.Cancel, "中止にしました"), queued: false);
+        removeRows = Overflow("この版から外す", "PlanSheetRemoveRows", Symbol.Remove, () => RowStateReport(CommandTargets, PlanRowAction.Remove, "この版から外しました"), queued: false);
+        reopenRows = Overflow("未完了に戻す", "PlanSheetReopenRows", Symbol.Refresh, () => RowStateReport(CommandTargets, PlanRowAction.Reopen, "未完了に戻しました"), queued: false);
+        commands.SecondaryCommands.Add(new AppBarSeparator());
         if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
         if (exportCsv is not null) Overflow("CSV に書き出し…", "PlanSheetCsvExport", Symbol.Save, exportCsv, queued: false);
         Overflow("表示列", "PlanSheetColumns", Symbol.List, async () => {

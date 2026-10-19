@@ -16,10 +16,12 @@ internal sealed partial class PlanSheetView
     private MenuFlyout? rowMenu;
     private string? rowMenuIdentity;
     internal string FirstField => Fields.Length > 0 ? Fields[0] : PlanField.Title;
+    // The rows every row-scoped command acts on: the same set the outline commands move, without the
+    // trailing input row, which is not a plan row.
+    private ImmutableArray<string> CommandTargets => [.. MoveTargets.Where(Rows.ContainsKey)];
 
     // The rows the row commands act on: the rows of the current selection, without the trailing input row.
-    private ImmutableArray<string> MenuTargets()
-        => [.. RowIds.Skip(Range.Row).Take(Range.RowCount).Where(Rows.ContainsKey)];
+    private ImmutableArray<string> MenuTargets() => CommandTargets;
 
     internal void ShowRowMenu(string identity, string field, FrameworkElement target, Point? position = null)
     {
@@ -45,13 +47,20 @@ internal sealed partial class PlanSheetView
         => Add(label, id, shortcut, refusal is null, refusal, run);
     private void AddRowItem(string label, string id, string shortcut, ImmutableArray<string> targets, PlanRowAction action, Func<Task> run)
     {
+        var (enabled, hint) = RowCommandState(targets, action);
+        Add(label, id, shortcut, enabled, hint, run);
+    }
+    // One place decides whether a row command applies and what it will leave alone, so the row context menu
+    // and the overflow never disagree.
+    internal (bool Enabled, string? Hint) RowCommandState(ImmutableArray<string> targets, PlanRowAction action)
+    {
         var (allowed, denied) = Permitted(targets);
         var eligibility = allowed.IsEmpty ? new PlanRowEligibility([], []) : Eligibility(allowed, action);
         var combined = eligibility with { Skipped = eligibility.Skipped.AddRange(denied) };
         // A command that still applies to some selected rows stays enabled and says which rows it will
         // skip and why; only a command that applies to none is disabled with its refusal (#231).
-        Add(label, id, shortcut, !combined.Applies.IsEmpty,
-            !combined.Applies.IsEmpty ? SkipReason(combined) : NoEligibleReason(combined), run);
+        return (!combined.Applies.IsEmpty,
+            !combined.Applies.IsEmpty ? SkipReason(combined) : NoEligibleReason(combined));
     }
     internal const string NoPermissionReason = "この Issue を更新する権限がありません";
     internal bool CannotUpdate(string identity) => Session.Document.Sync.CannotUpdate.Contains(identity);

@@ -15,9 +15,12 @@ internal sealed partial class PlanSheetHostedTests
 {
     // The commands are chosen through the menu, the way a PMO reaches them, so the marks are produced by the
     // same path the product repaints rather than by a direct session call the surface never makes.
-    private async Task ChooseRowCommand(string identity, string itemId)
+    // The commands are chosen from the overflow, the route the other hosted cases already drive, so these
+    // cases measure the mark and the status line; the row context menu's own reachability and reasons are
+    // the subject of the menu case.
+    private async Task ChooseRowCommand(string itemId)
     {
-        await Ui.Run(() => sheet.ShowRowMenu(identity, PlanField.Title, sheet.Realized.Single(r => r.Identity == identity)));
+        await Ui.Run(() => Ui.Click("PlanSheetMore"));
         await InvokeRowItem(itemId);
     }
     private static async Task InvokeRowItem(string itemId)
@@ -55,6 +58,17 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<MenuFlyoutItem>("PlanRowDelete").IsEnabled, Is.False);
             Assert.That(AutomationProperties.GetHelpText(Ui.Find<MenuFlyoutItem>("PlanRowDelete")), Does.Contain("完了・中止・この版から外す"));
         });
+        // The overflow carries the same four commands with the same reasons, so the keyboard route does not
+        // depend on the row menu being reachable by pointer (#231).
+        await Ui.Run(() => Ui.Click("PlanSheetMore"));
+        await Ui.Ready<MenuFlyoutItem>("PlanSheetCompleteRows");
+        await Ui.Run(() => {
+            foreach (var id in new[] { "PlanSheetCompleteRows", "PlanSheetCancelRows", "PlanSheetRemoveRows", "PlanSheetReopenRows" })
+                Assert.That(Ui.Find<MenuFlyoutItem>(id), Is.Not.Null, id);
+            Assert.That(Ui.Find<MenuFlyoutItem>("PlanSheetCompleteRows").IsEnabled, Is.True);
+            Assert.That(Ui.Find<MenuFlyoutItem>("PlanSheetReopenRows").IsEnabled, Is.False);
+            Assert.That(AutomationProperties.GetHelpText(Ui.Find<MenuFlyoutItem>("PlanSheetReopenRows")), Is.EqualTo("未完了の行です"));
+        });
     }
 
     [Test]
@@ -79,7 +93,7 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Estimate = 8 };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
-        await ChooseRowCommand("I1", "PlanRowCancel");
+        await ChooseRowCommand("PlanSheetCancelRows");
         var (row, tag) = await RowMark("I1");
         // Both marks are built with the row, so a failure in one must not hide the other.
         Assert.Multiple(() => {
@@ -101,7 +115,7 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Estimate = 8, Remaining = 8 };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
-        await ChooseRowCommand("I1", "PlanRowComplete");
+        await ChooseRowCommand("PlanSheetCompleteRows");
         var (row, tag) = await RowMark("I1");
         Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("完了にする"));
@@ -119,7 +133,7 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
-        await ChooseRowCommand("I1", "PlanRowRemove");
+        await ChooseRowCommand("PlanSheetRemoveRows");
         var (row, tag) = await RowMark("I1");
         Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("この版から外す"));
