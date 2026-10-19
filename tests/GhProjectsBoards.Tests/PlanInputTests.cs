@@ -7,6 +7,16 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanInputTests
 {
+    [TestCase("1.5d", "12")]
+    [TestCase("１．５ｄ", "12")]
+    [TestCase("8.0h", "8")]
+    [TestCase("2.50", "2.5")]
+    public void AnEffortReadsBackWithoutTrailingZeros(string input, string expected)
+    {
+        Assert.That(PlanInput.TryEffort(input, out var hours), Is.True);
+        Assert.That(hours.ToString(System.Globalization.CultureInfo.InvariantCulture), Is.EqualTo(expected));
+    }
+
     [TestCase("８ｈ", "8h")]
     [TestCase("＃２", "#2")]
     [TestCase("２・１０", "2・10")]

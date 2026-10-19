@@ -27,6 +27,19 @@ internal sealed class PlanIndentRefusalTests
             Is.EqualTo("ID 1 は ID 2 の後に始まるため、ID 2 を ID 1 の下にインデントできません。先にリンクを解除してください。"));
 
     [Test]
+    public void AnUnpublishedLinkToTheNewParentIsStillNamed()
+    {
+        // The ordinary sheet: tasks with effort under a requirement, the earlier one linked after the later
+        // by an edit not yet published, so GitHub still holds no link.
+        var requirement = Row("r");
+        var a = Row("a", "r", "b") with { Estimate = 8, Remaining = 8 };
+        var b = Row("b", "r") with { Estimate = 8, Remaining = 8 };
+        var document = Document(requirement, a with { Predecessors = [] }, b) with { State = new([requirement, a, b], new()) };
+        Assert.That(Refusal(document, "b"),
+            Is.EqualTo("ID 2 は ID 3 の後に始まるため、ID 3 を ID 2 の下にインデントできません。先にリンクを解除してください。"));
+    }
+
+    [Test]
     public void DescendantLinkToTheNewParentIsNamedByItsOwnRowId() =>
         Assert.That(Refusal(Document(Row("a"), Row("b"), Row("c", "b", "a")), "b"),
             Is.EqualTo("ID 3 は ID 1 の後に始まるため、ID 2 を ID 1 の下にインデントできません。先にリンクを解除してください。"));

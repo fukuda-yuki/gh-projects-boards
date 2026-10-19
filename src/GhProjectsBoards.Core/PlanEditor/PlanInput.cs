@@ -32,12 +32,15 @@ internal static class PlanInput
         var days = unit is 'd' or 'D';
         if (unit is 'h' or 'H' or 'd' or 'D') value = value[..^1];
         if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.CurrentCulture, out var number)) return false;
-        if (!days) { hours = number; return true; }
+        if (!days) { hours = Plain(number); return true; }
         // The day unit scales the number, so an accepted decimal that cannot be scaled stays refused.
         if (number > decimal.MaxValue / 8 || number < decimal.MinValue / 8) return false;
-        hours = number * 8;
+        hours = Plain(number * 8);
         return true;
     }
+    // A decimal keeps the scale it was typed or computed with; dropping trailing zeros shows 1.5d as 12h
+    // like every other effort, not as 12.0h (#239).
+    private static decimal Plain(decimal value) => value / 1.000000000000000000000000000000000m;
     internal static bool TryNumber(string text, out decimal number)
         => decimal.TryParse(Fold(text), NumberStyles.Number, CultureInfo.CurrentCulture, out number);
 }

@@ -392,7 +392,9 @@ internal static class PlanOperations
     // names the row being indented, the sibling it cannot go under and the direction of the link.
     private static string? IndentRefusal(PlanDocument candidate, (string Parent, string Root) indent, PlanCycleException cycle)
     {
-        var rows = EffectiveRows(candidate);
+        // The local rows, not the summary view: the new parent's link may be an unpublished edit, which the
+        // scheduler still sees and the summary view would replace with the published value.
+        var rows = candidate.State.Rows;
         var parentId = Position(rows, indent.Parent);
         var rootId = Position(rows, indent.Root);
         if (parentId == 0 || rootId == 0) return null;

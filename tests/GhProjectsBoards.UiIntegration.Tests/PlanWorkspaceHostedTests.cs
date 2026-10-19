@@ -1643,7 +1643,13 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, planFault = fault }));
-        await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "発行予定"; Ui.Click("PlanPublish"); });
+        // The synthetic fault rejects the second write of the first batch. Dates are plan values now (#236), so a
+        // title alone is a single write; the remaining-work edit gives the row its second write in that batch.
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "発行予定";
+            var remaining = Ui.Find<TextBox>("PlanCell1_Remaining"); remaining.Focus(FocusState.Programmatic); remaining.Text = "4";
+            Ui.Click("PlanPublish");
+        });
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("設計 → 発行予定")));
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
         await Ui.Until(() => Ui.Find<InfoBar>("PlanPublishFailure").IsOpen && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
@@ -1718,11 +1724,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             enabledCallback = publish.RegisterPropertyChangedCallback(Control.IsEnabledProperty, (_, _) => {
                 if (!publish.IsEnabled) publishDisabled = true;
             });
+            // Only the title: PlanCell0 is the entry row, so a second value typed there would insert a second,
+            // untitled row, which the publish holds back (#247) and leaves unpublished.
             var input = Ui.Find<TextBox>("PlanCell0_Title"); input.Focus(FocusState.Programmatic); input.Text = "新しい計画";
-            // A title alone writes nothing in the fields-and-assignees phase, so the stage would not be
-            // announced at all. The new Issue's effort gives that phase a write to report (#231).
-            var remaining = Ui.Find<TextBox>("PlanCell0_Remaining");
-            remaining.Focus(FocusState.Programmatic); remaining.Text = "8";
             Ui.Click("PlanPublish");
         });
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("新規 Issue")),
