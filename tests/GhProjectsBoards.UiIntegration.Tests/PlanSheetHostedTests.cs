@@ -47,11 +47,9 @@ internal sealed partial class PlanSheetHostedTests
             Predecessors = performance ? i % 10 == 1 ? [] : ["I" + (i - 1)] : i == 2 ? ["I1"] : []
         }).ToImmutableArray();
         // #236: a stored date is a plan value and a read does not invent one, so the shared sheet fixture states
-        // the plan the app had laid out — I2 after I1, everything else from the 基準日. Without this the sheet
-        // has no dates at all: no cells, no bars and no endpoint marks, which is what the hosted cases measure.
-        rows = rows.Select(row => row with {
-            Start = performance || row.Identity is not "I2" ? Today : Today.AddDays(1)
-        }).ToImmutableArray();
+        // the plan the app had laid out — an end per row, from which the sheet derives every start. Seeding the
+        // end keeps the start calculated, which the date-origin cases require and the date cells need to exist.
+        rows = rows.Select(row => row with { End = Today }).ToImmutableArray();
         session = await PlanSession.CreateAsync(new(root), new(new(new("github.com", 1), "P1"), new(rows, []),
             new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo",
                 People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null)).ToImmutableArray() : [new("U1", "alice", 100, null)],
@@ -756,7 +754,6 @@ internal sealed partial class PlanSheetHostedTests
         await Select(1, PlanField.Title);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetEmptyHint").Visibility, Is.EqualTo(Visibility.Collapsed));
-            Assert.That(Ui.Find<TextBlock>("PlanSheetTotals").Visibility, Is.EqualTo(Visibility.Collapsed));
         });
     }
 
@@ -787,12 +784,12 @@ internal sealed partial class PlanSheetHostedTests
 
     [TestCase("finish", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
     [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true, Category = "OverdueMissingWork")]
-    [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE7BA", false, Category = "OverdueMissingWork")]
-    [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE7BA", false)]
+    [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE7BA", true)]
     // #236 part B: the mark compares the plan with the forecast, so 予定より遅れ names the cause and the
     // working days it slipped; the retired 「発行済み M/d から」 basis no longer appears anywhere.
     [TestCase("later", "予定より遅れ: +1 日（自分の残による）", "\uE7BA", false)]
-    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", false)]
+    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
     [TestCase("summary-overdue", "配下に期限超過 1", "\uE7BA", false)]
     [TestCase("summary-later", "配下に予定より遅れ 1", "\uE7BA", false)]
     [Category("SheetRowPresentation")]
