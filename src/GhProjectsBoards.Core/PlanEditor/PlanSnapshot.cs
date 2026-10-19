@@ -10,7 +10,9 @@ internal sealed record PlanRemoteSnapshot(PlanBaseline Baseline, ImmutableDictio
 { public int InaccessibleCount { get; init; }
   public ImmutableDictionary<string, string> PeopleNames { get; init; } = ImmutableDictionary<string, string>.Empty;
   public ImmutableDictionary<string, PlanIssueLink> IssueLinks { get; init; } = ImmutableDictionary<string, PlanIssueLink>.Empty;
-  public ImmutableDictionary<string, ImmutableArray<string>> SubIssueOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+  public ImmutableDictionary<string, ImmutableArray<string>> SubIssueOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty;
+  // #231: rows whose Issue the viewer cannot update, observed by this read.
+  public ImmutableArray<string> CannotUpdate { get; init; } = []; }
 internal static class PlanSnapshot
 {
     internal static string ReadDiagnostic(ProjectReadResult result) => $"{result.Outcome}: " + string.Join("; ",
@@ -126,6 +128,10 @@ internal static class PlanSnapshot
         { InaccessibleCount = p.UndeliveredItemCount + p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable),
           IssueLinks = p.Issues.Values.ToImmutableDictionary(i => i.Id.NodeId, i => new PlanIssueLink($"{i.Repository.NameWithOwner}#{i.Number}", i.Url)),
           PeopleNames = p.Issues.Values.SelectMany(i => i.Native?.Assignees ?? []).DistinctBy(a => a.Id).ToImmutableDictionary(a => a.Id.NodeId, a => a.Login),
-          SubIssueOrders = p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId)).ToImmutableDictionary(i => i.Id.NodeId, i => i.Native!.SubIssues.Select(c => c.NodeId).ToImmutableArray()) };
+          SubIssueOrders = p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId)).ToImmutableDictionary(i => i.Id.NodeId, i => i.Native!.SubIssues.Select(c => c.NodeId).ToImmutableArray()),
+          // #231: only a definite false observation disables a command; an unavailable capability is not
+          // treated as a denial.
+          CannotUpdate = p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId) && i.Capability?.CanUpdate == false)
+              .Select(i => i.Id.NodeId).ToImmutableArray() };
     }
 }

@@ -58,12 +58,15 @@ internal sealed partial class PlanSheetHostedTests
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await Ui.Run(async () => { await session.Execute(new ClosePlanRows(["I1"], Cancelled: true), Today); sheet.Refresh(); });
-        await Ui.Until(() => sheet.Realized.Any(r => r.Identity == "I1"));
+        await Ui.Until(() => sheet.Realized.Any(r => r.Identity == "I1" && r.StateTagText is not null));
         await Ui.Run(() => {
             var row = sheet.Realized.Single(r => r.Identity == "I1");
-            Assert.That(row.StateTagText, Is.EqualTo("中止にする"));
-            Assert.That(row.StruckThrough, Is.True, "中止 is struck through");
-            Assert.That(row.Opacity, Is.LessThan(1), "中止 is dimmed");
+            // Both marks are built with the row, so a failure in one must not hide the other.
+            Assert.Multiple(() => {
+                Assert.That(row.StateTagText, Is.EqualTo("中止にする"));
+                Assert.That(row.StruckThrough, Is.True, "中止 is struck through");
+                Assert.That(row.Opacity, Is.LessThan(1), "中止 is dimmed");
+            });
             var indicator = Ui.Find<FontIcon>("PlanIndicator1", row);
             Assert.That(AutomationProperties.GetName(indicator), Does.Contain("中止"));
             // The tag names the command; it is not one of the outlined lateness marks.
@@ -78,11 +81,14 @@ internal sealed partial class PlanSheetHostedTests
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await Ui.Run(async () => { await session.Execute(new ClosePlanRows(["I1"]), Today); sheet.Refresh(); });
-        await Ui.Until(() => sheet.Realized.Any(r => r.Identity == "I1"));
+        await Ui.Until(() => sheet.Realized.Any(r => r.Identity == "I1" && r.StateTagText is not null));
         await Ui.Run(() => {
             var row = sheet.Realized.Single(r => r.Identity == "I1");
-            Assert.That(row.StateTagText, Is.EqualTo("完了にする"));
-            Assert.That(row.Opacity, Is.EqualTo(1), "a completed row keeps its ordinary weight");
+            Assert.Multiple(() => {
+                Assert.That(row.StateTagText, Is.EqualTo("完了にする"));
+                Assert.That(row.Opacity, Is.EqualTo(1), "a completed row keeps its ordinary weight");
+                Assert.That(row.StruckThrough, Is.False, "only 中止 is struck through");
+            });
             // The GitHub-owned sentence would claim a close that has not been published.
             Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanCell1_Remaining", row)), Is.EqualTo("完了にする を発行すると確定します（未発行）"));
         });
@@ -95,12 +101,14 @@ internal sealed partial class PlanSheetHostedTests
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await Ui.Run(async () => { await session.Execute(new RemovePlanRows(["I1"]), Today); sheet.Refresh(); });
-        await Ui.Until(() => sheet.Realized.Any(r => r.Identity == "I1"));
+        await Ui.Until(() => sheet.Realized.Any(r => r.Identity == "I1" && r.StateTagText is not null));
         await Ui.Run(() => {
             var row = sheet.Realized.Single(r => r.Identity == "I1");
-            Assert.That(row.StateTagText, Is.EqualTo("この版から外す"));
-            Assert.That(row.Opacity, Is.LessThan(1));
-            Assert.That(row.StruckThrough, Is.False, "only 中止 is struck through");
+            Assert.Multiple(() => {
+                Assert.That(row.StateTagText, Is.EqualTo("この版から外す"));
+                Assert.That(row.Opacity, Is.LessThan(1));
+                Assert.That(row.StruckThrough, Is.False, "only 中止 is struck through");
+            });
             Assert.That(Ui.Find<MenuFlyoutItem>("PlanRowRemove"), Is.Null);
         });
     }

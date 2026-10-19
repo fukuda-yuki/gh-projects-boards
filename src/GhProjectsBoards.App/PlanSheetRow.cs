@@ -264,10 +264,12 @@ public sealed class PlanSheetRow : Grid
                 changeMarker.Visibility = conflict || changed ? Visibility.Visible : Visibility.Collapsed;
                 changeMarker.Fill = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : "SheetChangedMarkBrush");
             }
-            // #231 slice B: a row whose state command is pending carries a tag (the command's own name) so
-            // it is never confused with the outlined lateness marks, and 中止 is struck through.
+            // A row whose state command is pending carries a tag (the command's own name) so it is never
+            // confused with the outlined lateness marks, and 中止 is struck through. Both elements are built
+            // with the Title cell whatever the row's state, because the usual order is a mounted sheet and
+            // then the command; building them only when a tag already exists leaves them absent for good.
             var rowTag = field == PlanField.Title ? owner.RowStateTag(Identity) : null;
-            if (field == PlanField.Title && rowTag is not null && tagChip is null) {
+            if (field == PlanField.Title && tagChip is null) {
                 tagChip = new TextBlock { FontSize = 11, HorizontalAlignment = HorizontalAlignment.Right,
                     VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 4, 0), IsHitTestVisible = false };
                 ((Grid)frames[i].Child).Children.Add(tagChip);
@@ -277,7 +279,7 @@ public sealed class PlanSheetRow : Grid
                 tagChip.Visibility = rowTag is null ? Visibility.Collapsed : Visibility.Visible;
                 tagChip.Foreground = PlanSheetView.Brush(rowTag == "中止にする" ? "SystemFillColorCautionBrush" : "TextFillColorSecondaryBrush");
             }
-            if (field == PlanField.Title && rowTag == "中止にする" && strikeLine is null) {
+            if (field == PlanField.Title && strikeLine is null) {
                 strikeLine = new Border { Height = 1, VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left, IsHitTestVisible = false };
                 ((Grid)frames[i].Child).Children.Add(strikeLine);

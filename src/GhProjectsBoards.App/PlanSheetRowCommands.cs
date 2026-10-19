@@ -45,8 +45,19 @@ internal sealed partial class PlanSheetView
         => Add(label, id, shortcut, reason, run);
     private void AddRowItem(string label, string id, string shortcut, ImmutableArray<string> targets, PlanRowAction action, Func<Task> run)
     {
-        var eligibility = Eligibility(targets, action);
-        Add(label, id, shortcut, !eligibility.Applies.IsEmpty ? SkipReason(eligibility) : NoEligibleReason(eligibility), run);
+        var (allowed, denied) = Permitted(targets);
+        var eligibility = allowed.IsEmpty ? new PlanRowEligibility([], []) : Eligibility(allowed, action);
+        var combined = eligibility with { Skipped = eligibility.Skipped.AddRange(denied) };
+        Add(label, id, shortcut, !combined.Applies.IsEmpty ? SkipReason(combined) : NoEligibleReason(combined), run);
+    }
+    internal const string NoPermissionReason = "この Issue を更新する権限がありません";
+    internal bool CannotUpdate(string identity) => Session.Document.Sync.CannotUpdate.Contains(identity);
+    // The read's permission observation is not plan state, so it filters the command's targets here rather
+    // than in eligibility: a row the viewer cannot update is skipped with its own reason (#231).
+    private (ImmutableArray<string> Allowed, ImmutableArray<(string Identity, string Reason)> Denied) Permitted(ImmutableArray<string> targets)
+    {
+        var denied = targets.Where(CannotUpdate).ToArray();
+        return ([.. targets.Where(id => !CannotUpdate(id))], [.. denied.Select(id => (id, NoPermissionReason))]);
     }
     // One item shape for every command: a disabled item keeps focus and explains itself, so a reason is
     // never silent (the sheet's command rows follow the same rule).
@@ -85,8 +96,10 @@ internal sealed partial class PlanSheetView
 
     private async Task RowStateReport(ImmutableArray<string> targets, PlanRowAction action, string done)
     {
-        var eligibility = Eligibility(targets, action);
-        if (eligibility.Applies.IsEmpty) { error.Text = NoEligibleReason(eligibility); return; }
+        var (allowed, denied) = Permitted(targets);
+        var eligibility = allowed.IsEmpty ? new PlanRowEligibility([], []) : Eligibility(allowed, action);
+        var skipped = eligibility with { Skipped = eligibility.Skipped.AddRange(denied) };
+        if (eligibility.Applies.IsEmpty) { error.Text = NoEligibleReason(skipped); return; }
         var command = action switch
         {
             PlanRowAction.Complete => (PlanCommand)new ClosePlanRows(eligibility.Applies),
@@ -96,8 +109,12 @@ internal sealed partial class PlanSheetView
         };
         Check(await Session.Execute(command, Today));
         Refresh();
+        // The command's own feedback is the row marks and the selection line, so they are repainted here
+        // rather than waiting for an unrelated layout pass (#231: a hosted run saw the tag stay absent).
+        RefreshRealized();
+        UpdateReason();
         // Say what happened and what was left alone; choosing another row or cell dismisses it.
-        error.Text = eligibility.Skipped.IsEmpty ? done : done + "。" + SkipReason(eligibility);
+        error.Text = skipped.Skipped.IsEmpty ? done : done + "。" + SkipReason(skipped);
     }
 
     // The tag a row carries while a state command is pending: the command's own name, so the tag and the

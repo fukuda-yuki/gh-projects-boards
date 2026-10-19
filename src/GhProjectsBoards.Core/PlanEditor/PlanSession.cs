@@ -341,7 +341,7 @@ internal sealed class PlanSession
             if (reset && ResetUnavailableReason is { } reason) throw new InvalidOperationException(reason);
             var original = checkpoint.Document;
             var merged = PlanMerge.NativeOrder(original, PlanMerge.Merge(original, remote.Baseline), remote.SubIssueOrders);
-            merged = merged with { Sync = merged.Sync with { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames) } };
+            merged = merged with { Sync = merged.Sync with { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames), CannotUpdate = CannotUpdate(original, remote, merged.State.Rows) } };
             if (refresh) merged = ReadDate(merged, today);
             PlanOperations.ValidateDocument(merged, today);
             // Remote changes made by this publish are baseline adoption, not external edits to historical inputs.
@@ -390,6 +390,11 @@ internal sealed class PlanSession
             return QueueSave();
         }
     }
+    // #231: the permission observation follows the read. A row the read no longer returns keeps its last
+    // observation while it stays in the plan, and an entry for a row that left the plan is forgotten.
+    private static ImmutableArray<string> CannotUpdate(PlanDocument original, PlanRemoteSnapshot remote, ImmutableArray<PlanRow> rows)
+        => original.Sync.CannotUpdate.Where(id => remote.Baseline.Rows.All(r => r.Identity != id) && rows.Any(r => r.Identity == id))
+            .Concat(remote.CannotUpdate).Distinct(StringComparer.Ordinal).ToImmutableArray();
     private static PlanDocument ReadDate(PlanDocument document, DateOnly today) => document with
     {
         State = document.State with { Settings = document.State.Settings with { StatusDate = today } }
@@ -519,7 +524,7 @@ internal sealed class PlanSession
                 { Publish = remaining, Failures = failures, Unverified = [],
                     LocalOrderChoices = merged.Sync.LocalOrderChoices.Where(p => state.Rows.Any(r => r.Identity == p.Key) &&
                         (!remote.SubIssueOrders.TryGetValue(p.Key, out var observed) || !p.Value.SequenceEqual(observed.Where(id => state.Rows.Any(r => r.Identity == id) && !missing.Any(r => r.Identity == id))))).ToImmutableDictionary(),
-                    NativeOrders = remote.SubIssueOrders.Where(p => state.Rows.Any(r => r.Identity == p.Key)).ToImmutableDictionary(), InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames),
+                    NativeOrders = remote.SubIssueOrders.Where(p => state.Rows.Any(r => r.Identity == p.Key)).ToImmutableDictionary(), InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames), CannotUpdate = CannotUpdate(original, remote, state.Rows),
                     Unavailable = missing.Select(r => r.Identity).ToImmutableArray() } };
             if (refresh) updated = ReadDate(updated, today);
             // Old outcomes must not block completion after their requested changes converge or become inapplicable.
