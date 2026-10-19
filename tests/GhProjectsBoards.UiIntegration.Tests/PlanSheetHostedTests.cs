@@ -604,14 +604,17 @@ internal sealed partial class PlanSheetHostedTests
 
     [TestCase("finish", "完了予定 10/2 を過ぎて未完了 · +1 日")]
     [TestCase("start", "開始予定 10/2 を過ぎて未着手")]
-    [TestCase("later", "発行済み 10/5 から +1 日")]
+    // #236 part B: the slip compares the plan with the forecast, so it names 見込終了 and the plan end it
+    // slipped from; the published basis is retired.
+    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1 日")]
     [Category("SelectionLine")]
     public async Task SelectionPillKeepsGregorianDatesUnderNonGregorianCulture(string state, string expected)
     {
         var row = new PlanRow("I1", "Task", "acme/repo") {
             Estimate = 8, Remaining = state == "later" ? 16 : 8, Assignees = ["U1"] };
+        // A finish-overdue plan needs a start no later than its end: the plan end is its own value now.
         var baseline = row with {
-            Start = state == "start" ? Today.AddDays(-3) : Today,
+            Start = state == "finish" ? Today.AddDays(-3) : Today,
             End = state == "finish" ? Today.AddDays(-3) : state == "start" ? Today.AddDays(4) : Today };
         await MountPresentation([row], [baseline]);
         await Ui.Ready<TextBox>("PlanCell1_Title");
@@ -730,6 +733,13 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var settings = session.Document.State.Settings;
         if (!people.IsDefault) settings = settings with { People = people };
+        // #236 makes a stored date a plan value and stops a read from inventing one. A presentation fixture
+        // that states GitHub's dates in its baseline and leaves the plan row without any means "as the read
+        // left it" — the baseline — so the plan row takes those dates. A row whose baseline has no date either
+        // stays undated, which is the #245 case the sheet must show as bar-less.
+        var github = baseline.ToDictionary(row => row.Identity);
+        rows = rows.Select(row => github.TryGetValue(row.Identity, out var source)
+            ? row with { Start = row.Start ?? source.Start, End = row.End ?? source.End } : row).ToImmutableArray();
         var document = new PlanDocument(session.Document.Project, new(baseline, columns.IsDefault ? [] : columns), new(rows, settings)) {
             Sync = new() { PeopleNames = logins ?? ImmutableDictionary<string, string>.Empty,
                 IssueLinks = ImmutableDictionary<string, PlanIssueLink>.Empty.Add("I1", new("acme/repo#1", "https://github.com/acme/repo/issues/1")) } };
@@ -746,35 +756,49 @@ internal sealed partial class PlanSheetHostedTests
     [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", true, Category = "OverdueMissingWork")]
     [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE814", false, Category = "OverdueMissingWork")]
     [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE814", false)]
-    [TestCase("later", "予定より遅れ: 発行済み 10/5 から +1 日", "\uE7BA", false)]
+    // #236 part B: the mark compares the plan with the forecast, so 予定より遅れ names the cause and the
+    // working days it slipped; the retired 「発行済み M/d から」 basis no longer appears anywhere.
+    [TestCase("later", "予定より遅れ: +1 日（自分の残による）", "\uE7BA", false)]
     [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", false)]
     [TestCase("summary-overdue", "配下に期限超過 1", "\uE814", false)]
     [TestCase("summary-later", "配下に予定より遅れ 1", "\uE7BA", false)]
     [Category("SheetRowPresentation")]
     public async Task LatenessMarkerAndEndColorFollowOverdueAndOwnEndMovement(string state, string expected, string glyph, bool critical)
     {
-        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8.5m, Remaining = 8.5m, Assignees = ["U1"] };
+        // The plan holds its own dates (#236), so every state states them: a row with no dates has no
+        // forecast, no mark and no slip.
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8.5m, Remaining = 8.5m, Assignees = ["U1"],
+            Start = Today.AddDays(-4), End = Today.AddDays(-3) };
         var baseline = row with { Start = Today, End = Today.AddDays(-3) };
         if (state == "finish-estimate") row = row with { Remaining = null };
         if (state == "finish-unknown") row = row with { Remaining = null, Estimate = null };
-        if (state == "start") baseline = baseline with { Start = Today.AddDays(-3), End = Today.AddDays(10) };
-        if (state == "later") baseline = baseline with { End = Today };
+        if (state == "start") {
+            row = row with { Start = Today.AddDays(-3), End = Today.AddDays(10) };
+            baseline = baseline with { Start = Today.AddDays(-3), End = Today.AddDays(10) };
+        }
+        if (state == "later") {
+            row = row with { Start = Today, End = Today, Remaining = 16 };
+            baseline = baseline with { End = Today };
+        }
         if (state == "unchanged") row = row with { Fixed = true, Start = Today.AddDays(-4), End = Today.AddDays(-3) };
         var rows = ImmutableArray.Create(row); var baselines = ImmutableArray.Create(baseline);
         if (state.StartsWith("summary")) {
-            rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
+            var child = row with { Identity = "I2", Parent = "I1", Start = Today.AddDays(-4), End = Today.AddDays(-3) };
+            if (state == "summary-later") child = child with { Start = Today, End = Today, Remaining = 16 };
+            rows = rows.Add(child);
             baselines = ImmutableArray.Create(baseline with { End = Today.AddDays(1) },
-                baseline with { Identity = "I2", Parent = "I1", End = state == "summary-later" ? Today : Today.AddDays(-3) });
+                child with { End = state == "summary-later" ? Today : Today.AddDays(-3) });
         }
         await MountPresentation(rows, baselines);
         await Ui.Run(async () => {
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
             var name = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator);
-            Assert.That(name, Does.Contain(expected).And.Not.Contain("発行済みより"));
+            Assert.That(name, Does.Contain(expected).And.Not.Contain("発行済み"));
             if (state == "finish-unknown") Assert.That(name, Does.Not.Contain("（残"));
             Assert.That(indicator.Glyph, Is.EqualTo(glyph));
             Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(name));
-            if (state == "finish") Assert.That(name, Does.Contain("予定より遅れ: 発行済み 10/2 から +2 日"));
+            // A 期限超過 task also reports how far its forecast slipped; the published date is not compared.
+            if (state == "finish") Assert.That(name, Does.Contain("見込終了は +"));
             var end = state.StartsWith("summary") ? Ui.Find<PlanSummaryCell>("PlanCell1_End").Text.Foreground
                 : Ui.Find<PlanSheetCell>("PlanCell1_End").Foreground;
             var red = ((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color;
