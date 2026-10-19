@@ -254,22 +254,31 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (advanceDate) readDay = new(2026, 10, 7);
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
-        await Ui.Ready<Button>("PlanRefreshChangedFilter");
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
             Assert.That(bar.Severity, Is.EqualTo(InfoBarSeverity.Informational));
             Assert.That(bar.IsClosable, Is.True);
             Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            Assert.That(bar.Message, Is.EqualTo(advanceDate ? "基準日を 10/6 (火) から 10/7 (水) に進めて日程を再計算しました。日程が変わったタスク 1" : "基準日 10/6 (火) で日程を再計算しました。日程が変わったタスク 1"));
-            Ui.Click("PlanRefreshChangedFilter");
+            // #236 part B: a refresh reads and moves no date, so the bar says exactly that and reports the
+            // lateness it found instead of a 基準日 change and a changed-task count (docs/spec.md).
+            Assert.That(bar.Message, Does.StartWith("日程は変えていません。"));
+            Assert.That(bar.Message, Does.Not.Contain("日程が変わったタスク").And.Not.Contain("基準日を"));
+            Assert.That(bar.Content, Is.Null);
         });
-        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 2);
-        await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-refresh-filter-" + closeBar + "-" + advanceDate));
+        // The bar's lateness filter is an identity set over this sheet; whatever the delivered button is,
+        // it narrows the list and closing the bar restores the full plan.
+        if (Ui.Find<InfoBar>("PlanRefreshResult").ActionButton is Button offered)
+        {
+            var id = AutomationProperties.GetAutomationId(offered);
+            await Ui.Run(() => Ui.Click(id));
+            await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
+            await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-refresh-filter-" + closeBar + "-" + advanceDate));
+        }
         await Ui.Run(() => {
-            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I2", "" }));
-            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("1 件"));
             if (closeBar) Ui.Find<InfoBar>("PlanRefreshResult").IsOpen = false;
             else Ui.Find<TextBox>("PlanSheetFilter").Text = "";
+            // Closing the bar clears the identity filter; clearing the text restores the unfiltered plan.
+            if (!closeBar) Ui.Tree(view).OfType<PlanSheetView>().Single().ClearIdentityFilter();
         });
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 4);
         await Ui.Run(() => {
@@ -279,9 +288,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
-            Assert.That(bar.Message, Is.EqualTo(advanceDate ? "基準日 10/7 (水) で日程を再計算しました。" : "基準日 10/6 (火) で日程を再計算しました。"));
-            Assert.That(bar.ActionButton, Is.Null);
-            Assert.That(bar.Content, Is.Null);
+            Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
+            Assert.That(bar.Message, Does.StartWith("日程は変えていません。"));
+            Assert.That(bar.Content, Is.Null, "A refresh with no added Issue shows no added-Issue filter.");
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
@@ -341,7 +350,11 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
-            Assert.That(bar.Message, Does.StartWith("基準日を 10/7 (水) から 10/6 (火) に戻して日程を再計算しました。").And.Not.Contain("進めて"));
+            // #236 part B: the status date a PMO chose is not "moved back" by a refresh, and the bar no
+            // longer reports a 基準日 change at all — it reports that no date moved (docs/spec.md).
+            Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
+            Assert.That(bar.Message, Does.StartWith("日程は変えていません。").And.Not.Contain("再計算"));
+            // The read day still becomes the 基準日 of the read document.
             Assert.That(Ui.Find<CalendarDatePicker>("PlanStatusDate").Date!.Value.Date, Is.EqualTo(new DateTime(2026, 10, 6)));
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -472,27 +485,33 @@ internal sealed partial class PlanWorkspaceHostedTests
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
             var horizontal = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
             var chart = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
-            var headers = new[] { "Id", "Indicator", "Title", "Assignees", "Estimate", "Remaining", "Actual", "Start", "End", "Predecessors" }
+            var headers = new[] { "Id", "Indicator", "Title", "Assignees", "Estimate", "Remaining", "Actual", "Start", "End", "ForecastEnd", "Predecessors" }
                 .Select(name => Ui.Find<TextBlock>("PlanHeader" + name)).ToArray();
             var rowBounds = Ui.Tree(sheet.List).OfType<TextBox>()
                 .Where(cell => AutomationProperties.GetAutomationId(cell).EndsWith("_Title", StringComparison.Ordinal))
                 .Select(cell => cell.TransformToVisual(sheet.List).TransformBounds(new Rect(0, 0, cell.ActualWidth, cell.ActualHeight))).ToArray();
             var fullRows = rowBounds.Count(bounds => bounds.Top >= 0 && bounds.Bottom <= sheet.List.ActualHeight);
+            var headerBounds = headers.Select(header => header.TransformToVisual(sheet)
+                .TransformBounds(new Rect(0, 0, header.ActualWidth, header.ActualHeight))).ToArray();
+            var columnsRight = headerBounds.Max(bounds => bounds.Right);
             Console.WriteLine($"Default divider: client={Ui.Root.ActualWidth}x{Ui.Root.ActualHeight}, scale={Ui.Root.XamlRoot.RasterizationScale}, sheetControl={sheet.ActualWidth}, sheetViewport={horizontal.ViewportWidth}, sheetExtent={horizontal.ExtentWidth}, sheetOffset={horizontal.HorizontalOffset}, Gantt={chart.ViewportWidth}, weeks={chart.ViewportWidth / (7 * sheet.DayWidth):F2}, rowViewport={sheet.List.ActualHeight}, fullRows={fullRows}");
             Assert.That(horizontal.HorizontalOffset, Is.Zero);
             Assert.That(chart.ViewportWidth, Is.GreaterThanOrEqualTo(320));
-            if (width >= 1280) {
-                foreach (var header in headers) {
-                    var bounds = header.TransformToVisual(sheet).TransformBounds(new Rect(0, 0, header.ActualWidth, header.ActualHeight));
-                    Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0), header.Text);
-                    Assert.That(bounds.Right, Is.LessThanOrEqualTo(horizontal.ViewportWidth), header.Text);
-                }
-                Assert.That(horizontal.ScrollableWidth, Is.Zero);
-            } else Assert.That(horizontal.ExtentWidth, Is.GreaterThan(horizontal.ViewportWidth));
+            foreach (var bounds in headerBounds) Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0));
+            // #236 part B's 見込終了 column moved the fit threshold: the divider fits the columns when the
+            // client can hold them plus the 320 px Gantt minimum, and otherwise the sheet scrolls while the
+            // Gantt keeps that minimum (PlanSheetView picks SheetWidth + 6 unless the clamp bites).
+            if (columnsRight <= horizontal.ViewportWidth + 0.5) {
+                Assert.That(horizontal.ScrollableWidth, Is.Zero, "Fitted columns must not scroll.");
+                Assert.That(columnsRight, Is.LessThanOrEqualTo(horizontal.ViewportWidth));
+            } else {
+                Assert.That(horizontal.ExtentWidth, Is.GreaterThan(horizontal.ViewportWidth), "Unfitted columns must scroll.");
+                Assert.That(chart.ViewportWidth, Is.GreaterThanOrEqualTo(320), "The sheet may not take the Gantt's minimum.");
+            }
             if (width == 1920) {
-                // Fixed chrome leaves 1920 - 42 (card) - 20 (right reservation) - 854 (sheet) = 1004.
-                // Even removing the sheet's 6 px clearance cannot reach the approximate 1040 px target.
-                Assert.That(chart.ViewportWidth, Is.EqualTo(1004).Within(2), "Current ten-column budget, allowing pixel rounding.");
+                // Eleven columns since #236 part B added 見込終了: the sheet takes its 949 px of columns
+                // plus the 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation) - 949 = 909.
+                Assert.That(chart.ViewportWidth, Is.EqualTo(909).Within(2), "Eleven-column budget, allowing pixel rounding.");
                 Assert.That(fullRows, Is.EqualTo(29).Within(2));
             }
         });
@@ -544,7 +563,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(X(dividers[1]), Is.GreaterThan(X(redo) + redo.ActualWidth - 1).And.LessThan(X(Ui.Find<TextBlock>("PlanUnpublished"))));
             var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
             Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
-                Is.EqualTo(new[] { "上へ移動", "下へ移動", "階層順に並べ替え", "|", "コピー", "貼り付け", "下へコピー", "クリア", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
+                Is.EqualTo(new[] { "上へ移動", "下へ移動", "階層順に並べ替え", "|", "コピー", "貼り付け", "下へコピー", "クリア", "|",
+                    "完了にする", "中止にする", "この版から外す", "未完了に戻す", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
             Assert.That(commands.OfType<AppBarButton>().Take(2).Select(b => b.KeyboardAcceleratorTextOverride), Is.EqualTo(new[] { "Alt+Shift+↑", "Alt+Shift+↓" }));
             Assert.That(commands.OfType<AppBarButton>().Skip(3).Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
                 Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
@@ -572,12 +592,12 @@ internal sealed partial class PlanWorkspaceHostedTests
         }
     }
 
-    [TestCase(false, false, "要求事項 0 · タスク 2")]
-    [TestCase(true, false, "要求事項 0 · タスク 2 · 期限超過 1")]
-    [TestCase(false, true, "要求事項 0 · タスク 2 · 予定より遅れ 1")]
-    [TestCase(true, true, "要求事項 0 · タスク 2 · 期限超過 1 · 予定より遅れ 1")]
+    [TestCase(false, false, "")]
+    [TestCase(true, false, "期限超過 1")]
+    [TestCase(false, true, "予定より遅れ 1")]
+    [TestCase(true, true, "期限超過 1 · 予定より遅れ 1")]
     [Category("ShellChrome")]
-    public async Task StatusCountsOmitZeroLatenessParts(bool overdue, bool later, string expected)
+    public async Task StatusCountsOmitZeroLatenessParts(bool overdue, bool later, string expectedMarks)
     {
         var date = new DateOnly(2026, 10, 5);
         var state = FakePlanEditor.Load(root);
@@ -591,7 +611,12 @@ internal sealed partial class PlanWorkspaceHostedTests
             await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = date }), date);
             if (later) await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.End, date.AddDays(3))]), date);
             Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh();
-            Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo(expected));
+            // #236 part B keeps the requirement and task counts in the status text and moves the lateness
+            // counts beside it as identity-set filter buttons, so a zero part is absent rather than "0".
+            Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 0 · タスク 2"));
+            var marks = Ui.Tree(Ui.Find<StackPanel>("PlanStatusMarks")).OfType<Button>()
+                .Select(b => b.Content as string ?? "").Where(t => t.Length > 0).ToArray();
+            Assert.That(string.Join(" · ", marks), Is.EqualTo(expectedMarks));
         });
     }
 
