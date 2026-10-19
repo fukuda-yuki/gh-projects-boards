@@ -23,6 +23,10 @@ internal sealed partial class PlanPublisherTests
         Assert.That(queries, Has.Some.Contains("PlanPublishItems"), "The publication read resolves the written rows by node ID.");
         Assert.That(queries, Has.Some.Contains("ProjectItemDetails"), "The publication read reads those items through the existing item path.");
         Assert.That(ReadItemIds(), Is.EquivalentTo(new[] { "T-I2" }), "Only the written item is read, before and after the write.");
+        // The request shape of one publish attempt: one scoped item read before the write and one after it,
+        // instead of the two complete traversals a 1,042-item Project needs (about 56 requests each).
+        Assert.That(queries.Count(q => q.Contains("ProjectItemDetails", StringComparison.Ordinal)), Is.EqualTo(2));
+        Assert.That(queries.Count(q => q.Contains("PlanPublishItems", StringComparison.Ordinal)), Is.EqualTo(2));
         Assert.That(FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I2").Row.Estimate, Is.EqualTo(5m));
     }
 
