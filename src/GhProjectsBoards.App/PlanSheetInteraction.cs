@@ -493,8 +493,13 @@ internal sealed partial class PlanSheetView
     {
         if (rows.Count == 0) throw new ArgumentException("削除する行を選択してください。");
         if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
+        // As in Excel, the selection stays where the deleted rows were: on the next row, or the previous
+        // one when the deleted rows were last (#247).
+        var before = RowIds.ToArray(); var first = before.Select((id, i) => (id, i)).Where(p => rows.Contains(p.id)).Select(p => p.i).DefaultIfEmpty(0).Min();
         Check(await Session.Execute(new DeletePlanRows([.. rows]), Today));
         wholeRowSelection = false;
+        var remaining = Session.Document.State.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+        if (before.Skip(first).Concat(before.Take(first).Reverse()).FirstOrDefault(remaining.Contains) is { } next) selected = anchor = next;
         Refresh();
     }
     internal void RevealAddedRow(string identity)

@@ -54,6 +54,8 @@ internal sealed partial class PlanSheetHostedTests
         // Running it from the open row menu completes only the permitted row and says which one was left alone.
         await InvokeRowItem("PlanRowComplete");
         await Ui.Until(() => session.Document.State.Rows.Single(r => r.Identity == "I2").Closed);
+        // The command's report follows the edit, so wait for it rather than read it on the same turn.
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
         await Ui.Run(() => {
             Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Closed, Is.False, "the denied row is untouched");
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("完了にしました。1行を除外します（" + PlanSheetView.NoPermissionReason + "）"));

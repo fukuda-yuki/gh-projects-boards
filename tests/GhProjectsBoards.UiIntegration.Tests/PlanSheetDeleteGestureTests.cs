@@ -68,22 +68,42 @@ internal sealed partial class PlanSheetHostedTests
         });
     }
 
+    [Test]
+    public async Task DeletingARowLeavesTheSelectionWhereTheRowWas()
+    {
+        // As in Excel, the PMO goes on from the row after the deleted one instead of the top of the plan (#247).
+        var first = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+        var second = new PlanRow("I2", "Other", "acme/repo") { Fixed = true };
+        await MountPresentation([first, second], [first, second]);
+        var mistaken = PlanRow.New("誤って挿入");
+        await Ui.Run(async () => { await session.Execute(new InsertPlanRows([mistaken], Before: "I2"), Today); sheet.Refresh(); });
+        await Ui.Until(() => sheet.RowIds.Contains(mistaken.Identity));
+        await Ui.Run(() => sheet.Select(mistaken.Identity, PlanField.Title, false));
+        await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Subtract));
+        await Ui.Until(() => !session.Document.State.Rows.Any(r => r.Identity == mistaken.Identity));
+        await Ui.Until(() => sheet.IsSelected("I2", PlanField.Title));
+    }
+
     // The keyboard gesture itself is native input, so it runs with the other PlanSheetNative cases.
     [Test, Category("PlanSheetNative")]
     public async Task ShiftSpaceTakesTheWholeRowAndDeleteRemovesIt()
     {
+        // Only a row that was never published can be deleted (#247), so the deleted row is a local one.
         var first = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
-        var second = new PlanRow("I2", "Other", "acme/repo") { Fixed = true };
-        await MountPresentation([first, second], [first, second]);
+        await MountPresentation([first], [first]);
+        var local = PlanRow.New("誤って挿入");
+        await Ui.Run(async () => { await session.Execute(new InsertPlanRows([local]), Today); sheet.Refresh(); });
+        await Ui.Until(() => sheet.RowIds.Contains(local.Identity));
+        var undo = session.UndoCount;
         await SheetNativeInput.Click("PlanCell2_Title");
         await SheetNativeInput.Press(VirtualKey.Space, VirtualKey.Shift);
         await Ui.Run(() => {
             foreach (var field in sheet.VisibleColumns.Where(c => c.Field is not null).Select(c => c.Field!))
-                Assert.That(sheet.IsSelected("I2", field), Is.True, "Shift+Space takes the whole row.");
+                Assert.That(sheet.IsSelected(local.Identity, field), Is.True, "Shift+Space takes the whole row.");
         });
         await SheetNativeInput.Press(VirtualKey.Delete);
-        await Ui.Until(() => !session.Document.State.Rows.Any(r => r.Identity == "I2"));
-        Assert.That(session.UndoCount, Is.EqualTo(1));
+        await Ui.Until(() => !session.Document.State.Rows.Any(r => r.Identity == local.Identity));
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
         await SheetNativeInput.Click("PlanCell1_Title");
         await SheetNativeInput.Press(VirtualKey.Space, VirtualKey.Shift);
         await SheetNativeInput.Press(VirtualKey.Delete);

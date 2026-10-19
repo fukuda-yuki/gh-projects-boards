@@ -136,6 +136,22 @@ internal sealed class PlanRowDeleteTests
     }
 
     [Test]
+    public async Task DeletingAMistakenRowLeavesItsSiblingsPlanDatesAlone()
+    {
+        // The sibling's end is a plan value that a reschedule would move; deleting a row it never depended
+        // on must not reach it through the shared parent (#236 dates are plan values).
+        var parent = new PlanRow("P", "Requirement", "acme/repo");
+        var sibling = new PlanRow("S", "Sibling", "acme/repo") { Parent = "P", Estimate = 8, Remaining = 8, Start = Today, End = Today.AddDays(9) };
+        var session = await PlanSession.CreateAsync(new(root), Initial(parent, sibling), Today);
+        var mistaken = PlanRow.New("誤って挿入");
+        await session.Execute(new InsertPlanRows([mistaken], Before: "S"), Today);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == mistaken.Identity).Parent, Is.EqualTo("P"));
+        Assert.That((await session.Execute(new DeletePlanRows([mistaken.Identity]), Today)).Succeeded, Is.True);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "S").End, Is.EqualTo(Today.AddDays(9)));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
     public async Task DeletingOneOfTwoSelectedSubtreesDeletesBoth()
     {
         var one = Planned("一つ目");

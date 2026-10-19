@@ -296,12 +296,12 @@ internal static class PlanOperations
                 var published = d.Baseline.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
                 if (state.Rows.FirstOrDefault(r => deleting.Contains(r.Identity) && published.Contains(r.Identity)) is { } refused)
                     throw new ArgumentException(PublishedRowRefusal(Position(state.Rows, refused.Identity)));
-                // A deleted predecessor no longer constrains its successors, and losing a child moves the
-                // parent roll-up; both are rescheduled below.
+                // A deleted predecessor no longer constrains its successors, which are rescheduled below. The
+                // parent's roll-up follows its remaining children by itself; rescheduling the parent would
+                // move every sibling that never depended on the deleted row (#236).
                 var survivors = rows.Where(r => !deleting.Contains(r.Identity)).Select(r => r.Predecessors.Any(deleting.Contains)
                     ? r with { Predecessors = r.Predecessors.Where(id => !deleting.Contains(id)).ToImmutableArray() } : r).ToList();
                 rescheduled.UnionWith(survivors.Where(r => r.Predecessors.Length != byId[r.Identity].Predecessors.Length).Select(r => r.Identity));
-                rescheduled.UnionWith(state.Rows.Where(r => deleting.Contains(r.Identity) && r.Parent is not null && !deleting.Contains(r.Parent)).Select(r => r.Parent!));
                 rows = survivors;
                 break;
             case ReplacePlanSettings settings:

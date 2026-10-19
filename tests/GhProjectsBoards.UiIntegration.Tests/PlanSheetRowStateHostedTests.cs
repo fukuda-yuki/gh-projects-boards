@@ -114,11 +114,12 @@ internal sealed partial class PlanSheetHostedTests
         await ChooseFromRowMenu("I1", "PlanRowCancel");
         var (row, tag) = await RowMark("I1", "中止にする");
         // Both marks are built with the row, so a failure in one must not hide the other.
-        Assert.Multiple(() => {
+        // Element properties are read on the UI thread.
+        await Ui.Run(() => Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("中止にする"));
             Assert.That(row.StruckThrough, Is.True, "中止 is struck through");
             Assert.That(row.Opacity, Is.LessThan(1), "中止 is dimmed");
-        });
+        }));
         await Ui.Run(() => {
             var indicator = Ui.Find<FontIcon>("PlanIndicator1", row);
             Assert.That(AutomationProperties.GetName(indicator), Does.Contain("中止"));
@@ -135,11 +136,12 @@ internal sealed partial class PlanSheetHostedTests
         await Select(1, PlanField.Title);
         await ChooseFromRowMenu("I1", "PlanRowComplete");
         var (row, tag) = await RowMark("I1", "完了にする");
-        Assert.Multiple(() => {
+        // Element properties are read on the UI thread.
+        await Ui.Run(() => Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("完了にする"));
             Assert.That(row.Opacity, Is.EqualTo(1), "a completed row keeps its ordinary weight");
             Assert.That(row.StruckThrough, Is.False, "only 中止 is struck through");
-        });
+        }));
         // The GitHub-owned sentence would claim a close that has not been published.
         await Ui.Run(() => Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanCell1_Remaining", row)),
             Is.EqualTo("完了にする を発行すると確定します（未発行）")));
@@ -153,11 +155,12 @@ internal sealed partial class PlanSheetHostedTests
         await Select(1, PlanField.Title);
         await ChooseFromRowMenu("I1", "PlanRowRemove");
         var (row, tag) = await RowMark("I1", "この版から外す");
-        Assert.Multiple(() => {
+        // Element properties are read on the UI thread.
+        await Ui.Run(() => Assert.Multiple(() => {
             Assert.That(tag, Is.EqualTo("この版から外す"));
             Assert.That(row.Opacity, Is.LessThan(1));
             Assert.That(row.StruckThrough, Is.False, "only 中止 is struck through");
-        });
+        }));
         // この版から外す hides the row from the version; it does not delete the Issue or the row before publish.
         await Ui.Until(() => session.Document.State.Rows.Single(r => r.Identity == "I1").Removed);
     }
