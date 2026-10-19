@@ -215,7 +215,16 @@ internal sealed partial class PlanSheetHostedTests
                 Is.EqualTo(originalStart + 24).Within(1));
         });
         await ShowDependencyRow(55);
-        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, [forwardX + 24, reverseX]));
+        await Ui.Run(() => {
+            // Diagnostic while the 8 px between this crossing and its endpoint tip is unresolved: print the
+            // inputs both surfaces derive from, so the next run says which one moved. Remove when settled.
+            var plan = session.Schedule(Today).ToDictionary(t => t.Input.Identity);
+            var crossing = Ui.Tree(CurrentDependencyRow("I55")!).OfType<NativePath>().Single();
+            TestContext.Out.WriteLine($"8px-probe offset={sheet.ChartOffset} dayWidth={sheet.DayWidth} "
+                + $"i1End={plan["I1"].End.Value:yyyy-MM-dd} i90Start={plan["I90"].Start.Value:yyyy-MM-dd} "
+                + $"crossingLeft={Canvas.GetLeft(crossing) + 2.0} expected={forwardX + 24} reverse={reverseX} tip={forwardX}");
+            AssertCrossingGeometry(CurrentDependencyRow("I55")!, [forwardX + 24, reverseX]);
+        });
         await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Z));
         await Ui.Idle();
         await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, [forwardX, reverseX]));
