@@ -345,6 +345,15 @@ internal sealed partial class PlanPublishReviewHostedTests
                 await Ui.Run(() => Ui.Click("PlanPublishClose"));
                 FakePlanEditor.Save(root, original);
                 await Ui.Run(async () => await workspace.Reset());
+                // A reset preserves local settings, so this iteration's settings command would reproduce
+                // the values already in force and reschedule nothing (PlanOperations.Apply reschedules only
+                // a calendar, Project-period or rate change). Clear the period first so the same command is
+                // a real change again: both iterations then make the same effective change and must
+                // publish the same mutations.
+                await Ui.Run(async () => {
+                    var session = workspace.Session!;
+                    await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectStart = null }), Today);
+                });
             }
             await Ui.Run(async () => {
                 var session = workspace.Session!;
