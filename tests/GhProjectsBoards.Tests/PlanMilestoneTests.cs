@@ -41,7 +41,7 @@ internal sealed class PlanMilestoneTests
     }
 
     [Test]
-    public async Task PhaseMappingIsOneUndoStepRoundTripsSettingsAndPreservesHeldDates()
+    public async Task PhaseMappingIsOneUndoStepRoundTripsSettingsAndMovesNoDates()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-milestone-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);

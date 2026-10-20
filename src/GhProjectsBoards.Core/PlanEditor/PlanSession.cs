@@ -107,9 +107,10 @@ internal sealed class PlanSession
             return SaveAfterPlanningCommand(document, kind, today);
         }
     }
-    // A settings change that affects the schedule (calendar, Project start, 基準日) reports the tasks it
-    // moved with a filter. An ordinary cell edit reschedules what it touches and shows those dates as
-    // unpublished changes instead; no command reports a whole-plan recalculation (#236).
+    // A settings change that affects the schedule (calendar, Project period, people rates) reports the tasks
+    // it moved with a filter. A 基準日 change is deliberately not a reschedule trigger (#236). An ordinary
+    // cell edit reschedules what it touches and shows those dates as unpublished changes instead; no command
+    // reports a whole-plan recalculation.
     private Task<PlanSaveResult> SaveAfterPlanningCommand(PlanDocument before, PlanOperationKind kind, DateOnly today)
     {
         var after = checkpoint.Document;

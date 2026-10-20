@@ -250,7 +250,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [TestCase(false, true), TestCase(true, true), TestCase(false, false), Category("PlanReadDate")]
-    public async Task RefreshResultNamesDateAndChangedTasksAndFilterCanBeCleared(bool closeBar, bool advanceDate)
+    public async Task RefreshResultNamesTheReadTimeWithoutDateChangesAndItsFilterCanBeCleared(bool closeBar, bool advanceDate)
     {
         readDay = new(2026, 10, 6);
         FakePlanEditor.Save(root, new([
@@ -377,7 +377,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("PlanReadDate")]
-    public async Task RefreshResultSaysMovedBackWhenPmoSelectedALaterStatusDate()
+    public async Task RefreshResultKeepsThePmoStatusDateAndReportsNoMovedDate()
     {
         readDay = new(2026, 10, 6);
         await Open();
@@ -1046,7 +1046,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task CsvPickerValidatesWholeFileThenImportsAndUndoesOneOperation()
     {
         await Open();
-        // Release the first-take-in date hold before measuring the CSV's additional changes.
+        // An earlier edit is an ordinary unpublished change; measure the CSV's additional changes from it.
         await CommitText("PlanCell1_Title", "設計の変更");
         await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Title == "設計の変更");
         var unpublishedBeforeCsv = workspace.Session!.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount;
