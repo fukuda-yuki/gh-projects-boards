@@ -565,6 +565,21 @@ internal static class PlanOperations
         PlanField.Predecessors => row.Predecessors.Any(held.Contains) || before.Predecessors.Any(held.Contains),
         _ => false
     };
+    // A remaining unpublished change that is held by design: it can only be sent by naming a row this
+    // publish cannot create (#247). The parent's child order counts as held when its changed children
+    // name one, exactly as PlanPublishPlan holds that order write whole. The publish review marks the
+    // same pairs 保留 from HoldsField/SiblingOrderChange; keeping the answer in one place stops the
+    // completeness check from reporting a failure the review already explains as held.
+    internal static bool HoldsRemainingChange(PlanDocument document, string identity, string field, ImmutableHashSet<string> held)
+    {
+        if (document.State.Rows.FirstOrDefault(r => r.Identity == identity) is not { } row) return false;
+        if (field is PlanField.Parent or PlanField.Predecessors)
+        {
+            var before = document.Baseline.Rows.FirstOrDefault(r => r.Identity == identity) ?? new(identity, "", row.Repository);
+            return HoldsField(row, before, field, held);
+        }
+        return field == PlanField.SubIssueOrder && SiblingOrderChange(document, identity) is { } sibling && sibling.After.Any(held.Contains);
+    }
     internal const string NothingEligible = "この操作ができる行がありません。";
     // #231: which rows of a selection a row-state command applies to. A requirement row stands for its
     // whole subtree, as with Link; the rest are skipped with the reason that makes them ineligible.

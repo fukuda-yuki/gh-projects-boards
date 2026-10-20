@@ -331,10 +331,15 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
     {
         var sync = session.Document.Sync;
         // A row this publish cannot create yet (an untitled new row and its would-be children, #247) is
-        // unpublished by design, so it does not make an otherwise complete publish incomplete.
+        // unpublished by design, and so is a remaining change that only exists because it names one (a
+        // published requirement's child order, or a 先行 link to the row). Neither makes an otherwise
+        // complete publish incomplete; every genuine condition below still does.
         var held = PlanOperations.HeldRows(session.Document);
-        var complete = sync.Publish is null && session.Changes(today).Fields.Keys.All(held.Contains) && sync.Unavailable.IsEmpty &&
-            PlanOperations.BlockingConflicts(session.Document).IsEmpty && sync.Failures.IsEmpty && sync.Unverified.IsEmpty;
+        var complete = sync.Publish is null &&
+            session.Changes(today).Fields.All(change => held.Contains(change.Key) ||
+                change.Value.All(field => PlanOperations.HoldsRemainingChange(session.Document, change.Key, field, held))) &&
+            sync.Unavailable.IsEmpty && PlanOperations.BlockingConflicts(session.Document).IsEmpty &&
+            sync.Failures.IsEmpty && sync.Unverified.IsEmpty;
         return new(complete, complete ? null : "未完了の変更があります。確認後に再発行してください。", review);
     }
     public async Task<PlanPublishResult> PublishAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<RemoteProgress>? progressReporter = null)
