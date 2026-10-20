@@ -12,7 +12,7 @@ using NUnit.Framework;
 namespace GhProjectsBoards.UiIntegration.Tests;
 
 [TestFixture, NonParallelizable, Category("PlanPublishReview")]
-internal sealed class PlanPublishReviewHostedTests
+internal sealed partial class PlanPublishReviewHostedTests
 {
     private DateOnly readDay;
     private string? previousToday;
@@ -208,6 +208,13 @@ internal sealed class PlanPublishReviewHostedTests
             var deleted = baseline with { Columns = baseline.Columns.RemoveAt(baseline.Columns.Length - 1),
                 Rows = baseline.Rows.Select(r => r with { ExtraValues = r.ExtraValues.Remove("Project:DeletedNote") }).ToImmutableArray() };
             await session.AcceptRefresh(new(deleted, ImmutableDictionary<string, string>.Empty, [], 0, 0), Today, refresh: false);
+            if (!datesAlreadyPublished)
+                // #236: a publish writes a date only when the plan value differs from the baseline, and a row
+                // read without dates has no plan dates at all. This variant therefore gives both rows dates
+                // the baseline lacks, which is what makes them writable here.
+                await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [
+                    new("I1", PlanField.Start, readDay), new("I1", PlanField.End, readDay.AddDays(1)),
+                    new("I2", PlanField.Start, readDay), new("I2", PlanField.End, readDay.AddDays(1))]), Today);
             if (edit) await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "書き込み対象")]), Today);
             Ui.Click("PlanPublish");
         });
@@ -271,12 +278,11 @@ internal sealed class PlanPublishReviewHostedTests
     }
 
     [TestCase(false, -1), TestCase(true, -1), TestCase(false, 0), TestCase(true, 0), TestCase(false, 1), Category("PlanReadDate")]
-    public async Task ReviewNamesCalculationDateAndFirstTakeInOrigin(bool refresh, int dayOffset)
+    public async Task ReviewNamesCalculationDateWithoutARecalculationOrigin(bool refresh, int dayOffset)
     {
         readDay = Today.AddDays(dayOffset);
         await Open(1);
         Assert.That(workspace.Session!.Document.State.Settings.StatusDate, Is.EqualTo(readDay));
-        Assert.That(workspace.Session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
         await Ui.Run(async () => {
             await workspace.Session.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = readDay }), Today);
             var title = Ui.Find<TextBox>("PlanCell1_Title");
@@ -289,26 +295,25 @@ internal sealed class PlanPublishReviewHostedTests
         await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text.Length > 0);
         await Ui.Idle();
         Assert.That(workspace.Session.Document.State.Rows[0].Title, Is.EqualTo("Edited"));
-        Assert.That(workspace.Session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
         if (refresh)
         {
-            var beforeRefresh = "";
-            await Ui.Run(() => beforeRefresh = Ui.Find<TextBlock>("PlanPublishStatusDate").Text);
             await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanRefresh"); });
-            await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && workspace.Session!.Document.Dates.Recalculated is null);
+            await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && workspace.Session!.Document.State.Settings.StatusDate == readDay);
             await Ui.Run(() => Ui.Click("PlanPublish"));
             await Ui.Ready<TextBlock>("PlanPublishStatusDate");
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text != beforeRefresh);
+            // A refresh leaves the 基準日 as the read day, so the line legitimately reads the same before and
+            // after it: what the reopen must show is the same delivered message with no recalculation origin.
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text == DateMessage(dayOffset));
             await Ui.Idle();
         }
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
-            Is.EqualTo(DateMessage(dayOffset) + (refresh ? "" : "（最初の取り込みのあとの再計算）"))));
+        // The date hold is removed (#236): the review names the 基準日 and no recalculation origin.
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text, Is.EqualTo(DateMessage(dayOffset))));
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-publish-date-" + refresh));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [TestCase(-1), TestCase(0), Category("PlanReset")]
-    public async Task ReviewNamesResetOriginAfterTheNextPlanningEdit(int dayOffset)
+    public async Task ReviewAfterAResetNamesNoRecalculationOrigin(int dayOffset)
     {
         readDay = Today.AddDays(dayOffset);
         await Open(1);
@@ -322,8 +327,8 @@ internal sealed class PlanPublishReviewHostedTests
         });
         await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Ready<TextBlock>("PlanPublishStatusDate");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
-            Is.EqualTo(DateMessage(dayOffset) + "（GitHub の状態に戻したあとの再計算）")));
+        // A reset moves no dates (#236), so there is no recalculation whose origin the line could name.
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text, Is.EqualTo(DateMessage(dayOffset))));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
@@ -347,6 +352,15 @@ internal sealed class PlanPublishReviewHostedTests
                 await Ui.Run(() => Ui.Click("PlanPublishClose"));
                 FakePlanEditor.Save(root, original);
                 await Ui.Run(async () => await workspace.Reset());
+                // A reset preserves local settings, so this iteration's settings command would reproduce
+                // the values already in force and reschedule nothing (PlanOperations.Apply reschedules only
+                // a calendar, Project-period or rate change). Clear the period first so the same command is
+                // a real change again: both iterations then make the same effective change and must
+                // publish the same mutations.
+                await Ui.Run(async () => {
+                    var session = workspace.Session!;
+                    await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectStart = null }), Today);
+                });
             }
             await Ui.Run(async () => {
                 var session = workspace.Session!;
@@ -481,6 +495,14 @@ internal sealed class PlanPublishReviewHostedTests
     [Test]
     public async Task RecycledConflictKeepsItsIssueAndResolutionReturnsToThatIssueWithoutWriting()
     {
+        // The review is a virtualized list: a group only exists as a realized container while it is in the
+        // viewport, and a container can be recycled between two UI turns. Every lookup below therefore waits
+        // for the realized group rather than assuming the container that was found a turn ago is still bound.
+        PlanPublishGroupView? RealizedGroup(string id) => Ui.Tree(view).OfType<PlanPublishGroupView>()
+            .FirstOrDefault(g => AutomationProperties.GetAutomationId(g) == id && g.IsLoaded && g.ActualHeight > 0);
+        bool RealizedResolve() =>
+            RealizedGroup("PlanPublishGroupI60") is { } group &&
+            Ui.Tree(group).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanResolveI60_Actual_True" && b.IsLoaded);
         await Open(60);
         await Ui.Run(async () => await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Paste,
             workspace.Session.Document.State.Rows.SelectMany(r => new[] {
@@ -496,7 +518,7 @@ internal sealed class PlanPublishReviewHostedTests
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.False);
             var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[59], ScrollIntoViewAlignment.Leading);
         });
-        await Ui.Ready<Button>("PlanResolveI60_Actual_True");
+        await Ui.Until(RealizedResolve);
         await Ui.Run(() => {
             var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[0], ScrollIntoViewAlignment.Leading);
         });
@@ -504,9 +526,9 @@ internal sealed class PlanPublishReviewHostedTests
         await Ui.Run(() => {
             var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[59], ScrollIntoViewAlignment.Leading);
         });
-        await Ui.Ready<Button>("PlanResolveI60_Actual_True");
+        await Ui.Until(RealizedResolve);
         await Ui.Run(() => {
-            var group = Ui.Find<PlanPublishGroupView>("PlanPublishGroupI60");
+            var group = RealizedGroup("PlanPublishGroupI60")!;
             Assert.That(string.Join(" ", Ui.Tree(group).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("要求タスク 60").And.Contain("競合  GitHub: 2"));
             Ui.Click("PlanResolveI60_Actual_True");
         });
@@ -528,9 +550,10 @@ internal sealed class PlanPublishReviewHostedTests
             });
             throw;
         }
+        await Ui.Until(() => RealizedGroup("PlanPublishGroupI60") is not null);
         await Ui.Run(async () => {
             Assert.That(workspace.Session!.Document.State.Rows.Single(r => r.Identity == "I60").Actual, Is.EqualTo(2));
-            var group = Ui.Find<PlanPublishGroupView>("PlanPublishGroupI60");
+            var group = RealizedGroup("PlanPublishGroupI60")!;
             var list = Ui.Find<ListView>("PlanPublishLines");
             var bounds = group.TransformToVisual(list).TransformBounds(new(0, 0, group.ActualWidth, group.ActualHeight));
             Assert.That(bounds.Bottom, Is.GreaterThan(0));

@@ -157,7 +157,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
                 var remote = PlanSnapshot.From(read, settings);
                 settings = PlanInitialSettings.From(remote.Baseline, settings);
                 var document = new PlanDocument(choice.Id, remote.Baseline, new(remote.Baseline.Rows, settings))
-                { Dates = new(PlanDateHoldOrigin.FirstTakeIn), Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names } };
+                { Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names } };
                 progress?.Report(new("日程を計算"));
                 token.ThrowIfCancellationRequested();
                 adoptionStarted = true;
@@ -255,7 +255,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         foreach (var session in sessions.Values) RequireSave(await session.RetrySaveAsync());
         catalog = await SaveCatalog(catalog);
     }
-    private static void RequireSave(PlanSaveResult result) { if (!result.Succeeded) throw new IOException(result.Error); }
+    private static void RequireSave(PlanSaveResult result) { if (!result.Succeeded) throw new PlanSaveFailedException(result); }
     private async Task<PlanWorkspaceCatalog> SaveCatalog(PlanWorkspaceCatalog candidate)
     {
         Directory.CreateDirectory(store.Root);

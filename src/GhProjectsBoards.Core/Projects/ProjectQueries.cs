@@ -57,7 +57,7 @@ internal static class ProjectQueries
                 __typename
                 ... on Node { id }
                 ... on Issue {
-                  labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
+                  labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
                   repository { id nameWithOwner owner { id } }
                 }
               }
@@ -69,4 +69,19 @@ internal static class ProjectQueries
     internal static string ItemValueSelection(int index)
         => ("v" + index + ":node(id:$id" + index + "){__typename ... on ProjectV2Item{id project{id} fieldValues(first:100,after:$after" + index + "){PAGE_INFO VALUES}}}")
             .Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
+    // #201: the publication read resolves only the Issues it is about to write to their Project items,
+    // so a publish never walks the Project's item connection. ProjectItemDetails then reads those items.
+    public static readonly string PublishItems = """
+        query PlanPublishItems($ids:[ID!]!) {
+          nodes(ids:$ids) {
+            __typename id
+            ... on Issue {
+              projectItems(first: 100) {
+                PAGE_INFO
+                nodes { id project { id } }
+              }
+            }
+          }
+        }
+        """.Replace("PAGE_INFO", PageInfo);
 }

@@ -16,8 +16,8 @@ internal sealed record SummaryMilestone(PlanMilestone Milestone, IReadOnlyList<s
     int? Difference, IReadOnlyList<string> LateTasks);
 internal sealed record SummaryPerson(string Identity, string Name, IReadOnlyList<SummaryPhase> Phases,
     SummaryTasks Tasks, decimal? Capacity, decimal? RequiredLoad);
-internal sealed record SummaryAttention(IReadOnlyList<string> Overdue, IReadOnlyList<string> OverEstimate,
-    IReadOnlyList<string> ZeroRemainingOpen, IReadOnlyList<string> Unassigned, SummaryValue UnassignedRemaining,
+internal sealed record SummaryAttention(IReadOnlyList<string> Overdue, IReadOnlyList<string> Later, IReadOnlyList<string> Cause,
+    IReadOnlyList<string> OverEstimate, IReadOnlyList<string> ZeroRemainingOpen, IReadOnlyList<string> Unassigned, SummaryValue UnassignedRemaining,
     IReadOnlyList<string> UnknownEffort);
 internal sealed record SummaryPlan(int? WorkingDays, int? ElapsedDays, int? RemainingDays,
     DateOnly? ForecastFinish, int? FinishDifference, SummaryTasks Total, decimal? Capacity, decimal? RequiredLoad,
@@ -74,7 +74,7 @@ internal static class PlanSummary
         int? elapsed = settings.ProjectStart is { } from ? days(from.DayNumber, statusDate.DayNumber - 1) : null;
         int? remaining = settings.ProjectEnd is { } until ? days(statusDate.DayNumber, until.DayNumber) : null;
         var tasks = scheduled.Where(t => !t.IsSummary).ToArray();
-        var lateness = PlanLateness.Classify(scheduled, document.Baseline, calendar, statusDate);
+        var lateness = PlanLateness.Classify(scheduled, calendar, statusDate);
         bool Overdue(ScheduledTask task) => lateness.Tasks[task.Input.Identity].Level == PlanLatenessLevel.Overdue;
         SummaryTasks Sum(IReadOnlyList<ScheduledTask> source)
         {
@@ -148,7 +148,9 @@ internal static class PlanSummary
         var unassigned = Sum(personGroups[PlanPeople.Unassigned].ToArray());
         return new(working, elapsed, remaining, finish, difference, total, projectCapacity, load,
             phaseTotals.Append(new("全体", total, true)).ToArray(), people, new("total", "合計", phaseTotals, total, projectCapacity, load), months,
-            new(Ids(Overdue), Ids(t => t.IsOverEstimate), Ids(t => t.IsZeroRemainingOpen), unassigned.Identities, unassigned.Remaining,
+            new(Ids(Overdue), Ids(t => lateness.Tasks[t.Input.Identity].Level == PlanLatenessLevel.Later),
+                Ids(t => lateness.Tasks[t.Input.Identity].IsCause && !t.Input.Closed),
+                Ids(t => t.IsOverEstimate), Ids(t => t.IsZeroRemainingOpen), unassigned.Identities, unassigned.Remaining,
                 Ids(t => t.Remaining is null || t.Forecast is null))) { Milestones = milestones };
     }
 }

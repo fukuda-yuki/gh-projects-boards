@@ -34,6 +34,18 @@ public sealed class PlanSheetRow : Grid
         HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
     private readonly FontIcon indicator = new() { FontSize = 13, Width = 28, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = true };
     private readonly List<Polygon?> corners = [];
+    // #231 slice B: the pending-state tag and the 中止 strike-through, both only on the title cell.
+    private TextBlock? tagChip;
+    private Border? strikeLine;
+    // Read by the hosted UI cases and the verifier's run sheet: the pending state tag and its strike-through.
+    internal string? StateTagText => tagChip is { Visibility: Visibility.Visible } ? tagChip.Text : null;
+    internal bool StruckThrough => strikeLine is { Visibility: Visibility.Visible };
+    // A recycled row can stay in the sheet's realized set after it lost its owner; the mark cases need to
+    // tell "the row was never repainted" from "this instance is no longer the displayed one".
+    internal bool IsBound => Owner is not null;
+    // The mark's raw wiring, so a case that sees no tag can say whether the element is missing, hidden, or
+    // simply in an instance the sheet no longer displays.
+    internal string TagDiagnostics => $"cells={Cells.Length} chip={(tagChip is null ? "null" : tagChip.Visibility.ToString())} strike={(strikeLine is null ? "null" : strikeLine.Visibility.ToString())} paints={markPaints} lastTag={lastTag ?? "null"}";
     private readonly List<Border> frames = [];
     private readonly List<TextBlock?> markers = [];
     private readonly List<Button?> handles = [];
@@ -55,9 +67,11 @@ public sealed class PlanSheetRow : Grid
         return width + cell.Padding.Left + cell.Padding.Right + 4;
     }
     private string? boundIdentity;
+    private int markPaints;
+    private string? lastTag;
     private double chartOffset = double.NaN;
     private sealed record ChartPresentation(string Identity, int Number, int RowIndex, DateOnly? Start, DateOnly? End,
-        bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? PublishedEnd,
+        bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? ForecastEnd,
         bool ShowLabels, DateOnly FirstDay, double DateInset, double DayWidth, double Viewport, double Height, ElementTheme Theme, Brush ThemeBrush);
     private sealed class DependencyVisual
     {
@@ -99,7 +113,17 @@ public sealed class PlanSheetRow : Grid
         idHandle.PreviewKeyDown += (_, args) => {
             if (Owner is not { } owner) return;
             if (args.Key == VirtualKey.Escape) { owner.CancelDrag(); args.Handled = true; }
+            else if (PlanSheetView.Down(VirtualKey.Control) && PlanSheetView.Minus(args.Key)) { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
+            else if (args.Key == VirtualKey.F10 && PlanSheetView.Down(VirtualKey.Shift) || (int)args.Key == 93) { args.Handled = true; owner.ShowRowMenu(Identity, owner.FirstField, this); }
             else if (owner.HandleOutlineShortcut(args.Key)) args.Handled = true;
+        };
+        // #231 slice B: the row menu opens from the parts of a row that are not a cell, from a cell that is
+        // not being edited (with its clipboard items), and from Shift+F10 or the menu key inside any cell.
+        foreach (var surface in new UIElement[] { idCell, indicator, fold }) surface.ContextRequested += (_, args) => {
+            if (Owner is not { } owner) return;
+            var position = args.TryGetPosition(this, out var point) ? point : (Point?)null;
+            args.Handled = true;
+            owner.ShowRowMenu(Identity, owner.FirstField, this, position);
         };
         line.Children.Add(idCell); line.Children.Add(indicator);
         Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(id, FontNumeralAlignment.Tabular);
@@ -130,6 +154,42 @@ public sealed class PlanSheetRow : Grid
         for (var i = 0; i < order.Length; i++)
             if (line.Children.IndexOf(order[i]) != i) { line.Children.Remove(order[i]); line.Children.Insert(i, order[i]); }
     }
+    // The pending-state mark for this row: a tag naming the command that produced it, and a strike line for
+    // 中止. The row's cell pass owns building the elements, because that is the moment the container is
+    // being realised; a command may only repaint them, so it never modifies the live tree mid-pass (#231).
+    internal void RefreshStateMark() => PaintStateMark(build: true);
+    internal void RepaintStateMark() => PaintStateMark(build: false);
+    private void PaintStateMark(bool build)
+    {
+        if (Owner is not { } owner || boundIdentity is null) return;
+        if (!build && tagChip is null && strikeLine is null) return;
+        var index = -1;
+        for (var i = 0; i < Cells.Length; i++) if (Cells[i].Field == PlanField.Title) { index = i; break; }
+        if (index < 0) return;
+        var depth = 0; var parent = owner.Rows.GetValueOrDefault(Identity)?.Parent;
+        while (parent is not null && owner.Rows.TryGetValue(parent, out var ancestor) && depth < 30) { depth++; parent = ancestor.Parent; }
+        var rowTag = owner.RowStateTag(Identity);
+        if (tagChip is null) {
+            tagChip = new TextBlock { FontSize = 11, HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 4, 0), IsHitTestVisible = false };
+            ((Grid)frames[index].Child).Children.Add(tagChip);
+        }
+        tagChip.Text = rowTag ?? "";
+        tagChip.Visibility = rowTag is null ? Visibility.Collapsed : Visibility.Visible;
+        tagChip.Foreground = PlanSheetView.Brush(rowTag == "中止にする" ? "SystemFillColorCautionBrush" : "TextFillColorSecondaryBrush");
+        tagChip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Cells[index].ReserveForTag(rowTag is null ? 0 : tagChip.DesiredSize.Width + 8);
+        if (strikeLine is null) {
+            strikeLine = new Border { Height = 1, VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left, IsHitTestVisible = false };
+            ((Grid)frames[index].Child).Children.Add(strikeLine);
+        }
+        strikeLine.Visibility = owner.IsCancelled(Identity) ? Visibility.Visible : Visibility.Collapsed;
+        strikeLine.Background = PlanSheetView.Brush("TextFillColorSecondaryBrush");
+        strikeLine.Width = Math.Max(0, frames[index].Width - 140);
+        strikeLine.Margin = new(24 + depth * 12, 0, 0, 0);
+        markPaints++; lastTag = rowTag;
+    }
     internal void SetOwner(PlanSheetView? owner, string? identity)
     {
         if (owner is not null) ArgumentNullException.ThrowIfNull(identity);
@@ -152,8 +212,7 @@ public sealed class PlanSheetRow : Grid
         owner?.UpdateInputProblem();
     }
     private void ClearIds()
-    {
-        AutomationProperties.SetAutomationId(id, ""); AutomationProperties.SetAutomationId(idHandle, ""); AutomationProperties.SetAutomationId(indicator, "");
+    {        AutomationProperties.SetAutomationId(id, ""); AutomationProperties.SetAutomationId(idHandle, ""); AutomationProperties.SetAutomationId(indicator, "");
         AutomationProperties.SetAutomationId(selectionAccent, "");
         foreach (var cell in Cells) { AutomationProperties.SetAutomationId(cell, ""); cell.Rebind(); }
         foreach (var display in summaryCells.Values) AutomationProperties.SetAutomationId(display, "");
@@ -220,8 +279,11 @@ public sealed class PlanSheetRow : Grid
             cell.Visibility = summary && field != PlanField.Title ? Visibility.Collapsed : visible;
             var selected = owner.IsSelected(Identity, field);
             var conflict = owner.BlockingConflicts.Any(c => c.Identity == Identity && c.Field == field);
-            frames[i].BorderBrush = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : selected ? "SheetSelectionStrokeBrush" : "SheetSeparatorBrush");
-            frames[i].BorderThickness = selected || conflict ? new(2) : new(0, 0, 0, 1);
+            // An untitled inserted row cannot be published, so its title carries the same critical
+            // outline a conflict uses and the reason in its help text and tooltip (#247).
+            var untitled = field == PlanField.Title && owner.IsUntitledNewRow(Identity);
+            frames[i].BorderBrush = PlanSheetView.Brush(conflict || untitled ? "SystemFillColorCriticalBrush" : selected ? "SheetSelectionStrokeBrush" : "SheetSeparatorBrush");
+            frames[i].BorderThickness = selected || conflict || untitled ? new(2) : new(0, 0, 0, 1);
             frames[i].Background = PlanSheetView.Brush(conflict ? "LayerFillColorDefaultBrush" : selected || owner.IsSelectedRow(Identity) ? "SheetSelectionBrush"
                 : owner.IsChanged(Identity, field) && owner.Unpublished.InputKind(Identity, field) == PlanUnpublishedInputKind.Entered ? "SheetChangedBrush" : "LayerFillColorDefaultBrush");
             var changed = owner.IsChanged(Identity, field);
@@ -245,6 +307,10 @@ public sealed class PlanSheetRow : Grid
                 changeMarker.Visibility = conflict || changed ? Visibility.Visible : Visibility.Collapsed;
                 changeMarker.Fill = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : "SheetChangedMarkBrush");
             }
+            // A row whose state command is pending carries a tag (the command's own name) so it is never
+            // confused with the outlined lateness marks, and 中止 is struck through. The mark is painted by
+            // its own method so the command can repaint it without waiting for a cell pass (#231).
+            if (field == PlanField.Title) RefreshStateMark();
             cell.IsReadOnly = owner.ReadOnly(Identity, field);
             var showHandle = owner.IsRangeEnd(Identity, field) && !cell.Editing && !cell.IsReadOnly && owner.Display(Identity, field).Length > 0 && !owner.Pending.ContainsKey((Identity, field));
             if (showHandle && handles[i] is null) {
@@ -261,12 +327,16 @@ public sealed class PlanSheetRow : Grid
             }
             cell.FontStyle = Windows.UI.Text.FontStyle.Normal;
             cell.Foreground = PlanSheetView.Brush(field == PlanField.End && late?.Level == PlanLatenessLevel.Overdue
-                && owner.CellDate(Identity, field) > owner.PublishedEnd(Identity) ? "SystemFillColorCriticalBrush"
+                ? "SystemFillColorCriticalBrush"
                 : owner.IsCalculated(Identity, field) ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
             cell.FontWeight = owner.Schedule.GetValueOrDefault(Identity)?.IsSummary == true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
-            cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict ? 4 : 1);
+            cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict || untitled ? 4 : 1);
             cell.Padding = field == PlanField.Title ? new(24 + depth * 12, 1, 4, 1) : new(4, 1, 4, 1);
-            var problem = owner.Problems.GetValueOrDefault((Identity, field)) ?? (remoteProblem.Length > 0 ? remoteProblem : null);
+            var problem = owner.Problems.GetValueOrDefault((Identity, field)) ?? (untitled ? "タイトルを入力してください" : remoteProblem.Length > 0 ? remoteProblem : null);
+            // A pending 完了 is local, so GitHub has not closed the Issue yet; the GitHub-owned read-only
+            // reason would mislead. This is information, not a cell error, so it never colours the frame (#231).
+            var stateHint = problem is null && cell.IsReadOnly && owner.IsPendingClose(Identity) && field is PlanField.Remaining or PlanField.End
+                ? owner.Rows[Identity].Closed ? "完了にする を発行すると確定します（未発行）" : "未完了に戻す を発行すると編集できます（未発行）" : null;
             var text = owner.Pending.GetValueOrDefault((Identity, field))?.Text ?? (cell.Editing ? owner.EditForm(Identity, field) : owner.Display(Identity, field));
             cell.Refresh(text);
             if (cell.TitleDisplay is { } titleDisplay) AutomationProperties.SetAutomationId(titleDisplay, "PlanTitleDisplay" + number);
@@ -277,8 +347,8 @@ public sealed class PlanSheetRow : Grid
             }
             AutomationProperties.SetAutomationId(cell, $"PlanCell{number}_{field}");
             AutomationProperties.SetName(cell, $"ID {(number == 0 ? "新規" : number)} {PlanSheetView.FullName(column)}" + (owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
-            AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
-            ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
+            AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? stateHint ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
+            ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? stateHint ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
                 : field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : text)));
             if (summary && field != PlanField.Title) {
                 if (!summaryCells.TryGetValue(field, out var display)) {
@@ -318,15 +388,25 @@ public sealed class PlanSheetRow : Grid
         var effort = owner.Schedule.GetValueOrDefault(Identity);
         var typed = taskRow?.StartNoEarlierThan is not null || taskRow?.Fixed == true;
         var unpublished = owner.Unpublished.Fields.ContainsKey(Identity);
-        var stateText = PlanSheetText.Indicator(taskRow, effort, late, owner.PublishedEnd(Identity), remoteProblem, unpublished);
-        indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : late?.Level == PlanLatenessLevel.Overdue ? "\uE814"
-            : late?.Level == PlanLatenessLevel.Later ? "\uE7BA" : effort?.IsOverEstimate == true || effort?.IsZeroRemainingOpen == true ? "\uE7BA" : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
+        var stateText = PlanSheetText.Indicator(taskRow, effort, late, remoteProblem, unpublished, owner.Marks);
+        // Outlined marks only, never filled (#236 part B): red 期限超過, yellow 予定より遅れ and 見積超過.
+        var overdueMark = owner.Marks.Overdue && late?.Level == PlanLatenessLevel.Overdue;
+        var yellowMark = owner.Marks.Later && late?.Level == PlanLatenessLevel.Later
+            || owner.Marks.OverEstimate && (effort?.IsOverEstimate == true || effort?.IsZeroRemainingOpen == true);
+        indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : overdueMark || yellowMark ? "\uE7BA"
+            : owner.IsDimmed(Identity) ? "\uE711"
+            : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
         indicator.FontFamily = new FontFamily(indicator.Glyph == "\u2022" ? "Segoe UI" : "Segoe Fluent Icons");
-        indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || late?.Level is PlanLatenessLevel.Overdue or PlanLatenessLevel.Later ? "SystemFillColorCriticalBrush" : done ? "IndicatorDoneBrush" : typed ? "IndicatorTypedBrush" : "SheetChangedMarkBrush");
+        indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || overdueMark ? "SystemFillColorCriticalBrush"
+            : yellowMark || owner.IsCancelled(Identity) ? "SystemFillColorCautionBrush"
+            : done ? "IndicatorDoneBrush" : typed ? "IndicatorTypedBrush" : "SheetChangedMarkBrush");
         indicator.Visibility = owner.IndicatorVisible ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetAutomationId(indicator, "PlanIndicator" + number);
         AutomationProperties.SetName(indicator, stateText); ToolTipService.SetToolTip(indicator, stateText);
         Background = owner.IsSelectedRow(Identity) ? PlanSheetView.Brush("SheetSelectionBrush") : null;
+        // 中止 and pending removal dim the whole row; a pending completion keeps its ordinary weight
+        // because the task is finished, not set aside (#231).
+        Opacity = owner.IsDimmed(Identity) ? 0.55 : 1;
         id.Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush");
         id.FontWeight = summary ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
         DrawChart();
@@ -367,7 +447,7 @@ public sealed class PlanSheetRow : Grid
         DrawDependencies(owner, number, rowIndex);
         decimal? completeFraction = !task.IsSummary && task.Input.IsComplete ? 1m : task.WorkCompleteFraction;
         var presentation = new ChartPresentation(Identity, number, rowIndex, task.Start.Value, task.End.Value,
-            task.IsSummary, task.IsMilestone, completeFraction, owner.LatenessOf(Identity), owner.PublishedEnd(Identity),
+            task.IsSummary, task.IsMilestone, completeFraction, owner.LatenessOf(Identity), owner.ForecastEndOf(Identity),
             owner.ShowLatenessLabels, owner.FirstDay, owner.ChartDateInset, owner.DayWidth, owner.ChartViewport, owner.RowHeight,
             ActualTheme, PlanSheetView.Brush("GanttTaskBrush"));
         if (presentation != chartPresentation) {
@@ -388,10 +468,17 @@ public sealed class PlanSheetRow : Grid
             var successorMilestone = successor.IsMilestone && successor.Start.Value == successor.End.Value;
             var predecessor = owner.Schedule[owner.RowIds[edge.From]];
             var predecessorMilestone = predecessor.IsMilestone && predecessor.Start.Value == predecessor.End.Value;
-            var predecessorStart = predecessor.Start.Value ?? edge.End;
-            var predecessorWidth = predecessor.Start.Value is null ? 8 : predecessorMilestone ? 10 : Math.Max(2, (edge.End.DayNumber - predecessorStart.DayNumber + 1) * owner.DayWidth);
-            var x1 = ChartX(owner, predecessorStart) + predecessorWidth; var x2 = ChartX(owner, edge.Start);
-            var successorWidth = successorMilestone ? 10 : Math.Max(2, ((successor.End.Value ?? edge.Start).DayNumber - edge.Start.DayNumber + 1) * owner.DayWidth);
+            // #236: every coordinate here comes from the schedule the bars are drawn from. The edge carries only
+            // the row pair now, because its cached copies of these dates could lag the bar by a day once an edit
+            // rescheduled an end; an arrow a day off from the bar it points at is a wrong picture, not a rounded
+            // one. RefreshEdges only creates an edge when both dates are known, so the fallbacks are unreachable.
+            if ((predecessor.Start.Value ?? predecessor.End.Value) is not { } predecessorStart
+                || (successor.Start.Value ?? successor.End.Value) is not { } successorStart) continue;
+            var predecessorEnd = predecessor.End.Value ?? predecessorStart;
+            var successorEnd = successor.End.Value ?? successorStart;
+            var predecessorWidth = predecessor.Start.Value is null ? 8 : predecessorMilestone ? 10 : Math.Max(2, (predecessorEnd.DayNumber - predecessorStart.DayNumber + 1) * owner.DayWidth);
+            var x1 = ChartX(owner, predecessorStart) + predecessorWidth; var x2 = ChartX(owner, successorStart);
+            var successorWidth = successorMilestone ? 10 : Math.Max(2, (successorEnd.DayNumber - successorStart.DayNumber + 1) * owner.DayWidth);
             var inset = Math.Min(3, successorWidth / 2);
             // Clamp locally: adding a large date coordinate can invert equal bounds through rounding.
             var entry = x2 + Math.Clamp(Math.Max(x1 - x2 + 5, 5), inset, successorWidth - inset);
@@ -543,9 +630,11 @@ public sealed class PlanSheetRow : Grid
                 Fill = PlanSheetView.Brush("GanttTaskBrush") }, "PlanProgress" + number);
             Canvas.SetLeft(progress, x); Canvas.SetTop(progress, (owner.RowHeight - 14) / 2); taskChart.Children.Add(progress);
         }
-        if (!milestone && late is { } count && owner.PublishedEnd(Identity) is { } published) {
-            var lateX = Math.Max(x, ChartX(owner, published) + owner.DayWidth);
-            var lateWidth = x + width - lateX;
+        if (!milestone && late is { } count && owner.ForecastEndOf(Identity) is { } forecast && forecast > end) {
+            // The slip runs from the day after the plan end to the forecast end (#236 part B). It is the
+            // plan-versus-forecast gap, never a comparison with what was published.
+            var lateX = ChartX(owner, end) + owner.DayWidth;
+            var lateWidth = ChartX(owner, forecast) + owner.DayWidth - lateX;
             if (lateWidth <= 0) return;
             Shape segment = task.IsSummary
                 ? new Polygon { Width = lateWidth, Height = 10, Points = [new(0, 0), new(lateWidth, 0), new(lateWidth, 10), new(Math.Max(0, lateWidth - 4), 6), new(0, 6)] }
@@ -568,8 +657,15 @@ internal sealed class PlanSheetCell : TextBox
     private readonly PlanSheetRow row;
     internal string Field { get; }
     internal bool Composing { get; private set; }
-    internal bool Editing { get; private set; }
+    // While editing, the text box keeps its own menu for the characters being typed; otherwise a right click
+    // opens the row menu (#231).
+    internal bool Editing { get => editing; private set { editing = value; ContextFlyout = value ? textMenu : null; } }
+    private bool editing;
+    private readonly Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase? textMenu;
     internal TextBlock? TitleDisplay { get; }
+    // Width the row-state tag takes at the right of the title, so the ellipsis ends before the tag (#231).
+    internal double TagReserve { get; private set; }
+    internal void ReserveForTag(double width) { if (TagReserve == width) return; TagReserve = width; RefreshDisplay(); }
     internal Grid? AssigneeDisplay { get; }
     internal TextBlock? AssigneeNameDisplay { get; }
     internal TextBlock? AssigneeCountDisplay { get; }
@@ -597,6 +693,7 @@ internal sealed class PlanSheetCell : TextBox
         }
         // Sheet Clear owns deletion, so the template has no delete button taking editor width.
         Style = (Style)Application.Current.Resources["PlanSheetCellStyle"];
+        textMenu = ContextFlyout; ContextFlyout = null;
         MinWidth = 0; MinHeight = 26; Height = 26; Padding = new(4, 2, 4, 2); FontSize = 13; BorderThickness = new(0); Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         if (field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Predecessors) TextAlignment = TextAlignment.Right;
         Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(this, FontNumeralAlignment.Tabular);
@@ -608,6 +705,11 @@ internal sealed class PlanSheetCell : TextBox
                 owner.UpdateInputProblem();
             }
             if (!Editing) SelectAll();
+        };
+        ContextRequested += (_, args) => {
+            if (Editing || row.Owner is not { } owner) return;
+            args.Handled = true;
+            owner.ShowRowMenu(row.Identity, Field, this, args.TryGetPosition(this, out var point) ? point : null, clipboard: true);
         };
         TextChanging += (_, _) => {
             // WinUI may deliver a programmatic text notification after Refresh returns.
@@ -707,7 +809,8 @@ internal sealed class PlanSheetCell : TextBox
         Opacity = Editing ? 1 : 0;
         display.Visibility = Editing ? Visibility.Collapsed : Visibility.Visible;
         display.Text = shownText; display.FontSize = FontSize; display.FontFamily = FontFamily;
-        display.FontWeight = FontWeight; display.Foreground = Foreground; display.Margin = Padding;
+        display.FontWeight = FontWeight; display.Foreground = Foreground;
+        display.Margin = new(Padding.Left, Padding.Top, Padding.Right + TagReserve, Padding.Bottom);
     }
     protected override void OnPreviewKeyDown(KeyRoutedEventArgs args)
     {
@@ -734,7 +837,20 @@ internal sealed class PlanSheetCell : TextBox
         else if (!Editing && control && !PlanSheetView.Down(VirtualKey.Menu) && args.Key == VirtualKey.F2)
         { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
         else if (!control && args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
-        else if (!Editing && control && args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y)
+        else if (!Editing && (args.Key == VirtualKey.F10 && shift || (int)args.Key == 93))
+        {
+            // The row menu from inside a cell, leaving its own right-click menu to the clipboard (#231).
+            args.Handled = true;
+            owner.ShowRowMenu(row.Identity, Field, row);
+        }
+        else if (!Editing && shift && !control && args.Key == VirtualKey.Space)
+        {
+            // Excel's Shift+Space takes the whole row: the anchor row when nothing is extended, otherwise
+            // every row of the range the cell selection already spans (#240).
+            args.Handled = true;
+            owner.SelectWholeRow(row.Identity, true);
+        }
+        else if (!Editing && control && (args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y || PlanSheetView.Minus(args.Key)))
         { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
         else if (!Editing && args.Key == VirtualKey.Delete) { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
         else if (!Editing && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right)
@@ -807,10 +923,18 @@ internal sealed class PlanSummaryCell : ContentControl
         else if (!control && args.Key is VirtualKey.Tab or VirtualKey.Enter) {
             args.Handled = true; owner.NavigateCell(field, args.Key == VirtualKey.Tab, shift);
         }
-        else if (!control && args.Key == VirtualKey.Delete || control && args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y) {
+        else if (!control && args.Key == VirtualKey.Delete || control && (args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y || PlanSheetView.Minus(args.Key))) {
             args.Handled = true; _ = owner.KeyboardCommand(args.Key);
         }
         else if (!control && args.Key == VirtualKey.Escape) { args.Handled = true; owner.CancelDrag(); }
+        else if (args.Key == VirtualKey.F10 && shift || (int)args.Key == 93) {
+            // A requirement row opens the same row menu from the keyboard (#231).
+            args.Handled = true; owner.ShowRowMenu(row.Identity, field, row);
+        }
+        else if (!control && shift && args.Key == VirtualKey.Space) {
+            // A requirement row takes its whole row the same way an ordinary cell does (#240).
+            args.Handled = true; owner.SelectWholeRow(row.Identity, true);
+        }
         else if (!control && (args.Key == VirtualKey.F2 || args.Key == VirtualKey.Space
             || args.Key is >= VirtualKey.Number0 and <= VirtualKey.Z
             || args.Key is >= VirtualKey.NumberPad0 and <= VirtualKey.Divide

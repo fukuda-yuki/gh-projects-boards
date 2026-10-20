@@ -56,10 +56,13 @@ internal static class FakeGhProgram
         var mutation = api && method != "GET" && args[1] != "graphql";
         string? query = null, detailId = null;
         JsonElement? bodyInput = null;
+        // #201: the publication read scope is asserted from the queries and variables a fake run recorded.
+        JsonElement? recordedVariables = null;
         if (api && args[1] == "graphql" && input is not null)
         {
             using var payload = JsonDocument.Parse(input);
             query = payload.RootElement.GetProperty("query").GetString();
+            recordedVariables = payload.RootElement.GetProperty("variables").Clone();
             mutation = query?.TrimStart().StartsWith("mutation", StringComparison.Ordinal) == true;
             if (query?.StartsWith("query PlanIssueDetail(", StringComparison.Ordinal) == true || query?.StartsWith("query PlanIssueBody(", StringComparison.Ordinal) == true)
                 detailId = payload.RootElement.GetProperty("variables").GetProperty("id").GetString();
@@ -68,7 +71,8 @@ internal static class FakeGhProgram
         }
         await WriteDiagnosticAsync(Path.Combine(directory, "calls.jsonl"), JsonSerializer.Serialize(new
         {
-            operation = args[0], endpoint = api ? args[1] : null, host, method, mutation, pid = Environment.ProcessId, detailId, bodyInput
+            operation = args[0], endpoint = api ? args[1] : null, host, method, mutation, pid = Environment.ProcessId, detailId, bodyInput,
+            query, variables = recordedVariables is { } recorded ? (object)recorded : null
         }) + "\n", append: true);
         if (settings.TryGetProperty("holdOperation", out var heldOperation) && args[0] == heldOperation.GetString() ||
             settings.TryGetProperty("holdQuery", out var heldQuery) && query?.Contains(heldQuery.GetString()!) == true)

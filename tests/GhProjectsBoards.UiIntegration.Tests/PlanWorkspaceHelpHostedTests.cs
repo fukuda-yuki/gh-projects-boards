@@ -32,8 +32,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await CommitText("PlanCell1_Title", "Edited title");
-        // The accepted edit also releases the first take-in date hold; compare after it settles.
-        await Ui.Until(() => workspace.Session!.UndoCount > 0 && workspace.Session.Document.Dates.Held is null);
+        // Compare after the accepted edit has settled in the document.
+        await Ui.Until(() => workspace.Session!.UndoCount > 0);
         if (page == "summary") { await Ui.Run(() => Ui.Click("PlanShowSummary")); await Ui.Idle(); }
         if (page == "settings") await Settings();
         if (page == "publish") { await Ui.Run(() => Ui.Click("PlanPublish")); await Ui.Idle(); }

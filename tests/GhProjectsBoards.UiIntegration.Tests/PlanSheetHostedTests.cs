@@ -46,6 +46,10 @@ internal sealed partial class PlanSheetHostedTests
             Estimate = 8, Remaining = 8, Assignees = [performance ? "U" + ((i - 1) % 20 + 1) : "U1"],
             Predecessors = performance ? i % 10 == 1 ? [] : ["I" + (i - 1)] : i == 2 ? ["I1"] : []
         }).ToImmutableArray();
+        // #236: a stored date is a plan value and a read does not invent one, so the shared sheet fixture states
+        // the plan the app had laid out — an end per row, from which the sheet derives every start. Seeding the
+        // end keeps the start calculated, which the date-origin cases require and the date cells need to exist.
+        rows = rows.Select(row => row with { End = Today }).ToImmutableArray();
         session = await PlanSession.CreateAsync(new(root), new(new(new("github.com", 1), "P1"), new(rows, []),
             new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo",
                 People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null)).ToImmutableArray() : [new("U1", "alice", 100, null)],
@@ -371,7 +375,15 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(sheet.IsRangeEnd("I2", PlanField.Estimate), Is.True);
         });
         await Ui.ClickCommand("PlanSheetClear"); await Ui.Idle();
-        Assert.That(session.Document.State.Rows, Is.EqualTo(before.Select((row, i) => i < 2 ? row with { Estimate = null } : row)));
+        // #236: clearing an Estimate is an edit, so the scheduler lays the edited rows' plan ends out again as
+        // part of the same Undo step. I1 ends on 10/5, and I2 follows it on the next working day, so its plan
+        // end moves to 10/6; the cells outside the clear keep their inputs.
+        var expected = before.Select((row, index) => index switch {
+            0 => row with { Estimate = null },
+            1 => row with { Estimate = null, End = Today.AddDays(1) },
+            _ => row
+        });
+        Assert.That(session.Document.State.Rows, Is.EqualTo(expected));
     }
     [Test, Category("PlanSheetFollowup")]
     public async Task DateEditTextFitsTheContentViewportWithoutWideningItsColumn()
@@ -450,8 +462,12 @@ internal sealed partial class PlanSheetHostedTests
         await Edit(1, PlanField.Actual, "16");
         await Edit(1, PlanField.Remaining, "0");
         await Ui.Run(() => {
+            // #236 part B: 残 0・未完了 adds no mark to the plan sheet, so the indicator carries the
+            // 見積超過 mark (outlined warning) and the unpublished change, not a zero-remaining entry.
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません").And.Contain("見積超過"));
+            var name = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator);
+            Assert.That(name, Does.Contain("見積超過: 見込工数 16h（見積工数 8h、差異 +8h）").And.Not.Contain("残 0・未完了"));
+            Assert.That(indicator.Glyph, Is.EqualTo("\uE7BA"));
             Assert.That(indicator.Glyph, Is.Not.Empty);
         });
     }
@@ -525,27 +541,37 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [TestCase("completed", "完了", "\uE73E")]
-    [TestCase("late", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8h）", "\uE814")]
+    [TestCase("late", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8h）", "\uE7BA")]
     [TestCase("typed", "開始日を指定", "\uE718")]
     [TestCase("fixed", "日程固定", "\uE718")]
     [TestCase("changed", "未発行の変更あり", "\u2022")]
     [TestCase("failed", "発行失敗", "\uEA39")]
     [TestCase("unverified", "GitHub で未確認", "\uEA39")]
-    [TestCase("summary", "配下に期限超過 1", "\uE814")]
+    [TestCase("summary", "配下に期限超過 1", "\uE7BA")]
     [Category("PlanSheetPhase2")]
     public async Task IndicatorPriorityAndSelectionExplainAllApplicableRowStates(string state, string expected, string glyph)
     {
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var row = new PlanRow("I1", "R05 顧客データの外部連携", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
         if (state is "completed" or "failed" or "unverified") row = row with { Closed = true, CloseDate = Today, Remaining = 0, Actual = 8, Start = Today, End = Today, StartNoEarlierThan = Today };
-        if (state is "typed" or "late") row = row with { StartNoEarlierThan = Today };
+        if (state == "typed") row = row with { StartNoEarlierThan = Today, End = new(2026, 10, 2) };
+        // #236: an overdue row is overdue against the 基準日, so this state states the plan dates that put it
+        // there; the published end no longer decides it.
+        if (state == "late") row = row with { Start = new(2026, 10, 2), End = new(2026, 10, 2) };
         if (state == "fixed") row = row with { Fixed = true, Start = Today, End = Today };
         var baseline = row with { End = state is "late" or "failed" or "unverified" ? new(2026, 10, 2) : state == "summary" ? new(2026, 10, 1) : row.End };
+        // #236: an unpublished change needs a stored plan value that differs from the baseline. A task with no
+        // dates of its own is undated — it has no calculated dates to compare — so this state states a plan end
+        // the baseline does not hold.
+        if (state == "changed") row = row with { End = Today };
         var rows = ImmutableArray.Create(row);
         var baselines = ImmutableArray.Create(baseline);
         if (state == "summary") {
-            rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
-            baselines = baselines.Add(row with { Identity = "I2", Parent = "I1", End = new(2026, 10, 2) });
+            // #236: the descendant is 期限超過 against the 基準日 through its plan dates, which the plan must
+            // hold. A stored end alone would be dropped when the calculated start moves past it, so the child
+            // keeps the start and end that put its plan end before 10/5.
+            rows = rows.Add(row with { Identity = "I2", Parent = "I1", Start = new(2026, 10, 2), End = new(2026, 10, 2) });
+            baselines = baselines.Add(row with { Identity = "I2", Parent = "I1", Start = new(2026, 10, 2), End = new(2026, 10, 2) });
         }
         var document = new PlanDocument(session.Document.Project, new(baselines, []), new(rows, session.Document.State.Settings)) {
             Sync = new() { Failures = state == "failed" ? [new("I1", PlanField.End, "Rejected")] : [], Unverified = state == "unverified" ? ["I1"] : [],
@@ -553,8 +579,13 @@ internal sealed partial class PlanSheetHostedTests
         session = await PlanSession.CreateAsync(new(Path.Combine(root, "indicator")), document, Today);
         await Ui.Run(() => { sheetHost.Children.Clear(); sheet = new(session); sheetHost.Children.Add(sheet.statusDate); sheetHost.Children.Add(sheet); Grid.SetRow(sheet, 1); });
         await Ui.Mount(sheetHost); await Select(1, PlanField.Title);
-        if (state is "late" or "failed" or "unverified")
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetSlip").ActualWidth > 0 && Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0);
+        if (state is "late" or "summary" or "failed" or "unverified") {
+            // The slip belongs to a lateness shape; a closed row has no forecast and no slip, so it only waits
+            // for the reason line that carries its remote problem.
+            var expectsSlip = state is "late" or "summary";
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0
+                && (!expectsSlip || Ui.Find<TextBlock>("PlanSheetSlip").ActualWidth > 0));
+        }
         await Ui.Run(() => {
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain(expected));
@@ -563,23 +594,29 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.Not.Empty);
-            if (state is "typed" or "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日指定 10/5 · 終了: 開始から 8h"));
+            if (state == "typed") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日指定 10/5 · 終了: 開始から 8h"));
+            if (state == "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日を維持 · 終了: 開始から 8h"));
             Assert.That(Ui.Find<HyperlinkButton>("PlanSheetIssue").Content, Is.EqualTo("acme/repo#1"));
             var slip = Ui.Find<TextBlock>("PlanSheetSlip").Text;
-            if (state is "late" or "failed" or "unverified") {
-                Assert.That(slip, Is.EqualTo(state == "late" ? "完了予定 10/2 を過ぎて未完了 · +1 日" : "発行済み 10/2 から +1 日"));
+            if (state == "late") {
+                Assert.That(slip, Is.EqualTo("完了予定 10/2 を過ぎて未完了 · +1 日"));
                 var text = Ui.Find<TextBlock>("PlanStartReason");
                 var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
                 var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
                 Assert.That(gap, Is.InRange(8d, 12d), "The late pill follows the reason immediately.");
                 Assert.That(pill.CornerRadius.TopLeft, Is.GreaterThan(0));
             }
-            else if (state == "summary") Assert.That(slip, Is.EqualTo("発行済み 10/1 から +2 日"));
+            // A closed task has no forecast, so the delivered model shows no slip for it: the only thing the
+            // published end could have measured is gone with the moving dates.
+            else if (state is "failed" or "unverified") Assert.That(slip, Is.Empty);
+            else if (state == "summary") Assert.That(slip, Is.EqualTo("見込終了 10/5 (月) · 10/2 から +1 日"));
             else Assert.That(slip, Is.Empty);
             if (state is "failed" or "unverified") Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("完了").And.Contain("開始日を指定").And.Contain("未発行の変更あり"));
         });
     }
-    [TestCase("started", "終了: 基準日 10/5 から見込み残存工数 8h")]
+    // #236: the plan consumes a task from its own start — Actual + Remaining — so the end reason counts hours
+    // rather than naming a 基準日, and a task needs its own dates for the reason to exist.
+    [TestCase("started", "終了: 開始から 12h")]
     [TestCase("unstarted", "終了: 開始から 8h")]
     [TestCase("fixed", "終了: 指定")]
     [TestCase("complete", null)]
@@ -587,9 +624,10 @@ internal sealed partial class PlanSheetHostedTests
     [Category("SelectionLine")]
     public async Task SelectionExplainsEndReason(string state, string? expected)
     {
-        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"],
+            Start = Today, End = Today };
         if (state == "started") row = row with { Actual = 4 };
-        if (state == "fixed") row = row with { Fixed = true, Start = Today, End = Today };
+        if (state == "fixed") row = row with { Fixed = true };
         if (state == "complete") row = row with { Closed = true, CloseDate = Today, Actual = 8, Remaining = 0 };
         var rows = ImmutableArray.Create(row);
         if (state == "summary") rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
@@ -604,14 +642,19 @@ internal sealed partial class PlanSheetHostedTests
 
     [TestCase("finish", "完了予定 10/2 を過ぎて未完了 · +1 日")]
     [TestCase("start", "開始予定 10/2 を過ぎて未着手")]
-    [TestCase("later", "発行済み 10/5 から +1 日")]
+    // #236 part B: the slip compares the plan with the forecast, so it names 見込終了 and the plan end it
+    // slipped from; the published basis is retired.
+    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1 日")]
     [Category("SelectionLine")]
     public async Task SelectionPillKeepsGregorianDatesUnderNonGregorianCulture(string state, string expected)
     {
         var row = new PlanRow("I1", "Task", "acme/repo") {
             Estimate = 8, Remaining = state == "later" ? 16 : 8, Assignees = ["U1"] };
+        // A finish-overdue plan needs a start no later than its end: the plan end is its own value now. An
+        // overdue start needs a plan start before the 基準日 (10/5) while its end keeps it out of the finish
+        // set, because the finish set is decided first.
         var baseline = row with {
-            Start = state == "start" ? Today.AddDays(-3) : Today,
+            Start = state is "finish" or "start" ? Today.AddDays(-3) : Today,
             End = state == "finish" ? Today.AddDays(-3) : state == "start" ? Today.AddDays(4) : Today };
         await MountPresentation([row], [baseline]);
         await Ui.Ready<TextBox>("PlanCell1_Title");
@@ -629,42 +672,64 @@ internal sealed partial class PlanSheetHostedTests
         });
     }
 
-    [TestCase("finish", "完了予定 10/2 を過ぎて未完了", true, "")]
+    // #236 part B: the pill compares the plan with the forecast (「見込終了 M/d (曜) · M/d から +N 日」) and
+    // the published-end basis is retired. Each state states the plan's own dates, because a task with no dates
+    // has no forecast and no pill.
+    [TestCase("finish", "完了予定 10/2 を過ぎて未完了 · +1 日", true, "")]
     [TestCase("start", "開始予定 10/2 を過ぎて未着手", true, "")]
     [TestCase("moved", "完了予定 10/2 を過ぎて未完了 · +1 日", true, "")]
-    [TestCase("later", "発行済み 10/5 から +1 日", false, "")]
-    [TestCase("predecessor", "発行済み 10/5 から +1 日", false, "先行の遅れによる")]
-    [TestCase("constraint", "発行済み 10/5 から +1 日", false, "")]
-    [TestCase("long", "発行済み 10/5 から +1 日", false, "")]
-    [TestCase("summary-overdue", "発行済み 10/2 から +1 日", true, "配下: 期限超過 1")]
-    [TestCase("summary-later", "発行済み 10/5 から +1 日", false, "配下: 予定より遅れ 1")]
-    [TestCase("summary-counts", "", false, "配下: 期限超過 1 · 予定より遅れ 1")]
+    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1 日", false, "")]
+    // The predecessor state names its cause through the selection line's link, not the pill's detail line.
+    // The successor starts when the predecessor's 10/7 work is used up, so it does not share that day.
+    [TestCase("predecessor", "見込終了 10/8 (木) · 10/5 から +3 日", false, "")]
+    // A typed start constraint moves the plan start, so the plan end follows it and no slip remains: the
+    // delivered model has no lateness to show here (the published-basis slip this state used to show is gone).
+    [TestCase("constraint", "", false, "")]
+    [TestCase("long", "見込終了 10/6 (火) · 10/5 から +1 日", false, "")]
+    [TestCase("summary-overdue", "見込終了 10/5 (月) · 10/2 から +1 日", true, "配下: 期限超過 1")]
+    [TestCase("summary-later", "見込終了 10/6 (火) · 10/5 から +1 日", false, "配下: 予定より遅れ 1")]
+    [TestCase("summary-counts", "見込終了 10/6 (火) · 10/5 から +1 日", true, "配下: 期限超過 1 · 予定より遅れ 1")]
     [TestCase("none", "", false, "")]
     [Category("SelectionLine")]
     public async Task SelectionPresentsLatenessAndKeepsIssueAtRight(string state, string expected, bool tinted, string detail)
     {
-        var row = new PlanRow("I1", "Selected task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
-        var old = row with { Start = Today, End = Today };
-        if (state is "finish" or "moved" or "summary-overdue") old = old with { End = Today.AddDays(-3) };
-        if (state == "finish") row = row with { Fixed = true, Start = Today.AddDays(-3), End = Today.AddDays(-3) };
-        if (state == "start") old = old with { Start = Today.AddDays(-3), End = Today.AddDays(4) };
-        if (state is "later" or "summary-later") row = row with { Remaining = 16 };
-        if (state is "constraint" or "long") row = row with { StartNoEarlierThan = Today.AddDays(1) };
+        var row = new PlanRow("I1", "Selected task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"],
+            Start = Today, End = Today };
+        var old = row;
+        if (state is "finish" or "moved" or "summary-overdue") {
+            row = state == "finish" ? row with { Fixed = true, Start = Today.AddDays(-3), End = Today.AddDays(-3) }
+                : row with { Start = Today.AddDays(-3), End = Today.AddDays(-3) };
+            old = row;
+        }
+        if (state == "start") { row = row with { Start = Today.AddDays(-3), End = Today.AddDays(4) }; old = row; }
+        if (state is "later" or "summary-later" or "long") row = row with { Remaining = 16 };
         if (state == "long") row = row with { Title = string.Concat(Enumerable.Repeat("長いタスク名と終了理由の表示確認", 8)) };
+        if (state == "constraint") row = row with { StartNoEarlierThan = Today.AddDays(1) };
         var rows = ImmutableArray.Create(row); var baseline = ImmutableArray.Create(old);
         if (state == "predecessor") {
-            rows = rows.SetItem(0, row with { Predecessors = ["I2"] }).Add(row with { Identity = "I2" });
-            baseline = baseline.Add(row with { Identity = "I2", Start = Today, End = Today });
+            // A 日程固定 task is the shape that can be 予定より遅れ through a predecessor: it keeps its plan
+            // dates while its forecast start follows the predecessor's end. An unfixed task's plan start would
+            // follow the predecessor too, and its end with it, leaving no gap to show.
+            rows = rows.SetItem(0, row with { Fixed = true, Predecessors = ["I2"] })
+                .Add(row with { Identity = "I2", Start = Today.AddDays(2), End = Today.AddDays(2) });
+            baseline = baseline.Add(row with { Identity = "I2", Start = Today.AddDays(2), End = Today.AddDays(2) });
         }
         if (state.StartsWith("summary-")) {
-            rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
-            baseline = baseline.Add(old with { Identity = "I2", Parent = "I1" });
+            var child = state switch {
+                "summary-overdue" => old with { Identity = "I2", Parent = "I1" },
+                "summary-later" => old with { Identity = "I2", Parent = "I1", Start = Today, End = Today, Remaining = 16 },
+                _ => old with { Identity = "I2", Parent = "I1" }
+            };
+            rows = rows.Add(child);
+            baseline = baseline.Add(child);
         }
         if (state == "summary-counts") {
-            rows = rows.Add(row with { Identity = "I3", Parent = "I1", Remaining = 16 });
-            baseline = baseline.SetItem(0, old with { End = null })
-                .SetItem(1, old with { Identity = "I2", Parent = "I1", End = Today.AddDays(-3) })
-                .Add(old with { Identity = "I3", Parent = "I1" });
+            // One overdue child and one later child: the summary's roll-up end is 10/5 and its forecast 10/6,
+            // so the pill is tinted (a descendant is 期限超過) and both counts appear in the detail line.
+            var overdueChild = old with { Identity = "I2", Parent = "I1", Start = Today.AddDays(-3), End = Today.AddDays(-3) };
+            var later = old with { Identity = "I3", Parent = "I1", Start = Today, End = Today, Remaining = 16 };
+            rows = rows.SetItem(1, overdueChild).Add(later);
+            baseline = baseline.SetItem(1, overdueChild).Add(later);
         }
         await MountPresentation(rows, baseline); await Select(1, PlanField.Title); await Ui.Idle();
         await Ui.Until(() => Ui.Find<HyperlinkButton>("PlanSheetIssue").ActualWidth > 0
@@ -684,6 +749,9 @@ internal sealed partial class PlanSheetHostedTests
                 }
             }
             Assert.That(Ui.Find<TextBlock>("PlanSheetLatenessDetail").Text, Is.EqualTo(detail));
+            // #236 part B: a predecessor-caused lateness names its cause with a link to that row.
+            Assert.That(Ui.Find<HyperlinkButton>("PlanSelectionPredecessorLink").Visibility,
+                Is.EqualTo(state == "predecessor" ? Visibility.Visible : Visibility.Collapsed));
             var issue = Ui.Find<HyperlinkButton>("PlanSheetIssue");
             Assert.That(issue.Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(issue.Content, Is.EqualTo("acme/repo#1"));
@@ -697,30 +765,27 @@ internal sealed partial class PlanSheetHostedTests
         if (state is "moved" or "predecessor" or "long") await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-" + state));
     }
 
-    [TestCase(0, 0, "")]
-    [TestCase(1, 0, "期限超過 1")]
-    [TestCase(0, 1, "予定より遅れ 1")]
-    [TestCase(1, 1, "期限超過 1 · 予定より遅れ 1")]
+    [Test]
     [Category("SelectionLine")]
-    public async Task EmptySelectionShowsHintAndOnlyNonzeroTotals(int overdue, int later, string expected)
+    public async Task EmptySelectionShowsTheHintAndHidesItWhenARowIsSelected()
     {
+        // #236 part B: the Project-wide lateness counts are the status bar's filter buttons in the workspace,
+        // so a bare sheet no longer owns a totals line. This case keeps its own subject — the empty-selection
+        // hint — and the count buttons are exercised where they live.
         var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
-        var rows = ImmutableArray.Create(row, row with { Identity = "I2", Remaining = later == 1 ? 16 : 8 });
-        var baseline = ImmutableArray.Create(row with { End = overdue == 1 ? Today.AddDays(-3) : Today }, row with { Identity = "I2", End = Today });
+        var rows = ImmutableArray.Create(row, row with { Identity = "I2", Remaining = 16 });
+        var baseline = ImmutableArray.Create(row with { End = Today.AddDays(-3) }, row with { Identity = "I2", End = Today });
         await MountPresentation(rows, baseline);
         await Ui.Run(() => {
-            var hint = Ui.Find<TextBlock>("PlanSheetEmptyHint"); var totals = Ui.Find<TextBlock>("PlanSheetTotals");
+            var hint = Ui.Find<TextBlock>("PlanSheetEmptyHint");
             Assert.That(hint.Text, Is.EqualTo("タスクを選択すると、開始日と終了日の根拠を表示します"));
             Assert.That(hint.Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(hint), Is.EqualTo(hint.Text));
-            Assert.That(totals.Text, Is.EqualTo(expected));
-            Assert.That(totals.Visibility, Is.EqualTo(expected.Length == 0 ? Visibility.Collapsed : Visibility.Visible));
         });
-        if (overdue == 1 && later == 1) await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-empty"));
+        await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-empty"));
         await Select(1, PlanField.Title);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetEmptyHint").Visibility, Is.EqualTo(Visibility.Collapsed));
-            Assert.That(Ui.Find<TextBlock>("PlanSheetTotals").Visibility, Is.EqualTo(Visibility.Collapsed));
         });
     }
 
@@ -730,6 +795,13 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var settings = session.Document.State.Settings;
         if (!people.IsDefault) settings = settings with { People = people };
+        // #236 makes a stored date a plan value and stops a read from inventing one. A presentation fixture
+        // that states GitHub's dates in its baseline and leaves the plan row without any means "as the read
+        // left it" — the baseline — so the plan row takes those dates. A row whose baseline has no date either
+        // stays undated, which is the #245 case the sheet must show as bar-less.
+        var github = baseline.ToDictionary(row => row.Identity);
+        rows = rows.Select(row => github.TryGetValue(row.Identity, out var source)
+            ? row with { Start = row.Start ?? source.Start, End = row.End ?? source.End } : row).ToImmutableArray();
         var document = new PlanDocument(session.Document.Project, new(baseline, columns.IsDefault ? [] : columns), new(rows, settings)) {
             Sync = new() { PeopleNames = logins ?? ImmutableDictionary<string, string>.Empty,
                 IssueLinks = ImmutableDictionary<string, PlanIssueLink>.Empty.Add("I1", new("acme/repo#1", "https://github.com/acme/repo/issues/1")) } };
@@ -742,39 +814,53 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Mount(sheetHost);
     }
 
-    [TestCase("finish", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", true)]
-    [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", true, Category = "OverdueMissingWork")]
-    [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE814", false, Category = "OverdueMissingWork")]
-    [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE814", false)]
-    [TestCase("later", "予定より遅れ: 発行済み 10/5 から +1 日", "\uE7BA", false)]
-    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", false)]
-    [TestCase("summary-overdue", "配下に期限超過 1", "\uE814", false)]
+    [TestCase("finish", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
+    [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE7BA", true)]
+    // #236 part B: the mark compares the plan with the forecast, so 予定より遅れ names the cause and the
+    // working days it slipped; the retired 「発行済み M/d から」 basis no longer appears anywhere.
+    [TestCase("later", "予定より遅れ: +1 日（自分の残による）", "\uE7BA", false)]
+    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
+    [TestCase("summary-overdue", "配下に期限超過 1", "\uE7BA", false)]
     [TestCase("summary-later", "配下に予定より遅れ 1", "\uE7BA", false)]
     [Category("SheetRowPresentation")]
     public async Task LatenessMarkerAndEndColorFollowOverdueAndOwnEndMovement(string state, string expected, string glyph, bool critical)
     {
-        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8.5m, Remaining = 8.5m, Assignees = ["U1"] };
+        // The plan holds its own dates (#236), so every state states them: a row with no dates has no
+        // forecast, no mark and no slip.
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8.5m, Remaining = 8.5m, Assignees = ["U1"],
+            Start = Today.AddDays(-4), End = Today.AddDays(-3) };
         var baseline = row with { Start = Today, End = Today.AddDays(-3) };
         if (state == "finish-estimate") row = row with { Remaining = null };
         if (state == "finish-unknown") row = row with { Remaining = null, Estimate = null };
-        if (state == "start") baseline = baseline with { Start = Today.AddDays(-3), End = Today.AddDays(10) };
-        if (state == "later") baseline = baseline with { End = Today };
+        if (state == "start") {
+            row = row with { Start = Today.AddDays(-3), End = Today.AddDays(10) };
+            baseline = baseline with { Start = Today.AddDays(-3), End = Today.AddDays(10) };
+        }
+        if (state == "later") {
+            row = row with { Start = Today, End = Today, Remaining = 16 };
+            baseline = baseline with { End = Today };
+        }
         if (state == "unchanged") row = row with { Fixed = true, Start = Today.AddDays(-4), End = Today.AddDays(-3) };
         var rows = ImmutableArray.Create(row); var baselines = ImmutableArray.Create(baseline);
         if (state.StartsWith("summary")) {
-            rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
+            var child = row with { Identity = "I2", Parent = "I1", Start = Today.AddDays(-4), End = Today.AddDays(-3) };
+            if (state == "summary-later") child = child with { Start = Today, End = Today, Remaining = 16 };
+            rows = rows.Add(child);
             baselines = ImmutableArray.Create(baseline with { End = Today.AddDays(1) },
-                baseline with { Identity = "I2", Parent = "I1", End = state == "summary-later" ? Today : Today.AddDays(-3) });
+                child with { End = state == "summary-later" ? Today : Today.AddDays(-3) });
         }
         await MountPresentation(rows, baselines);
         await Ui.Run(async () => {
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
             var name = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator);
-            Assert.That(name, Does.Contain(expected).And.Not.Contain("発行済みより"));
+            Assert.That(name, Does.Contain(expected).And.Not.Contain("発行済み"));
             if (state == "finish-unknown") Assert.That(name, Does.Not.Contain("（残"));
             Assert.That(indicator.Glyph, Is.EqualTo(glyph));
             Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(name));
-            if (state == "finish") Assert.That(name, Does.Contain("予定より遅れ: 発行済み 10/2 から +2 日"));
+            // A 期限超過 task also reports how far its forecast slipped; the published date is not compared.
+            if (state == "finish") Assert.That(name, Does.Contain("見込終了は +"));
             var end = state.StartsWith("summary") ? Ui.Find<PlanSummaryCell>("PlanCell1_End").Text.Foreground
                 : Ui.Find<PlanSheetCell>("PlanCell1_End").Foreground;
             var red = ((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color;
@@ -793,10 +879,20 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("SheetRowPresentation")]
     public async Task EnteredCellsHaveTintButRecalculatedDatesOnlyHaveCornersAndSelectionWins()
     {
-        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 16, Assignees = ["U1"] };
-        await MountPresentation([row with { Estimate = 16, Assignees = ["U2"] }, row with { Identity = "I2", Predecessors = ["I1"] }],
-            [row with { Start = Today, End = Today }, row with { Identity = "I2", Predecessors = ["I1"], Start = Today.AddDays(1), End = Today.AddDays(1) }],
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 16, Assignees = ["U1"],
+            Start = Today, End = Today };
+        var successor = new PlanRow("I2", "Next", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"],
+            Predecessors = ["I1"], Start = Today.AddDays(1), End = Today.AddDays(1) };
+        // #236: entering an effort is an edit that reschedules the edited row and its successors, so the case
+        // performs the entry through the session. The planned 16h from 10/5 reaches 10/6 and I2 follows on the
+        // next working day; both plan ends then differ from their baseline dates, which is the calculation the
+        // corner markers show without a tint.
+        await MountPresentation([row, successor], [row, successor],
             [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]);
+        var save = await session.Execute(new EditPlanCells(PlanOperationKind.Cell,
+            [new("I1", PlanField.Estimate, 24m), new("I1", PlanField.Assignees, ImmutableArray.Create("U2"))]), Today);
+        Assert.That(save.Succeeded, Is.True, save.Error);
+        await Ui.Run(() => sheet.Refresh());
         await Ui.Run(() => {
             foreach (var (number, field, tinted) in new[] { (1, PlanField.Estimate, true), (1, PlanField.Assignees, true), (1, PlanField.End, false), (2, PlanField.End, false) }) {
                 var cell = Ui.Find<PlanSheetCell>($"PlanCell{number}_{field}");
@@ -1647,9 +1743,17 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        await Ui.Run(() => { sheet.Width = 1248; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        // #236 part B: the twelve default columns measure 944 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
+        // 担当者 80 + 見積 56 + 残 56 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 96 + 先行 64) and the
+        // divider 6 px. RefreshLayout lays the sheet out inside 20 px less than the control width (a reserve for
+        // its own chrome) and keeps the Gantt at its 320 px minimum, so the honest threshold is
+        // 944 + 6 + 320 + 20 = 1290 control px — the "about 1,300 effective pixels of window" the spec and
+        // manual quote. A 1270 px control leaves 930 px for the sheet and clips 先行.
+        await Ui.Run(() => { sheet.Width = 1290; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        await Ui.Until(() => sheet.ActualWidth == 1248);
+        // Layout rounds a 1290 effective-pixel width to the display's physical pixels, so accept the rounded
+        // width; the fit assertions below are the claim this case measures.
+        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1290) <= 1);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
@@ -2005,7 +2109,10 @@ internal sealed partial class PlanSheetHostedTests
             offset = sheet.ChartOffset;
             cellX = Ui.Find<TextBox>("PlanCell1_Title").TransformToVisual(sheet).TransformPoint(new()).X;
             headerX = Ui.Find<TextBlock>("PlanHeaderTitle").TransformToVisual(sheet).TransformPoint(new()).X;
-            Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Polyline>("PlanArrow1_2_2").Points.Count, Is.EqualTo(3));
+            // #236: both fixture rows hold 10/5 as their plan end, so I2 starts on its predecessor's end day and
+            // the route leaves I1's bar in the row gap before entering I2 — the five-point form (three-point when
+            // the entry clears the predecessor's right edge).
+            Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Polyline>("PlanArrow1_2_2").Points.Count, Is.EqualTo(5));
             Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)));
             Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true);
         });
@@ -2126,6 +2233,31 @@ internal sealed partial class PlanSheetHostedTests
         await Edit(2, PlanField.Remaining, "16");
         Assert.That(session.Document.State.Rows[1].Remaining, Is.EqualTo(16));
     }
+    [Test]
+    public async Task RefusedIndentNamesTheBlockingLinkAndClearsWithTheNextSelection()
+    {
+        // Row 2 depends on row 1, so indenting it under row 1 is refused (#241).
+        await Select(2, PlanField.Title);
+        var before = session.Document; var history = (session.UndoCount, session.RedoCount);
+        await Ui.ClickCommand("PlanSheetIndent"); await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text,
+                Is.EqualTo("ID 2 は ID 1 の後に始まるため、ID 2 を ID 1 の下にインデントできません。先にリンクを解除してください。"));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Visible));
+        });
+        Assert.That(session.Document, Is.SameAs(before));
+        Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo(history));
+        await Select(3, PlanField.Title);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length == 0);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Collapsed)));
+        // The arrow keys move the selection through MoveSelection, which must dismiss the refusal too.
+        await Select(2, PlanField.Title);
+        await Ui.ClickCommand("PlanSheetIndent"); await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        await Ui.Run(() => sheet.MoveSelection(Windows.System.VirtualKey.Down, false));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length == 0);
+    }
     [TestCase(false), TestCase(true)]
     public async Task AutomationSelectionMovesKeyboardFocusSoAnotherCellCannotReclaimTheSelection(bool extend)
     {
@@ -2180,8 +2312,10 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("基準日")));
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 20)));
         await Edit(1, PlanField.Predecessors, "2");
+        // #239/#241: 先行 input reads `#N` as an Issue number, while the refusal names the involved plan-row
+        // IDs as `ID n`, which is the form the sheet and the spec use.
         await Ui.Run(() => Assert.That(((TextBlock)Ui.Popup<Border>("SheetInputProblem")!.Child).Text,
-            Does.Contain("#1").And.Contain("#2")));
+            Is.EqualTo("循環参照: ID 1, ID 2")));
         Assert.That(session.Document.State.Rows[0].Predecessors, Is.Empty);
     }
     [TestCase("日", 24d), TestCase("週", 8d), TestCase("月", 2d)]

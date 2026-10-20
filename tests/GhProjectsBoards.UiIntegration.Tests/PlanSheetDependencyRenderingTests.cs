@@ -193,15 +193,22 @@ internal sealed partial class PlanSheetHostedTests
             AssertDependencyEntersBar(1, 90, 90, true);
             originalStart = Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X;
         });
-        var forwardX = await DependencyEntryX(1, 90, 90, true);
-        var reverseX = await DependencyEntryX(95, 3, 3, false);
+        // #236 part B: the crossing is the arrow's entry into the successor's bar, and the arrow head in the
+        // successor's row is that same entry X. Derive the expected X from the tip the current view draws —
+        // the schedule's date and bar, not an X remembered from another scroll state, whose 8 px memory of an
+        // earlier state is what this case used to compare against.
+        var expected = await CurrentCrossingEntryXs();
         await ShowDependencyRow(55);
-        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, [forwardX, reverseX]));
+        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, expected));
+
         await Ui.Run(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(0, null, null, true));
         await Ui.Until(() => sheet.ChartOffset == 0);
         await SheetNativeInput.Rendered();
-        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, [forwardX + 120, reverseX + 120]));
+        expected = await CurrentCrossingEntryXs();
+        await ShowDependencyRow(55);
+        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, expected));
         await Ui.Run(() => RenderedEvidence.Capture(sheet, "dependency-crossings-horizontal-origin"));
+
         await Ui.Run(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true));
         await Ui.Until(() => sheet.ChartOffset == 120);
         await ShowDependencyRow(1);
@@ -214,11 +221,16 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X,
                 Is.EqualTo(originalStart + 24).Within(1));
         });
+        expected = await CurrentCrossingEntryXs();
         await ShowDependencyRow(55);
-        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, [forwardX + 24, reverseX]));
+        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, expected));
+
         await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Z));
         await Ui.Idle();
-        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, [forwardX, reverseX]));
+        expected = await CurrentCrossingEntryXs();
+        await ShowDependencyRow(55);
+        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, expected));
+
         await ShowDependencyRow(90);
         await SheetNativeInput.Rendered();
         await WaitForDependencyPresentation(1, 90, 90);
@@ -227,6 +239,16 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X,
                 Is.EqualTo(originalStart).Within(1));
         });
+    }
+
+    // The screen X each long dependency enters its successor's bar at in the view the caller is measuring.
+    // Reading the drawn tip keeps the expectation derived from the schedule and scroll state in effect; a
+    // remembered X survives a scroll or an edit only by coincidence.
+    private async Task<double[]> CurrentCrossingEntryXs()
+    {
+        var forward = await DependencyEntryX(1, 90, 90, true);
+        var reverse = await DependencyEntryX(95, 3, 3, false);
+        return [forward, reverse];
     }
 
     [Test]

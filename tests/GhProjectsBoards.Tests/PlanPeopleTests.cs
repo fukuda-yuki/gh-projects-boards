@@ -7,9 +7,23 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanPeopleTests
 {
     private static readonly DateOnly Day = new(2026, 10, 5);
-    private static PlanRow Row(string id, decimal? remaining = 4) => new(id, id, "acme/repo") { Assignees = ["U1"], Estimate = 4, Actual = 0, Remaining = remaining };
-    private static PlanDocument Document(ImmutableArray<PlanRow> rows, ProjectPlanSettings? settings = null) =>
-        new(new(new("github.com", 42), "P1"), new(rows, []), new(rows, settings ?? new() { StatusDate = Day, People = [new("U1", "alice", 50, 80)] }));
+    // Dates are plan values now (#236): a task with no dates of its own gets none, so a load fixture states its
+    // start and lets the scheduler lay the end out, as it always did.
+    private static PlanRow Row(string id, decimal? remaining = 4) => new(id, id, "acme/repo") { Assignees = ["U1"], Estimate = 4, Actual = 0, Remaining = remaining, Start = Day };
+    // Dates are plan values now (#236): a read shows the dates the plan holds, so the fixture lays the plan out
+    // once as a PMO edit would and stores the result, instead of expecting a read to place the work.
+    private static PlanDocument Document(ImmutableArray<PlanRow> rows, ProjectPlanSettings? settings = null)
+    {
+        var chosen = settings ?? new() { StatusDate = Day, People = [new("U1", "alice", 50, 80)] };
+        var schedule = PlanScheduler.Calculate(rows.Select((r, i) => PlanOperations.TaskInput(r, i)).ToArray(),
+            new PlanSettings { StatusDate = chosen.StatusDate, ProjectStart = chosen.ProjectStart,
+                Calendar = new() { CompanyDaysOff = chosen.CompanyDaysOff.ToHashSet(), ImportedHolidays = chosen.ImportedHolidays?.ToPreset() },
+                People = chosen.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() },
+            Day, rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal));
+        var byId = schedule.ToDictionary(t => t.Input.Identity);
+        var placed = rows.Select(r => r with { Start = byId[r.Identity].Start.Value, End = byId[r.Identity].End.Value }).ToImmutableArray();
+        return new(new(new("github.com", 42), "P1"), new(placed, []), new(placed, chosen));
+    }
 
     [TestCase(80, 56, 40, 96, -16)]
     [TestCase(100, 0, 0, 0, 100)]
@@ -30,6 +44,18 @@ internal sealed class PlanPeopleTests
         Assert.That(load.Tasks, Is.EqualTo(new[] { "I1", "I2" }));
         Assert.That(PlanOperations.Schedule(d, Day).Select(s => (s.Start.Value, s.End.Value)), Is.All.EqualTo((Day, Day)));
         Assert.That(PlanJson.Text(d), Is.EqualTo(before));
+    }
+    [Test]
+    public void LateWorkWaitingOnAPredecessorIsLoadedAfterItsForecastNotPiledOnTheStatusDate()
+    {
+        // Laid out on Day, then a week passes with nothing done: both tasks are late on their plan dates.
+        var laidOut = Document([Row("I1"), Row("I2") with { Predecessors = ["I1"] }]);
+        var later = Day.AddDays(8); // Tuesday; the Monday between is Sports Day
+        var d = laidOut with { State = laidOut.State with { Settings = laidOut.State.Settings with { StatusDate = later } } };
+        var load = PlanPeople.Calculate(d, later, later, PlanPeriodScale.Day, 2).People.Single(p => p.Identity == "U1").Periods;
+        // The remaining work follows the forecast: I1 from the 基準日, I2 after I1, not both on the 基準日.
+        Assert.That(load.Select(p => (p.Planned, p.Overloaded)), Is.EqualTo(new (decimal?, bool)[] { (4m, false), (4m, false) }));
+        Assert.That(load.Select(p => p.Tasks), Is.EqualTo(new[] { new[] { "I1" }, new[] { "I2" } }));
     }
     [TestCase(PlanPeriodScale.Day, "2026-12-31", "2026-12-31", "2026-12-31")]
     [TestCase(PlanPeriodScale.Week, "2027-01-01", "2026-12-28", "2027-01-03")]
@@ -90,6 +116,8 @@ internal sealed class PlanPeopleTests
     [Test]
     public void SameDayDependencyUsesTheSchedulersPartialDayAllocation()
     {
+        // The load follows the forecast's exact finish, so a successor starts when its predecessor's work is used
+        // up, not at the start of the predecessor's end day (#80, #236).
         var d = Document([Row("I1", 1), Row("I2", 5) with { Predecessors = ["I1"] }]);
         var p = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Day, 2).People.Single(p => p.Identity == "U1");
         Assert.That(p.Periods.Select(p => p.Planned), Is.EqualTo(new[] { 4m, 2m }));

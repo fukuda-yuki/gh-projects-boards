@@ -108,15 +108,14 @@ internal sealed class PlanInitialSettingsTests
         var document = snapshot.Document;
         var empty = document.State.Settings with { ProjectStart = null, ProjectEnd = null, PhaseMilestones = ImmutableDictionary<string, string>.Empty };
         var settings = PlanInitialSettings.From(document.Baseline, empty);
-        var initialized = document with { State = document.State with { Settings = settings }, Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
+        var initialized = document with { State = document.State with { Settings = settings } };
         Assert.That(settings.ProjectStart, Is.EqualTo(plan.ProjectStart));
         Assert.That(settings.ProjectEnd, Is.EqualTo(plan.Milestones.Max(m => m.Due)));
         Assert.That(settings.PhaseMilestones, Is.EquivalentTo(plan.Milestones.ToDictionary(m => m.Phase, m => m.Title)));
         Assert.That(PlanOperations.Schedule(initialized, plan.StatusDate).Select(t => (t.Start.Value, t.End.Value)),
             Is.EqualTo(snapshot.Rows.Select(r => (r.Start, r.End))));
         Assert.That(PlanOperations.Changes(initialized, plan.StatusDate).TaskCount, Is.Zero);
-        var recalculated = initialized with { Dates = new() };
-        Assert.That(PlanOperations.Schedule(recalculated, plan.StatusDate).Select(t => (t.Start.Value, t.End.Value)),
+        Assert.That(PlanOperations.Schedule(initialized, plan.StatusDate).Select(t => (t.Start.Value, t.End.Value)),
             Is.EqualTo(PlanOperations.Schedule(document, plan.StatusDate).Select(t => (t.Start.Value, t.End.Value))),
             "The derived ProjectStart floor must not move the evaluation schedule.");
     }

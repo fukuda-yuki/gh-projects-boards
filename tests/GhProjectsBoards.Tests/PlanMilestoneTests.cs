@@ -19,8 +19,9 @@ internal sealed class PlanMilestoneTests
         var d = Document(new("S", "Summary", "a/b") { MilestoneTitle = "Release" },
             new("C", "Closed", "a/b") { Parent = "S", MilestoneTitle = "Release", Closed = true, CloseDate = Day, End = Day.AddDays(20) },
             new("K", "Kept", "a/b") { MilestoneTitle = "Release", Phase = "SA", Start = Day, End = Day.AddDays(5) },
-            new("O", "Open", "a/b") { MilestoneTitle = "Release", Remaining = 16 },
-            new("N", "Other", "a/b") { Remaining = 80 });
+            // #236: a task with no dates of its own gets none, so the open rows state their plan start.
+            new("O", "Open", "a/b") { MilestoneTitle = "Release", Remaining = 16, Start = Day },
+            new("N", "Other", "a/b") { Remaining = 80, Start = Day });
         var scheduled = PlanOperations.Schedule(d, Day);
         var result = PlanSummary.Calculate(d, scheduled, Day);
         var m = result.Milestones.Single(m => m.Milestone.Title == "Release");
@@ -45,8 +46,8 @@ internal sealed class PlanMilestoneTests
         var root = Path.Combine(Path.GetTempPath(), "ghpb-milestone-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         try {
-            var document = Document(new PlanRow("I1", "Held", "a/b") { MilestoneTitle = "Release", Remaining = 80, Start = Day.AddDays(-10), End = Day.AddDays(-5) });
-            document = document with { Dates = new(PlanDateHoldOrigin.FirstTakeIn), State = document.State with {
+            var document = Document(new PlanRow("I1", "Planned", "a/b") { MilestoneTitle = "Release", Remaining = 80, Start = Day.AddDays(-10), End = Day.AddDays(-5) });
+            document = document with { State = document.State with {
                 Settings = document.State.Settings with { PhaseMilestones = ImmutableDictionary<string, string>.Empty } } };
             var session = await PlanSession.CreateAsync(new(root), document, Day);
             Assert.That((await session.FlushAsync()).Succeeded, Is.True);
@@ -55,7 +56,6 @@ internal sealed class PlanMilestoneTests
             var save = await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with {
                 PhaseMilestones = ImmutableDictionary<string, string>.Empty.Add("SA", "Release") }), Day);
             Assert.That(session.UndoCount, Is.EqualTo(1));
-            Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
             Assert.That(session.Schedule(Day).Select(t => (t.Start, t.End)), Is.EqualTo(dates));
             Assert.That(session.Changes(Day).TaskCount, Is.EqualTo(unpublished));
             Assert.That(save.Succeeded, Is.True, save.Error);
@@ -66,7 +66,7 @@ internal sealed class PlanMilestoneTests
             Assert.That((await session.ImportSettingsAsync(path, Day)).Applied, Is.True);
             Assert.That(session.Document.State.Settings.PhaseMilestones["SA"], Is.EqualTo("Release"));
             Assert.That(session.UndoCount, Is.EqualTo(1));
-            Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
+            Assert.That(save.Recalculation, Is.Null, "A milestone mapping change moves no dates.");
         } finally { Directory.Delete(root, true); }
     }
 

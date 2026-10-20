@@ -152,6 +152,8 @@ internal sealed class PlanSummaryView : UserControl
             content.Children.Add(TableText($"{label} {tasks.Count:N0}")); button.Content = content; attention.Children.Add(button);
         }
         Attention("期限超過", "SummaryOverdue", report.Attention.Overdue, "\uE814");
+        Attention("遅れの原因", "SummaryCause", report.Attention.Cause, "\uE7BA");
+        Attention("予定より遅れ", "SummaryLater", report.Attention.Later, "\uE7BA");
         Attention("見積超過", "SummaryOverEstimate", report.Attention.OverEstimate, "\uE7BA");
         Attention("残 0・未完了", "SummaryZeroRemaining", report.Attention.ZeroRemainingOpen, "\uE7BA");
         Attention($"担当者なし 残 {Value(report.Attention.UnassignedRemaining)}h", "SummaryUnassigned", report.Attention.Unassigned, "\uE77B");
@@ -363,21 +365,22 @@ internal sealed class PlanSummaryView : UserControl
         for (var i = 0; i < labels.Length; i++) Cell(header, TableText(labels[i], "SummaryTaskHeader_" + i, numeric: i is >= 2 and <= 6), i);
         table.Children.Add(header);
         var calendar = new PlanCalendar { CompanyDaysOff = document!.State.Settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset() };
-        var lateness = PlanLateness.Classify(schedule.Values.ToArray(), document.Baseline, calendar, day);
+        var lateness = PlanLateness.Classify(schedule.Values.ToArray(), calendar, day);
         var rowIds = document!.State.Rows.Select((row, index) => (row.Identity, Id: index + 1)).ToDictionary(r => r.Identity, r => r.Id);
-        var publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
         var selectedRows = document.State.Rows.Where(r => ids.Contains(r.Identity)).ToArray();
         foreach (var row in selectedRows.Take(200)) {
             var task = schedule[row.Identity]; var states = new List<string>();
             var late = lateness.Tasks[row.Identity];
-            if (late.MissedPublishedDate is { } missed) {
+            if (late.MissedDate is { } missed) {
                 var remainingText = task.Remaining is { } work ? $"（見込み残存工数 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
                 states.Add(late.OverdueKind == PlanOverdueKind.Finish
                     ? $"期限超過: 完了予定 {missed.ToString("M/d", CultureInfo.InvariantCulture)} を過ぎて未完了{remainingText}"
                     : $"期限超過: 開始予定 {missed.ToString("M/d", CultureInfo.InvariantCulture)} を過ぎて未着手");
             }
-            if (late.DaysLater is { } days && publishedEnds.GetValueOrDefault(row.Identity) is { } published)
-                states.Add($"予定より遅れ: 発行済み {published.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日");
+            // 予定より遅れ is the not-overdue set (#236); an overdue task is named once, as on the sheet.
+            if (late.DaysLater is { } days && late.Level == PlanLatenessLevel.Later && task.End.Value is { } planned)
+                states.Add($"予定より遅れ: {planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日"
+                    + (task.ForecastEnd is { } forecast ? $"（見込終了 {forecast.ToString("M/d", CultureInfo.InvariantCulture)}）" : ""));
             if (task.IsOverEstimate) states.Add(task.Forecast is null ? "見積超過: 見込工数・差異が数値の範囲外です" : $"見積超過: 見込工数 {task.Forecast:0.############################}h（見積工数 {task.Estimate:0.############################}h、差異 {task.Variance:+0.############################;-0.############################;0}h）");
             if (task.IsZeroRemainingOpen) states.Add("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません");
             if (task.Input.Closed) states.Add("完了");

@@ -15,6 +15,9 @@ internal sealed partial class PlanSheetView
     internal bool IsFolded(string identity) => folded.Contains(identity);
     private AppBarButton collapseAll = null!, expandAll = null!, goToDate = null!, predecessorAdd = null!;
     private AppBarButton linkTasks = null!, unlinkTasks = null!;
+    // #231: the row-state commands also live in the overflow, with the same enablement and hints as the row
+    // context menu, so the keyboard route does not depend on a pointer.
+    private AppBarButton completeRows = null!, cancelRows = null!, removeRows = null!, reopenRows = null!;
     private Flyout? predecessorFlyout;
 
     private void InitializeOverview(CommandBar commands)
@@ -46,6 +49,15 @@ internal sealed partial class PlanSheetView
             ToolTipService.SetToolTip(button, reason.Length > 0 ? reason : button.Label);
         }
         goToDate.IsEnabled = SelectedDate() is not null;
+        // #231: the row-state commands report the same eligibility and reasons in the overflow as in the row
+        // context menu, so a PMO reading either route is told the same thing.
+        foreach (var (button, action) in new[] { (completeRows, PlanRowAction.Complete), (cancelRows, PlanRowAction.Cancel),
+            (removeRows, PlanRowAction.Remove), (reopenRows, PlanRowAction.Reopen) }) {
+            var (enabled, hint) = RowCommandState(CommandTargets, action);
+            button.IsEnabled = enabled; button.AllowFocusWhenDisabled = true;
+            AutomationProperties.SetHelpText(button, hint ?? "");
+            ToolTipService.SetToolTip(button, hint is null ? button.Label : button.Label + ": " + hint);
+        }
         predecessorAdd.IsEnabled = Rows.ContainsKey(selected);
         foreach (var (button, unlink) in new[] { (linkTasks, false), (unlinkTasks, true) }) {
             var unavailable = TaskLinkUnavailable(unlink) ?? PlanTaskLinks.Prepare(Session.Document.State, MoveTargets, unlink).Reason;

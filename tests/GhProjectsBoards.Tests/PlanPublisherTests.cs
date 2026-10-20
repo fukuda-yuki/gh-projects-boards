@@ -95,8 +95,12 @@ internal sealed partial class PlanPublisherTests
         await session.Execute(new InsertPlanRows([added]), Today);
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Actual, 4m)]), Today);
         var remote = FakePlanEditor.Load(root);
+        // Plan dates are working days (#236): the reset must show GitHub's dates exactly, so the fixture's
+        // dates must be ones the schedule can reproduce. Today-2/Today-1 are the weekend, which the
+        // scheduler normalises to the next working day and then recomputes the end from, so that pair can
+        // never be a fixed point of the schedule.
         FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Where(i => i.Row.Identity != "I3").Select(i => i with {
-            Row = i.Row with { Title = "Remote " + i.Row.Identity, Remaining = 16, Start = Today.AddDays(-2), End = Today.AddDays(-1) }
+            Row = i.Row with { Title = "Remote " + i.Row.Identity, Remaining = 16, Start = Today.AddDays(-3), End = Today }
         }).Reverse().ToImmutableArray() });
         await session.SaveSync(session.Document.Sync with { Failures = [new("I2", PlanField.Actual, "Verified failure")] });
         var day = Today.AddDays(7);
@@ -111,12 +115,11 @@ internal sealed partial class PlanPublisherTests
             Assert.That(session.Document.Sync.Unavailable, Is.Empty);
             Assert.That(session.Document.Sync.Failures, Is.Empty);
             Assert.That(session.Changes(day).TaskCount, Is.Zero);
-            Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.Reset));
-            Assert.That(session.Schedule(day).All(t => t.Start.Value == Today.AddDays(-2) && t.End.Value == Today.AddDays(-1)), Is.True);
+            Assert.That(session.Schedule(day).All(t => t.Start.Value == t.Input.Start && t.End.Value == t.Input.End), Is.True,
+                "Reset takes GitHub's dates as the plan dates.");
         });
         await Reopen();
         await session.Undo(day);
-        Assert.That(session.Document.Dates.Held, Is.Null);
         Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Title, Is.EqualTo("Older edit"));
         Assert.That(session.Document.Baseline.Rows.Single(r => r.Identity == "I1").Title, Is.EqualTo("Remote I1"));
         Assert.That(session.Document.State.Rows.Any(r => r.Identity == added.Identity), Is.True);
@@ -128,8 +131,7 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Changes(day).TaskCount, Is.Zero);
         Assert.That(session.Document.Sync.Failures, Is.Empty);
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "After reset")]), day);
-        Assert.That(session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.Reset));
-        Assert.That(session.Schedule(day).Any(t => t.Start.Value != Today.AddDays(-2)), Is.True);
+        Assert.That(session.Schedule(day).Any(t => t.Start.Value != Today.AddDays(-3)), Is.False, "A title edit moves no date.");
         await session.Undo(day); // edit
         await session.Undo(day); // reset
         await session.Undo(day); // actual
@@ -159,11 +161,12 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day));
         Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I3" }));
         Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(new[] { "I3", "I2" }));
-        Assert.That(session.Schedule(day).Single(r => r.Input.Identity == "I1").End.Value, Is.Null);
+        // #236: the read adopted GitHub's start for I1, and the plan lays that task's end out from the work it
+        // holds; GitHub's other ends are kept as they are, so nothing is an unpublished difference here.
+        Assert.That(session.Schedule(day).Single(r => r.Input.Identity == "I1").Start.Value, Is.EqualTo(Today.AddDays(-3)));
         Assert.That(session.Changes(day).TaskCount, Is.Zero);
         Assert.That((await publisher.ResetAsync(session, day.AddDays(1))).Succeeded, Is.True);
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day.AddDays(1)));
-        Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.Reset));
         Assert.That(session.Changes(day).TaskCount, Is.Zero);
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
@@ -250,13 +253,14 @@ internal sealed partial class PlanPublisherTests
         var published = await publisher.PublishAsync(session, Today.AddDays(10));
         Assert.That(published.Succeeded, Is.True, published.Error);
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(picked));
-        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Start, Is.EqualTo(picked));
+        // #236: a 基準日 change never moves a task date, and a task with no dates of its own stays without one.
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Start, Is.Null);
         var refreshed = await publisher.RefreshAsync(session, Today.AddDays(3));
         Assert.That(refreshed.Succeeded, Is.True, refreshed.Error);
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(Today.AddDays(3)));
         Assert.That(refreshed.Refresh!.PreviousStatusDate, Is.EqualTo(picked));
         Assert.That(refreshed.Refresh.StatusDate, Is.EqualTo(Today.AddDays(3)));
-        Assert.That(refreshed.Refresh.ChangedTasks, Is.EquivalentTo(new[] { "I1" }));
+        Assert.That(refreshed.Refresh.ChangedTasks, Is.Empty, "A refresh reads dates; it does not move them.");
         Assert.That((await publisher.RefreshAsync(session, Today.AddDays(3))).Refresh!.ChangedTasks, Is.Empty);
     }
 
@@ -355,6 +359,25 @@ internal sealed partial class PlanPublisherTests
         Assert.That(result.Succeeded, Is.True, result.Error);
         Assert.That(session.Document.Sync.NativeOrders["I1"], Has.Length.EqualTo(102));
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task TheReadCarriesIssueUpdatePermissionWithoutMakingItAPlanChange()
+    {
+        await Start(2);
+        Assert.That(session.Document.Sync.CannotUpdate, Is.Empty, "the fixture grants permission by default");
+        Scenario("no-update-permission");
+        var result = await publisher.RefreshAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(session.Document.Sync.CannotUpdate, Is.EqualTo(new[] { "I1" }));
+        // A permission observation is not a plan value: it is not unpublished work and cannot be published.
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero, "nothing about a permission observation is written");
+        // The observation follows the read, so restoring permission forgets the denial.
+        Scenario();
+        Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(session.Document.Sync.CannotUpdate, Is.Empty);
     }
 
     [Test]
@@ -1038,6 +1061,106 @@ internal sealed partial class PlanPublisherTests
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         Assert.That(session.Document.Sync.Publish, Is.Null);
     }
+    [Test]
+    public async Task AnUntitledRowIsNotCreatedAndTheRestOfThePlanStillPublishes()
+    {
+        await Start(1);
+        await session.Execute(new InsertPlanRows([PlanRow.New("", "acme/repo")]), Today);
+        var untitled = session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:", StringComparison.Ordinal));
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Edited")]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Title), Is.EqualTo(new[] { "Edited" }));
+        var sent = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(sent, Does.Contain("updateIssue"));
+        Assert.That(sent, Does.Not.Contain("createIssue"));
+        Assert.That(session.Document.Sync.Failures, Is.Empty, "A row that cannot be published yet is not a failure.");
+        Assert.That(session.Document.State.Rows.Any(r => r.Identity == untitled.Identity), Is.True);
+        Assert.That(session.Changes(Today).Fields.ContainsKey(untitled.Identity), Is.True);
+    }
+
+    [Test]
+    public async Task AnUntitledRowAlonePublishesNothingAndStillSucceeds()
+    {
+        await Start(1);
+        await session.Execute(new InsertPlanRows([PlanRow.New("", "acme/repo")]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Count, Is.EqualTo(1));
+        Assert.That(File.Exists(Path.Combine(root, "plan-mutations.jsonl")), Is.False, "Nothing is sent for a row this publish cannot create.");
+        Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(1));
+    }
+    [Test]
+    public async Task ClosingAndCancellingRowsPublishTheirStateReason()
+    {
+        await Start(2);
+        await session.Execute(new ClosePlanRows(["I1"]), Today);
+        await session.Execute(new ClosePlanRows(["I2"], Cancelled: true), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var state = FakePlanEditor.Load(root);
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I1").Row.Closed, Is.True);
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I1").Row.Cancelled, Is.False);
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I2").Row.Cancelled, Is.True);
+        var sent = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(sent, Does.Contain("closeIssue"));
+        Assert.That(sent, Does.Contain("COMPLETED"));
+        Assert.That(sent, Does.Contain("NOT_PLANNED"));
+        // The closed-task follow-up writes (the close-day End and Remaining 0) are planned from the close
+        // day the read reports and sent by the same publish, so one publish leaves nothing behind.
+        Assert.That(sent, Does.Contain("updateProjectV2ItemFieldValue"));
+        Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(0));
+        // The end written is the day GitHub reports the close, not the provisional 基準日.
+        var closedRow = FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I1").Row;
+        Assert.That(closedRow.End, Is.EqualTo(closedRow.CloseDate));
+    }
+
+    [Test]
+    public async Task ReopeningAClosedIssueSendsReopenIssue()
+    {
+        await Start(1, state => state with { Issues = state.Issues.Select(i => i with {
+            Row = i.Row with { Closed = true, Cancelled = true, CloseDate = Today.AddDays(-1) } }).ToImmutableArray() });
+        Assert.That(session.Document.State.Rows.Single().Cancelled, Is.True, "the read reports 中止 from the state reason");
+        await session.Execute(new ReopenPlanRows(["I1"]), Today);
+        Assert.That(session.Document.State.Rows.Single().Closed, Is.False);
+        await publisher.PublishAsync(session, Today);
+        Assert.That(FakePlanEditor.Load(root).Issues.Single().Row.Closed, Is.False);
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("reopenIssue"));
+    }
+
+    [Test]
+    public async Task RemovingARowArchivesItsItemWithoutDeletingTheIssue()
+    {
+        await Start(1);
+        await session.Execute(new RemovePlanRows(["I1"]), Today);
+        await publisher.PublishAsync(session, Today);
+        var state = FakePlanEditor.Load(root);
+        Assert.That(state.Issues.Single().Archived, Is.True);
+        Assert.That(state.Issues.Single().Added, Is.True, "The Issue and its membership remain; only the item is archived.");
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("archiveProjectV2Item").And.Contain("\"projectId\""));
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("deleteIssue"));
+        // The archived row leaves the plan; it is not kept as an item GitHub can no longer return.
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Does.Not.Contain("I1"));
+        Assert.That(session.Document.Sync.Unavailable, Is.Empty);
+        Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task OneRowsStateFailureStaysPendingAndDoesNotStopTheOthers()
+    {
+        await Start(2);
+        await session.Execute(new ClosePlanRows(["I1"]), Today);
+        await session.Execute(new ClosePlanRows(["I2"]), Today);
+        Scenario("close-denied");
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.False, "expected the failed row to keep the publish unfinished; error=" + (result.Error ?? "<none>"));
+        var state = FakePlanEditor.Load(root);
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I1").Row.Closed, Is.True, "The other row's state write is independent.");
+        Assert.That(state.Issues.Single(i => i.Row.Identity == "I2").Row.Closed, Is.False);
+        Assert.That(session.Document.Sync.Failures.Any(f => f.Identity == "I2" && f.Field == PlanField.Closed), Is.True, "The failed row keeps its reason.");
+        Assert.That(session.Changes(Today).Fields.ContainsKey("I2"), Is.True, "The failed row stays pending for the next publish.");
+        Assert.That(session.Document.Sync.Failures.Any(f => f.Identity == "I1"), Is.False, "The successful row is not recorded as a failure.");
+    }
     private static readonly DateOnly Today = new(2026, 10, 5);
     private static readonly ScopedId Project = new(new("github.com", 42), "P1");
     private string root = null!;
@@ -1670,7 +1793,12 @@ internal sealed partial class PlanPublisherTests
         var result = await publisher.PublishAsync(session, Today);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
         if (fault == "removed-during-write") {
-            Assert.That(result.Succeeded, Is.False); Assert.That(result.Error, Is.Not.Empty);
+            // #201: an item this publish does not write is not read by it, so its removal during the write
+            // is not seen here; it arrives with 最新の情報に更新 as an unavailable row.
+            Assert.That(result.Succeeded, Is.True, result.Error);
+            Assert.That(session.Document.Sync.Publish, Is.Null);
+            var refresh = await publisher.RefreshAsync(session, Today);
+            Assert.That(refresh.Succeeded, Is.True, refresh.Error);
             Assert.That(session.Document.Sync.Unavailable, Is.EqualTo(new[] { "I2" }));
         } else {
             Assert.That(result.Succeeded, Is.True, result.Error);

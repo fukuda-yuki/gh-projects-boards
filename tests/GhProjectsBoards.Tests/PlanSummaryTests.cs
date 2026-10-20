@@ -99,7 +99,7 @@ internal sealed class PlanSummaryTests
     [Test]
     public void MonthlyLoadKeepsDailyOverloadAndUsesSuppliedSchedule()
     {
-        var d = Document(new PlanRow("A", "One", "a/b") { Assignees = ["U1"], Remaining = 8 }, new("B", "Two", "a/b") { Assignees = ["U1"], Remaining = 8 });
+        var d = Document(new PlanRow("A", "One", "a/b") { Assignees = ["U1"], Remaining = 8, Start = Day }, new("B", "Two", "a/b") { Assignees = ["U1"], Remaining = 8, Start = Day });
         var scheduled = PlanOperations.Schedule(d, Day);
         var supplied = scheduled.Select(t => t with { PlannedHours = new Dictionary<DateOnly, decimal> { [Day] = 8 } }).ToArray();
         var result = PlanSummary.Calculate(d, supplied, Day);
@@ -162,9 +162,10 @@ internal sealed class PlanSummaryTests
     }
 
     [Test]
-    public void AttentionUsesPublishedDatesAndExistingEffortFlags()
+    public void AttentionUsesPlanDatesAndExistingEffortFlags()
     {
-        var d = Document(new PlanRow("I", "Overdue", "a/b") { End = Day.AddDays(-1), Estimate = 8, Actual = 10, Remaining = 0 });
+        // 期限超過 compares the plan end with the 基準日 (#236), so the row needs the plan dates it is judged on.
+        var d = Document(new PlanRow("I", "Overdue", "a/b") { Start = Day.AddDays(-2), End = Day.AddDays(-1), Estimate = 8, Actual = 10, Remaining = 0 });
         var result = Calculate(d);
         Assert.That(result.Attention.Overdue, Is.EqualTo(new[] { "I" }));
         Assert.That(result.Attention.ZeroRemainingOpen, Is.EqualTo(new[] { "I" }));
@@ -173,10 +174,9 @@ internal sealed class PlanSummaryTests
     }
 
     [Test]
-    public void ClosedTaskForecastUsesCloseDateEvenWhilePublishedDatesAreHeld()
+    public void ClosedTaskForecastUsesCloseDateInsteadOfTheStoredEnd()
     {
         var d = Document(new PlanRow("I", "Closed", "a/b") { Closed = true, CloseDate = Day, End = Day.AddDays(4) });
-        d = d with { Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
         Assert.That(Calculate(d).ForecastFinish, Is.EqualTo(Day));
     }
 

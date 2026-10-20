@@ -22,6 +22,10 @@ internal sealed partial class PlanSheetView
 {
     private string selected = "", anchor = "";
     private string selectedField = PlanField.Title, anchorField = PlanField.Title;
+    // #240: a whole-row selection must be distinguishable from a rectangle that happens to cover every
+    // column, so it is explicit state set by the ID cells or Shift+Space, never inferred from the range.
+    private bool wholeRowSelection;
+    private const string TitleNotCleared = "タスク名は消せません。行ごと消すときは 行を削除";
     private Column[]? fieldColumns;
     private string[] visibleFields = [];
     private string[] Fields
@@ -34,9 +38,17 @@ internal sealed partial class PlanSheetView
             return visibleFields;
         }
     }
-    internal sealed record Edge(int From, int To, DateOnly End, DateOnly Start);
+    // #236: an edge names only the row pair. It used to carry the predecessor's end and the successor's start
+    // as copies taken when the edges were built, while the bars are drawn from the current schedule. An edit
+    // that reschedules an end (EndDayOnly lets a successor start on the stored end day) left the copy a day
+    // behind the bar, so the arrow pointed a day away from the bar it belongs to. Keeping the dates out of the
+    // type is what stops the second source coming back: every drawing path reads the schedule the bars use.
+    internal sealed record Edge(int From, int To);
     internal IReadOnlyList<Edge> Edges { get; private set; } = [];
     internal static bool Down(VirtualKey key) => (InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
+    // Ctrl+-: the numeric keypad reports Subtract, the main row reports the OEM minus code (Excel's
+    // Ctrl+- accepts both), so 行を削除 must too (#247).
+    internal static bool Minus(VirtualKey key) => key == VirtualKey.Subtract || (int)key == 189;
     private CellRange Range
     {
         get
@@ -61,7 +73,7 @@ internal sealed partial class PlanSheetView
         var indexes = RowIndexes;
         Edges = RowIds.Where(Rows.ContainsKey).SelectMany(id => Rows[id].Predecessors
             .Where(p => indexes.ContainsKey(p) && Schedule.GetValueOrDefault(p)?.End.Value is not null && Schedule[id].Start.Value is not null)
-            .Select(p => new Edge(indexes[p], indexes[id], Schedule[p].End.Value!.Value, Schedule[id].Start.Value!.Value))).ToArray();
+            .Select(p => new Edge(indexes[p], indexes[id]))).ToArray();
     }
     internal bool IsSelected(string identity, string field)
     {
@@ -77,8 +89,11 @@ internal sealed partial class PlanSheetView
     {
         if (!RowIds.Contains(identity) || !Fields.Contains(field)) return;
         var previousRange = Range;
+        wholeRowSelection = false;
         selected = identity; selectedField = field;
         if (!extend) { anchor = identity; anchorField = field; }
+        // A refusal explains the operation it refused; choosing a row or cell dismisses it (#241).
+        error.Text = "";
         EnsureColumnVisible(field);
         // First selection can precede the horizontal viewport's initial layout.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
@@ -119,9 +134,8 @@ internal sealed partial class PlanSheetView
         var hasSelection = Schedule.TryGetValue(selected, out var task);
         emptyHint.Visibility = hasSelection ? Visibility.Collapsed : Visibility.Visible;
         detailToggle.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
-        totals.Text = hasSelection ? "" : LatenessCounts(OverdueTasks, LaterTasks);
-        totals.Visibility = totals.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        AutomationProperties.SetName(totals, totals.Text);
+        successorLink.Visibility = Visibility.Collapsed; successorLink.Content = "";
+        predecessorLink.Visibility = Visibility.Collapsed; predecessorLink.Content = "";
         var late = LatenessOf(selected);
         slip.Text = "";
         latenessDetail.Text = "";
@@ -130,13 +144,27 @@ internal sealed partial class PlanSheetView
                 var counts = LatenessCounts(late.OverdueDescendantTasks, late.LaterDescendantTasks);
                 latenessDetail.Text = counts.Length > 0 ? "配下: " + counts : "";
             }
-            if (!task.IsSummary && late.OverdueKind is { } kind && late.MissedPublishedDate is { } missed) {
+            if (!task.IsSummary && late.OverdueKind is { } kind && late.MissedDate is { } missed) {
                 var missedDate = missed.ToString("M/d", CultureInfo.InvariantCulture);
                 slip.Text = kind == PlanOverdueKind.Finish ? $"完了予定 {missedDate} を過ぎて未完了" : $"開始予定 {missedDate} を過ぎて未着手";
                 if (late.DaysLater is { } days) slip.Text += $" · +{days} 日";
-            } else if (late.DaysLater is { } days && PublishedEnd(selected) is { } published) {
-                slip.Text = $"発行済み {published.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日";
-                if (!task.IsSummary && late.StartDelayedByPredecessor) latenessDetail.Text = "先行の遅れによる";
+            } else if (late.DaysLater is { } days && task.End.Value is { } planned) {
+                // The plan end and the forecast end are what the lateness compares (#236); publishing no
+                // longer defines it, so the earlier "発行済み" wording is retired.
+                slip.Text = $"見込終了 {ForecastLabel(selected)} · {planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日";
+            }
+            if (!task.IsSummary && task.End.Value is { } end && ForecastEndOf(selected) is { } forecast && forecast > end) {
+                var delayed = LaterDescendantsOf(selected).Length;
+                if (delayed > 0) {
+                    successorLink.Content = $"この遅れで後続 {delayed} タスクが予定より遅れ · 後続を表示";
+                    successorLink.Visibility = Visibility.Visible;
+                    AutomationProperties.SetName(successorLink, $"後続を表示（{delayed} タスク）");
+                }
+            }
+            if (late.CausePredecessorRowId is { } cause) {
+                predecessorLink.Content = $"先行 {cause} の遅れによる · {cause} へ移動";
+                predecessorLink.Visibility = Visibility.Visible;
+                AutomationProperties.SetName(predecessorLink, $"先行 {cause} へ移動");
             }
         }
         slipPill.Background = late?.Level == PlanLatenessLevel.Overdue ? Brush("GanttLateTintBrush") : null;
@@ -153,7 +181,7 @@ internal sealed partial class PlanSheetView
         } else { issueLink.Content = ""; issueLink.NavigateUri = null; issueLink.Visibility = Visibility.Collapsed; }
         AutomationProperties.SetName(issueLink, issueLink.Content?.ToString() ?? "");
         reason.Text = task is not null ? (task.StartReason is "子タスクの集計" or "完了" or "日程固定" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason) : "";
-        if (task is not null && PlanLateness.EndReason(task, StatusDate) is { } endReason) reason.Text += " · " + endReason;
+        if (task is not null && PlanLateness.EndReason(task) is { } endReason) reason.Text += " · " + endReason;
         if (task?.Warnings.Count > 0) reason.Text += " · " + string.Join(" / ", task.Warnings);
         var remoteProblem = RemoteProblem(selected);
         if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;
@@ -161,18 +189,28 @@ internal sealed partial class PlanSheetView
             reason.Text = "競合: GitHub では " + PlanWorkspaceView.ReviewValue(Session.Document, selectedField, conflict.Remote);
         if (ReadOnlyReason(selected, selectedField) is { } readOnlyReason)
             reason.Text = readOnlyReason + (reason.Text.Length > 0 ? " · " + reason.Text : "");
+        // #231: the selected row's pending state command belongs on the selection line too, so the state is
+        // readable without hunting for the tag in the title cell.
+        if (RowStateTag(selected) is { } stateTag)
+            reason.Text = (reason.Text.Length > 0 ? reason.Text + " · " : "") + stateTag + "（未発行）";
         AutomationProperties.SetName(reason, reason.Text);
         ToolTipService.SetToolTip(reason, reason.Text);
     }
     private static string LatenessCounts(int overdue, int later) =>
         overdue > 0 ? $"期限超過 {overdue}" + (later > 0 ? $" · 予定より遅れ {later}" : "") : later > 0 ? $"予定より遅れ {later}" : "";
+    private string ForecastLabel(string identity) => ForecastEndOf(identity) is { } day
+        ? PlanSheetView.DateText(day) : "—";
     internal void MoveSelection(VirtualKey key, bool extend)
     {
+        // Excel keeps a whole-row selection whole while it extends vertically: Shift+Down after
+        // Shift+Space still selects rows for Delete (#240). Any other move narrows back to cells.
+        var wholeRow = wholeRowSelection && extend && key is VirtualKey.Up or VirtualKey.Down;
         var row = Math.Max(0, RowIds.IndexOf(selected)); var column = Math.Max(0, Array.IndexOf(Fields, selectedField));
         if (key == VirtualKey.Up) row--; if (key == VirtualKey.Down) row++;
         if (key == VirtualKey.Left) column--; if (key == VirtualKey.Right) column++;
         if (Fields.Length == 0) return;
         Select(RowIds[Math.Clamp(row, 0, RowIds.Count - 1)], Fields[Math.Clamp(column, 0, Fields.Length - 1)], extend);
+        if (wholeRow) SelectWholeRow(selected, true);
         FocusSelected();
     }
     internal event Action? CommandRowFocusRequested;
@@ -253,7 +291,8 @@ internal sealed partial class PlanSheetView
         // Run yields to native focus events before executing. Preserve command
         // targets at invocation, including paste's matrix expansion order.
         var range = Range;
-        var rows = key is VirtualKey.C or VirtualKey.Delete ? RowIds.Skip(range.Row).Take(range.RowCount).ToArray() : [];
+        var deleting = Minus(key);
+        var rows = key is VirtualKey.C or VirtualKey.Delete || deleting ? RowIds.Skip(range.Row).Take(range.RowCount).ToArray() : [];
         var fields = key is VirtualKey.C or VirtualKey.Delete ? Fields.Skip(range.Column).Take(range.ColumnCount).ToArray() : [];
         var visible = key == VirtualKey.V ? RowIds.Where(Rows.ContainsKey).ToArray() : [];
         var columns = key == VirtualKey.V ? Fields.ToArray() : [];
@@ -263,9 +302,15 @@ internal sealed partial class PlanSheetView
                 case VirtualKey.C: await Copy(rows, fields); break;
                 case VirtualKey.V: await Paste(range, visible, columns); break;
                 case VirtualKey.D: await Fill(PlanOperationKind.CtrlD); break;
-                case VirtualKey.Delete: await Clear(rows, fields); break;
+                case VirtualKey.Delete:
+                    // #240: a whole-row selection removes the rows; a cell range clears, and never タスク名.
+                    if (!wholeRowSelection) { await Clear(rows, fields); break; }
+                    var rowTargets = rows.Where(Rows.ContainsKey).ToArray();
+                    if (rowTargets.Length > 0) await DeleteRows(rowTargets);
+                    break;
                 case VirtualKey.Z: await ChangeHistory(false); break;
                 case VirtualKey.Y: await ChangeHistory(true); break;
+                default: if (deleting) await DeleteRows(rows); break;
             }
         });
     }
@@ -427,7 +472,11 @@ internal sealed partial class PlanSheetView
     {
         if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
         RequireNoPending(rows, fields);
+        var skippedTitle = fields.Contains(PlanField.Title);
         Check(await Session.Execute(new ClearPlanCells(rows.ToImmutableArray(), fields.ToImmutableArray()), Today)); Refresh();
+        // Core skips タスク名; say so, because the rest of the range did clear (#240). The line goes when
+        // the PMO chooses another row or cell, like every other refusal in the sheet.
+        if (skippedTitle) error.Text = TitleNotCleared;
     }
     private async Task Insert()
     {
@@ -437,13 +486,29 @@ internal sealed partial class PlanSheetView
         Check(await Session.Execute(new InsertPlanRows([row], selected.Length == 0 ? null : selected), Today));
         RevealAddedRow(row.Identity);
     }
+    // 行を削除 removes the rows of the selection with their subtrees, whatever columns are selected.
+    // A published Issue is refused by Core and points at 完了・中止・この版から外す (#231, #247).
+    private Task DeleteRows() => DeleteRows(RangeRows(Range));
+    internal async Task DeleteRows(IReadOnlyList<string> rows)
+    {
+        if (rows.Count == 0) throw new ArgumentException("削除する行を選択してください。");
+        if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
+        // As in Excel, the selection stays where the deleted rows were: on the next row, or the previous
+        // one when the deleted rows were last (#247).
+        var before = RowIds.ToArray(); var first = before.Select((id, i) => (id, i)).Where(p => rows.Contains(p.id)).Select(p => p.i).DefaultIfEmpty(0).Min();
+        Check(await Session.Execute(new DeletePlanRows([.. rows]), Today));
+        wholeRowSelection = false;
+        var remaining = Session.Document.State.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+        if (before.Skip(first).Concat(before.Take(first).Reverse()).FirstOrDefault(remaining.Contains) is { } next) selected = anchor = next;
+        Refresh();
+    }
     internal void RevealAddedRow(string identity)
     {
         acceptedFilter = "";
         rendering = true;
         try { filter.Text = ""; }
         finally { rendering = false; }
-        selected = anchor = identity; selectedField = anchorField = PlanField.Title; Refresh(); FocusSelected();
+        selected = anchor = identity; selectedField = anchorField = PlanField.Title; wholeRowSelection = false; Refresh(); FocusSelected();
     }
     private async Task Indent(bool outdent)
     {
@@ -470,6 +535,18 @@ internal sealed partial class PlanSheetView
     private readonly DispatcherTimer dragScroll = new() { Interval = TimeSpan.FromMilliseconds(40) };
     private void InitializeInteraction()
     {
+        // The selection line's impact links (#236 part B): filter to the delayed successors, or move to the
+        // predecessor that caused the delay.
+        successorLink.Click += (_, _) => {
+            if (selected.Length == 0) return;
+            var ids = LaterDescendantsOf(selected).ToHashSet(StringComparer.Ordinal);
+            if (ids.Count > 0) FilterTasks(ids, $"後続 {ids.Count}", dimAncestors: true);
+        };
+        predecessorLink.Click += (_, _) => {
+            if (LatenessOf(selected)?.CausePredecessorRowId is not { } rowId || IdentityOfRow(rowId) is not { Length: > 0 } identity) return;
+            ClearIdentityFilter();
+            SelectAndFocus(identity, PlanField.Title, false);
+        };
         AddHandler(PointerMovedEvent, new PointerEventHandler((_, args) => {
             if (drag is not { } operation || args.Pointer.PointerId != operation.PointerId) return;
             UpdateDrag(args.GetCurrentPoint(this).Position); args.Handled = true;
@@ -536,6 +613,7 @@ internal sealed partial class PlanSheetView
         if (operation.Fill)
         {
             selected = operation.End; anchor = operation.Source; selectedField = anchorField = operation.Field;
+            wholeRowSelection = false;
             selection.Text = $"{Range.RowCount}行へコピー"; RefreshRealized();
         }
         else

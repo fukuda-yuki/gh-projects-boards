@@ -10,6 +10,8 @@ internal sealed record ScopedId(ConnectionScope Scope, string NodeId);
 internal enum ValueAvailability { Present, Empty, Unsupported, Unavailable, NotLoaded }
 internal enum FieldOwner { Issue, ProjectItem, Unknown }
 internal enum IssueState { Open, Closed }
+// #231: the read enum has four values; the write enum has no REOPENED.
+internal enum IssueStateReason { Completed, NotPlanned, Duplicate, Reopened }
 internal enum ProjectItemKind { Issue, PullRequest, Draft, Unavailable, Unsupported }
 internal enum ProjectReadOutcome { Complete, Partial, Failed, Cancelled, TimedOut }
 internal enum ReadProblemKind { Api, InvalidResponse, DuplicateIdentity, RepeatedCursor, IncompleteTraversal, ConcurrentChange, ScopeMismatch }
@@ -22,7 +24,8 @@ internal sealed record IssueReadModel(ScopedId Id, RepositoryReadModel Repositor
     IssuePlanningObservation? Native = null)
 { public ReadValue<NativeLabel[]> Labels { get; init; } = new(ValueAvailability.NotLoaded);
   public ReadValue<MilestoneReadModel> Milestone { get; init; } = new(ValueAvailability.NotLoaded);
-  public ReadValue<DateTimeOffset?> ClosedAt { get; init; } = new(ValueAvailability.NotLoaded); }
+  public ReadValue<DateTimeOffset?> ClosedAt { get; init; } = new(ValueAvailability.NotLoaded);
+  public ReadValue<IssueStateReason?> StateReason { get; init; } = new(ValueAvailability.NotLoaded); }
 internal sealed record MilestoneReadModel(ScopedId Id, ScopedId RepositoryId, string Title, DateOnly? DueDate, bool Closed);
 internal sealed record NativeLabel(string Id, string Name);
 internal sealed record RepositoryLabel(ScopedId RepositoryId, string Id, string Name);

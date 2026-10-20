@@ -79,7 +79,11 @@ internal sealed class EvaluationFixtureTests
         Assert.That(measures.Phases.Single(p => p.Phase == "PS").Effort.Variance, Is.GreaterThan(0), "見込 exceeds 見積 where 残 was raised.");
         Assert.That(measures.Total.Overruns, Is.GreaterThan(0), "Open tasks re-estimated above 見積 are still being worked on.");
         Assert.That(tasks.Count(t => !t.Closed && t.Remaining == 0), Is.EqualTo(1), "One open task has 残 0.");
-        Assert.That(tasks.Single(t => !t.Closed && t.Remaining == 0).End, Is.EqualTo(middle.StatusDate));
+        // #236: 残 0・未完了 keeps its plan end — the day Actual + Remaining was used up from its start — so it
+        // stays where the plan put it instead of sliding to the 基準日. It carries no mark on the sheet.
+        var zeroRemaining = tasks.Single(t => !t.Closed && t.Remaining == 0);
+        Assert.That(zeroRemaining.End, Is.LessThan(middle.StatusDate));
+        Assert.That(zeroRemaining.Start, Is.LessThanOrEqualTo(zeroRemaining.End!.Value));
         Assert.That(tasks.Count(t => t.Closed && t.Actual < t.Estimate), Is.GreaterThan(0), "Some tasks finish early.");
         Assert.That(tasks.Where(t => t.Closed).All(t => t.Remaining == 0 && t.End == t.CloseDate && t.End < middle.StatusDate && t.Start <= t.End), Is.True, "A closed task ends on its close date before the status date.");
         Assert.That(tasks.Where(t => !t.Closed && t.Actual > 0 && t.Remaining > 0).All(t => t.Start < middle.StatusDate), Is.True);

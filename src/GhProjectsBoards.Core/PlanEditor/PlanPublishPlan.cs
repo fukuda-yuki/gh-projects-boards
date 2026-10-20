@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Collections.Immutable;
 namespace GhProjectsBoards.Core.PlanEditor;
-internal enum PlanPublishStage { Create, Add, Fields, Hierarchy, Dependencies, Order }
+internal enum PlanPublishStage { Create, Add, Fields, State, Hierarchy, Dependencies, Order }
 internal enum PlanWriteState { Pending, Dispatched, Succeeded, Failed }
 internal sealed record PlanReviewChange(string Identity, string Field, string? Before, string? After);
 internal sealed record PlanWrite(string Key, string Identity, PlanPublishStage Stage, string Mutation, string InputType, string Input, string Selection)
@@ -31,6 +31,9 @@ internal static class PlanPublishPlan
                 "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" => (PlanPublishStage.Fields, "projectV2Item { id }"),
                 "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => (PlanPublishStage.Fields, "assignable { __typename }"),
                 "addLabelsToLabelable" or "removeLabelsFromLabelable" => (PlanPublishStage.Fields, "labelable { __typename }"),
+                // #231: the row-state commands.
+                "closeIssue" or "reopenIssue" => (PlanPublishStage.State, "issue { id }"),
+                "archiveProjectV2Item" => (PlanPublishStage.State, "item { id }"),
                 "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" => (PlanPublishStage.Hierarchy, "issue { id }"),
                 "addBlockedBy" or "removeBlockedBy" => (PlanPublishStage.Dependencies, "issue { id }"),
                 "updateProjectV2ItemPosition" => (PlanPublishStage.Order, "items { totalCount }"),
@@ -53,7 +56,8 @@ internal static class PlanPublishPlan
                 "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => "assignableId",
                 "addBlockedBy" or "removeBlockedBy" => "issueId",
                 "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" => "subIssueId",
-                "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" or "updateProjectV2ItemPosition" => "itemId", _ => null
+                "closeIssue" or "reopenIssue" => "issueId",
+                "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" or "updateProjectV2ItemPosition" or "archiveProjectV2Item" => "itemId", _ => null
             };
             if (target is not null) PlanOperations.Require(input.RootElement.GetProperty(target).GetString() == (target == "itemId" ? "item:" : "") + write.Identity, "発行対象が行と一致しません。");
             if (input.RootElement.TryGetProperty("projectId", out var project))
@@ -66,18 +70,36 @@ internal static class PlanPublishPlan
         if (!PlanOperations.BlockingConflicts(document).IsEmpty || !document.Sync.Unavailable.IsEmpty) throw new InvalidOperationException("競合を解決してください。");
         var changes = ImmutableArray.CreateBuilder<PlanReviewChange>(); var writes = ImmutableArray.CreateBuilder<PlanWrite>();
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
-        void Add(string id, PlanPublishStage stage, string mutation, string type, object input, string selection)
-            => writes.Add(new(writes.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), id, stage, mutation, type, PlanJson.Text(input), selection));
+        // A row this publish cannot create (#247). Its own writes are not planned, and neither is any
+        // write that would name it, so one untitled row never blocks the rest of the plan.
+        var held = PlanOperations.HeldRows(document);
+        int Add(string id, PlanPublishStage stage, string mutation, string type, object input, string selection)
+        {
+            if (held.Contains(id)) return -1;
+            var text = PlanJson.Text(input);
+            if (References(text, held)) return -1;
+            writes.Add(new(writes.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), id, stage, mutation, type, text, selection));
+            return writes.Count - 1;
+        }
         var rows = document.State.Rows;
         foreach (var scheduled in PlanOperations.Schedule(document, today))
         {
             var row = rows[scheduled.Input.RowId - 1] with { Start = scheduled.Start.Value, End = scheduled.End.Value,
-                Remaining = !scheduled.DatesHeld && scheduled.Input.Closed && !scheduled.IsSummary ? 0 : scheduled.Input.Remaining };
+                Remaining = scheduled.Input.Closed && !scheduled.IsSummary ? 0 : scheduled.Input.Remaining };
+            if (held.Contains(row.Identity)) continue;
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
+            // この版から外す archives the item and nothing else: the row leaves the plan, so its other
+            // differences are not written (#231).
+            if (!isNew && row.Removed)
+            {
+                changes.Add(new(row.Identity, PlanField.Removed, PlanValues.Get(before, PlanField.Removed), "true"));
+                Add(row.Identity, PlanPublishStage.State, "archiveProjectV2Item", "ArchiveProjectV2ItemInput",
+                    new { projectId = document.Project.NodeId, itemId = "item:" + row.Identity }, "item { id }");
+                continue;
+            }
             if (isNew)
             {
-                if (string.IsNullOrWhiteSpace(row.Title)) throw new InvalidOperationException("タイトルを入力してください。");
                 if (!PlanOperations.Repository(row.Repository)) throw new InvalidOperationException("リポジトリを設定してください。");
                 changes.Add(new(row.Identity, PlanField.NewTask, null, row.Title));
                 Add(row.Identity, PlanPublishStage.Create, "createIssue", "CreateIssueInput", new
@@ -93,6 +115,11 @@ internal static class PlanPublishPlan
                 var bv = PlanValues.Get(before, field); var av = PlanValues.Get(row, field);
                 if (bv == av) continue;
                 if (isNew && field is PlanField.Repository or PlanField.Title) continue;
+                // A pending close or reopen sends its state write alone; the closed end and the remaining
+                // work follow the close day the read reports (#231).
+                if (!isNew && before.Closed != row.Closed && field is PlanField.Start or PlanField.End or PlanField.Remaining) continue;
+                // A relationship to a row this publish does not create cannot be sent (#247).
+                if (PlanOperations.HoldsField(row, before, field, held)) continue;
                 changes.Add(new(row.Identity, field, isNew ? null : bv, av));
                 if (PlanSheetColumns.IsExtra(field))
                 {
@@ -108,9 +135,9 @@ internal static class PlanPublishPlan
                         "TEXT" => new { text = (string)value }, "NUMBER" => (object)new { number = (decimal)value },
                         "DATE" => new { date = (string)value },
                         "SINGLE_SELECT" => new { singleSelectOptionId = definition.Options.Single(o => o.Name == (string)value).Id }, _ => throw new InvalidOperationException() };
-                    Add(row.Identity, PlanPublishStage.Fields, value is null ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue",
+                    var extraAt = Add(row.Identity, PlanPublishStage.Fields, value is null ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue",
                         value is null ? "ClearProjectV2ItemFieldValueInput" : "UpdateProjectV2ItemFieldValueInput", input, "projectV2Item { id }");
-                    writes[^1] = writes[^1] with { Field = field };
+                    if (extraAt >= 0) writes[extraAt] = writes[extraAt] with { Field = field };
                     continue;
                 }
                 switch (field)
@@ -118,20 +145,34 @@ internal static class PlanPublishPlan
                     case PlanField.MilestoneTitle:
                         var milestone = row.MilestoneTitle is null ? null : remote.Baseline.RepositoryMilestones.SingleOrDefault(m => m.Repository == row.Repository && m.Name == row.MilestoneTitle)?.Id
                             ?? throw new InvalidOperationException("マイルストーンを確認してください。");
-                        Add(row.Identity, PlanPublishStage.Fields, "updateIssue", "UpdateIssueInput", new { id = row.Identity, milestoneId = milestone }, "issue { id }");
-                        writes[^1] = writes[^1] with { Field = field };
+                        var milestoneAt = Add(row.Identity, PlanPublishStage.Fields, "updateIssue", "UpdateIssueInput", new { id = row.Identity, milestoneId = milestone }, "issue { id }");
+                        if (milestoneAt >= 0) writes[milestoneAt] = writes[milestoneAt] with { Field = field };
                         break;
                     case PlanField.Labels:
                         foreach (var (mutation, names) in new[] { ("removeLabelsFromLabelable", before.Labels.Except(row.Labels)), ("addLabelsToLabelable", row.Labels.Except(before.Labels)) })
                         {
                             var ids = names.Select(name => remote.Baseline.RepositoryLabels.SingleOrDefault(l => l.Repository == row.Repository && l.Name == name)?.Id ?? throw new InvalidOperationException("ラベルを確認してください。")).ToArray();
                             if (ids.Length == 0) continue;
-                            Add(row.Identity, PlanPublishStage.Fields, mutation, char.ToUpperInvariant(mutation[0]) + mutation[1..] + "Input", new { labelableId = row.Identity, labelIds = ids }, "labelable { __typename }");
-                            writes[^1] = writes[^1] with { Field = field };
+                            var labelAt = Add(row.Identity, PlanPublishStage.Fields, mutation, char.ToUpperInvariant(mutation[0]) + mutation[1..] + "Input", new { labelableId = row.Identity, labelIds = ids }, "labelable { __typename }");
+                            if (labelAt >= 0) writes[labelAt] = writes[labelAt] with { Field = field };
                         }
                         break;
-                    case PlanField.Repository: case PlanField.Closed:
+                    case PlanField.Repository:
                         throw new InvalidOperationException("この変更は発行できません: " + field);
+                    case PlanField.Cancelled:
+                        // The reason travels with the state write below, so it adds no write of its own (#231).
+                        continue;
+                    case PlanField.Removed:
+                        // Only a published row can be removed, and that is handled before the field loop (#231).
+                        continue;
+                    case PlanField.Closed:
+                        // #231: 完了にする closes as COMPLETED, 中止にする as NOT_PLANNED, 未完了に戻す reopens.
+                        if (row.Closed)
+                            Add(row.Identity, PlanPublishStage.State, "closeIssue", "CloseIssueInput",
+                                new { issueId = row.Identity, stateReason = row.Cancelled ? "NOT_PLANNED" : "COMPLETED" }, "issue { id }");
+                        else
+                            Add(row.Identity, PlanPublishStage.State, "reopenIssue", "ReopenIssueInput", new { issueId = row.Identity }, "issue { id }");
+                        break;
                     case PlanField.Status:
                         var statusField = remote.Fields.SingleOrDefault(f => f.Name == "Status" && f.DataType == "SINGLE_SELECT" && f.ValueOwner == Projects.FieldOwner.ProjectItem && f.Availability == Projects.ValueAvailability.Present)
                             ?? throw new InvalidOperationException("Status の列を確認してください。");
@@ -142,12 +183,15 @@ internal static class PlanPublishPlan
                                 ?? throw new InvalidOperationException("Status の選択肢を確認してください。");
                             statusInput["value"] = new { singleSelectOptionId = option.Id };
                         }
-                        Add(row.Identity, PlanPublishStage.Fields, row.Status is null ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue",
+                        var statusAt = Add(row.Identity, PlanPublishStage.Fields, row.Status is null ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue",
                             row.Status is null ? "ClearProjectV2ItemFieldValueInput" : "UpdateProjectV2ItemFieldValueInput", statusInput, "projectV2Item { id }");
-                        writes[^1] = writes[^1] with { Field = PlanField.Status };
+                        if (statusAt >= 0) writes[statusAt] = writes[statusAt] with { Field = PlanField.Status };
                         break;
                     case PlanField.Title:
-                        if (string.IsNullOrWhiteSpace(row.Title)) throw new InvalidOperationException("タイトルを入力してください。");
+                        // A published Issue must keep a title; only a new row may be left untitled, and
+                        // that row is held above instead of reaching this write (#247).
+                        if (string.IsNullOrWhiteSpace(row.Title))
+                            throw new InvalidOperationException($"タイトルを入力してください（ID {scheduled.Input.RowId}）。");
                         Add(row.Identity, PlanPublishStage.Fields, "updateIssue", "UpdateIssueInput", new { id = row.Identity, title = row.Title }, "issue { id }"); break;
                     case PlanField.Assignees:
                         foreach (var (mutation, ids) in new[] { ("removeAssigneesFromAssignable", before.Assignees.Except(row.Assignees).ToArray()),
@@ -188,13 +232,16 @@ internal static class PlanPublishPlan
             }
         }
         var oldOrder = document.Baseline.Rows.Select(r => r.Identity).ToArray();
+        var removed = rows.Where(r => r.Removed).Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
         var moved = PlanOrder.Moved(oldOrder, rows.Select(r => r.Identity));
         foreach (var parent in rows.Where(r => r.Parent is not null).Select(r => r.Parent!).Distinct())
         {
-            if (!rows.Any(r => r.Identity == parent)) continue;
+            if (!rows.Any(r => r.Identity == parent) || held.Contains(parent)) continue;
             // The same comparison decides the unpublished count, the review line and these writes.
             if (PlanOperations.SiblingOrderChange(document, parent) is not { } sibling) continue;
             var children = sibling.After;
+            // An order that names a row this publish does not create or is removing is held whole (#247, #231).
+            if (children.Any(id => held.Contains(id) || removed.Contains(id))) continue;
             changes.Add(new(parent, PlanField.SubIssueOrder, PlanJson.Text(sibling.Before), PlanJson.Text(children)));
             for (var i = 0; i < children.Length; i++)
             {
@@ -207,12 +254,34 @@ internal static class PlanPublishPlan
         for (var i = 0; i < rows.Length; i++)
         {
             var id = rows[i].Identity;
+            if (held.Contains(id) || removed.Contains(id)) continue;
             if (!moved.Contains(id) && baseline.ContainsKey(id)) continue;
             changes.Add(new(id, PlanField.Order, baseline.ContainsKey(id) ? Array.IndexOf(oldOrder, id).ToString(CultureInfo.InvariantCulture) : null, i.ToString(CultureInfo.InvariantCulture)));
+            // Positioning depends on the item before it; a row this publish does not create, or is
+            // removing, is skipped so the anchor is the nearest row that stays in the plan (#247, #231).
+            var anchor = i;
+            while (anchor > 0 && (held.Contains(rows[anchor - 1].Identity) || removed.Contains(rows[anchor - 1].Identity))) anchor--;
             Add(id, PlanPublishStage.Order, "updateProjectV2ItemPosition", "UpdateProjectV2ItemPositionInput",
-                new { projectId = document.Project.NodeId, itemId = "item:" + id, afterId = i == 0 ? null : "item:" + rows[i - 1].Identity }, "items { totalCount }");
+                new { projectId = document.Project.NodeId, itemId = "item:" + id, afterId = anchor == 0 ? null : "item:" + rows[anchor - 1].Identity }, "items { totalCount }");
         }
         return new(changes.ToImmutable(), writes.OrderBy(w => w.Stage).ThenBy(RelationshipPhase).ToImmutableArray());
+    }
+    // The identity positions of a write input, so a write that would name a row this publish does not
+    // create can be held back instead of sent (#247).
+    private static bool References(string json, ImmutableHashSet<string> held)
+        => ReferencesIdentity(json, text => held.Contains(text)
+            || text.StartsWith("item:", StringComparison.Ordinal) && held.Contains(text[5..]));
+    internal static bool ReferencesIdentity(string json, Func<string, bool> matches)
+    {
+        using var input = System.Text.Json.JsonDocument.Parse(json);
+        bool Contains(System.Text.Json.JsonElement element, bool identifier = false) => element.ValueKind switch
+        {
+            System.Text.Json.JsonValueKind.String => identifier && element.GetString() is { } text && matches(text),
+            System.Text.Json.JsonValueKind.Array => element.EnumerateArray().Any(e => Contains(e, identifier)),
+            System.Text.Json.JsonValueKind.Object => element.EnumerateObject().Any(p => Contains(p.Value, IsIdentifierField(p.Name))),
+            _ => false
+        };
+        return Contains(input.RootElement);
     }
     private static int RelationshipPhase(PlanWrite write) => write.Mutation switch { "addSubIssue" or "addBlockedBy" => 1, "reprioritizeSubIssue" => 2, _ => 0 };
     internal static IEnumerable<ImmutableArray<PlanWrite>> Batches(IEnumerable<PlanWrite> writes)

@@ -11,7 +11,7 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 internal sealed partial class PlanWorkspaceHostedTests
 {
     [TestCase(false), TestCase(true), Category("EndDatePaint")]
-    public async Task UnchangedTaskEndRepaintsAfterStatusDateOrPublicationClearsRed(bool publish)
+    public async Task UnchangedTaskEndRepaintsRedAcrossStatusDateAndPublication(bool publish)
     {
         readDay = new(2026, 10, 5);
         var calculatedEnd = new DateOnly(2026, 10, 14);
@@ -37,7 +37,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await AssertEndColorPixels(end, text, false, "normal");
 
-        await SetEndColorStatusDate(readDay.AddDays(2));
+        // Dates are plan values (#236): the end turns red only once the 基準日 passes it.
+        await SetEndColorStatusDate(calculatedEnd.AddDays(1));
         await AssertEndColorPixels(end, text, true, "overdue");
         if (publish)
         {
@@ -52,13 +53,13 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Run(() => Ui.Click("PlanPublishClose"));
             await Ui.Idle();
             Assert.That(FakePlanEditor.Load(root).Issues.Single().Row.End, Is.EqualTo(calculatedEnd));
+            // Publishing does not change lateness: the retained cell stays red after the publication repaint.
+            await AssertEndColorPixels(end, text, true, "published");
         }
-        else
-        {
-            await SetEndColorStatusDate(readDay);
-            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
-        }
-        await AssertEndColorPixels(end, text, false, publish ? "published" : "status-date-restored");
+        var batches = FakePlanEditor.Load(root).MutationBatches;
+        await SetEndColorStatusDate(readDay);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(batches));
+        await AssertEndColorPixels(end, text, false, "status-date-restored");
     }
 
     private async Task SetEndColorStatusDate(DateOnly date)

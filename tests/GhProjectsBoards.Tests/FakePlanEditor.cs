@@ -21,14 +21,17 @@ internal static class FakePlanEditor
         var state = Load(root);
         var fault = scenario.TryGetProperty("planFault", out var faultNode) ? faultNode.GetString() : null;
         var faultBatch = scenario.TryGetProperty("faultBatch", out var batchNode) ? batchNode.GetInt32() : 1;
-        if ((fault == "readfailure" || fault is "after-and-read" or "before-and-read" && state.MutationBatches > 0) && query.Contains("ProjectItems")) { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
+        // #201: a publish reads and verifies only the items it writes, so a fault aimed at the Project's
+        // item read must reach both the complete item walk and the scoped publication read.
+        var itemRead = query.Contains("ProjectItems") || query.Contains("PlanPublishItems") || query.Contains("ProjectItemDetails");
+        if ((fault == "readfailure" || fault is "after-and-read" or "before-and-read" && state.MutationBatches > 0) && itemRead) { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
         if (query.Contains("ProjectFields")) { state = state with { ReadAttempts = state.ReadAttempts + 1 }; Save(root, state); }
         if ((fault == "verificationfailure" && state.MutationBatches >= faultBatch ||
-            fault == "uncertain-verification" && state.MutationBatches >= faultBatch) && query.Contains("ProjectItems"))
+            fault == "uncertain-verification" && state.MutationBatches >= faultBatch) && itemRead)
         { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
         if (fault == "uncertain-verification" && state.MutationBatches >= faultBatch && query.Contains("PlanCreationGuard"))
         { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
-        if (fault == "read-once" && state.ReadAttempts == 1 && query.Contains("ProjectItems"))
+        if (fault == "read-once" && state.ReadAttempts == 1 && itemRead)
         { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
         var workspace = scenario.TryGetProperty("workspace", out var ws) && ws.GetBoolean();
         if (workspace && query.Contains("Registration"))
@@ -109,10 +112,13 @@ internal static class FakePlanEditor
             var item = JsonSerializer.SerializeToNode(new { __typename = "ProjectV2Item", id = ItemId("T-" + row.Identity), type = "ISSUE", isArchived = issue.Archived, project = new { id = projectId },
                 content = new { __typename = "Issue", id = row.Identity, number = int.Parse(row.Identity[1..]), url = "https://github.com/" + row.Repository + "/issues/" + row.Identity[1..], title = row.Title,
                     state = row.Closed ? "CLOSED" : "OPEN",
+                    stateReason = row.Closed ? row.Cancelled ? "NOT_PLANNED" : "COMPLETED" : null,
                     labels = Page(state.Labels.Where(l => l.Repository == row.Repository && row.Labels.Contains(l.Name)).Take(100).Select(l => (object)new { id = l.Id, name = l.Name }), row.Labels.Length, row.Labels.Length>100, row.Labels.Length>100 ? "100" : null),
                     milestone = state.Milestones.SingleOrDefault(m => m.Repository == row.Repository && m.Title == row.MilestoneTitle) is { } member ? Milestone(member) : null,
                     closedAt = row.Closed && row.CloseDate is { } closeDate ? new DateTimeOffset(closeDate.ToDateTime(new TimeOnly(12, 0)),
-                        TimeZoneInfo.Local.GetUtcOffset(closeDate.ToDateTime(new TimeOnly(12, 0)))).ToUniversalTime().ToString("O") : null, viewerCanUpdate = true, repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository, owner = new { id = "O1" } },
+                        TimeZoneInfo.Local.GetUtcOffset(closeDate.ToDateTime(new TimeOnly(12, 0)))).ToUniversalTime().ToString("O") : null,
+                    // #231: only this fault denies Issue update permission, so the ordinary fixtures stay writable.
+                    viewerCanUpdate = !(fault == "no-update-permission" && row.Identity == "I1"), repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository, owner = new { id = "O1" } },
                     assignees = Page(row.Assignees.Select(id => (object)new { id, login = workspace ? "person-" + id : id }), row.Assignees.Length),
                     blockedBy = Page(row.Predecessors.Select(id => (object)new { id }), row.Predecessors.Length),
                     subIssues = query.Contains("subIssues(", StringComparison.Ordinal) ? Children(row.Identity) : null,
@@ -132,6 +138,28 @@ internal static class FakePlanEditor
                 data["l"+index]=JsonSerializer.SerializeToNode(new { __typename="Issue", id, labels=Page(all.Skip(offset).Take(100).Select(l=>(object)new{id=l.Id,name=l.Name}),all.Length,offset+100<all.Length,offset+100<all.Length?(offset+100).ToString():null) });
             }
             Write(new JsonObject { ["data"]=data }); return 0;
+        }
+        if (query.Contains("PlanPublishItems"))
+        {
+            // #201: the publication read resolves only the requested Issue identities to their items.
+            // A churned read cannot deliver one of them, exactly as a churned item walk changes its total.
+            var churn = fault == "churn" && state.ReadAttempts <= faultBatch
+                || fault == "verification-churn" && state.MutationBatches > 0 && state.ReadAttempts <= 3;
+            var nodes = new List<object?>();
+            foreach (var id in variables.GetProperty("ids").EnumerateArray().Select(n => n.GetString()!).ToArray())
+            {
+                var issue = state.Issues.FirstOrDefault(i => i.Row.Identity == id);
+                if (issue is null || churn) { nodes.Add(null); churn = false; continue; }
+                // The same membership visibility the item walk applies, so the scoped read observes what a
+                // complete read would have observed for the same item.
+                var visible = issue.Added && !(fault == "membership-delay" && state.MutationBatches is > 0 and <= 4
+                    && state.ReadAttempts < 2 && int.Parse(issue.Row.Identity[1..]) % 2 == 0);
+                var owners = visible ? workspace ? new[] { "P1", "P2" } : new[] { "P1" } : [];
+                nodes.Add(new { __typename = "Issue", id,
+                    projectItems = Page(owners.Select(owner => (object)new { id = ItemIdFor(owner, "T-" + id), project = new { id = owner } }), owners.Length) });
+            }
+            Write(new { data = new { nodes = nodes.ToArray(), viewer = new { databaseId = 42 } } });
+            return 0;
         }
         object? node = null;
         if (query.Contains("PlanAddField"))
@@ -389,8 +417,27 @@ internal static class FakePlanEditor
                         children.Insert(children.IndexOf(siblingId!) + (after ? 1 : 0), childId);
                         subOrders = subOrders.SetItem(identity, children.ToImmutableArray());
                     }
-                    else throw new InvalidOperationException("Unsupported fake mutation: " + mutation);
-                    issues[index] = issue with { Row = row }; id = selection == "projectV2Item" ? ItemId("T-" + identity) : identity;
+                    // #231: a per-row state failure keeps that row's write pending and lets the rest publish.
+                    if (fault == "close-denied" && mutation == "closeIssue" && input.GetProperty("issueId").GetString() == "I2")
+                    { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "FORBIDDEN", message = "Synthetic close failure" })); data[alias] = null; continue; }
+                    // #231: 完了にする / 中止にする / 未完了に戻す / この版から外す.
+                    if (mutation == "closeIssue")
+                        row = row with { Closed = true, Cancelled = input.GetProperty("stateReason").GetString() == "NOT_PLANNED",
+                            CloseDate = DateOnly.FromDateTime(DateTime.Now) };
+                    else if (mutation == "reopenIssue") row = row with { Closed = false, Cancelled = false, CloseDate = null };
+                    else if (mutation == "archiveProjectV2Item")
+                    {
+                        // GitHub requires the Project as well as the item; without it the input is rejected.
+                        if (!input.TryGetProperty("projectId", out var project) || string.IsNullOrEmpty(project.GetString()))
+                        { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "INVALID", message = "Argument 'projectId' on InputObject 'ArchiveProjectV2ItemInput' is required." })); data[alias] = null; continue; }
+                        issue = issue with { Archived = true }; selection = "item"; id = ItemId("T-" + identity);
+                    }
+                    else if (mutation is not ("updateIssue" or "addLabelsToLabelable" or "removeLabelsFromLabelable" or "updateProjectV2ItemPosition"
+                        or "addAssigneesToAssignable" or "removeAssigneesFromAssignable" or "addBlockedBy" or "removeBlockedBy"
+                        or "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue") && !mutation.Contains("ItemFieldValue"))
+                        throw new InvalidOperationException("Unsupported fake mutation: " + mutation);
+                    issues[index] = issue with { Row = row };
+                    if (selection != "item") id = selection == "projectV2Item" ? ItemId("T-" + identity) : identity;
                 }
                 if (fault == "link-already-exists" && mutation is "addSubIssue" or "addBlockedBy")
                 { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "UNPROCESSABLE", message = "Relationship already exists" })); data[alias] = null; continue; }

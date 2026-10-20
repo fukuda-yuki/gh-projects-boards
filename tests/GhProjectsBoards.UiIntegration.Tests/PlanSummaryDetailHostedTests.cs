@@ -56,10 +56,11 @@ internal sealed partial class PlanWorkspaceHostedTests
             new(new("I2", "Closed", "acme/repo") { Estimate = 8, Closed = true, CloseDate = new(2026, 10, 2), Assignees = ["U1"] }, "", true) { Phase = "SA" },
             new(new("I3", "Over estimate", "acme/repo") { Estimate = 8, Actual = 4, Remaining = 8, Assignees = ["U1"] }, "", true) { Phase = "SA" },
             new(new("I4", "Zero open", "acme/repo") { Estimate = 8, Remaining = 0, Assignees = ["U1"] }, "", true) { Phase = "SA" },
-            new(new("I5", "Overdue", "acme/repo") { Estimate = 24, Actual = 8, Remaining = 16, End = new(2026, 10, 2), Assignees = ["U1"] }, "", true) { Phase = "SA" },
-            new(new("I6", "Later", "acme/repo") { Estimate = 40, End = new(2026, 10, 6), Assignees = ["U1"] }, "", true) { Phase = "SA" }], 7) { Phases = ["SA"] });
+            new(new("I5", "Overdue", "acme/repo") { Estimate = 24, Actual = 8, Remaining = 16, Start = new(2026, 9, 30), End = new(2026, 10, 2), Assignees = ["U1"] }, "", true) { Phase = "SA" },
+            new(new("I6", "Later", "acme/repo") { Estimate = 40, Remaining = 40, Start = new(2026, 10, 5), End = new(2026, 10, 6), Assignees = ["U1"] }, "", true) { Phase = "SA" }], 7) { Phases = ["SA"] });
         await Open("Ordinary");
-        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = readDay, ProjectStart = readDay }), readDay);
+        // Only the 基準日: a version-start change would reschedule the dated tasks (#236) and hide the slip.
+        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = readDay }), readDay);
         await Ui.Run(() => Ui.Click("PlanShowSummary")); await Ui.Ready<Button>("SummaryCell_U1_0");
         await Ui.Run(() => Ui.Click("SummaryCell_U1_0")); await Ui.Ready<TextBlock>("SummaryTask_I6");
         await Ui.Run(() => {
@@ -67,8 +68,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("SummaryTask_I2").Text, Is.EqualTo("完了"));
             Assert.That(Ui.Find<TextBlock>("SummaryTask_I3").Text, Is.EqualTo("見積超過: 見込工数 12h（見積工数 8h、差異 +4h）"));
             Assert.That(Ui.Find<TextBlock>("SummaryTask_I4").Text, Is.EqualTo("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません"));
-            Assert.That(Ui.Find<TextBlock>("SummaryTask_I5").Text, Does.StartWith("期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 16h）").And.Contain("予定より遅れ: 発行済み 10/2 から +2 日"));
-            Assert.That(Ui.Find<TextBlock>("SummaryTask_I6").Text, Is.EqualTo("予定より遅れ: 発行済み 10/6 から +3 日"));
+            // An overdue task is not also 予定より遅れ (#236): that set holds the late tasks still before their end.
+            Assert.That(Ui.Find<TextBlock>("SummaryTask_I5").Text, Is.EqualTo("期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 16h）"));
+            Assert.That(Ui.Find<TextBlock>("SummaryTask_I6").Text, Is.EqualTo("予定より遅れ: 10/6 から +3 日（見込終了 10/9）"));
             foreach (var id in Enumerable.Range(1, 6)) {
                 var state = Ui.Find<TextBlock>("SummaryTask_I" + id);
                 Assert.That(ToolTipService.GetToolTip(state), Is.EqualTo(state.Text));

@@ -526,7 +526,7 @@ internal sealed class PlanPublishTests
         var day = new DateOnly(2026, 10, 5);
         var scope = new ConnectionScope("github.com", 42); var project = new ScopedId(scope, "P1");
         var parent = new PlanRow("P", "Parent", "acme/repo") { Estimate = 99, Remaining = 99 };
-        var child = new PlanRow("C", "Child", "acme/repo") { Parent = "P", Estimate = 8, Remaining = 8 };
+        var child = new PlanRow("C", "Child", "acme/repo") { Parent = "P", Estimate = 8, Remaining = 8, Start = day, End = day };
         var mappings = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Start, PlanField.End }
             .Select(f => new PlanColumnMapping(f, "F" + f, f.ToString(), f is PlanField.Start or PlanField.End ? "DATE" : "NUMBER")).ToImmutableArray();
         var settings = new ProjectPlanSettings { StatusDate = day, Columns = mappings };
@@ -536,7 +536,8 @@ internal sealed class PlanPublishTests
             mappings.Select(m => new ProjectFieldDefinition(new(scope, m.FieldId), project, m.Name, "ProjectV2Field", m.DataType, FieldOwner.ProjectItem, [], ValueAvailability.Present)).ToImmutableArray(), 0, 0) { SubIssueOrders = ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("P", ["C"]) };
         var plan = PlanPublishPlan.Build(document, remote, day, "run");
         Assert.That(plan.Changes.Where(c => c.Identity == "P").Select(c => c.Field), Is.EquivalentTo(new[] { PlanField.Start, PlanField.End }));
-        Assert.That(plan.Writes, Has.Length.EqualTo(4));
+        // The child's own dates are unchanged (#236 keeps them), so the summary's rolled-up pair is the difference.
+        Assert.That(plan.Writes, Has.Length.EqualTo(2));
         Assert.That(plan.Changes.All(c => c.After == "\"2026-10-05\""), Is.True);
     }
     [TestCase(PlanPublishStage.Fields, 49, 5, "number")]
@@ -569,5 +570,60 @@ internal sealed class PlanPublishTests
         Assert.That(batches.Length, Is.EqualTo(14));
         foreach (var batch in batches) Assert.That(batch.Length,
             Is.LessThanOrEqualTo(10));
+    }
+
+    // #247: an inserted row left without a title must not stop the publish. It is not created, and
+    // only the writes that would reference it are held.
+    private static PlanRemoteSnapshot Snapshot(PlanBaseline baseline)
+        => new(baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0);
+
+    [Test]
+    public void AnUntitledNewRowIsNotCreatedAndHoldsOnlyItsDependants()
+    {
+        var scope = new ScopedId(new("github.com", 42), "P1");
+        var baseline = new PlanBaseline([new("I1", "First", "acme/repo"), new("I2", "Second", "acme/repo")], []);
+        var untitled = new PlanRow("local:" + Guid.NewGuid().ToString("N"), "", "acme/repo");
+        var child = new PlanRow("local:" + Guid.NewGuid().ToString("N"), "Child", "acme/repo") { Parent = untitled.Identity };
+        var state = new PlanState([baseline.Rows[0] with { Title = "First edited" }, untitled, child,
+            baseline.Rows[1] with { Predecessors = [untitled.Identity] }], new());
+        var document = new PlanDocument(scope, baseline, state);
+        var review = PlanPublishPlan.Build(document, Snapshot(baseline), Day, "run");
+        Assert.That(review.Writes.Any(w => w.Mutation == "createIssue"), Is.False, "An untitled row is never created.");
+        Assert.That(review.Writes.Any(w => w.Identity == untitled.Identity || w.Identity == child.Identity), Is.False);
+        Assert.That(review.Writes.All(w => !w.Input.Contains(untitled.Identity)), Is.True, "No write may reference a row this publish does not create.");
+        Assert.That(review.Writes.Any(w => w.Mutation == "addBlockedBy" || w.Mutation == "updateProjectV2ItemPosition"), Is.False);
+        Assert.That(review.Writes.Any(w => w.Mutation == "updateIssue" && w.Identity == "I1"), Is.True, "The rest of the plan still publishes.");
+        Assert.That(review.Changes.Select(c => (c.Identity, c.Field)), Is.EqualTo(new[] { ("I1", PlanField.Title) }));
+        Assert.That(PlanOperations.Changes(document, Day).Fields.ContainsKey(untitled.Identity), Is.True, "The untitled row stays unpublished until it is titled or deleted.");
+    }
+
+    [Test]
+    public void ATitledNewRowStillPublishesItsCreationItsOrderAndItsChildren()
+    {
+        var scope = new ScopedId(new("github.com", 42), "P1");
+        var baseline = new PlanBaseline([new("I1", "First", "acme/repo")], []);
+        var added = new PlanRow("local:" + Guid.NewGuid().ToString("N"), "New", "acme/repo");
+        var child = new PlanRow("local:" + Guid.NewGuid().ToString("N"), "Child", "acme/repo") { Parent = added.Identity };
+        var document = new PlanDocument(scope, baseline, new([baseline.Rows[0], added, child], new()));
+        var review = PlanPublishPlan.Build(document, Snapshot(baseline), Day, "run");
+        Assert.That(review.Writes.Count(w => w.Mutation == "createIssue"), Is.EqualTo(2));
+        Assert.That(review.Writes.Count(w => w.Mutation == "addSubIssue"), Is.EqualTo(1), "A titled new parent still receives its child.");
+        Assert.That(review.Writes.Count(w => w.Mutation == "updateProjectV2ItemPosition"), Is.EqualTo(2));
+    }
+
+    [Test]
+    public void OrderWritesAnchorOnTheNearestRowThisPublishCreates()
+    {
+        var scope = new ScopedId(new("github.com", 42), "P1");
+        var baseline = new PlanBaseline([new("I1", "First", "acme/repo"), new("I2", "Second", "acme/repo"), new("I3", "Third", "acme/repo")], []);
+        var untitled = new PlanRow("local:" + Guid.NewGuid().ToString("N"), "", "acme/repo");
+        var document = new PlanDocument(scope, baseline, new([baseline.Rows[0], untitled, baseline.Rows[2], baseline.Rows[1]], new()));
+        var review = PlanPublishPlan.Build(document, Snapshot(baseline), Day, "run");
+        var positions = review.Writes.Where(w => w.Mutation == "updateProjectV2ItemPosition").ToArray();
+        Assert.That(positions.Select(w => w.Identity), Is.EqualTo(new[] { "I2" }));
+        using var input = System.Text.Json.JsonDocument.Parse(positions[0].Input);
+        Assert.That(input.RootElement.GetProperty("afterId").GetString(), Is.EqualTo("item:I3"), "The anchor skips the row this publish does not create.");
+        Assert.That(review.Changes.Any(c => c.Identity == untitled.Identity), Is.False);
+        Assert.That(review.Changes.Any(c => c.Identity == "I2" && c.Field == PlanField.Order), Is.True);
     }
 }

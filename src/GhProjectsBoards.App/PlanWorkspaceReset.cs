@@ -44,7 +44,7 @@ internal sealed partial class PlanWorkspaceView
                 + (changes.NewTaskCount > 0 ? $"（新しく追加した {changes.NewTaskCount.ToString("N0", culture)} タスクを含む。これらは作られません）" : "")));
             if (changes.RecalculatedTaskCount > 0) content.Children.Add(Label($"再計算で変わった日程 {changes.RecalculatedTaskCount.ToString("N0", culture)}"));
         }
-        content.Children.Add(Label($"日程は GitHub の値をそのまま表示します。基準日は今日 {Today.ToString("M/d (ddd)", culture)} になり、次に計画を編集したときに全体を再計算します。"));
+        content.Children.Add(Label($"日程は GitHub の値をそのまま表示し、タスクを編集するまで動きません。基準日は今日 {Today.ToString("M/d (ddd)", culture)} になります。"));
         content.Children.Add(Label("稼働率、上限工数、休日、列の設定はそのままです。"));
         content.Children.Add(Label("戻したあとでも「元に戻す」で、破棄した変更を未発行の変更として戻せます。"));
         var dialog = Id(new ContentDialog {
@@ -62,7 +62,7 @@ internal sealed partial class PlanWorkspaceView
         var culture = CultureInfo.GetCultureInfo("ja-JP");
         refreshResult.Title = "GitHub の状態に戻しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
         refreshResult.Message = $"基準日を {day.ToString("M/d (ddd)", culture)} にしました。日程は GitHub の値のままです。";
-        refreshResult.ActionButton = null;
+        refreshResult.ActionButton = null; refreshResult.Content = null;
         refreshResult.IsOpen = true;
     }
 }

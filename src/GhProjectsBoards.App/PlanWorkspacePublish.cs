@@ -13,6 +13,9 @@ internal sealed partial class PlanWorkspaceView
     private readonly TextBlock publishBlockedReason = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishBlockedReason");
     private readonly TextBlock publishStatusDate = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishStatusDate");
     private readonly TextBlock publishSummary = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishSummary");
+    // #201: a publish reads and verifies only the items it writes, so it does not refresh the plan.
+    private readonly TextBlock publishScope = Id(new TextBlock { TextWrapping = TextWrapping.Wrap,
+        Text = "発行は計画を最新の情報に更新しません。他の変更は「最新の情報に更新」で取り込みます。" }, "PlanPublishScope");
     private readonly TextBlock publishResult = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishResult");
     private PlanDocument? publishedDocument;
     private Button openPublish = null!;
@@ -39,7 +42,7 @@ internal sealed partial class PlanWorkspaceView
         close.Click += (_, _) => { if (!closing && !publishing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
         var header = new StackPanel { Spacing = 8 };
-        header.Children.Add(actions); header.Children.Add(publishSummary); header.Children.Add(publishResult); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
+        header.Children.Add(actions); header.Children.Add(publishSummary); header.Children.Add(publishScope); header.Children.Add(publishResult); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
         AutomationProperties.SetLiveSetting(publishBlockedReason, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         AutomationProperties.SetLiveSetting(publishResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.Children.Add(header);
@@ -66,12 +69,9 @@ internal sealed partial class PlanWorkspaceView
         var statusDate = document.State.Settings.StatusDate ?? today;
         var pastStatusDate = statusDate < today;
         var dateText = statusDate.ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"));
-        publishStatusDate.Text = (pastStatusDate
+        publishStatusDate.Text = pastStatusDate
             ? "注意: 基準日 " + dateText + " は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。"
-            : "日付は基準日 " + dateText + " で計算したものです。") + (document.Dates.Recalculated switch {
-                PlanDateHoldOrigin.FirstTakeIn => "（最初の取り込みのあとの再計算）",
-                PlanDateHoldOrigin.Reset => "（GitHub の状態に戻したあとの再計算）", _ => ""
-            });
+            : "日付は基準日 " + dateText + " で計算したものです。";
         publishStatusDate.Foreground = PlanSheetView.Brush(pastStatusDate ? "SheetChangedMarkBrush" : "TextFillColorPrimaryBrush");
         AutomationProperties.SetName(publishStatusDate, publishStatusDate.Text);
         var conflicts = PlanOperations.BlockingConflicts(document);
@@ -85,38 +85,87 @@ internal sealed partial class PlanWorkspaceView
         }
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
         var scheduled = session.Schedule(Today).ToDictionary(r => r.Input.Identity);
+        // Rows this publish cannot create because they have no title, and every new row that would be
+        // created inside one (#247). Their writes are held, so the review must not present them as writes.
+        var held = PlanOperations.HeldRows(document);
+        var untitled = PlanOperations.UntitledNewRows(document).ToHashSet(StringComparer.Ordinal);
+        void MoveToRow(string identity) { Show("tasks"); sheet?.RevealAddedRow(identity); }
+        void RowActions(PlanPublishReviewLine line, string identity)
+        {
+            line.Actions.Add(new("行へ移動", $"PlanReviewMoveTo{identity}", () => { MoveToRow(identity); return Task.CompletedTask; }));
+            line.Actions.Add(new("行を削除", $"PlanReviewDelete{identity}", () => Run(async () => {
+                var position = ReviewPosition(identity);
+                Check(await session.Execute(new DeletePlanRows([identity]), Today));
+                RenderTasks();
+                RestoreReviewPosition(identity, position);
+            })));
+        }
         foreach (var row in document.State.Rows)
         {
+            if (held.Contains(row.Identity))
+            {
+                var line = new PlanPublishReviewLine(untitled.Contains(row.Identity)
+                    ? $"タイトルのない新しい行 {untitled.Count:N0} 件は発行しません"
+                    : "タイトルのない新しい行の中にあるため発行しません");
+                RowActions(line, row.Identity);
+                Group(row.Identity).Lines.Add(line);
+                continue;
+            }
             var result = scheduled[row.Identity];
             var current = row with { Start = result.Start.Value, End = result.End.Value };
             // Same rule as PlanOperations.Changes: a closed task publishes its Remaining as 0.
-            if (document.Dates.Held is null && row.Closed && !result.IsSummary) current = current with { Remaining = 0 };
+            if (row.Closed && !result.IsSummary) current = current with { Remaining = 0 };
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
             if (isNew) { Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}")); Group(row.Identity).HasWritableChanges = true; }
+            // #231: the review names what the publish sends and nothing else. この版から外す archives the item
+            // alone; a close or reopen sends its state write, and its dates and remaining work follow the read.
+            var stateChange = !isNew && before.Closed != row.Closed;
+            if (!isNew && !before.Removed && row.Removed)
+            {
+                Group(row.Identity).Lines.Add(new("GitHub: プロジェクトからアーカイブします（Issue とフィールドの値は残ります）"));
+                Group(row.Identity).HasWritableChanges = true;
+                continue;
+            }
+            if (stateChange)
+            {
+                Group(row.Identity).Lines.Add(new(row.Closed
+                    ? row.Cancelled ? "GitHub: Issue を完了としてではなく閉じます（中止）" : "GitHub: Issue を完了として閉じます"
+                    : "GitHub: Issue を再オープンします"));
+                Group(row.Identity).HasWritableChanges = true;
+            }
             foreach (var field in PlanValues.Fields(before, current))
             {
+                if (stateChange && field is PlanField.Start or PlanField.End or PlanField.Remaining or PlanField.Cancelled) continue;
                 if (PlanSheetColumns.IsMappedExtra(document, field)) continue;
                 var conflict = conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
                 if (conflict is null && (PlanOperations.IsSummaryPublishExcluded(result.IsSummary, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings))) continue;
                 var oldValue = PlanValues.Get(before, field); var newValue = PlanValues.Get(current, field);
                 if (oldValue == newValue && conflict is null || isNew && field is PlanField.Title or PlanField.Repository) continue;
-                if (changes.Fields.TryGetValue(row.Identity, out var fields) && fields.Contains(field)) Group(row.Identity).HasWritableChanges = true;
-                Group(row.Identity).Lines.Add(ReviewLine(document, row.Identity, field, oldValue, newValue, conflict, isNew));
+                // A relationship that would name a row this publish does not create is held, not written.
+                var holds = PlanOperations.HoldsField(current, before, field, held);
+                if (!holds && changes.Fields.TryGetValue(row.Identity, out var fields) && fields.Contains(field)) Group(row.Identity).HasWritableChanges = true;
+                var line = ReviewLine(document, row.Identity, field, oldValue, newValue, conflict, isNew);
+                if (holds) line.Text += "（タイトルのない新しい行のため保留）";
+                Group(row.Identity).Lines.Add(line);
             }
         }
         foreach (var parent in document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!)
             .Concat(conflicts.Where(c => c.Field == PlanField.SubIssueOrder).Select(c => c.Identity)).Distinct())
         {
-            if (!document.State.Rows.Any(r => r.Identity == parent)) continue;
+            if (!document.State.Rows.Any(r => r.Identity == parent) || held.Contains(parent)) continue;
             var conflict = conflicts.SingleOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
             // The same comparison decides the unpublished count, this line and the publish writes.
             var sibling = PlanOperations.SiblingOrderChange(document, parent);
             if (sibling is null && conflict is null) continue;
             var previous = sibling?.Before ?? PlanOperations.PreviousSiblingOrder(document, parent);
             var children = sibling?.After ?? PlanOperations.PlanChildren(document, parent);
-            if (sibling is not null) Group(parent).HasWritableChanges = true;
-            Group(parent).Lines.Add(ReviewLine(document, parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent)));
+            // An order that names a row this publish does not create is held whole (#247).
+            var holdsOrder = children.Any(held.Contains);
+            if (sibling is not null && !holdsOrder) Group(parent).HasWritableChanges = true;
+            var orderLine = ReviewLine(document, parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent));
+            if (holdsOrder) orderLine.Text += "（タイトルのない新しい行のため保留）";
+            Group(parent).Lines.Add(orderLine);
         }
         foreach (var conflict in conflicts.Where(c => c.Field == PlanField.Order))
             Group(conflict.Identity).Lines.Add(ReviewLine(document, conflict.Identity, conflict.Field, conflict.Baseline, conflict.Local, conflict));
@@ -134,6 +183,7 @@ internal sealed partial class PlanWorkspaceView
             .ToDictionary(p => p.Identity, p => p.Position);
         foreach (var (row, index) in document.State.Rows.Select((row, index) => (row, index)))
         {
+            if (held.Contains(row.Identity)) continue;
             if (!changes.Fields.TryGetValue(row.Identity, out var fields) ||
                 !fields.Contains(PlanField.Order) && !fields.Contains(PlanField.NewTask)) continue;
             var before = baselinePositions.TryGetValue(row.Identity, out var position) ? position.ToString() : "—";
@@ -236,8 +286,10 @@ internal sealed partial class PlanWorkspaceView
     private static string Caption(PlanDocument document, string identity)
     {
         var index = document.State.Rows.IndexOf(document.State.Rows.FirstOrDefault(r => r.Identity == identity)!);
-        return index >= 0 ? $"{index + 1} {document.State.Rows[index].Title}" : identity == document.Project.NodeId ? "プロジェクト" :
+        if (index < 0) return identity == document.Project.NodeId ? "プロジェクト" :
             document.Sync.IssueLinks.GetValueOrDefault(identity)?.Caption ?? "計画外Issue（未取得）";
+        // A new row without a title has nothing to show but its position (#247).
+        return document.State.Rows[index].Title.Length == 0 ? $"{index + 1}行目 タイトルのない新しい行" : $"{index + 1} {document.State.Rows[index].Title}";
     }
     internal static string ReviewValue(PlanDocument document, string field, string? json)
     {
@@ -251,8 +303,9 @@ internal sealed partial class PlanWorkspaceView
         return element.ValueKind switch {
             JsonValueKind.Array => element.GetArrayLength() == 0 ? "未入力" : string.Join("、", element.EnumerateArray().Select(e => Identity(e.GetString()!))),
             JsonValueKind.String => field == PlanField.Parent ? Identity(element.GetString()!) : element.GetString() is { Length: > 0 } text ? text : "未入力",
-            JsonValueKind.True => field == PlanField.Fixed ? "固定" : "完了",
-            JsonValueKind.False => field == PlanField.Fixed ? "指定なし" : "未完了",
+            // #231: the row-state fields read as the command's own words, never as a bare 完了.
+            JsonValueKind.True => field switch { PlanField.Fixed => "固定", PlanField.Cancelled => "中止にする", PlanField.Removed => "この版から外す", _ => "完了" },
+            JsonValueKind.False => field switch { PlanField.Fixed => "指定なし", PlanField.Cancelled => "中止にしない", PlanField.Removed => "この版に残す", _ => "未完了" },
             _ => element.ToString() };
     }
     private async Task Publish()

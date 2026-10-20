@@ -24,8 +24,9 @@ internal sealed class PlanEffortTests
         Assert.That(tasks[0].Remaining, Is.Zero);
         Assert.That(tasks[0].End.Value, Is.EqualTo(close));
         Assert.That(tasks[1].Warnings, Is.Empty);
-        Assert.That(tasks[1].Start.Value, Is.EqualTo(close.AddDays(1)));
-        Assert.That(tasks[1].End.Value, Is.EqualTo(close.AddDays(1)));
+        // The closed predecessor's end is its close day, and a successor may start on that day (#236).
+        Assert.That(tasks[1].Start.Value, Is.EqualTo(close));
+        Assert.That(tasks[1].End.Value, Is.EqualTo(close));
         var review = PlanPublishPlan.Build(d, Remote(d), Day, Guid.NewGuid().ToString("N"));
         Assert.That(review.Changes.Select(c => c.Field), Is.EquivalentTo(mapped
             ? new[] { PlanField.End, PlanField.Remaining } : new[] { PlanField.End }));
@@ -131,12 +132,14 @@ internal sealed class PlanEffortTests
         Assert.That(row.IsZeroRemainingOpen, Is.EqualTo(zero));
     }
     [Test]
-    public void ReestimatedOverrunSchedulesRemainingAtPersonsRateAfterStatusDate()
+    public void ReestimatedOverrunConsumesActualAndRemainingAtThePersonsRateFromItsStart()
     {
-        var result = PlanScheduler.Calculate([new("I1", 1) { Estimate = 40, Actual = 56, Remaining = 8,
-            Start = Day.AddDays(-7), Assignees = ["U1"] }], new() { People = [new("U1", 50)] }, Day).Single();
-        Assert.That(result.Start.Value, Is.EqualTo(Day.AddDays(-7)));
-        Assert.That(result.End.Value, Is.EqualTo(Day.AddDays(1)));
+        // #236 rule 2: an in-progress task keeps its start and its end is the day Actual + Remaining is used
+        // up from there. At 50% (4h a day) 8h done + 8h left reaches 10/8, and the load carries only the 8h left.
+        var result = PlanScheduler.Calculate([new("I1", 1) { Estimate = 40, Actual = 8, Remaining = 8,
+            Start = Day, Assignees = ["U1"] }], new() { People = [new("U1", 50)] }, Day).Single();
+        Assert.That(result.Start.Value, Is.EqualTo(Day));
+        Assert.That(result.End.Value, Is.EqualTo(Day.AddDays(3)));
         Assert.That(result.PlannedHours!.Values.Sum(), Is.EqualTo(8));
     }
     private static PlanDocument Document(PlanRow row)
@@ -145,6 +148,21 @@ internal sealed class PlanEffortTests
         return new(new(new("github.com", 42), "P1"), new(rows, []), new(rows, new() {
             StatusDate = Day, Columns = [new(PlanField.Remaining, "R", "Remaining", "NUMBER"), new(PlanField.End, "E", "End", "DATE")]
         }));
+    }
+    // A read invents no dates (#236 rule 5), so the plan holds the end its start implies only because the edit
+    // that set that start laid it out. This does the same, and stamps only the end, because that is what
+    // Reschedule writes.
+    private static PlanDocument Laid(PlanDocument d)
+    {
+        var rows = d.State.Rows;
+        var settings = d.State.Settings;
+        var schedule = PlanScheduler.Calculate(rows.Select((r, i) => PlanOperations.TaskInput(r, i)).ToArray(),
+            new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
+                Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() },
+            Day, rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal));
+        var byId = schedule.ToDictionary(t => t.Input.Identity);
+        return d with { State = d.State with { Rows = rows.Select(r => r with { End = byId[r.Identity].End.Value }).ToImmutableArray() } };
     }
     private static PlanRemoteSnapshot Remote(PlanDocument d) => new(d.Baseline, ImmutableDictionary<string, string>.Empty,
         d.State.Settings.Columns.Select(c => new ProjectFieldDefinition(new(d.Project.Scope, c.FieldId), d.Project, c.Name,
@@ -179,17 +197,26 @@ internal sealed class PlanEffortTests
     {
         var row = new PlanRow("I1", "Work", "acme/repo") { Estimate = 40, Actual = 8,
             Closed = closed, CloseDate = closed ? Day : null,
-            Start = closed ? Day.AddDays(7) : null, End = closed ? Day.AddDays(11) : null };
+            // #236: a task with no dates of its own gets none, so the open case states its plan start and the
+            // scheduler lays its end out from there.
+            Start = closed ? Day.AddDays(7) : Day, End = closed ? Day.AddDays(11) : null };
         var d = Document(row);
         var columns = d.State.Settings.Columns.Add(new(PlanField.Start, "S", "Start", "DATE"));
         d = d with { State = d.State with { Settings = d.State.Settings with { Columns = mapped ? columns : [] },
             Rows = [row with { Title = "Updated" }] } };
+        // The start this row holds was given by a PMO edit, and that edit laid the end out. Without this the
+        // plan would hold no end at all and the automatic end field would be display-only, which under #236 is
+        // not an unpublished change.
+        d = Laid(d);
         var scheduled = PlanOperations.Schedule(d, Day).Single();
         Assert.That(scheduled.Start.Value, Is.EqualTo(Day));
-        Assert.That(scheduled.End.Value, Is.EqualTo(closed ? Day : Day.AddDays(3)));
+        // #236 rule 2: an in-progress task consumes Actual + Remaining from its plan start, so 8h done plus
+        // 32h left at 8h a day reaches 10/9.
+        Assert.That(scheduled.End.Value, Is.EqualTo(closed ? Day : Day.AddDays(4)));
         Assert.That(scheduled.Remaining, Is.EqualTo(closed ? 0 : 32));
+        // #236: the open row keeps the plan start it already has, so its end is the automatic field here.
         var expected = mapped ? closed ? new[] { PlanField.Title, PlanField.Start, PlanField.End, PlanField.Remaining }
-            : new[] { PlanField.Title, PlanField.Start, PlanField.End } : new[] { PlanField.Title };
+            : new[] { PlanField.Title, PlanField.End } : new[] { PlanField.Title };
         var changes = PlanOperations.Changes(d, Day);
         Assert.That(changes.Fields["I1"], Is.EquivalentTo(expected));
         Assert.That(changes.RecalculatedFields.Select(c => c.Field), Is.EquivalentTo(expected.Where(f => f != PlanField.Title)));
@@ -279,7 +306,7 @@ internal sealed class PlanEffortTests
     [Test]
     public void ReopeningClearsCloseDateAndSchedulesAgain()
     {
-        var d = Document(new("I1", "Work", "acme/repo") { Closed = true, CloseDate = Day.AddDays(-3), Remaining = 16 });
+        var d = Document(new("I1", "Work", "acme/repo") { Closed = true, CloseDate = Day.AddDays(-3), Remaining = 16, Start = Day });
         var remote = d.Baseline with { Rows = [d.Baseline.Rows[0] with { Closed = false, CloseDate = null }] };
         var merged = PlanMerge.Merge(d, remote);
         Assert.That(merged.State.Rows[0].CloseDate, Is.Null);

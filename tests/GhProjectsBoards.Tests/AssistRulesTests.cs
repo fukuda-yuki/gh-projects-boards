@@ -61,7 +61,8 @@ internal sealed class AssistRulesTests
             Assert.That(task.End.Origin, Is.EqualTo(DateOrigin.Calculated));
             Assert.That(task.StartReason, Is.Not.Empty); Assert.That(task.EndReason, Is.Not.Empty);
             Assert.That(task.Successors.Single().Identity, Is.EqualTo("B"));
-            Assert.That(task.PublishedDifferences.Any(d => d.Field == PlanField.End), Is.True);
+            Assert.That(task.PublishedDifferences.Any(d => d.Field == PlanField.End), Is.False,
+                "The plan keeps the published end, so 期限超過 — not a published difference — reports the slippage.");
             Assert.That(task.Lateness.Level, Is.EqualTo(PlanLatenessLevel.Overdue));
         });
         var summary = reader.SummarizePlan();
@@ -87,13 +88,17 @@ internal sealed class AssistRulesTests
         Assert.Throws<ArgumentException>(() => reader.FindTasks(new() { Limit = 101 }));
     }
     [Test]
-    public void CombinedSearchUsesLocalValuesStatusDateAndPublishedLateness()
+    public void CombinedSearchUsesLocalValuesStatusDateAndForecastLateness()
     {
         var d = Document(); d = d with { State = d.State with { Rows = d.State.Rows.SetItem(1, d.State.Rows[1] with { Title = "更新した設計" }) } };
         var reader = new AssistPlanReader(d, Today.AddDays(10));
-        var filter = new AssistFindTasks { Title = "更新", Phase = "PS", Assignee = "田中", Requirement = "R", From = Today, To = Today, State = "unpublished" };
+        // #236: the date range filters on the plan's own interval, which for A is its stored 10/12–10/14.
+        var filter = new AssistFindTasks { Title = "更新", Phase = "PS", Assignee = "田中", Requirement = "R", From = Today.AddDays(-3), To = Today.AddDays(-1), State = "unpublished" };
         Assert.That(reader.FindTasks(filter).Items.Select(t => t.Identity), Is.EqualTo(new[] { "A" }));
-        Assert.That(reader.FindTasks(filter with { State = "later-than-published" }).Items.Select(t => t.Identity), Is.EqualTo(new[] { "A" }));
+        // A is 期限超過 (its plan end is behind the 基準日), so it is not 予定より遅れ, which compares the plan
+        // with the 見込終了 forecast (#236).
+        Assert.That(reader.FindTasks(filter with { State = "later" }).Items, Is.Empty);
+        Assert.That(reader.FindTasks(filter with { State = "overdue" }).Items.Select(t => t.Identity), Is.EqualTo(new[] { "A" }));
         Assert.That(reader.SummarizePlan().StatusDate, Is.EqualTo(Today));
         Assert.That(reader.GetTasks(["A"]).Items.Single().PublishedDifferences.Single(v => v.Field == PlanField.Title).Published, Is.EqualTo("PS-004 設計"));
     }
@@ -141,27 +146,26 @@ internal sealed class AssistRulesTests
         Assert.That(PlanJson.Text(d), Is.EqualTo(before));
     }
     [Test]
-    public void HeldDatePreviewReportsTheReleaseRecalculationApartFromTheProposalEffect()
+    public void ProposalEffectIsTheTasksTheEditItselfReschedules()
     {
-        var unheld = Document(); var held = unheld with { Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
+        var document = Document();
         AssistProposal Propose(PlanDocument d, string field, object value) =>
             AssistProposal.Create(d, 0, Today, [new("A", field, JsonSerializer.SerializeToElement(value))]).Proposal!;
-        var title = Propose(held, PlanField.Title, "変更");
+        var title = Propose(document, PlanField.Title, "変更");
         Assert.That(title.ScheduleEffect.Total, Is.Zero, "A title change moves no dates of its own.");
-        Assert.That(title.RecalculatedTasks, Is.EqualTo(2), "Releasing the held dates recalculates both tasks.");
-        var remaining = Propose(held, PlanField.Remaining, 40m);
-        var expected = Propose(unheld, PlanField.Remaining, 40m);
-        static object[] Dates(AssistProposal p) => p.ScheduleEffect.Items.Select(c => (object)(c.Task.Identity, c.PreviousStart, c.PreviousEnd, c.Start, c.End)).ToArray();
-        Assert.That(Dates(remaining), Is.EqualTo(Dates(expected)).And.Not.Empty, "The effect is measured from the recalculated plan.");
-        Assert.That(remaining.RecalculatedTasks, Is.EqualTo(2));
-        Assert.That(expected.RecalculatedTasks, Is.Zero);
+        Assert.That(title.MovedTasks, Is.Zero);
+        var remaining = Propose(document, PlanField.Remaining, 40m);
+        Assert.That(remaining.MovedTasks, Is.EqualTo(remaining.ScheduleEffect.Total).And.Positive,
+            "The reported count is exactly the schedule effect the card lists.");
     }
     [Test]
-    public void ProposalShowsScheduledCurrentDateRatherThanTheOldPublishedInput()
+    public void ProposalShowsThePlanValueRatherThanTheOldPublishedInput()
     {
         var d = Document();
         var proposal = AssistProposal.Create(d, 0, Today, [new("B", PlanField.Start, JsonSerializer.SerializeToElement("2026-10-26"))]).Proposal!;
-        Assert.That(proposal.Changes.Single().Current, Is.EqualTo("2026-10-19"));
+        // #236 rule 5: B has no dates of its own and no edit has placed it, so the plan shows none — the
+        // proposal's current value is that plan value, not an invented date.
+        Assert.That(proposal.Changes.Single().Current, Is.Empty);
     }
     [Test]
     public void TypedProposalAcceptsTheSameWholeOperationAsSheetInputIncludingDateAndAssigneeChanges()

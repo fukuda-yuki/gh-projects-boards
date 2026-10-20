@@ -25,11 +25,14 @@ internal static class PlanField
     public const string SubIssueOrder = "SubIssueOrder";
     public const string Labels = "Labels";
     public const string MilestoneTitle = "MilestoneTitle";
-    public static readonly string[] All = [Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder, Labels, MilestoneTitle];
+    // #231: a task that is 中止 rather than 完了, and a task the PMO has taken out of this version.
+    public const string Cancelled = "Cancelled";
+    public const string Removed = "Removed";
+    public static readonly string[] All = [Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder, Labels, MilestoneTitle, Cancelled, Removed];
     public static bool IsDefined(string value) => All.Contains(value) || PlanSheetColumns.IsExtra(value);
 }
 
-internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset }
+internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, Delete, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset, Close, Cancel, Reopen, Remove }
 internal sealed record PlanColumnDefinition(string Id, string Name, string DataType)
 { public ImmutableArray<string> Options { get; init; } = []; }
 internal sealed record PlanColumnMapping(string Role, string FieldId, string Name, string DataType);
@@ -56,6 +59,11 @@ internal sealed record ProjectPlanSettings
     public DateOnly? ProjectEnd { get; init; }
     public string? DefaultRepository { get; init; }
     public DateOnly? StatusDate { get; init; }
+    // #236 part B: each lateness mark can be hidden on its own. The sets, the counts and the filters are
+    // unaffected, so hiding a mark never hides the work behind it. #251 owns the wider settings inventory.
+    public bool ShowOverdueMark { get; init; } = true;
+    public bool ShowLaterMark { get; init; } = true;
+    public bool ShowOverEstimateMark { get; init; } = true;
 }
 internal sealed record PlanExtraValue(ValueAvailability Availability, string? Json);
 internal sealed record PlanRow(string Identity, string Title, string Repository)
@@ -68,6 +76,10 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
     public string? Phase { get; init; }
     public bool Closed { get; init; }
     public DateOnly? CloseDate { get; init; }
+    // #231: 中止 (closed as not planned) and この版から外す (pending archive). Both leave the schedule,
+    // the totals and the load; the row keeps its values until the publish confirms it.
+    public bool Cancelled { get; init; }
+    public bool Removed { get; init; }
     public ImmutableArray<string> Assignees { get; init; } = [];
     public ImmutableArray<string> Predecessors { get; init; } = [];
     public string? Parent { get; init; }
@@ -87,12 +99,9 @@ internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray
   public ImmutableArray<PlanRepositoryOption> RepositoryMilestones { get; init; } = [];
   public ImmutableArray<PlanRepositoryOption> RepositoryLabels { get; init; } = []; }
 internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings);
-internal enum PlanDateHoldOrigin { FirstTakeIn, Reset }
-internal sealed record PlanDateState(PlanDateHoldOrigin? Held = null, PlanDateHoldOrigin? Recalculated = null);
 internal sealed record PlanDocument(ScopedId Project, PlanBaseline Baseline, PlanState State)
 {
     public PlanSync Sync { get; init; } = new();
-    public PlanDateState Dates { get; init; } = new();
 }
 internal sealed record PlanCellChange(string Identity, string Field, object? Value);
 internal abstract record PlanCommand;
@@ -108,14 +117,20 @@ internal sealed record IndentPlanRows(ImmutableArray<string> Targets, bool Outde
 internal sealed record MovePlanSubtrees(ImmutableArray<string> Targets, string? Before = null) : PlanCommand;
 internal sealed record ArrangePlanOutline() : PlanCommand;
 internal sealed record MovePlanRows(ImmutableArray<string> Targets, string? Before = null) : PlanCommand;
+internal sealed record DeletePlanRows(ImmutableArray<string> Targets) : PlanCommand;
+// #231: the four row-state commands. A requirement row stands for its whole subtree, and each command
+// applies to the rows of the selection it fits.
+internal sealed record ClosePlanRows(ImmutableArray<string> Targets, bool Cancelled = false) : PlanCommand;
+internal sealed record ReopenPlanRows(ImmutableArray<string> Targets) : PlanCommand;
+internal sealed record RemovePlanRows(ImmutableArray<string> Targets) : PlanCommand;
+internal enum PlanRowAction { Complete, Cancel, Reopen, Remove }
+internal sealed record PlanRowEligibility(ImmutableArray<string> Applies, ImmutableArray<(string Identity, string Reason)> Skipped);
 internal sealed record ReplacePlanSettings(ProjectPlanSettings Settings) : PlanCommand;
 internal sealed record PlanRowChange(string Identity, PlanRow? Before, PlanRow? After);
 internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowChange> Rows,
     ImmutableArray<string>? BeforeOrder, ImmutableArray<string>? AfterOrder,
     ProjectPlanSettings? BeforeSettings, ProjectPlanSettings? AfterSettings)
 {
-    public PlanDateState? BeforeDates { get; init; }
-    public PlanDateState? AfterDates { get; init; }
     public ImmutableArray<PlanRow> DiscardedRows { get; init; } = [];
     public ImmutableArray<string>? BeforeUnavailable { get; init; }
     public ImmutableArray<string>? AfterUnavailable { get; init; }
@@ -131,9 +146,14 @@ internal sealed record PlanSaveResult(bool Succeeded, PlanSaveFailure Failure, s
 {
     public PlanRefreshResult? Recalculation { get; init; }
     public bool Retryable => Failure == PlanSaveFailure.Io;
-}
-internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);
+}internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);
 internal sealed record PlanOpenResult(PlanLoadStatus Status, PlanSession? Session, string? Error);
+internal sealed record PlanReconcileResult(bool Succeeded, string? Error);
+// Carries the failure kind to the UI boundary, so a changed stored plan is not presented as a retry (#248).
+internal sealed class PlanSaveFailedException(PlanSaveResult result) : IOException(result.Error ?? "保存できませんでした。")
+{
+    public PlanSaveResult Result { get; } = result;
+}
 internal sealed record PlanImportResult(bool Applied, ImmutableArray<string> Warnings, string? Error, PlanSaveResult? Save);
 internal sealed record PlanSiblingOrderChange(ImmutableArray<string> Before, ImmutableArray<string> After);
 internal enum PlanUnpublishedInputKind { Entered, Recalculated }

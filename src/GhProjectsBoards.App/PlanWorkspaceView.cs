@@ -37,6 +37,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly StackPanel legend = Id(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 20, Margin = new(0, 0, 20, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanGanttLegend");
     private readonly Border statusBar = new() { Height = 28 };
     private readonly TextBlock statusCounts = Id(new TextBlock { Margin = new(20, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanStatusCounts");
+    private readonly StackPanel statusMarks = Id(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center }, "PlanStatusMarks");
     private readonly SelectorBarItem tasksTab = Id(new SelectorBarItem { Text = "計画" }, "PlanShowTasks");
     private readonly SelectorBarItem summaryTab = Id(new SelectorBarItem { Text = "サマリー" }, "PlanShowSummary");
     private readonly SelectorBar tabs = new();
@@ -59,6 +60,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Grid summaryArea = new();
     private PlanSummaryView? summaryView;
     private readonly Button retrySave;
+    private readonly Button conflictAction;
     private readonly TextBlock title = Id(new TextBlock { FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "OpenProjectName");
     private readonly Border unpublishedBadge = new() { CornerRadius = new(10), MinWidth = 20, Padding = new(6, 2, 6, 2), Background = PlanSheetView.Brush("SheetChangedMarkBrush") };
     private readonly TextBlock unpublishedLabel = new() { Text = "未発行のタスク", VerticalAlignment = VerticalAlignment.Center };
@@ -196,9 +198,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
         }, commitPending: false);
         retrySave.Visibility = Visibility.Collapsed;
         saveFailure.ActionButton = retrySave;
+        // A changed stored plan cannot be resolved by retrying, so the bar offers the way out instead (#248).
+        conflictAction = Button("対処する…", "PlanResolveSaveConflict", () => { _ = ResolveSaveConflictAsync(); return Task.CompletedTask; }, commitPending: false);
+        conflictAction.Visibility = Visibility.Collapsed;
+        saveFailure.Content = conflictAction;
         refreshFailure.ActionButton = Button("再試行", "PlanRetryRefresh", RefreshRemote);
         publishFailure.ActionButton = Button("再試行", "PlanRetryPublish", () => { RenderReview(); Show("publish"); return Task.CompletedTask; });
-        refreshResult.Closed += (_, _) => sheet?.ClearChangedTasksFilter();
+        refreshResult.Closed += (_, _) => sheet?.ClearIdentityFilter();
         AutomationProperties.SetLiveSetting(refreshResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         failures.Children.Add(refreshResult);
         AutomationProperties.SetLiveSetting(csvExportResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
@@ -258,11 +264,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var statusContent = new Grid();
         statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         statusContent.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        statusContent.Children.Add(statusCounts);
+        var statusLine = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 0, VerticalAlignment = VerticalAlignment.Center };
+        statusLine.Children.Add(statusCounts); statusLine.Children.Add(statusMarks);
+        statusContent.Children.Add(statusLine);
         foreach (var (caption, fill, stroke, dashed) in new[] {
             ("実績工数", "GanttTaskBrush", "GanttTaskBrush", false),
             ("見込み残存工数", "GanttTaskTintBrush", "GanttTaskBrush", false),
-            ("発行済みの終了日からの遅れ", "GanttLateTintBrush", "GanttLateBrush", true),
+            ("計画の終了日から見込終了までの遅れ", "GanttLateTintBrush", "GanttLateBrush", true),
             ("非稼働日", "GanttNonWorkingBrush", "WorkspaceCardStrokeBrush", false) }) {
             var item = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
             var swatch = new Microsoft.UI.Xaml.Shapes.Rectangle { Width = 16, Height = 10, RadiusX = 2, RadiusY = 2, VerticalAlignment = VerticalAlignment.Center,
@@ -343,10 +351,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var requirements = rows.Count(r => parents.Contains(r.Identity));
         statusCounts.Text = string.Create(CultureInfo.GetCultureInfo("ja-JP"), $"要求事項 {requirements:N0} · タスク {rows.Length - requirements:N0}");
         // RenderTasks creates and refreshes the session's sheet before updating shell counts.
-        if (sheet?.Session == session) {
-            if (sheet.OverdueTasks > 0) statusCounts.Text += $" · 期限超過 {sheet.OverdueTasks.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"))}";
-            if (sheet.LaterTasks > 0) statusCounts.Text += $" · 予定より遅れ {sheet.LaterTasks.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"))}";
-        }
+        UpdateStatusMarks(session);
     }
     private static Button CommandButton(string text, string id, Symbol icon)
     {
@@ -417,16 +422,19 @@ internal sealed partial class PlanWorkspaceView : UserControl
             + Environment.NewLine + "詳細: " + unreadable.Message;
         openFailure.IsOpen = true;
     }
-    private void ShowSaveFailure(string message)
+    private void ShowSaveFailure(string message, bool conflict = false)
     {
         sheet?.ClearSaveFailure();
         error.Text = "";
+        SaveConflictPending = conflict;
         saveFailure.Message = message; saveFailure.IsOpen = true;
-        retrySave.Visibility = Visibility.Visible;
+        retrySave.Visibility = conflict ? Visibility.Collapsed : Visibility.Visible;
+        conflictAction.Visibility = conflict ? Visibility.Visible : Visibility.Collapsed;
     }
     private void ClearSaveFailures()
     {
-        saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed;
+        SaveConflictPending = false;
+        saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; conflictAction.Visibility = Visibility.Collapsed;
         foreach (var entry in sheets.Values) entry.ClearSaveFailure();
     }
     private Task RefreshRemote() => ReadRemote(false);
@@ -466,21 +474,32 @@ internal sealed partial class PlanWorkspaceView : UserControl
     {
         showingRecalculation = recalculation;
         var culture = CultureInfo.GetCultureInfo("ja-JP");
-        string Date(DateOnly date) => date.ToString("M/d (ddd)", culture);
-        var moved = result.PreviousStatusDate != result.StatusDate;
-        var direction = result.StatusDate > result.PreviousStatusDate ? "進めて" : "戻して";
-        refreshResult.Title = recalculation ? "日程を再計算しました" : "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
-        refreshResult.Message = moved
-            ? $"基準日を {Date(result.PreviousStatusDate)} から {Date(result.StatusDate)} に{direction}日程を再計算しました。"
-            : $"基準日 {Date(result.StatusDate)} で日程を再計算しました。";
         refreshResult.ActionButton = null; refreshResult.Content = null;
-        if (recalculation || result.ChangedTasks.Count > 0)
-            refreshResult.Message += "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture);
-        if (result.ChangedTasks.Count > 0)
+        if (recalculation)
         {
-            refreshResult.ActionButton = Button("変更したタスクだけ表示", "PlanRefreshChangedFilter", () => {
-                Show("tasks"); sheet?.FilterChangedTasks(result.ChangedTasks); return Task.CompletedTask;
-            });
+            // A settings change reschedules the plan, so it keeps its own bar and reports the moved tasks.
+            refreshResult.Title = "日程を再計算しました";
+            refreshResult.Message = result.ChangedTasks.Count > 0
+                ? "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture) + "。発行すると GitHub に反映します。"
+                : "日程は変わっていません。";
+            if (result.ChangedTasks.Count > 0)
+                refreshResult.ActionButton = Button("変更したタスクだけ表示", "PlanRefreshChangedFilter", () => {
+                    Show("tasks"); sheet?.FilterTasks(result.ChangedTasks, "日程変更"); return Task.CompletedTask;
+                });
+        }
+        else
+        {
+            // #236: a refresh reads; it moves no date, so the bar reports the lateness it found instead of a
+            // 基準日 change or a changed-task count.
+            refreshResult.Title = "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
+            var counts = LatenessCounts();
+            refreshResult.Message = "日程は変えていません。" + (counts.Length > 0 ? " " + counts + "。" : " 遅れはありません。");
+            if (counts.Length > 0 && sheet?.CauseTasks > 0)
+                refreshResult.ActionButton = Button("遅れの原因を表示", "PlanRefreshCauseFilter", () => {
+                    Show("tasks"); sheet?.FilterTasks(sheet.CauseSet, "遅れの原因 " + sheet.CauseTasks.ToString("N0", culture), dimAncestors: true); return Task.CompletedTask;
+                });
+            else if (counts.Length > 0 && sheet is { OverdueTasks: > 0 })
+                refreshResult.ActionButton = CountFilter("期限超過", "PlanRefreshOverdueFilter", sheet.OverdueSet, sheet.OverdueTasks);
         }
         if (!result.AddedTasks.IsEmpty && workspace.Session is { } session)
         {
@@ -502,11 +521,52 @@ internal sealed partial class PlanWorkspaceView : UserControl
         }
         refreshResult.IsOpen = true;
     }
+    // The status bar's lateness counts (#236 part B) are buttons over the same identity sets the marks use.
+    private CheckBox MarkSwitch(string label, string id, bool value, Func<ProjectPlanSettings, bool, ProjectPlanSettings> change)
+    {
+        var box = Id(new CheckBox { Content = label, IsChecked = value, MinWidth = 0 }, id);
+        AutomationProperties.SetName(box, label);
+        ToolTipService.SetToolTip(box, label + "を表示します。件数と絞り込みは変わりません。");
+        var generation = settingsGeneration;
+        box.Click += async (_, _) => {
+            if (rendering || generation != settingsGeneration) return;
+            await Run(() => ChangeSettings(s => change(s, box.IsChecked == true)));
+            RenderSettings();
+        };
+        return box;
+    }
+    private string LatenessCounts()
+    {
+        if (sheet is null) return "";
+        var culture = CultureInfo.GetCultureInfo("ja-JP");
+        var parts = new List<string>();
+        if (sheet.OverdueTasks > 0) parts.Add($"期限超過 {sheet.OverdueTasks.ToString("N0", culture)}");
+        if (sheet.LaterTasks > 0) parts.Add($"予定より遅れ {sheet.LaterTasks.ToString("N0", culture)}");
+        if (sheet.CauseTasks > 0) parts.Add($"遅れの原因 {sheet.CauseTasks.ToString("N0", culture)}");
+        if (sheet.OverEstimateTasks > 0) parts.Add($"見積超過 {sheet.OverEstimateTasks.ToString("N0", culture)}");
+        return string.Join(" · ", parts);
+    }
+    private Button CountFilter(string label, string id, IReadOnlySet<string> identities, int count)
+    {
+        var text = label + " " + count.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"));
+        return Button(text, id, () => {
+            Show("tasks"); sheet?.FilterTasks(identities, text, dimAncestors: true); return Task.CompletedTask;
+        });
+    }
+    private void UpdateStatusMarks(PlanSession session)
+    {
+        statusMarks.Children.Clear();
+        if (sheet?.Session != session) return;
+        if (sheet.OverdueTasks > 0) statusMarks.Children.Add(CountFilter("期限超過", "PlanStatusOverdueFilter", sheet.OverdueSet, sheet.OverdueTasks));
+        if (sheet.LaterTasks > 0) statusMarks.Children.Add(CountFilter("予定より遅れ", "PlanStatusLaterFilter", sheet.LaterSet, sheet.LaterTasks));
+        if (sheet.CauseTasks > 0) statusMarks.Children.Add(CountFilter("遅れの原因", "PlanStatusCauseFilter", sheet.CauseSet, sheet.CauseTasks));
+        if (sheet.OverEstimateTasks > 0) statusMarks.Children.Add(CountFilter("見積超過", "PlanStatusOverEstimateFilter", sheet.OverEstimateSet, sheet.OverEstimateTasks));
+    }
     private void CloseRefreshResult()
     {
         showingRecalculation = false;
         refreshResult.IsOpen = false;
-        sheet?.ClearChangedTasksFilter();
+        sheet?.ClearIdentityFilter();
     }
     private void UpdateCommandAvailability()
     {
@@ -534,6 +594,91 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (bar?.ActionButton is Button retry) retry.IsEnabled = !busy;
     }
     internal string WorkDescription => $"operation={operation.Status}, closing={closing}, pendingSettings={pendingSettings.Count}, sheets=[{string.Join("; ", sheets.Values.Select(s => s.WorkDescription))}]";
+    // #248: a save refused because another window stored this plan is not retryable; the two escapes
+    // (reload and reapply, or save as a copy) both keep this window's edit, and closing always has a choice.
+    internal bool SaveConflictPending { get; private set; }
+    private async Task ReapplyStoredPlanAsync()
+    {
+        if (workspace.Session is not { } session) return;
+        var result = await session.ReapplyStoredAsync(Today);
+        if (result.Succeeded) { ClearSaveFailures(); RenderTasks(); RenderSettings(); return; }
+        ShowSaveFailure(result.Error ?? "読み直した計画を保存できませんでした。", conflict: true);
+    }
+    private async Task SavePlanCopyAsync()
+    {
+        if (workspace.Session is not { } session) return;
+        if (await SelectFile("plan-copy") is not { } path) return;
+        var result = await session.SaveCopyAsync(path);
+        if (result.Succeeded) { ClearSaveFailures(); error.Text = "コピーとして保存しました: " + path; return; }
+        ShowSaveFailure(result.Error ?? "コピーとして保存できませんでした。", conflict: true);
+    }
+    private async Task ResolveSaveConflictAsync()
+    {
+        switch (await ShowSaveConflictDialogAsync(closing: false))
+        {
+            case SaveConflictChoice.Reapply: await ReapplyAndReportAsync(); break;
+            case SaveConflictChoice.SaveCopy: await CopyAndReportAsync(); break;
+        }
+    }
+    private async Task<bool> ReapplyAndReportAsync()
+    {
+        await ReapplyStoredPlanAsync();
+        return !SaveConflictPending;
+    }
+    private async Task<bool> CopyAndReportAsync()
+    {
+        await SavePlanCopyAsync();
+        return !SaveConflictPending;
+    }
+    private enum SaveConflictChoice { Reapply, SaveCopy, Discard, Stay }
+    private async Task<SaveConflictChoice> ShowSaveConflictDialogAsync(bool closing)
+    {
+        var discard = false;
+        var dialog = Id(new ContentDialog { XamlRoot = XamlRoot, Title = "別のウィンドウがこの計画を保存しました",
+            PrimaryButtonText = closing ? "読み直して適用して閉じる" : "読み直して編集を適用",
+            SecondaryButtonText = closing ? "コピーとして保存して閉じる" : "コピーとして保存…",
+            CloseButtonText = closing ? "閉じない" : "あとで",
+            DefaultButton = ContentDialogButton.Primary }, "PlanSaveConflict");
+        var discardButton = Button(closing ? "編集を破棄して閉じる" : "編集を破棄", "PlanSaveConflictDiscard", () => { discard = true; dialog.Hide(); return Task.CompletedTask; }, commitPending: false);
+        var panel = new StackPanel { Spacing = 12 };
+        panel.Children.Add(new TextBlock { TextWrapping = TextWrapping.Wrap,
+            Text = "このウィンドウの編集は保持しています。保存されている計画を読み直して編集を適用するか、このウィンドウの内容をコピーとして保存してください。"
+                + (closing ? Environment.NewLine + "編集を破棄して閉じることもできます。" : "") });
+        // Discarding is only a way out of closing; while the window stays open, nothing is thrown away.
+        if (closing) panel.Children.Add(discardButton);
+        dialog.Content = panel;
+        var result = await dialog.ShowAsync();
+        if (discard) return SaveConflictChoice.Discard;
+        return result switch { ContentDialogResult.Primary => SaveConflictChoice.Reapply, ContentDialogResult.Secondary => SaveConflictChoice.SaveCopy, _ => SaveConflictChoice.Stay };
+    }
+    // Called by the window when a close could not flush. True means the window may close.
+    internal async Task<bool> ResolveCloseConflictAsync()
+    {
+        if (!SaveConflictPending)
+        {
+            // A retryable failure keeps its retry path, and the window can still be closed by choice.
+            var discard = false;
+            var dialog = Id(new ContentDialog { XamlRoot = XamlRoot, Title = "保存できませんでした",
+                PrimaryButtonText = "保存を再試行", CloseButtonText = "閉じない", DefaultButton = ContentDialogButton.Primary }, "PlanCloseFailure");
+            var discardButton = Button("編集を破棄して閉じる", "PlanCloseDiscard", () => { discard = true; dialog.Hide(); return Task.CompletedTask; }, commitPending: false);
+            var panel = new StackPanel { Spacing = 12 };
+            panel.Children.Add(new TextBlock { TextWrapping = TextWrapping.Wrap,
+                Text = (saveFailure.Message.Length > 0 ? saveFailure.Message : "保存できませんでした。") + Environment.NewLine + "編集を破棄して閉じることもできます。" });
+            panel.Children.Add(discardButton);
+            dialog.Content = panel;
+            var result = await dialog.ShowAsync();
+            if (discard) return true;
+            if (result != ContentDialogResult.Primary) return false;
+            try { await workspace.RetrySave(); await CommitPending(); ClearSaveFailures(); return true; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { ShowSaveFailure(ex.Message, ex is PlanSaveFailedException { Result.Failure: PlanSaveFailure.ChangedFile }); return false; }
+        }
+        var choice = await ShowSaveConflictDialogAsync(closing: true);
+        return choice switch {
+            SaveConflictChoice.Reapply => await ReapplyAndReportAsync(),
+            SaveConflictChoice.SaveCopy => await CopyAndReportAsync(),
+            SaveConflictChoice.Discard => true,
+            _ => false };
+    }
     internal async Task<bool> StopAsync()
     {
         if (!await DiscardDetailEdit()) return false;
@@ -551,7 +696,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             closing = false;
             SetPublishBusy(false); RenderTasks(); RenderReview();
-            if (ex is IOException or UnauthorizedAccessException) ShowSaveFailure(ex.Message);
+            if (ex is IOException or UnauthorizedAccessException) ShowSaveFailure(ex.Message, ex is PlanSaveFailedException { Result.Failure: PlanSaveFailure.ChangedFile });
             else error.Text = ex.Message;
             return false;
         }
@@ -606,7 +751,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
+                next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }),
+                    reapplyStoredPlan: ReapplyStoredPlanAsync, savePlanCopy: SavePlanCopyAsync);
                 next.CommandRowFocusRequested += () => {
                     if (!ReferenceEquals(sheet, next)) return;
                     if (DetailVisible && PlanSheetView.Down(Windows.System.VirtualKey.Shift)) FocusDetail(); else FocusCommandRow();
@@ -652,7 +798,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void ShowPlanningResult(PlanSaveResult save)
     {
-        if (showingRecalculation && workspace.Session?.Document.Dates.Held is not null) CloseRefreshResult();
         if (save.Recalculation is { } result) ShowRefreshResult(result, recalculation: true);
     }
     private void Check(PlanSaveResult save)
@@ -698,6 +843,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 if (!result.Succeeded) throw new InvalidOperationException(result.Error);
                 await workspace.Refresh(OperationToken); RenderTasks(); RenderSettings();
             }));
+            settings.Children.Add(SettingsHeading("表示"));
+            // #236 part B: each lateness mark can be hidden. The sets, the counts and the filters stay.
+            settings.Children.Add(MarkSwitch("期限超過の印", "PlanShowOverdueMark", value.ShowOverdueMark,
+                (s, on) => s with { ShowOverdueMark = on }));
+            settings.Children.Add(MarkSwitch("予定より遅れの印", "PlanShowLaterMark", value.ShowLaterMark,
+                (s, on) => s with { ShowLaterMark = on }));
+            settings.Children.Add(MarkSwitch("見積超過の印", "PlanShowOverEstimateMark", value.ShowOverEstimateMark,
+                (s, on) => s with { ShowOverEstimateMark = on }));
             settings.Children.Add(SettingsHeading("カレンダー"));
             settings.Children.Add(Label("月–金  09:00–13:00 / 14:00–18:00"));
             var holidays = value.ImportedHolidays?.ToPreset() ?? PlanningContract.BundledHolidays();
@@ -1078,11 +1231,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private async Task<string?> SelectFile(string purpose)
     {
         if (PickFile is { } pick) return await pick(purpose);
-        if (purpose is "export" or "csv-export")
+        if (purpose is "export" or "csv-export" or "plan-copy")
         {
             var csv = purpose == "csv-export";
+            var copy = purpose == "plan-copy";
             var title = string.Concat((workspace.Selected?.Title ?? "Project").Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).TrimEnd(' ', '.');
-            var picker = new FileSavePicker { SuggestedFileName = csv ? (title.Length == 0 ? "Project" : title) + ".csv" : "project-settings" };
+            var picker = new FileSavePicker { SuggestedFileName = csv ? (title.Length == 0 ? "Project" : title) + ".csv" : copy ? (title.Length == 0 ? "Project" : title) + "-copy" : "project-settings" };
             WinRT.Interop.InitializeWithWindow.Initialize(picker, WindowHandle);
             picker.FileTypeChoices.Add(csv ? "CSV" : "JSON", [csv ? ".csv" : ".json"]);
             return (await picker.PickSaveFileAsync())?.Path;

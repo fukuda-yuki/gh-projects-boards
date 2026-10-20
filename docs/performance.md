@@ -89,3 +89,18 @@ Use one unchanged baseline and one candidate with the identical harness and fixt
 ## Refresh and publish (#79)
 
 Use the product publisher measurement command and source/environment/artifact requirements in the [test policy](../tests/README.md#live-github). The baseline sandbox measurements, batch limits and targets are in [decisions](decisions.md#throughput-targets-for-79). Core throughput, hosted rendering and ordinary-desktop responsiveness are separate observations. Preserve failed attempts and report unavailable measurements explicitly.
+
+### Publication read scope (#201)
+
+Measured offline on the evaluation workload — a 基準日 change and a refresh, then 12 PMO edits and one publish, driven through the ordinary app against the isolated fake gh (`C:\w\rc2-plan\evidence\196\run-b-offline.ps1`). This is the **offline workload shape**, not a GitHub measurement: the fake serves reads locally, so the elapsed time mostly reflects local processing, and it is not comparable with the 318.9 s and 308 s GitHub figures.
+
+| Publish | Batches | Calls | Writes | Head |
+| --- | --- | --- | --- | --- |
+| 41.33 s | `[10,10,3]` | 117 | 3 | `4f6ce4f8` (before #201) |
+| 20.13 s | `[10,10,3]` | 15 | 3 | `b2c311a9` (after #201) |
+
+Both rows are the same workload: one 基準日 change, one refresh, twelve Remaining edits and one publish, with identical mutation batches and the same three writes. The publish therefore went from 117 calls to 15 and from 41.33 s to 20.13 s, a saving of about 21 s, while the field values written did not change. The refresh is deliberately unchanged at 58 calls: #201 narrows the read scope of a publish, and a refresh still reads the whole Project.
+
+The read scope itself is evidenced by the request set rather than by the timing. An adapter run of a one-write publish records **no `ProjectItems` traversal**, exactly **two scoped item reads** — one before the writes and one after them — and those reads name only the written item id. Before #201 the same publish paid two complete Project traversals; at 1,042 items each is about 56 requests, which is the 102 calls the after-row no longer spends.
+
+The after-row was taken in a full-access session under the desktop and machine-idle locks, on binaries named by hash rather than by branch tip: `GhProjectsBoards.App.exe` SHA-256 `0ACE201E90B226B9C761C811088D140B7F53E20275D87CDF431B26FF11BE2A62`, built 09:07:38 from `e0ab19f9`. Idle was confirmed immediately before the first launch, and the run record is `C:\w\rc2-plan\evidence\196\run-b-201\run.json`. A session that cannot persist must not take this measurement: the publish requires every checkpoint save to succeed, so a run whose saves fail produces a number that means nothing.

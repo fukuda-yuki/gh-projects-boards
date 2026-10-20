@@ -18,7 +18,7 @@ internal static class PlanCsvExport
         var people = document.State.Settings.People.ToDictionary(p => p.Identity, p => p.Name);
         var published = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
         var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
-        var lateness = PlanLateness.Classify(schedule, document.Baseline, calendar, document.State.Settings.StatusDate ?? today);
+        var lateness = PlanLateness.Classify(schedule, calendar, document.State.Settings.StatusDate ?? today);
         var text = new StringBuilder("\uFEFF");
         var rowsById = document.State.Rows.ToDictionary(r => r.Identity);
         WriteRow([Text("ID"), .. visible.Select(c => Text(c.Name)), Text("要求事項"), Text("リポジトリ"), Text("Issue 番号"), Text("URL"), Text("未発行")]);
@@ -42,8 +42,10 @@ internal static class PlanCsvExport
                     return PlanExtraEditing.Value(row, field) is decimal numeric ? Number(numeric) : Text(PlanExtraEditing.Value(row, field)?.ToString() ?? "");
                 }
                 return field switch {
-                    "Indicator" => Text(PlanSheetText.Indicator(row, task, lateness.Tasks.GetValueOrDefault(row.Identity), published.GetValueOrDefault(row.Identity),
-                        PlanSheetText.RemoteProblem(document.Sync, row.Identity), changes.Fields.ContainsKey(row.Identity))),
+                    "Indicator" => Text(PlanSheetText.Indicator(row, task, lateness.Tasks.GetValueOrDefault(row.Identity),
+                        PlanSheetText.RemoteProblem(document.Sync, row.Identity), changes.Fields.ContainsKey(row.Identity),
+                        PlanMarkVisibility.From(document.State.Settings))),
+                    "ForecastEnd" => Text(PlanSheetText.ForecastEnd(task, lateness.Tasks.GetValueOrDefault(row.Identity))),
                     PlanField.Estimate => Number(task.Estimate), PlanField.Remaining => Number(task.Remaining), PlanField.Actual => Number(task.Actual),
                     PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value), PlanField.StartNoEarlierThan => Date(row.StartNoEarlierThan),
                     PlanField.Assignees => Text(string.Join(", ", row.Assignees.Select(Assignee))),

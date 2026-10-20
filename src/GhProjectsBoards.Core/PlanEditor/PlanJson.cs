@@ -35,7 +35,8 @@ internal static class PlanJson
         var sync = checkpoint.Document.Sync;
         PlanOperations.Require(!sync.Unverified.IsDefault && sync.Unverified.Distinct().Count() == sync.Unverified.Length &&
             (sync.Unverified.IsEmpty || sync.Publish is not null) && sync.Unverified.All(id => checkpoint.Document.State.Rows.Any(r => r.Identity == id)) && !sync.Failures.IsDefault && sync.Failures.All(f => PlanField.IsDefined(f.Field) && !string.IsNullOrWhiteSpace(f.Reason)) && !sync.Conflicts.IsDefault && !sync.Unavailable.IsDefault && sync.InaccessibleCount >= 0 && sync.DraftCount >= 0 && sync.PullRequestCount >= 0 &&
-            sync.Unavailable.Distinct().Count() == sync.Unavailable.Length && sync.Unavailable.All(id => checkpoint.Document.Baseline.Rows.Any(r => r.Identity == id)), "更新状態が不正です。");
+            sync.Unavailable.Distinct().Count() == sync.Unavailable.Length && sync.Unavailable.All(id => checkpoint.Document.Baseline.Rows.Any(r => r.Identity == id)) &&
+            !sync.CannotUpdate.IsDefault && sync.CannotUpdate.Distinct().Count() == sync.CannotUpdate.Length, "更新状態が不正です。");
         PlanOperations.Require(sync.Conflicts.Select(c => (c.Identity, c.Field)).Distinct().Count() == sync.Conflicts.Length &&
             sync.Conflicts.All(c => PlanField.IsDefined(c.Field) && c.Field != PlanField.NewTask && c.Baseline is not null && c.Local is not null && c.Remote is not null &&
                 (c.DeletedFieldName is null || PlanSheetColumns.IsExtra(c.Field) && c.Remote == "null" && !checkpoint.Document.Baseline.Columns.Any(f => "Project:" + f.Id == c.Field)) &&
@@ -59,7 +60,7 @@ internal static class PlanJson
         if (document.Sync.Publish is { DispatchStarted: true } attempt)
             PlanOperations.Require(patch.BeforeSettings is null && attempt.Writes.All(w => state.Rows.Any(r => r.Identity == w.Identity)),
                 "送信済みの発行対象または設定を履歴から変更できません。");
-        var next = document with { State = state, Dates = (forward ? patch.AfterDates : patch.BeforeDates) ?? document.Dates, Baseline = PlanOperations.ReplayBaseline(document.Baseline, patch, forward),
+        var next = document with { State = state, Baseline = PlanOperations.ReplayBaseline(document.Baseline, patch, forward),
             Sync = document.Sync with { LocalOrderChoices = (forward ? patch.AfterLocalOrderChoices : patch.BeforeLocalOrderChoices) ?? document.Sync.LocalOrderChoices, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? document.Sync.Conflicts,
                 Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? document.Sync.Unavailable } };
         // A never-dispatched record is released on reopen before any user can travel through history.

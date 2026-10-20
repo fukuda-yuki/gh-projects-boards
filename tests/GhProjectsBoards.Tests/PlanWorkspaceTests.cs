@@ -121,8 +121,8 @@ internal sealed class PlanWorkspaceTests
         finally { Directory.Delete(root, true); }
     }
 
-    [TestCase(false, false), TestCase(false, true), TestCase(true, false), TestCase(false, true, true)]
-    public async Task RecalculationOriginPersistsUntilSuccessfulRefreshOrPublish(bool refresh, bool noWrites, bool undoBeforePublish = false)
+    [Test]
+    public async Task AnEditPersistsWithoutARecalculationNoticeAndRefreshAdvancesTheStatusDate()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-origin-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -135,19 +135,15 @@ internal sealed class PlanWorkspaceTests
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
             await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var session = workspace.Session!;
-            if (noWrites) await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectStart = day }), day);
-            else await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Edited")]), day);
+            var edit = await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Edited")]), day);
+            Assert.That(edit.Recalculation, Is.Null, "An ordinary edit shows unpublished dates instead of a recalculation notice.");
             session = (await PlanSession.OpenAsync(new(root), session.Document.Project, day.AddDays(1))).Session!;
-            Assert.That(session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
-            if (undoBeforePublish) await session.Undo(day);
             var publisher = new PlanPublisher(workspace.Service!, workspace.Context!);
-            var result = await (refresh ? publisher.RefreshAsync(session, day.AddDays(2)) : publisher.PublishAsync(session, day.AddDays(2)));
+            var result = await publisher.RefreshAsync(session, day.AddDays(2));
             Assert.That(result.Succeeded, Is.True, result.Error);
-            Assert.That(session.Document.Dates.Recalculated, Is.Null);
-            Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(refresh ? day.AddDays(2) : day));
-            if (!undoBeforePublish) await session.Undo(day);
+            Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day.AddDays(2)));
+            await session.Undo(day);
             await session.Redo(day);
-            Assert.That(session.Document.Dates.Recalculated, Is.Null, "Publication or refresh must also clear stale origin notices in retained history.");
         }
         finally { Directory.Delete(root, true); }
     }
@@ -181,7 +177,7 @@ internal sealed class PlanWorkspaceTests
     }
 
     [Test]
-    public async Task FirstTakeInKeepsGitHubDatesAndZeroUnpublishedAcrossLaterReopen()
+    public async Task FirstTakeInTakesGitHubDatesAsThePlanAndMovesNothing()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-held-dates-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -190,10 +186,9 @@ internal sealed class PlanWorkspaceTests
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
             var start = new DateOnly(2026, 10, 5);
             FakePlanEditor.Save(root, new([
-                new(new("I1", "Summary", "acme/repo") { Start = null, End = start }, "", true),
-                new(new("I2", "Task", "acme/repo") { Parent = "I1", Start = start, End = start, Remaining = 16 }, "", true),
-                new(new("I3", "Closed", "acme/repo") { Start = start, End = start, Closed = true, CloseDate = start.AddDays(1), Remaining = 8 }, "", true)
-            ], 4));
+                new(new("I1", "Summary", "acme/repo") { Start = start, End = start.AddDays(1) }, "", true),
+                new(new("I2", "Task", "acme/repo") { Parent = "I1", Start = start, End = start.AddDays(1), Remaining = 16 }, "", true)
+            ], 3));
             var store = new PlanStore(root);
             var day = new DateOnly(2026, 10, 6);
             var workspace = new PlanWorkspace(store, () => day);
@@ -201,29 +196,24 @@ internal sealed class PlanWorkspaceTests
             await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
             var session = workspace.Session!;
             Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day));
-            void AssertHeld(PlanSession plan, DateOnly today)
+            void AssertUnchanged(PlanSession plan, DateOnly today)
             {
                 Assert.That(plan.Schedule(today).Select(t => (t.Start.Value, t.End.Value)),
                     Is.EqualTo(plan.Document.Baseline.Rows.Select(r => (r.Start, r.End))));
                 Assert.That(plan.Changes(today).TaskCount, Is.Zero);
             }
-            AssertHeld(session, day);
-            var publisher = new PlanPublisher(workspace.Service!, workspace.Context!);
-            var published = await publisher.PublishAsync(session, day.AddDays(5));
-            Assert.That(published.Succeeded, Is.True, published.Error);
-            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero, "A held plan with 未発行 0 must not publish the deferred closed Remaining calculation.");
-            Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
+            AssertUnchanged(session, day);
             var reopened = (await PlanSession.OpenAsync(store, session.Document.Project, day.AddDays(5))).Session!;
-            AssertHeld(reopened, day.AddDays(5));
+            AssertUnchanged(reopened, day.AddDays(5));
             Assert.That(reopened.Document.State.Settings.StatusDate, Is.EqualTo(day));
-            await reopened.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Title, "Edited")]), day.AddDays(5));
-            Assert.That(reopened.Schedule(day).Single(t => t.Input.Identity == "I3").End.Value, Is.EqualTo(start.AddDays(1)));
-            Assert.That(reopened.Changes(day).TaskCount, Is.GreaterThan(0));
+            // An edit reschedules only the task it reaches; every other plan date stays where it was.
+            await reopened.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Remaining, 24m)]), day.AddDays(5));
+            Assert.That(reopened.Schedule(day.AddDays(5)).Single(t => t.Input.Identity == "I1").End.Value, Is.EqualTo(start.AddDays(2)));
             Assert.That(reopened.UndoCount, Is.EqualTo(1));
             await reopened.Undo(day);
-            AssertHeld(reopened, day);
+            AssertUnchanged(reopened, day);
             await reopened.Redo(day);
-            Assert.That(reopened.Schedule(day).Single(t => t.Input.Identity == "I3").End.Value, Is.EqualTo(start.AddDays(1)));
+            Assert.That(reopened.Schedule(day.AddDays(5)).Single(t => t.Input.Identity == "I1").End.Value, Is.EqualTo(start.AddDays(2)));
         }
         finally { Directory.Delete(root, true); }
     }

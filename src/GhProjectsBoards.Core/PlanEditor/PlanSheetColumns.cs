@@ -14,13 +14,27 @@ internal static class PlanSheetColumns
         => column?.DisplayName is not null ? column.Name : field switch {
             PlanField.Estimate => "見積工数", PlanField.Remaining => "見込み残存工数", PlanField.Actual => "実績工数",
             PlanField.Parent => "親タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
+            // #231: the row-state writes are reviewed by the command that produces them.
+            PlanField.Closed => "状態", PlanField.Cancelled => "中止にする", PlanField.Removed => "この版から外す",
             _ => column?.Name ?? Standard.FirstOrDefault(c => c.Key == field).Name ?? field
         };
     internal static readonly (string Key, string Name)[] Standard = [
         ("Id", "ID"), ("Indicator", "状態"), ("Title", "タスク名"), ("Phase", "工程"), ("Assignees", "担当者"),
         ("Estimate", "見積 h"), ("Remaining", "残 h"), ("Actual", "実績 h"), ("Start", "開始日"), ("End", "終了日"),
-        ("Predecessors", "先行"), ("StartNoEarlierThan", "開始日指定"), ("Fixed", "日程固定"), ("Status", "ステータス")];
+        ("ForecastEnd", "見込終了"), ("Predecessors", "先行"), ("StartNoEarlierThan", "開始日指定"), ("Fixed", "日程固定"), ("Status", "ステータス")];
     internal static bool IsExtra(string key) => key.StartsWith("Project:", StringComparison.Ordinal) && key.Length > 8;
+    // A column the scheduler owns: read-only for the PMO, so a clear skips it instead of refusing the whole
+    // range that spans it (#236 part B, 見込終了).
+    internal static bool IsComputed(string key) => key == "ForecastEnd";
+    // A column the PMO cannot put a value into, independent of the row it is on: the scheduler's computed
+    // 見込終了, the always read-only repository, or a standard role the Project does not map (工程 without an
+    // assigned single-select field, which the summary view tells the PMO to assign). A clear skips such a
+    // column the way it skips タスク名, so a range over the default columns still clears its editable cells
+    // (#236 part B). Row-level read-only cells — a summary's roll-up cells, a closed row's remaining work —
+    // are not covered here; clearing those stays a refusal.
+    internal static bool IsReadOnlyColumn(string key, ProjectPlanSettings settings) =>
+        IsComputed(key) || key == PlanField.Repository
+        || key == PlanField.Phase && !settings.Columns.Any(column => column.Role == PlanField.Phase);
     internal static bool IsMappedExtra(PlanDocument document, string key)
         => IsExtra(key) && (document.State.Settings.Columns.Any(c => c.FieldId == key[8..])
             || document.Baseline.Columns.Any(c => c.Id == key[8..] && c.Name == "Status" && c.DataType == "SINGLE_SELECT"));
@@ -50,9 +64,9 @@ internal static class PlanSheetColumns
             var mapping = settings.Columns.SingleOrDefault(c => c.Role.ToString() == key);
             var source = mapping?.Name ?? key switch { "Title" => "Title", "Assignees" => "Assignees", "Predecessors" => "Blocked by", "Status" => "Status", _ => "—" };
             var type = key switch { "Title" => "テキスト", "Assignees" => "担当者", "Predecessors" => "関係",
-                "Estimate" or "Remaining" or "Actual" => "数値", "Start" or "End" or "StartNoEarlierThan" => "日付",
+                "Estimate" or "Remaining" or "Actual" => "数値", "Start" or "End" or "StartNoEarlierThan" or "ForecastEnd" => "日付",
                 "Phase" or "Status" or "Fixed" => "単一選択", _ => "—" };
-            result.Add(new(key, name, source, key == "Indicator" ? "計算" : key == "Id" ? "読み取りのみ" : "編集できる", i < 11, null) { Type = type });
+            result.Add(new(key, name, source, key is "Indicator" or "ForecastEnd" ? "計算" : key == "Id" ? "読み取りのみ" : "編集できる", i < 12, null) { Type = type });
         }
         var mapped = settings.Columns.Select(c => c.FieldId).ToHashSet();
         foreach (var f in document.Baseline.Columns.Where(f => !mapped.Contains(f.Id) && !(f.Name == "Status" && f.DataType == "SINGLE_SELECT") && f.DataType is "TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT" or "ITERATION"))

@@ -5,6 +5,8 @@ using NUnit.Framework;
 
 namespace GhProjectsBoards.Tests;
 
+// The 基準日 a read records, and the settings/history behaviour around it. The date hold and its release
+// notice are removed (#236): a read sets the 基準日 and leaves every plan date alone.
 [TestFixture]
 internal sealed class PlanReadDateTests
 {
@@ -13,82 +15,24 @@ internal sealed class PlanReadDateTests
     private string root = null!;
     [SetUp] public void Setup() => root = Path.Combine(Path.GetTempPath(), "ghpb-read-date-" + Guid.NewGuid().ToString("N"));
     [TearDown] public void Cleanup() { if (Directory.Exists(root)) Directory.Delete(root, true); }
-    private static PlanDocument Document(bool held = true)
+    private static PlanDocument Document()
     {
-        ImmutableArray<PlanRow> rows = [new("I1", "Summary", "acme/repo") { End = Day.AddDays(-1) },
-            new("I2", "Task", "acme/repo") { Parent = "I1", Start = Day.AddDays(-1), End = Day.AddDays(-1), Remaining = 16, Assignees = ["U1"] },
+        ImmutableArray<PlanRow> rows = [new("I1", "Summary", "acme/repo") { Start = Day, End = Day.AddDays(1) },
+            new("I2", "Task", "acme/repo") { Parent = "I1", Start = Day, End = Day.AddDays(1), Remaining = 16, Assignees = ["U1"] },
             new("I3", "Undated", "acme/repo")];
         var settings = new ProjectPlanSettings { StatusDate = Day, People = [new("U1", "alice", 100, null)],
             Columns = [new(PlanField.Start, "start", "Start date", "DATE"), new(PlanField.End, "end", "Target date", "DATE")] };
-        return new(Project, new(rows, []), new(rows, settings)) { Dates = held ? new(PlanDateHoldOrigin.FirstTakeIn) : new() };
+        return new(Project, new(rows, []), new(rows, settings));
     }
     private static PlanRemoteSnapshot Remote(PlanDocument document) => new(document.Baseline,
         document.Baseline.Rows.ToImmutableDictionary(r => r.Identity, r => "T-" + r.Identity), [], 0, 0);
     private static EditPlanCells Edit(string title) => new(PlanOperationKind.Cell, [new("I2", PlanField.Title, title)]);
 
-    [TestCase(PlanDateHoldOrigin.FirstTakeIn, "edit")]
-    [TestCase(PlanDateHoldOrigin.Reset, "edit")]
-    [TestCase(PlanDateHoldOrigin.Reset, "conflict")]
-    [TestCase(PlanDateHoldOrigin.Reset, "unavailable")]
-    public async Task HoldReleaseReportsChangedTasksOnlyOnTheReleasingCommand(PlanDateHoldOrigin origin, string action)
-    {
-        var document = Document() with { Dates = new(origin) };
-        document = document with { Sync = document.Sync with {
-            Conflicts = [new("I2", PlanField.Title, "\"Task\"", "\"Task\"", "\"Remote\"")],
-            Unavailable = ["I3"]
-        } };
-        var session = await PlanSession.CreateAsync(new(root), document, Day);
-        var result = action switch {
-            "conflict" => await session.ResolveConflict("I2", PlanField.Title, true, Day),
-            "unavailable" => await session.ResolveUnavailable("I3", false, Day),
-            _ => await session.Execute(Edit("Edited"), Day)
-        };
-        Assert.That(result.Recalculation, Is.Not.Null);
-        Assert.That(result.Recalculation!.StatusDate, Is.EqualTo(Day));
-        Assert.That(result.Recalculation.ChangedTasks, Is.EquivalentTo(new[] { "I2" }));
-        Assert.That((await session.FlushAsync()).Recalculation, Is.Null);
-        Assert.That((await session.RetrySaveAsync()).Recalculation, Is.Null);
-        Assert.That((await session.Undo(Day)).Recalculation, Is.Null);
-        Assert.That(session.Document.Dates.Held, Is.EqualTo(origin));
-        Assert.That((await session.Redo(Day)).Recalculation, Is.Null);
-        Assert.That(session.Document.Dates.Held, Is.Null);
-        Assert.That((await session.Execute(Edit("Another edit"), Day)).Recalculation, Is.Null);
-        Assert.That((await session.Execute(Edit("Another edit"), Day)).Recalculation, Is.Null);
-        await session.Undo(Day);
-        await session.Undo(Day);
-        Assert.That((await session.Execute(Edit("New release"), Day)).Recalculation, Is.Not.Null);
-    }
-
-    [Test]
-    public async Task HoldReleaseWithUnchangedDatesStillReportsZeroTasks()
-    {
-        var document = Document();
-        var row = document.State.Rows[1] with { Parent = null, Start = Day, End = Day, Remaining = 8 };
-        document = document with { Baseline = document.Baseline with { Rows = [row] }, State = document.State with { Rows = [row] } };
-        var session = await PlanSession.CreateAsync(new(root), document, Day);
-        var result = await session.Execute(Edit("Edited"), Day);
-        Assert.That(result.Recalculation, Is.Not.Null);
-        Assert.That(result.Recalculation!.ChangedTasks, Is.Empty);
-    }
-
-    [Test]
-    public async Task HoldReleaseNoticeIsNotPersistedOnReopen()
-    {
-        var session = await PlanSession.CreateAsync(new(root), Document(), Day);
-        var result = await session.Execute(Edit("Edited"), Day);
-        Assert.That(result.Succeeded, Is.True, result.Error);
-        Assert.That(result.Recalculation, Is.Not.Null);
-        var reopened = await PlanSession.OpenAsync(new(root), Project, Day);
-        Assert.That(reopened.Status, Is.EqualTo(PlanLoadStatus.Loaded));
-        Assert.That((await reopened.Session!.FlushAsync()).Recalculation, Is.Null);
-        Assert.That((await reopened.Session.Execute(Edit("After restart"), Day)).Recalculation, Is.Null);
-    }
-
     [TestCase(false), TestCase(true)]
     public async Task SettingsImportPreservesReadDateAndZeroUnpublishedOnLaterReopen(bool hasImportedDate)
     {
         var document = Document();
-        var row = document.State.Rows[1] with { Parent = null, Start = Day, End = Day, Remaining = 8 };
+        var row = document.State.Rows[1] with { Parent = null };
         document = document with { Baseline = document.Baseline with { Rows = [row] }, State = document.State with { Rows = [row] } };
         var session = await PlanSession.CreateAsync(new(root), document, Day);
         var path = Path.Combine(root, "import-settings.json");
@@ -100,7 +44,6 @@ internal sealed class PlanReadDateTests
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(Day));
         Assert.That(session.Document.State.Settings.DefaultRepository, Is.EqualTo("acme/other"));
         Assert.That(session.UndoCount, Is.EqualTo(1));
-        Assert.That(session.Document.Dates.Held, Is.Null);
         Assert.That(session.Changes(Day.AddDays(30)).TaskCount, Is.Zero);
         var reopened = await PlanSession.OpenAsync(new(root), Project, Day.AddDays(60));
         Assert.That(reopened.Status, Is.EqualTo(PlanLoadStatus.Loaded));
@@ -109,10 +52,11 @@ internal sealed class PlanReadDateTests
     }
 
     [Test]
-    public void HeldInputErrorKeepsGitHubDatesAndExcludesPeopleLoad()
+    public void InputErrorKeepsPlanDatesAndExcludesPeopleLoad()
     {
         var document = Document();
-        var rows = document.State.Rows.SetItem(1, document.State.Rows[1] with { Actual = -1, Remaining = 8 });
+        var rows = document.State.Rows.SetItem(1, document.State.Rows[1] with
+            { Actual = -1, Remaining = 8, Start = Day.AddDays(-1), End = Day.AddDays(-1) });
         document = document with { Baseline = document.Baseline with { Rows = rows }, State = document.State with { Rows = rows } };
         var scheduled = PlanOperations.Schedule(document, Day);
         var task = scheduled.Single(t => t.Input.Identity == "I2");
@@ -137,12 +81,10 @@ internal sealed class PlanReadDateTests
         var picked = Day.AddDays(1);
         await session.Execute(new ReplacePlanSettings(original.State.Settings with { StatusDate = picked }), Day);
         Assert.That(session.UndoCount, Is.EqualTo(1));
-        Assert.That(session.Document.Dates, Is.EqualTo(new PlanDateState(null, PlanDateHoldOrigin.FirstTakeIn)));
         var opened = await PlanSession.OpenAsync(new(root), Project, Day.AddDays(10));
         session = opened.Session!;
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(picked));
         await session.Undo(Day);
-        Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
         Assert.That(session.Changes(Day).TaskCount, Is.Zero);
         await session.Redo(Day);
         await session.Execute(Edit("Local title"), Day);
@@ -150,7 +92,6 @@ internal sealed class PlanReadDateTests
         var refreshDay = Day.AddDays(3);
         Assert.That((await session.AcceptRefresh(Remote(original), refreshDay)).Succeeded, Is.True);
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(refreshDay));
-        Assert.That(session.Document.Dates, Is.EqualTo(new PlanDateState()));
         Assert.That(session.UndoCount, Is.EqualTo(2), "Drop the superseded date-only choice but retain other settings and the cell edit.");
         await session.Undo(refreshDay);
         Assert.That(session.Document.State.Settings.ProjectStart, Is.Null);
@@ -158,8 +99,6 @@ internal sealed class PlanReadDateTests
         await session.Undo(refreshDay);
         Assert.That(session.Document.State.Rows[1].Title, Is.EqualTo("Task"));
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(refreshDay));
-        Assert.That(session.Document.Dates, Is.EqualTo(new PlanDateState()));
-        Assert.That(session.Schedule(refreshDay)[1].Start.Value, Is.EqualTo(refreshDay));
         await session.Redo(refreshDay);
         await session.Redo(refreshDay);
         Assert.That(session.Document.State.Rows[1].Title, Is.EqualTo("Local title"));
@@ -168,7 +107,7 @@ internal sealed class PlanReadDateTests
     }
 
     [Test]
-    public async Task RefreshRebasesRedoAndCannotRestoreSupersededDateOrHold()
+    public async Task RefreshRebasesRedoAndCannotRestoreASupersededDate()
     {
         var original = Document();
         var session = await PlanSession.CreateAsync(new(root), original, Day);
@@ -181,84 +120,111 @@ internal sealed class PlanReadDateTests
         await session.Redo(Day.AddDays(5));
         Assert.That(session.Document.State.Rows[1].Title, Is.EqualTo("Edited"));
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(Day.AddDays(3)));
-        Assert.That(session.Document.Dates, Is.EqualTo(new PlanDateState()));
         await session.Undo(Day.AddDays(5));
-        Assert.That(session.Document.Dates.Held, Is.Null);
-    }
-
-    [TestCase("date", 1)]
-    [TestCase("github", 1)]
-    [TestCase("unchanged", 0)]
-    public void ChangedTasksCompareDisplayedSchedulesAndExcludeSummaries(string change, int expected)
-    {
-        var before = Document(false);
-        var after = before;
-        if (change == "date") after = after with { State = after.State with { Settings = after.State.Settings with { StatusDate = Day.AddDays(1) } } };
-        if (change == "github") after = after with { State = after.State with { Rows = after.State.Rows.SetItem(1, after.State.Rows[1] with { Remaining = 24 }) } };
-        var changed = PlanOperations.ChangedTaskDates(before, after, Day.AddDays(30));
-        Assert.That(changed.Count, Is.EqualTo(expected));
-        Assert.That(changed, expected == 0 ? Is.Empty : Is.EquivalentTo(new[] { "I2" }));
+        Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(Day.AddDays(3)));
     }
 
     [Test]
-    public void HeldDatesDoNotRunAutomaticSchedulingBeforeThePlanningAction()
-    {
-        var document = Document();
-        document = document with { State = document.State with { Settings = document.State.Settings with { StatusDate = DateOnly.MaxValue } } };
-        var task = PlanOperations.Schedule(document, DateOnly.MaxValue).Single(t => t.Input.Identity == "I2");
-        Assert.That(task.Start.Value, Is.EqualTo(Day.AddDays(-1)));
-        Assert.That(task.Warnings, Does.Not.Contain("日程が日付の範囲外"));
-        Assert.That(task.PlannedHours, Is.Null);
-    }
-
-    [Test]
-    public void HeldLatenessAndPeopleLoadUseGitHubDatesWithoutEndReason()
+    public void PlanDatesFeedLatenessAndPeopleLoadAfterARead()
     {
         var document = Document();
         var scheduled = PlanOperations.Schedule(document, Day.AddDays(30));
-        var lateness = PlanLateness.Classify(scheduled, document.Baseline, new(), Day);
-        Assert.That(lateness.OverdueTasks, Is.EqualTo(1));
+        var lateness = PlanLateness.Classify(scheduled, new(), Day);
+        Assert.That(lateness.OverdueTasks, Is.Zero);
         Assert.That(lateness.LaterTasks, Is.Zero);
-        Assert.That(lateness.Tasks["I2"].DaysLater, Is.Null);
-        Assert.That(scheduled[1].StartReason, Is.EqualTo("GitHub の日付（次の編集で再計算）"));
-        Assert.That(PlanLateness.EndReason(scheduled[1], Day), Is.Null);
-        var load = PlanPeople.Calculate(document, Day.AddDays(30), Day.AddDays(-1), PlanPeriodScale.Day, 3).People.Single(p => p.Identity == "U1");
-        Assert.That(load.Periods.Select(p => p.Planned), Is.EqualTo(new decimal?[] { 16, 0, 0 }));
-    }
-
-    [TestCase(false), TestCase(true)]
-    public async Task ResolutionReleasesResetHoldAndUndoRestoresIt(bool unavailable)
-    {
-        var document = Document() with { Dates = new(PlanDateHoldOrigin.Reset) };
-        document = document with { Sync = unavailable
-            ? document.Sync with { Unavailable = ["I3"] }
-            : document.Sync with { Conflicts = [new("I2", PlanField.Title, "\"Task\"", "\"Task\"", "\"Remote\"")] } };
-        var session = await PlanSession.CreateAsync(new(root), document, Day);
-        if (unavailable) await session.ResolveUnavailable("I3", false, Day);
-        else await session.ResolveConflict("I2", PlanField.Title, true, Day);
-        Assert.That(session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.Reset));
-        Assert.That(session.UndoCount, Is.EqualTo(1));
-        await session.Undo(Day);
-        Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.Reset));
-        Assert.That(session.Document.Dates.Recalculated, Is.Null);
-        Assert.That(session.Changes(Day).TaskCount, Is.Zero);
-        await session.Redo(Day);
-        Assert.That(session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.Reset));
+        Assert.That(scheduled[1].StartReason, Is.EqualTo("開始日を維持"), "The plan keeps its own start.");
+        Assert.That(PlanLateness.EndReason(scheduled[1]), Is.EqualTo("終了: 開始から 16h"));
+        var load = PlanPeople.Calculate(document, Day, Day, PlanPeriodScale.Day, 3).People.Single(p => p.Identity == "U1");
+        Assert.That(load.Periods.Select(p => p.Planned), Is.EqualTo(new decimal?[] { 8, 8, 0 }),
+            "16h at 100% covers the plan's two working days.");
     }
 
     [Test]
-    public async Task NoOpPlanningCommandReleasesHoldAndIsReversibleButRejectedEditDoesNot()
+    public async Task ARejectedEditChangesNothingAndANoOpKeepsHistory()
     {
         var session = await PlanSession.CreateAsync(new(root), Document(), Day);
+        var before = PlanJson.Text(session.Document);
         Assert.ThrowsAsync<ArgumentException>(() => session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Remaining, -1m)]), Day));
-        Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
         Assert.That(session.UndoCount, Is.Zero);
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
         await session.Execute(Edit("Task"), Day);
-        Assert.That(session.Document.Dates.Held, Is.Null);
+        Assert.That(session.UndoCount, Is.Zero, "Committing the same title is a no-op.");
+        await session.Execute(Edit("Edited"), Day);
         Assert.That(session.UndoCount, Is.EqualTo(1));
         await session.Undo(Day);
-        Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+        Assert.That(session.Document.State.Rows[1].Title, Is.EqualTo("Task"));
         await session.Redo(Day);
-        Assert.That(session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
+        Assert.That(session.Document.State.Rows[1].Title, Is.EqualTo("Edited"));
+    }
+
+    [Test]
+    public async Task ASettingsChangeThatMovesDatesReportsTheMovedTasksOnce()
+    {
+        var row = new PlanRow("I2", "Task", "acme/repo") { Start = Day, End = Day, Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        var settings = new ProjectPlanSettings { StatusDate = Day, People = [new("U1", "alice", 100, null)],
+            Columns = [new(PlanField.Start, "start", "Start date", "DATE"), new(PlanField.End, "end", "Target date", "DATE")] };
+        var document = new PlanDocument(Project, new([row], []), new([row], settings));
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        var result = await session.Execute(new ReplacePlanSettings(settings with { ProjectStart = Day.AddDays(7) }), Day);
+        Assert.That(result.Recalculation, Is.Not.Null, "A settings change that moves dates reports them for a filter.");
+        Assert.That(result.Recalculation!.ChangedTasks, Is.EquivalentTo(new[] { "I2" }));
+        Assert.That((await session.FlushAsync()).Recalculation, Is.Null);
+        Assert.That((await session.Execute(Edit("Edited"), Day)).Recalculation, Is.Null, "An ordinary edit shows unpublished dates instead.");
+    }
+
+    [Test]
+    public async Task AStatusDateChangeThroughRefreshMovesNoDateAndReportsNoMovedTasks()
+    {
+        var row = new PlanRow("I2", "Task", "acme/repo") { Start = Day, End = Day, Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        var settings = new ProjectPlanSettings { StatusDate = Day, People = [new("U1", "alice", 100, null)],
+            Columns = [new(PlanField.Start, "start", "Start date", "DATE"), new(PlanField.End, "end", "Target date", "DATE")] };
+        var document = new PlanDocument(Project, new([row], []), new([row], settings));
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+        var result = await session.Execute(new ReplacePlanSettings(document.State.Settings with { StatusDate = Day.AddDays(9) }), Day);
+        Assert.That(result.Recalculation, Is.Null, "A 基準日 change never moves a task date.");
+        Assert.That(session.Schedule(Day.AddDays(9)).Single().End.Value, Is.EqualTo(row.End));
+        Assert.That(session.Changes(Day.AddDays(9)).TaskCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task AWeekendStartReadFromGitHubStaysAPlanValue()
+    {
+        // GitHub may hold a start on a Saturday; a read and a later 基準日 change show it as it is (#236).
+        var saturday = new DateOnly(2026, 10, 10);
+        var row = new PlanRow("I1", "Task", "acme/repo") { Start = saturday, End = saturday.AddDays(2), Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"] };
+        var document = Document() with { Baseline = new([row], []), State = Document().State with { Rows = [row] } };
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        Assert.That(session.Schedule(Day).Single().Start.Value, Is.EqualTo(saturday));
+        Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = Day.AddDays(14) }), Day);
+        Assert.That(session.Changes(Day.AddDays(14)).TaskCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task ACalendarChangeMovesDatedTasksButGivesAnUndatedTaskNoDates()
+    {
+        var document = Document();
+        var undatedWithWork = document.State.Rows[2] with { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        document = document with { Baseline = document.Baseline with { Rows = document.Baseline.Rows.SetItem(2, undatedWithWork) },
+            State = document.State with { Rows = document.State.Rows.SetItem(2, undatedWithWork) } };
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { CompanyDaysOff = [Day] }), Day);
+        var after = session.Document.State.Rows.Single(r => r.Identity == "I3");
+        Assert.That((after.Start, after.End), Is.EqualTo(((DateOnly?)null, (DateOnly?)null)), "A settings change is not a PMO edit of the undated task.");
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I2").End, Is.Not.EqualTo(Document().State.Rows[1].End), "The dated task follows the calendar.");
+    }
+
+    [Test]
+    public async Task APublishedTitleCannotBeEmptiedButANewRowMayStayUntitled()
+    {
+        var session = await PlanSession.CreateAsync(new(root), Document(), Day);
+        var before = PlanJson.Text(session.Document);
+        Assert.That(() => session.Execute(Edit(" "), Day), Throws.ArgumentException.With.Message.EqualTo("GitHub の Issue のタスク名は空にできません。"));
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        await session.Execute(new InsertPlanRows([PlanRow.New("Local", "acme/repo")]), Day);
+        var local = session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:", StringComparison.Ordinal));
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new(local.Identity, PlanField.Title, "")]), Day);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == local.Identity).Title, Is.Empty);
     }
 }

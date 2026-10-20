@@ -10,8 +10,17 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         CancellationToken cancellationToken = default, IProgress<RemoteProgress>? progress = null)
         => new ReadSession(service, context, project, cancellationToken, progress, lease).RunAsync();
 
+    // #201: a publish reads only the items it is about to write. The identities are Issue node IDs; each is
+    // resolved to its Project item in this Project and then read through the ordinary detail path, so the
+    // result carries the same Issue fields, relationships and field values a complete read would deliver
+    // for those items — and nothing for the rest of the Project.
+    public Task<ProjectReadResult> ReadItemsAsync(ConnectionContext context, ScopedId project, IReadOnlyList<string> issueIds,
+        CancellationToken cancellationToken = default)
+        => new ReadSession(service, context, project, cancellationToken, null, lease, issueIds).RunAsync();
+
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
-        ScopedId projectId, CancellationToken cancellationToken, IProgress<RemoteProgress>? progress, GhConnectionService.OperationLease? lease = null)
+        ScopedId projectId, CancellationToken cancellationToken, IProgress<RemoteProgress>? progress, GhConnectionService.OperationLease? lease = null,
+        IReadOnlyList<string>? itemScope = null)
     {
         private readonly List<ReadProblem> problems = [];
         private readonly Dictionary<ScopedId, ProjectFieldDefinition> fields = [];
@@ -59,7 +68,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
                     ReadProjectFields, value => { AddField(value); return Task.CompletedTask; });
                 if (!stopped)
-                    itemsComplete = await ReadItemsAsync();
+                    itemsComplete = itemScope is null ? await ReadItemsAsync() : await ReadItemScopeAsync();
                 await ReadValuePages();
                 await ReadLabelPages();
                 foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
@@ -147,6 +156,59 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             stopped = true;
             interruption = response.Outcome;
             problems.Add(new(ReadProblemKind.Api, "items", response.Failure, response.Outcome, response.HttpStatus, response.RetryAfter));
+        }
+
+        // #201: the scoped counterpart of ReadItemsAsync. It resolves the requested Issue identities to
+        // their items in this Project and reads those items through the same detail batches; a scope that
+        // does not resolve to an item contributes no row, which is how an archived item stays absent.
+        private async Task<bool> ReadItemScopeAsync()
+        {
+            try
+            {
+                foreach (var slice in itemScope!.Distinct(StringComparer.Ordinal).Chunk(DetailBatchSize))
+                {
+                    if (stopped) return false;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var response = await SendAsync(ProjectQueries.PublishItems, new { ids = slice });
+                    if (!response.IsSuccess)
+                    {
+                        RecordItemFailure(response);
+                        return false;
+                    }
+                    var nodes = Array(Property(response.Data ?? default, "data"), "nodes");
+                    if (nodes.GetArrayLength() != slice.Length) throw new ReadException(ReadProblemKind.IncompleteTraversal);
+                    for (var i = 0; i < slice.Length; i++)
+                    {
+                        var node = nodes[i];
+                        // A node the read cannot deliver is a concurrent change, exactly as a missing detail
+                        // node is for the complete read.
+                        if (node.ValueKind == JsonValueKind.Null)
+                        {
+                            problems.Add(new(ReadProblemKind.ConcurrentChange, "items"));
+                            stopped = true;
+                            return false;
+                        }
+                        MatchNode(node, slice[i], "Issue");
+                        var membership = Property(node, "projectItems");
+                        if (Boolean(Property(membership, "pageInfo"), "hasNextPage")) throw new ReadException(ReadProblemKind.IncompleteTraversal);
+                        foreach (var entry in Array(membership, "nodes").EnumerateArray())
+                            if (Id(Property(entry, "project")) == projectId) detailIds.Add(Text(entry, "id"));
+                    }
+                    await FlushDetailsAsync();
+                }
+                while (!stopped && pendingDetails.Count > 0)
+                {
+                    await DrainCompletedDetailsAsync();
+                    if (!stopped && pendingDetails.Count > 0) await WaitForDetailResponseAsync();
+                }
+                return !stopped;
+            }
+            finally
+            {
+                // Even a validation failure or cancellation must not outlive this read's lease.
+                await Task.WhenAll(pendingDetails.Select(batch => batch.Response));
+                cancellationToken.ThrowIfCancellationRequested();
+            }
         }
 
         private async Task ObserveDetailFailuresAsync()
@@ -324,6 +386,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var issue = new IssueReadModel(item.ContentId, new(Id(repository), Id(Property(repository, "owner")),
                         Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
                         ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content),
+                            StateReason = ReadStateReason(content),
                             Labels = ReadIssueLabels(content),
                             Milestone = Property(content, "milestone").ValueKind == JsonValueKind.Null ? new(ValueAvailability.Empty)
                                 : new(ValueAvailability.Present, ReadMilestone(Property(content, "milestone"), Id(repository))) };
@@ -713,6 +776,23 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 JsonValueKind.String when value.GetString() == "OPEN" => new(ValueAvailability.Present, IssueState.Open),
                 JsonValueKind.String when value.GetString() == "CLOSED" => new(ValueAvailability.Present, IssueState.Closed),
                 JsonValueKind.String => new(ValueAvailability.Unsupported),
+                JsonValueKind.Undefined => new(ValueAvailability.NotLoaded),
+                _ => new(ValueAvailability.Unavailable)
+            };
+        }
+        // #231: the state reason separates 中止 (NOT_PLANNED or DUPLICATE) from 完了 (COMPLETED). An open
+        // Issue legitimately has none, so absence is empty rather than a read failure.
+        private static ReadValue<IssueStateReason?> ReadStateReason(JsonElement node)
+        {
+            var value = Optional(node, "stateReason");
+            return value.ValueKind switch
+            {
+                JsonValueKind.String when value.GetString() == "COMPLETED" => new(ValueAvailability.Present, IssueStateReason.Completed),
+                JsonValueKind.String when value.GetString() == "NOT_PLANNED" => new(ValueAvailability.Present, IssueStateReason.NotPlanned),
+                JsonValueKind.String when value.GetString() == "DUPLICATE" => new(ValueAvailability.Present, IssueStateReason.Duplicate),
+                JsonValueKind.String when value.GetString() == "REOPENED" => new(ValueAvailability.Present, IssueStateReason.Reopened),
+                JsonValueKind.String => new(ValueAvailability.Unsupported),
+                JsonValueKind.Null => new(ValueAvailability.Empty),
                 JsonValueKind.Undefined => new(ValueAvailability.NotLoaded),
                 _ => new(ValueAvailability.Unavailable)
             };

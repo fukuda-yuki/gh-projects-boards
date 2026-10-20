@@ -30,13 +30,13 @@ internal static class PlanExtraEditing
         if (text.Length == 0) return null;
         return definition.DataType switch {
             "TEXT" => PlanSheetEditing.Parse(document, PlanField.Title, text, today),
-            "NUMBER" => decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out var n) ? n : throw new ArgumentException("数値を入力してください。"),
+            "NUMBER" => PlanInput.TryNumber(text, out var n) ? n : throw new ArgumentException("数値を入力してください。"),
             "DATE" => PlanSheetEditing.Parse(document, PlanField.Start, text, today),
             "SINGLE_SELECT" => Select(definition.Name, definition.Options, text), _ => null };
     }
     internal static string? Select(string name, IEnumerable<string> options, string text, string? emptyMessage = null)
     {
-        var value = text.Trim();
+        var value = PlanInput.Fold(text).Trim();
         if (value.Length == 0) return null;
         var choices = options.ToArray();
         if (choices.Length == 0) throw new ArgumentException(emptyMessage ?? $"{name} に選択肢がありません。選択肢は GitHub のプロジェクト設定で追加します。");

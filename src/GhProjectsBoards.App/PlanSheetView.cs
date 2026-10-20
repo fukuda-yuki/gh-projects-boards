@@ -45,20 +45,41 @@ internal sealed partial class PlanSheetView : Grid
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
     private PlanDocument? presentedDocument;
     private DateOnly presentedToday;
-    private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0);
+    private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0, 0, 0);
     internal int OverdueTasks => lateness.OverdueTasks;
     internal int LaterTasks => lateness.LaterTasks;
+    internal int CauseTasks => lateness.CauseTasks;
+    internal int OverEstimateTasks => lateness.OverEstimateTasks;
+    private IReadOnlySet<string> Set(Func<PlanTaskLateness, bool> matches) =>
+        lateness.Tasks.Where(pair => matches(pair.Value)).Select(pair => pair.Key).ToHashSet(StringComparer.Ordinal);
+    // The four status-bar filters (#236 part B) are identity sets over the same classification the marks use.
+    internal IReadOnlySet<string> OverdueSet => Set(late => late.Level == PlanLatenessLevel.Overdue);
+    internal IReadOnlySet<string> LaterSet => Set(late => late.Level == PlanLatenessLevel.Later);
+    internal IReadOnlySet<string> CauseSet => Set(late => late.IsCause);
+    internal IReadOnlySet<string> OverEstimateSet => Set(late => late.OverEstimate);
+    internal PlanMarkVisibility Marks => PlanMarkVisibility.From(Session.Document.State.Settings);
+    internal DateOnly? ForecastEndOf(string identity) => Schedule.GetValueOrDefault(identity)?.ForecastEnd;
+    internal int? WorkingDaysLater(string identity) => LatenessOf(identity)?.DaysLater;
+    // Ancestor requirement rows a lateness filter keeps for context: shown, but dimmed.
+    private HashSet<string> filterContext = [];
+    internal bool IsFilterContext(string identity) => filterContext.Contains(identity);
+    internal ImmutableArray<string> LaterDescendantsOf(string identity) =>
+        PlanLateness.LaterDescendants(Schedule.Values.OrderBy(t => t.Input.RowId).ToArray(), identity, lateness);
+    internal string IdentityOfRow(int rowId) => Schedule.Values.FirstOrDefault(t => t.Input.RowId == rowId)?.Input.Identity ?? "";
     private Dictionary<string, string> peopleNames = new();
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<string>>.Empty);
+    private ImmutableArray<string> untitledNewRows = [];
+    // An inserted row the PMO has not titled yet: the publish skips it and the sheet marks its title (#247).
+    internal bool IsUntitledNewRow(string identity) => untitledNewRows.Contains(identity);
     internal sealed record Column(string? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
         new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 224), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
         new(PlanField.Estimate, "見積 h", 56), new(PlanField.Remaining, "残 h", 56), new(PlanField.Actual, "実績 h", 56),
-        new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new(PlanField.Predecessors, "先行", 64),
+        new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ForecastEnd", "見込終了", 96), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.StartNoEarlierThan, "開始日指定", 100), new(PlanField.Fixed, "日程固定", 80), new(PlanField.Status, "ステータス", 100)];
     internal bool IndicatorVisible { get; private set; } = true;
     internal readonly HashSet<string?> Hidden = [PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status];
-    internal Column[] VisibleColumns { get; private set; } = Columns.Take(11).ToArray();
+    internal Column[] VisibleColumns { get; private set; } = Columns.Take(12).ToArray();
     internal double RowHeight { get; private set; } = 28;
     private double? dividerWidth;
     private PlanSheetDivider divider = null!;
@@ -79,8 +100,15 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Canvas chartHead = Id(new Canvas { Height = 48, Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) }, "PlanGanttHeader");
     private readonly TextBlock reason = Id(new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis }, "PlanStartReason");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanSheetError");
+    // Derived from the document, so it names the untitled rows and disappears with them (#247).
+    private readonly TextBlock untitledRows = Id(new TextBlock { TextWrapping = TextWrapping.Wrap,
+        Foreground = Brush("SystemFillColorCriticalBrush"), Visibility = Visibility.Collapsed }, "PlanSheetUntitledRows");
     internal readonly InfoBar SaveFailure = Id(new InfoBar { Title = "保存できませんでした", Severity = InfoBarSeverity.Error, IsClosable = false }, "PlanSheetSaveFailure");
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
+    // A changed stored plan cannot be resolved by retrying: these are the two ways out (#248).
+    private readonly StackPanel conflictActions = new() { Orientation = Orientation.Horizontal, Spacing = 8, Visibility = Visibility.Collapsed };
+    private readonly Button reapplyStored = Id(new Button { Content = "読み直して編集を適用" }, "PlanSaveReapply");
+    private readonly Button saveCopy = Id(new Button { Content = "コピーとして保存…" }, "PlanSaveCopy");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
     private Func<PlanRow, bool>? filterPredicate;
@@ -96,14 +124,15 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Canvas chartBackground = Id(new Canvas { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left }, "PlanChartBackground");
     private readonly Canvas chartStatus = new() { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left };
     private HashSet<DateOnly> nonWorkingDates = [];
-    private Dictionary<string, DateOnly?> publishedEnds = [];
-    internal DateOnly? PublishedEnd(string identity) => publishedEnds.GetValueOrDefault(identity);
     private readonly TextBlock selection = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis }, "PlanSheetSelection");
     private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
     private readonly TextBlock latenessDetail = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetLatenessDetail");
     private readonly TextBlock emptyHint = Id(new TextBlock { Text = "タスクを選択すると、開始日と終了日の根拠を表示します", Foreground = Brush("TextFillColorSecondaryBrush"), TextTrimming = TextTrimming.CharacterEllipsis }, "PlanSheetEmptyHint");
-    private readonly TextBlock totals = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), HorizontalAlignment = HorizontalAlignment.Right }, "PlanSheetTotals");
+    // The selection line's two impact links (#236 part B): what this task's lateness delayed, and the
+    // predecessor that delayed it. One button per action, shown only when the lateness has that cause.
+    private readonly HyperlinkButton successorLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0, Visibility = Visibility.Collapsed }, "PlanSelectionSuccessorFilter");
+    private readonly HyperlinkButton predecessorLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0, Visibility = Visibility.Collapsed }, "PlanSelectionPredecessorLink");
     private readonly Border slipPill = new() { Background = Brush("GanttLateTintBrush"), CornerRadius = new(11), Padding = new(8, 2, 8, 2), Visibility = Visibility.Collapsed };
     private readonly HyperlinkButton issueLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0 }, "PlanSheetIssue");
     internal readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 170, Language = "ja-JP", DateFormat = "{year.full}/{month.integer(2)}/{day.integer(2)} ({dayofweek.abbreviated})" }, "PlanStatusDate");
@@ -120,7 +149,8 @@ internal sealed partial class PlanSheetView : Grid
     internal string WorkDescription => $"loaded={IsLoaded}, disposed={disposed}, commands=[{string.Join(", ", commands.Values)}], tail={tail.Status}, clipboard={clipboardWork}, dragTimer={dragScroll.IsEnabled}, frame={frameSubscribed}, focusTarget={requestedFocus}, pendingCells={Pending.Count}, realizedRows={Realized.Count}, zoomOpen={zoom.IsDropDownOpen}, calendarOpen={statusDate.IsCalendarOpen}";
     internal event Action? Changed;
     internal event Action<PlanSaveResult>? SaveFeedbackChanged;
-    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? openColumns = null, Func<Task>? exportCsv = null)
+    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? openColumns = null, Func<Task>? exportCsv = null,
+        Func<Task>? reapplyStoredPlan = null, Func<Task>? savePlanCopy = null)
     {
         Session = session;
         this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
@@ -146,6 +176,7 @@ internal sealed partial class PlanSheetView : Grid
         var commands = commandBar = Id(new SheetCommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
             OverflowButtonVisibility = CommandBarOverflowButtonVisibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetCommands");
         AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
+        AddCommand(commands, "行を削除", "PlanSheetDelete", Symbol.Delete, DeleteRows).KeyboardAcceleratorTextOverride = "Ctrl+-";
         AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M2,5 L5,8 L2,11 L1,10 L3,8 L1,6 Z");
         AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M4,5 L1,8 L4,11 L5,10 L3,8 L5,6 Z");
         InitializeOverview(commands);
@@ -164,6 +195,13 @@ internal sealed partial class PlanSheetView : Grid
         Overflow("貼り付け", "PlanSheetPaste", Symbol.Paste, () => KeyboardCommand(VirtualKey.V), "Ctrl+V", queued: false);
         Overflow("下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD), "Ctrl+D").Icon = CommandIcon("F0 M2,1 H14 V5 H2 Z M3,2 V4 H13 V2 Z M7,7 H9 V11 H12 L8,15 L4,11 H7 Z");
         Overflow("クリア", "PlanSheetClear", Symbol.Clear, () => KeyboardCommand(VirtualKey.Delete), "Delete", queued: false);
+        commands.SecondaryCommands.Add(new AppBarSeparator());
+        // #231: the row-state commands from the keyboard. The row context menu is the pointer route; both use
+        // the same targets, eligibility and reasons.
+        completeRows = Overflow("完了にする", "PlanSheetCompleteRows", Symbol.Accept, () => RowStateReport(CommandTargets, PlanRowAction.Complete, "完了にしました"), queued: false);
+        cancelRows = Overflow("中止にする", "PlanSheetCancelRows", Symbol.Cancel, () => RowStateReport(CommandTargets, PlanRowAction.Cancel, "中止にしました"), queued: false);
+        removeRows = Overflow("この版から外す", "PlanSheetRemoveRows", Symbol.Remove, () => RowStateReport(CommandTargets, PlanRowAction.Remove, "この版から外しました"), queued: false);
+        reopenRows = Overflow("未完了に戻す", "PlanSheetReopenRows", Symbol.Refresh, () => RowStateReport(CommandTargets, PlanRowAction.Reopen, "未完了に戻しました"), queued: false);
         commands.SecondaryCommands.Add(new AppBarSeparator());
         if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
         if (exportCsv is not null) Overflow("CSV に書き出し…", "PlanSheetCsvExport", Symbol.Save, exportCsv, queued: false);
@@ -188,19 +226,26 @@ internal sealed partial class PlanSheetView : Grid
         slipPill.Child = slip;
         explanation.Children.Add(reason); explanation.Children.Add(slipPill); SetColumn(slipPill, 1);
         explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 2);
+        var impact = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        impact.Children.Add(successorLink); impact.Children.Add(predecessorLink);
+        explanation.Children.Add(impact); SetColumn(impact, 3);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
         InitializeDetailToggle(selectedLine);
         selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
         selectedLine.Children.Add(emptyHint); SetColumnSpan(emptyHint, 3);
-        selectedLine.Children.Add(totals); SetColumn(totals, 4);
         AutomationProperties.SetName(emptyHint, emptyHint.Text);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(selectedLine); SetRow(selectedLine, 2);
-        var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(error);
+        var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(untitledRows); feedback.Children.Add(error);
         SaveFailure.ActionButton = retrySave;
+        conflictActions.Children.Add(reapplyStored); conflictActions.Children.Add(saveCopy);
+        SaveFailure.Content = conflictActions;
         if (!hostSaveFailure) feedback.Children.Add(SaveFailure);
         retrySave.Click += async (_, _) => await Run(async () => { Check(await Session.RetrySaveAsync()); }, "Retry save");
+        reapplyStored.Click += async (_, _) => { if (reapplyStoredPlan is { } reapply) await Run(reapply, "Reapply stored plan"); };
+        saveCopy.Click += async (_, _) => { if (savePlanCopy is { } copy) await Run(copy, "Save plan copy"); };
         error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = string.IsNullOrEmpty(error.Text) ? Visibility.Collapsed : Visibility.Visible);
+        untitledRows.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => untitledRows.Visibility = string.IsNullOrEmpty(untitledRows.Text) ? Visibility.Collapsed : Visibility.Visible);
         Children.Add(feedback); SetRow(feedback, 1);
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions.Add(new()); grid.ColumnDefinitions.Add(new()); }
@@ -327,22 +372,32 @@ internal sealed partial class PlanSheetView : Grid
         try { filter.Text = acceptedFilter; }
         finally { rendering = wasRendering; }
     }
-    internal void FilterChangedTasks(IReadOnlySet<string> identities) => FilterTasks(identities, "日程変更");
-    internal void FilterTasks(IReadOnlySet<string> identities, string label, bool includeSummaries = false)
+    internal void FilterTasks(IReadOnlySet<string> identities, string label, bool includeSummaries = false, bool dimAncestors = false)
     {
         CancelPendingFilter();
         acceptedFilter = label;
-        filterPredicate = row => identities.Contains(row.Identity) && (includeSummaries || !SummaryIds.Contains(row.Identity));
+        // Ancestor requirement rows stay visible as context when a count filter is applied (#236 part B).
+        filterContext = dimAncestors ? AncestorsOf(identities) : [];
+        filterPredicate = row => identities.Contains(row.Identity) && (includeSummaries || !SummaryIds.Contains(row.Identity))
+            || filterContext.Contains(row.Identity);
         rendering = true;
         try { filter.Text = acceptedFilter; }
         finally { rendering = false; }
         Refresh();
     }
-    internal void ClearChangedTasksFilter()
+    private HashSet<string> AncestorsOf(IReadOnlySet<string> identities)
+    {
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var identity in identities)
+            for (var parent = Rows.GetValueOrDefault(identity)?.Parent; parent is not null; parent = Rows.GetValueOrDefault(parent)?.Parent)
+                if (!found.Add(parent)) break;
+        return found;
+    }
+    internal void ClearIdentityFilter()
     {
         if (filterPredicate is null) return;
         CancelPendingFilter();
-        acceptedFilter = ""; filterPredicate = null;
+        acceptedFilter = ""; filterPredicate = null; filterContext = [];
         rendering = true;
         try { filter.Text = ""; }
         finally { rendering = false; }
@@ -406,7 +461,7 @@ internal sealed partial class PlanSheetView : Grid
             // Nesting them inside that same queue would wait on themselves.
             if (!queueInSheet) { await action(); return; }
             await Run(async () => {
-                if (id is "PlanSheetInsert" or "PlanSheetIndent" or "PlanSheetOutdent") await CommitPending();
+                if (id is "PlanSheetInsert" or "PlanSheetDelete" or "PlanSheetIndent" or "PlanSheetOutdent") await CommitPending();
                 await action();
             }, id);
         };
@@ -445,13 +500,17 @@ internal sealed partial class PlanSheetView : Grid
         if (result.Succeeded) ClearSaveFailure();
         else {
             error.Text = ""; SaveFailure.Message = result.Error ?? "保存できません。再試行してください。";
-            SaveFailure.IsOpen = true; retrySave.Visibility = Visibility.Visible;
-            throw new IOException(result.Error);
+            SaveFailure.IsOpen = true;
+            // Retrying cannot resolve a plan another writer stored; the two escapes replace it (#248).
+            var conflict = result.Failure == PlanSaveFailure.ChangedFile;
+            retrySave.Visibility = conflict ? Visibility.Collapsed : Visibility.Visible;
+            conflictActions.Visibility = conflict ? Visibility.Visible : Visibility.Collapsed;
+            throw new PlanSaveFailedException(result);
         }
     }
     internal void ClearSaveFailure()
     {
-        SaveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed;
+        SaveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; conflictActions.Visibility = Visibility.Collapsed;
     }
     internal async Task FlushInput()
     {
@@ -582,13 +641,13 @@ internal sealed partial class PlanSheetView : Grid
             PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
             var scheduled = PlanOperations.Schedule(document, today);
             Schedule = scheduled.ToDictionary(r => r.Input.Identity);
-            publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
             var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
             var nextNonWorkingDates = calendar.Holidays.Dates.Select(d => d.Date).Concat(calendar.ImportedHolidays?.Dates.Select(d => d.Date) ?? []).Concat(calendar.CompanyDaysOff).ToHashSet();
             if (!nonWorkingDates.SetEquals(nextNonWorkingDates)) timelineKey = null;
             nonWorkingDates = nextNonWorkingDates;
-            lateness = PlanLateness.Classify(scheduled, document.Baseline, calendar, document.State.Settings.StatusDate ?? today);
+            lateness = PlanLateness.Classify(scheduled, calendar, document.State.Settings.StatusDate ?? today);
             Unpublished = PlanOperations.Changes(document, today, scheduled);
+            untitledNewRows = PlanOperations.UntitledNewRows(document);
             SummaryIds = Rows.Values.Where(r => r.Parent is not null && Rows.ContainsKey(r.Parent)).Select(r => r.Parent!).ToHashSet();
             folded.IntersectWith(SummaryIds);
             presentedDocument = document; presentedToday = today;
@@ -601,7 +660,18 @@ internal sealed partial class PlanSheetView : Grid
         finally { rendering = false; }
         ReconcileSelection(); RefreshLayout();
         metrics.Mark("layout");
-        UpdateReason(); RefreshOverviewCommands(); Changed?.Invoke();
+        RenderUntitledRows(); UpdateReason(); RefreshOverviewCommands(); Changed?.Invoke();
+    }
+    // The rows a publish will not create because they have no title (#247). Both the line and the cell
+    // mark are derived from the document, so they vanish with the cause.
+    private void RenderUntitledRows()
+    {
+        var positions = untitledNewRows.Select(id => PlanIds.GetValueOrDefault(id)).Where(id => id > 0).ToArray();
+        var text = positions.Length == 0 ? "" : "タイトルを入力してください（ID "
+            + (positions.Length > 10 ? string.Join(", ", positions.Take(10)) + " ほか" + (positions.Length - 10).ToString("N0") + " 件" : string.Join(", ", positions))
+            + "）。行を削除 で行ごと消せます。";
+        if (untitledRows.Text == text) return;
+        untitledRows.Text = text; AutomationProperties.SetName(untitledRows, text);
     }
     private void RefreshVisibleRows(PlanDocument document)
     {
@@ -703,6 +773,9 @@ internal sealed partial class PlanSheetView : Grid
         return field switch {
             PlanField.Labels => string.Join(", ", row.Labels),
             PlanField.Start => Date(computed.Start.Value), PlanField.End => Date(computed.End.Value),
+            // 見込終了 is read-only and derived (#236 part B): the date plus the working days it is later.
+            "ForecastEnd" => computed.ForecastEnd is { } forecast ? DateText(forecast)
+                + (lateness.Tasks.GetValueOrDefault(identity)?.DaysLater is { } later ? "  +" + later : "") : "",
             PlanField.Estimate => computed.Estimate is { } estimate ? estimate.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Remaining => computed.Remaining is { } remaining ? remaining.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Actual => computed.Actual is { } actual ? actual.ToString(CultureInfo.CurrentCulture) + "h" : "",
