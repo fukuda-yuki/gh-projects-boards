@@ -751,7 +751,12 @@ internal sealed partial class PlanSheetView : Grid
         ? Rows.TryGetValue(identity,out var row) && PlanExtraEditing.Value(row,field) is string text && DateOnly.TryParseExact(text,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out var day) ? day : null : field switch {
         PlanField.Start => Schedule.GetValueOrDefault(identity)?.Start.Value,
         PlanField.End => Schedule.GetValueOrDefault(identity)?.End.Value,
+        "ForecastEnd" => ForecastEndOf(identity),
         PlanField.StartNoEarlierThan => Rows.GetValueOrDefault(identity)?.StartNoEarlierThan, _ => null };
+    // 見込終了 is a calculated read-only column: the date is secondary text and a later forecast adds a red
+    // working-day slip (#236 decision 5).
+    internal string ForecastAccessibleValue(string identity) => ForecastEndOf(identity) is { } day
+        ? DateText(day, true) + (WorkingDaysLater(identity) is { } later ? " +" + later + " 日（稼働日）" : "") : "";
     internal string EditForm(string identity, string field) => IsDateField(field)
         ? CellDate(identity, field)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? ""
         : field == PlanField.Assignees && Rows.TryGetValue(identity, out var row)
@@ -791,6 +796,8 @@ internal sealed partial class PlanSheetView : Grid
     internal bool IsCalculated(string identity, string field) => Schedule.TryGetValue(identity, out var result) &&
         (field == PlanField.Start && result.Start.Origin == DateOrigin.Calculated
         || field == PlanField.End && result.End.Origin == DateOrigin.Calculated
+        // 見込終了 is always the scheduler's derived forecast (#236).
+        || field == "ForecastEnd" && result.ForecastEnd is not null
         || field == PlanField.Remaining && (result.Input.Closed || result.Input.Remaining is null && result.Remaining is not null)
         || result.IsSummary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual);
     internal string? ReadOnlyReason(string identity, string field) => Rows.TryGetValue(identity, out var row)

@@ -71,7 +71,8 @@ internal sealed partial class PlanWorkspaceView
         var dateText = statusDate.ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"));
         publishStatusDate.Text = pastStatusDate
             ? "注意: 基準日 " + dateText + " は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。"
-            : "日付は基準日 " + dateText + " で計算したものです。";
+            // The dates in the review are the plan's stored values (#236); the 基準日 only decides lateness.
+            : "日付は計画の値です。基準日 " + dateText + " で遅れを判定しています。";
         publishStatusDate.Foreground = PlanSheetView.Brush(pastStatusDate ? "SheetChangedMarkBrush" : "TextFillColorPrimaryBrush");
         AutomationProperties.SetName(publishStatusDate, publishStatusDate.Text);
         var conflicts = PlanOperations.BlockingConflicts(document);

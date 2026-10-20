@@ -250,7 +250,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [TestCase(false, true), TestCase(true, true), TestCase(false, false), Category("PlanReadDate")]
-    public async Task RefreshResultNamesDateAndChangedTasksAndFilterCanBeCleared(bool closeBar, bool advanceDate)
+    public async Task RefreshResultNamesTheReadTimeWithoutDateChangesAndItsFilterCanBeCleared(bool closeBar, bool advanceDate)
     {
         readDay = new(2026, 10, 6);
         FakePlanEditor.Save(root, new([
@@ -377,7 +377,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("PlanReadDate")]
-    public async Task RefreshResultSaysMovedBackWhenPmoSelectedALaterStatusDate()
+    public async Task RefreshResultKeepsThePmoStatusDateAndReportsNoMovedDate()
     {
         readDay = new(2026, 10, 6);
         await Open();
@@ -662,6 +662,36 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(string.Join(" · ", marks), Is.EqualTo(expectedMarks));
         });
     }
+
+    [Test, Category("ShellChrome")]
+    public async Task StatusCountFilterKeepsAncestorRequirementRowsDimmedForContext()
+    {
+        var date = new DateOnly(2026, 10, 5);
+        readDay = date;
+        var requirement = new PlanRow("I1", "要求事項", "acme/repo");
+        var overdue = new PlanRow("I2", "遅れ", "acme/repo") { Parent = "I1", Start = date.AddDays(-3), End = date.AddDays(-3), Estimate = 8, Remaining = 8 };
+        var onPlan = new PlanRow("I3", "予定どおり", "acme/repo") { Parent = "I1", Start = date.AddDays(3), End = date.AddDays(3), Estimate = 8, Remaining = 8 };
+        var outside = new PlanRow("I4", "別の要求", "acme/repo") { Start = date.AddDays(3), End = date.AddDays(3), Estimate = 8, Remaining = 8 };
+        FakePlanEditor.Save(root, new([new(requirement, "", true), new(overdue, "", true), new(onPlan, "", true), new(outside, "", true)], 5));
+        await Open("要求事項");
+        await Ui.Ready<Button>("PlanStatusOverdueFilter");
+        await Ui.Run(() => Ui.Click("PlanStatusOverdueFilter"));
+        await Ui.Idle();
+        await Ui.Run(() => {
+            var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            // The matched row and its ancestor requirement row stay; unrelated rows leave the view.
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I1", "I2", "" }));
+            Assert.That(sheet.Realized.Single(row => row.Identity == "I1").Opacity, Is.EqualTo(0.55),
+                "A count filter keeps the ancestor requirement row for context and dims it.");
+            Assert.That(sheet.Realized.Single(row => row.Identity == "I2").Opacity, Is.EqualTo(1),
+                "The matched task keeps its ordinary weight.");
+            sheet.ClearIdentityFilter();
+        });
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 5);
+        await Ui.Run(() => Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().Realized.Single(row => row.Identity == "I1").Opacity, Is.EqualTo(1),
+            "Clearing the filter restores the ancestor row."));
+    }
+
 
     [Test, Category("ShellChrome")]
     public async Task ProjectPickerChecksOnlyOpenProjectAndSeparatesIconCommands()
@@ -1046,7 +1076,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task CsvPickerValidatesWholeFileThenImportsAndUndoesOneOperation()
     {
         await Open();
-        // Release the first-take-in date hold before measuring the CSV's additional changes.
+        // An earlier edit is an ordinary unpublished change; measure the CSV's additional changes from it.
         await CommitText("PlanCell1_Title", "設計の変更");
         await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Title == "設計の変更");
         var unpublishedBeforeCsv = workspace.Session!.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount;

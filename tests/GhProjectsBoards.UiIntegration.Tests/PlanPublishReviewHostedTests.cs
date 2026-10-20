@@ -278,7 +278,7 @@ internal sealed partial class PlanPublishReviewHostedTests
     }
 
     [TestCase(false, -1), TestCase(true, -1), TestCase(false, 0), TestCase(true, 0), TestCase(false, 1), Category("PlanReadDate")]
-    public async Task ReviewNamesCalculationDateWithoutARecalculationOrigin(bool refresh, int dayOffset)
+    public async Task ReviewStatesPlanValuesAndTheLatenessBasisDateWithoutARecalculationOrigin(bool refresh, int dayOffset)
     {
         readDay = Today.AddDays(dayOffset);
         await Open(1);
@@ -306,7 +306,8 @@ internal sealed partial class PlanPublishReviewHostedTests
             await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text == DateMessage(dayOffset));
             await Ui.Idle();
         }
-        // The date hold is removed (#236): the review names the 基準日 and no recalculation origin.
+        // Dates are plan values (#236): the review states that fact and uses the 基準日 only for lateness,
+        // and it names no calculation or recalculation origin.
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text, Is.EqualTo(DateMessage(dayOffset))));
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-publish-date-" + refresh));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -327,15 +328,15 @@ internal sealed partial class PlanPublishReviewHostedTests
         });
         await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Ready<TextBlock>("PlanPublishStatusDate");
-        // A reset moves no dates (#236), so there is no recalculation whose origin the line could name.
+        // A reset moves no dates (#236), so there is no calculation or recalculation whose origin the line could name.
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text, Is.EqualTo(DateMessage(dayOffset))));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     private static string DateMessage(int dayOffset) => dayOffset switch {
         -1 => "注意: 基準日 2026/10/06 (火) は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。",
-        0 => "日付は基準日 2026/10/07 (水) で計算したものです。",
-        1 => "日付は基準日 2026/10/08 (木) で計算したものです。",
+        0 => "日付は計画の値です。基準日 2026/10/07 (水) で遅れを判定しています。",
+        1 => "日付は計画の値です。基準日 2026/10/08 (木) で遅れを判定しています。",
         _ => throw new ArgumentOutOfRangeException(nameof(dayOffset))
     };
 

@@ -144,6 +144,7 @@ public sealed class PlanSheetRow : Grid
             Cells = [.. Cells, cell];
             var grid = new Grid(); grid.Children.Add(cell);
             if (cell.TitleDisplay is { } display) grid.Children.Add(display);
+            if (cell.ForecastDisplay is { } forecast) grid.Children.Add(forecast);
             if (cell.AssigneeDisplay is { } assignees) grid.Children.Add(assignees);
             if (cell.Field == PlanField.Title) grid.Children.Add(fold);
             var frame = new Border { Child = grid, BorderThickness = new(0, 0, 0, 1) };
@@ -340,13 +341,16 @@ public sealed class PlanSheetRow : Grid
             var text = owner.Pending.GetValueOrDefault((Identity, field))?.Text ?? (cell.Editing ? owner.EditForm(Identity, field) : owner.Display(Identity, field));
             cell.Refresh(text);
             if (cell.TitleDisplay is { } titleDisplay) AutomationProperties.SetAutomationId(titleDisplay, "PlanTitleDisplay" + number);
+            if (cell.ForecastDisplay is { } forecastDisplay) AutomationProperties.SetAutomationId(forecastDisplay, "PlanForecastDisplay" + number);
             if (cell.AssigneeDisplay is { } assigneeDisplay) {
                 assigneeDisplay.Visibility = cell.Visibility == Visibility.Visible && !cell.Editing ? Visibility.Visible : Visibility.Collapsed;
                 AutomationProperties.SetAutomationId(cell.AssigneeNameDisplay!, "PlanAssigneeName" + number);
                 AutomationProperties.SetAutomationId(cell.AssigneeCountDisplay!, "PlanAssigneeCount" + number);
             }
             AutomationProperties.SetAutomationId(cell, $"PlanCell{number}_{field}");
-            AutomationProperties.SetName(cell, $"ID {(number == 0 ? "新規" : number)} {PlanSheetView.FullName(column)}" + (owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
+            AutomationProperties.SetName(cell, $"ID {(number == 0 ? "新規" : number)} {PlanSheetView.FullName(column)}"
+                + (field == "ForecastEnd" ? (owner.ForecastAccessibleValue(Identity) is { Length: > 0 } forecastName ? " " + forecastName : "")
+                    : owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
             AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? stateHint ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
             ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? stateHint ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
                 : field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : text)));
@@ -356,6 +360,9 @@ public sealed class PlanSheetRow : Grid
                     summaryCells.Add(field, display);
                     ((Grid)frames[i].Child).Children.Insert(1, display);
                 }
+                // The leaf cell's two-colour forecast paint hides behind the summary cell, which draws the
+                // same value for a requirement's roll-up (#236 M3).
+                if (cell.ForecastDisplay is { } leafForecast) leafForecast.Visibility = Visibility.Collapsed;
                 AutomationProperties.SetAutomationId(cell, "");
                 display.Visibility = visible;
                 display.Height = cell.Height;
@@ -366,12 +373,21 @@ public sealed class PlanSheetRow : Grid
                 if (missing > 0)
                     display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = $"未{missing} ", FontSize = 11,
                         Foreground = PlanSheetView.Brush("SystemFillColorCautionBrush") });
-                display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = value });
+                if (field == "ForecastEnd") {
+                    // The derived date is secondary text; a later forecast adds the critical red slip.
+                    if (owner.ForecastEndOf(Identity) is { } forecastDate)
+                        display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = PlanSheetView.DateText(forecastDate),
+                            Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
+                    if (owner.WorkingDaysLater(Identity) is { } later)
+                        display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = "  +" + later,
+                            Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush") });
+                } else display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = value });
                 display.Text.Foreground = PlanSheetView.Brush(field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End
-                    ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
+                    or "ForecastEnd" ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
                 AutomationProperties.SetAutomationId(display, $"PlanCell{number}_{field}");
                 var accessibleValue = field is PlanField.Start or PlanField.End && owner.CellDate(Identity, field) is { } accessibleDate
                     ? PlanSheetView.DateText(accessibleDate, true)
+                    : field == "ForecastEnd" ? owner.ForecastAccessibleValue(Identity)
                     : missing > 0 ? $"{value}（{(field == PlanField.Estimate ? "見積" : "残")}のないタスク {missing} 件を除く）" : value;
                 AutomationProperties.SetName(display, $"ID {number} {PlanSheetView.FullName(column)} {accessibleValue} · {PlanOperations.SummaryReadOnlyReason(field)}");
                 var fullValue = field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : accessibleValue;
@@ -392,7 +408,7 @@ public sealed class PlanSheetRow : Grid
         // Outlined marks only, never filled (#236 part B): red 期限超過, yellow 予定より遅れ and 見積超過.
         var overdueMark = owner.Marks.Overdue && late?.Level == PlanLatenessLevel.Overdue;
         var yellowMark = owner.Marks.Later && late?.Level == PlanLatenessLevel.Later
-            || owner.Marks.OverEstimate && (effort?.IsOverEstimate == true || effort?.IsZeroRemainingOpen == true);
+            || owner.Marks.OverEstimate && effort?.IsOverEstimate == true;
         indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : overdueMark || yellowMark ? "\uE7BA"
             : owner.IsDimmed(Identity) ? "\uE711"
             : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
@@ -405,8 +421,9 @@ public sealed class PlanSheetRow : Grid
         AutomationProperties.SetName(indicator, stateText); ToolTipService.SetToolTip(indicator, stateText);
         Background = owner.IsSelectedRow(Identity) ? PlanSheetView.Brush("SheetSelectionBrush") : null;
         // 中止 and pending removal dim the whole row; a pending completion keeps its ordinary weight
-        // because the task is finished, not set aside (#231).
-        Opacity = owner.IsDimmed(Identity) ? 0.55 : 1;
+        // because the task is finished, not set aside (#231). A count filter keeps ancestor requirement rows
+        // as context only, so they dim like those rows (#236 decision 5).
+        Opacity = owner.IsDimmed(Identity) || owner.IsFilterContext(Identity) ? 0.55 : 1;
         id.Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush");
         id.FontWeight = summary ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
         DrawChart();
@@ -663,6 +680,10 @@ internal sealed class PlanSheetCell : TextBox
     private bool editing;
     private readonly Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase? textMenu;
     internal TextBlock? TitleDisplay { get; }
+    // 見込終了 needs two colours in one cell: the derived date in secondary text and its working-day slip
+    // in critical red (#236 decision 5). A TextBlock with runs draws that; the TextBox keeps its text and
+    // input path with its paint hidden, like the title display.
+    internal TextBlock? ForecastDisplay { get; }
     // Width the row-state tag takes at the right of the title, so the ellipsis ends before the tag (#231).
     internal double TagReserve { get; private set; }
     internal void ReserveForTag(double width) { if (TagReserve == width) return; TagReserve = width; RefreshDisplay(); }
@@ -678,6 +699,11 @@ internal sealed class PlanSheetCell : TextBox
             TitleDisplay = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap,
                 VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
             AutomationProperties.SetAccessibilityView(TitleDisplay, AccessibilityView.Raw);
+        }
+        if (field == "ForecastEnd") {
+            ForecastDisplay = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap,
+                VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
+            AutomationProperties.SetAccessibilityView(ForecastDisplay, AccessibilityView.Raw);
         }
         if (field == PlanField.Assignees) {
             AssigneeDisplay = new Grid { IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center };
@@ -776,6 +802,7 @@ internal sealed class PlanSheetCell : TextBox
     }
     internal void Rebind() { Editing = false; Composing = false; endedThisTurn = false;
         if (TitleDisplay is { } display) AutomationProperties.SetAutomationId(display, "");
+        if (ForecastDisplay is { } forecast) AutomationProperties.SetAutomationId(forecast, "");
         if (AssigneeNameDisplay is { } name) AutomationProperties.SetAutomationId(name, "");
         if (AssigneeCountDisplay is { } count) AutomationProperties.SetAutomationId(count, ""); }
     internal void Refresh(string text)
@@ -801,6 +828,20 @@ internal sealed class PlanSheetCell : TextBox
             AssigneeCountDisplay!.Text = suffix;
             foreach (var part in new[] { AssigneeNameDisplay, AssigneeCountDisplay }) {
                 part.FontSize = FontSize; part.FontFamily = FontFamily; part.FontWeight = FontWeight; part.Foreground = Foreground;
+            }
+        }
+        if (ForecastDisplay is { } forecast) {
+            Opacity = Editing ? 1 : 0;
+            forecast.Visibility = Editing ? Visibility.Collapsed : Visibility.Visible;
+            forecast.Margin = Padding;
+            forecast.FontSize = FontSize; forecast.FontFamily = FontFamily; forecast.FontWeight = FontWeight;
+            forecast.Inlines.Clear();
+            if (row.Owner is { } owner && owner.Schedule.TryGetValue(row.Identity, out var task) && task.ForecastEnd is { } day) {
+                forecast.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = PlanSheetView.DateText(day),
+                    Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
+                if (owner.WorkingDaysLater(row.Identity) is { } later)
+                    forecast.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = "  +" + later,
+                        Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush") });
             }
         }
         if (TitleDisplay is not { } display) return;

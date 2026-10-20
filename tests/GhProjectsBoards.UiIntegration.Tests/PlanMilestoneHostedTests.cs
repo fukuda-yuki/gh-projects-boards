@@ -168,7 +168,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test]
-    public async Task PhaseMappingControlIsOneUndoStepAndDoesNotReleaseHeldDates()
+    public async Task PhaseMappingControlIsOneUndoStepAndMovesNoDates()
     {
         await MilestonePlan();
         var session = workspace.Session!; var undo = session.UndoCount;

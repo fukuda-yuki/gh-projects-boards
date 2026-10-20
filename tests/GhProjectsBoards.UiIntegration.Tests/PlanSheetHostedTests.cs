@@ -472,6 +472,62 @@ internal sealed partial class PlanSheetHostedTests
         });
     }
 
+    [Test, Category("SheetRowPresentation")]
+    public async Task ForecastEndShowsTheDerivedDateInSecondaryTextAndOnlyALaterForecastAddsTheRedSlip()
+    {
+        // #236 decision 5: 見込終了 is the read-only forecast column after 終了日. Its date is secondary text,
+        // a later forecast adds a red working-day slip, and the accessible name carries both.
+        var late = new PlanRow("I1", "Fixed late", "acme/repo") { Estimate = 40, Remaining = 40, Start = Today, End = Today.AddDays(2), Fixed = true };
+        var onPlan = new PlanRow("I2", "Fixed on plan", "acme/repo") { Estimate = 8, Remaining = 8, Start = Today, End = Today, Fixed = true };
+        var closed = new PlanRow("I3", "Closed", "acme/repo") { Estimate = 8, Actual = 8, Remaining = 0, Closed = true, CloseDate = Today, Start = Today, End = Today };
+        var requirement = new PlanRow("P", "Requirement", "acme/repo");
+        late = late with { Parent = "P" };
+        await MountPresentation([late, onPlan, closed, requirement], [late, onPlan, closed, requirement]);
+        await Ui.Run(() => {
+            var slip = Ui.Find<TextBlock>("PlanForecastDisplay1");
+            var runs = slip.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().ToArray();
+            Assert.That(runs.Select(run => run.Text), Is.EqualTo(new[] { "10/9 (金)", "  +2" }));
+            Assert.That(((SolidColorBrush)runs[0].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
+            Assert.That(((SolidColorBrush)runs[1].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
+            Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell1_ForecastEnd")),
+                Is.EqualTo("ID 1 見込終了 2026-10-09 (金) +2 日（稼働日）"));
+            // A forecast that ends on the plan end keeps the secondary date and shows no red run.
+            var aligned = Ui.Find<TextBlock>("PlanForecastDisplay2");
+            var alignedRuns = aligned.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().ToArray();
+            Assert.That(alignedRuns.Select(run => run.Text), Is.EqualTo(new[] { "10/5 (月)" }));
+            Assert.That(((SolidColorBrush)alignedRuns[0].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
+            Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell2_ForecastEnd")), Is.EqualTo("ID 2 見込終了 2026-10-05 (月)"));
+            // No forecast: blank cell and no date in the accessible name.
+            Assert.That(Ui.Find<TextBlock>("PlanForecastDisplay3").Inlines, Is.Empty);
+            Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell3_ForecastEnd")), Is.EqualTo("ID 3 見込終了"));
+            // A requirement's roll-up draws the same two-colour forecast on its summary cell (#236 M3).
+            Assert.That(Ui.Find<TextBlock>("PlanForecastDisplay4").Visibility, Is.EqualTo(Visibility.Collapsed),
+                "The summary cell owns the requirement's forecast paint.");
+            var summary = Ui.Find<PlanSummaryCell>("PlanCell4_ForecastEnd");
+            var summaryRuns = summary.Text.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().ToArray();
+            Assert.That(summaryRuns.Select(run => run.Text), Is.EqualTo(new[] { "10/9 (金)", "  +2" }));
+            Assert.That(((SolidColorBrush)summaryRuns[0].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
+            Assert.That(((SolidColorBrush)summaryRuns[1].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
+            Assert.That(AutomationProperties.GetName(summary), Does.Contain("2026-10-09 (金) +2 日（稼働日）"));
+        });
+    }
+
+    [Test, Category("SheetRowPresentation")]
+    public async Task ZeroRemainingOpenAloneShowsNoMarkOnTheSheet()
+    {
+        // #236 decision 4: 残 0・未完了 carries no sheet mark. With plan dates on the 基準日 the task is
+        // neither 期限超過 nor 予定より遅れ and not 見積超過, so no glyph and no indicator name may appear.
+        var row = new PlanRow("I1", "Zero remaining", "acme/repo") { Estimate = 40, Actual = 0, Remaining = 0, Start = Today, End = Today };
+        await MountPresentation([row], [row]);
+        await Ui.Run(() => {
+            var indicator = Ui.Find<FontIcon>("PlanIndicator1");
+            Assert.That(indicator.Glyph, Is.Empty);
+            Assert.That(AutomationProperties.GetName(indicator), Is.Empty);
+            Assert.That(ToolTipService.GetToolTip(indicator)?.ToString() ?? "", Is.Empty);
+        });
+    }
+
+
     [TestCase("Enter", true), TestCase("Tab", true), TestCase("Leave", true)]
     [TestCase("Escape", false), TestCase("Select", false)]
     [Category("PlanSheetNative")]

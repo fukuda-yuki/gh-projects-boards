@@ -56,6 +56,78 @@ internal sealed class PlanDateScheduleTests
     }
 
     [Test]
+    public void AnAssigneeEditMovesNoTaskDateAndChangesOnlyTheAssignee()
+    {
+        // #236 acceptance 2: 担当者 is not a rescheduling trigger. The edit is one unpublished field and
+        // neither the edited task nor its successor moves.
+        ImmutableArray<PlanRow> rows = [
+            new("I1", "First", "acme/repo") { Start = D("2026-10-05"), End = D("2026-10-05"), Estimate = 8, Remaining = 8 },
+            new("I2", "Second", "acme/repo") { Start = D("2026-10-06"), End = D("2026-10-06"), Estimate = 8, Remaining = 8, Predecessors = ["I1"] }];
+        var document = Document(rows);
+        var before = Schedule(document).Select(t => (t.Input.Identity, t.Start.Value, t.End.Value)).ToArray();
+
+        var updated = document with { State = PlanOperations.Apply(document, new EditPlanCells(PlanOperationKind.Cell,
+            [new("I1", PlanField.Assignees, new[] { "U1" })]), Monday).State };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Schedule(updated).Select(t => (t.Input.Identity, t.Start.Value, t.End.Value)), Is.EqualTo(before));
+            Assert.That(UnpublishedFields(updated, "I1"), Is.EqualTo(new[] { PlanField.Assignees }));
+            Assert.That(UnpublishedFields(updated, "I2"), Is.Empty);
+        });
+    }
+
+    [TestCase(PlanField.Remaining)]
+    [TestCase(PlanField.Actual)]
+    public void APasteOfEffortReschedulesTheEditedTaskAndItsSuccessor(string field)
+    {
+        // #236 acceptance 2: a paste of 実績 or 残 reschedules the edited task and its successor like a typed
+        // edit; 8h done plus 8h left or 16h left both push the end to 10/6 and the successor to 10/7.
+        ImmutableArray<PlanRow> rows = [
+            new("I1", "First", "acme/repo") { Start = D("2026-10-05"), End = D("2026-10-05"), Estimate = 40, Actual = 0, Remaining = 8 },
+            new("I2", "Second", "acme/repo") { Start = D("2026-10-06"), End = D("2026-10-06"), Estimate = 8, Remaining = 8, Predecessors = ["I1"] }];
+        var document = Document(rows);
+
+        var updated = document with { State = PlanOperations.Apply(document, new EditPlanCells(PlanOperationKind.Paste,
+            [new("I1", field, field == PlanField.Actual ? 8m : 16m)]), Monday).State };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Dates(updated, "I1"), Is.EqualTo((D("2026-10-05"), D("2026-10-06"))));
+            // The successor's plan end moves with the predecessor. Its start stays the stored same-day
+            // handoff because the plan describes days: the predecessor's stored end 10/6 lets it start 10/6.
+            Assert.That(Dates(updated, "I2").End, Is.EqualTo(D("2026-10-07")));
+            Assert.That(UnpublishedFields(updated, "I1"), Is.EquivalentTo(new[] { field, PlanField.End }));
+            Assert.That(UnpublishedFields(updated, "I2"), Does.Contain(PlanField.End).And.Not.Contain(PlanField.Start));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void CompletingOrCancellingARowMovesNoOtherTasksPlanDate(bool cancelled)
+    {
+        // #236 acceptance 2 / #231: a row-state command changes only the row's own state fields. The
+        // successor keeps the plan dates it already holds in both cases.
+        ImmutableArray<PlanRow> rows = [
+            new("I1", "First", "acme/repo") { Start = D("2026-10-05"), End = D("2026-10-05"), Estimate = 8, Remaining = 8 },
+            new("I2", "Second", "acme/repo") { Start = D("2026-10-06"), End = D("2026-10-06"), Estimate = 8, Remaining = 8, Predecessors = ["I1"] }];
+        var document = Document(rows);
+        var successor = Dates(document, "I2");
+
+        var updated = document with { State = PlanOperations.Apply(document, new ClosePlanRows(["I1"], cancelled), Monday).State };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Dates(updated, "I2"), Is.EqualTo(successor), "No row-state command moves another task's plan date.");
+            Assert.That(UnpublishedFields(updated, "I1"), cancelled
+                ? Is.EquivalentTo(new[] { PlanField.Closed, PlanField.Cancelled })
+                : Does.Contain(PlanField.Closed));
+            Assert.That(UnpublishedFields(updated, "I2"), Is.Empty);
+        });
+    }
+
+
+    [Test]
     public void APlanStartIsNeverPulledEarlier()
     {
         // 8h of work planned for 10/20 is late work only because the 基準日 caught up with it, not a

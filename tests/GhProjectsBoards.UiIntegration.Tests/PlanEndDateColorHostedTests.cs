@@ -23,7 +23,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         ], 2) { AddedFields = [PlanField.StartNoEarlierThan] });
         await Open();
         Assert.That(workspace.Session!.Document.State.Rows.Single().StartNoEarlierThan, Is.EqualTo(calculatedEnd));
-        // Release the initial date hold through the same picker used for the round trip.
+        // Move the 基準日 back and forth through the same picker used for the round trip: a 基準日 change
+        // moves no plan date (#236), and the retained end must return to its ordinary colour.
         await SetEndColorStatusDate(readDay.AddDays(-1));
         await SetEndColorStatusDate(readDay);
         PlanSheetCell end = null!;

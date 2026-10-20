@@ -159,6 +159,7 @@ internal static class EvaluationFixture
         var identities = Identities(plan);
         var phaseOf = plan.Rows.Where(r => r.Phase is not null).ToDictionary(r => identities[r.Key], r => r.Phase!);
         var schedule = PlanOperations.Schedule(snapshot.Document, snapshot.StatusDate).Where(t => phaseOf.ContainsKey(t.Input.Identity)).ToArray();
+        var finish = schedule.Any(t => Finish(t) is null) ? null : schedule.Max(Finish);
         Effort Sum(IEnumerable<ScheduledTask> tasks)
         {
             var list = tasks.ToArray();
@@ -167,11 +168,16 @@ internal static class EvaluationFixture
                 list.Count(t => !t.Input.Closed && t.Remaining == 0));
         }
         var calendar = new PlanCalendar();
+        // #236 decision 5: 完了見込 follows the forecast schedule. Open work finishes at its forecast end,
+        // closed work at the close date, and kept work without a forecast keeps its retained plan end; a
+        // task the scheduler cannot finish at all leaves the measure unknown, as the summary does.
+        DateOnly? Finish(ScheduledTask task) => task.Input.Closed ? task.Input.CloseDate ?? task.End.Value
+            : task.ForecastEnd ?? task.End.Value;
         var phases = plan.Phases.Select(phase => {
             var tasks = schedule.Where(t => phaseOf[t.Input.Identity] == phase).ToArray();
-            var forecast = tasks.Max(t => t.End.Value);
+            var forecast = tasks.Any(t => Finish(t) is null) ? null : tasks.Max(Finish);
             var due = plan.Milestones.Single(m => m.Phase == phase).Due;
-            return new PhaseMeasure(phase, Sum(tasks), tasks.Min(t => t.Start.Value), forecast, due, PlanScheduler.WorkingDaysBetween(due, forecast, calendar) ?? 0);
+            return new PhaseMeasure(phase, Sum(tasks), tasks.Min(t => t.Start.Value), forecast, due, forecast is { } day ? PlanScheduler.WorkingDaysBetween(due, day, calendar) ?? 0 : 0);
         }).ToArray();
         var holidays = calendar.Holidays.Dates.Select(d => d.Date).ToHashSet();
         var days = 0;
@@ -186,6 +192,6 @@ internal static class EvaluationFixture
             return new PersonMeasure(person.Identity, Sum(schedule.Where(t => t.Input.Assignees.Contains(person.Identity))),
                 periods.Length, periods.Count(p => p.Overloaded), periods.Length == 0 ? 0 : Math.Round(periods.Max(p => p.Percent ?? 0), 0));
         }).ToArray();
-        return new(snapshot.StatusDate, Sum(schedule), schedule.Max(t => t.End.Value), phases, people);
+        return new(snapshot.StatusDate, Sum(schedule), finish, phases, people);
     }
 }
