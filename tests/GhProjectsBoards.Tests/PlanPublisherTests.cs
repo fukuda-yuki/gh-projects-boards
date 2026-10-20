@@ -1090,6 +1090,90 @@ internal sealed partial class PlanPublisherTests
         Assert.That(File.Exists(Path.Combine(root, "plan-mutations.jsonl")), Is.False, "Nothing is sent for a row this publish cannot create.");
         Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(1));
     }
+    // #247 M1: the held write can belong to a published row — here the requirement whose child order
+    // now names the untitled row inserted before its published child. Publishing the rest must report
+    // success and leave only that order change unpublished; nothing may name the row it cannot create.
+    [Test]
+    public async Task AHeldChildOrderOnAPublishedRequirementDoesNotFailTheRestOfThePublish()
+    {
+        await Start(3, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I2" ? i with { Row = i.Row with { Parent = "I1" } } : i).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2"])
+        });
+        await session.Execute(new InsertPlanRows([PlanRow.New("", "acme/repo")], "I2"), Today);
+        var untitled = session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:", StringComparison.Ordinal));
+        Assert.That(untitled.Parent, Is.EqualTo("I1"), "A row inserted before a published child inherits that child's requirement.");
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I3", PlanField.Title, "Edited")]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.Multiple(() => {
+            Assert.That(result.Succeeded, Is.True, result.Error);
+            Assert.That(FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I3").Row.Title, Is.EqualTo("Edited"), "The valid edit is sent.");
+            Assert.That(session.Changes(Today).Fields.TryGetValue("I1", out var fields) && fields.Contains(PlanField.SubIssueOrder), Is.True,
+                "The requirement's child order stays unpublished while it names the untitled row.");
+            Assert.That(session.Changes(Today).Fields.ContainsKey(untitled.Identity), Is.True, "The untitled row stays unpublished.");
+        });
+        var sent = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(sent, Does.Contain("updateIssue"));
+        Assert.That(sent, Does.Not.Contain("createIssue"));
+        Assert.That(sent, Does.Not.Contain("reprioritizeSubIssue"), "An order that names the untitled row is held whole.");
+        Assert.That(sent, Does.Not.Contain(untitled.Identity), "No write may name a row this publish does not create.");
+    }
+
+    // #247 M1, second shape of the same held write: a published row's 先行 link now points at the
+    // untitled row. The link is held; sending the rest must still report success.
+    [Test]
+    public async Task AHeldPredecessorLinkToAnUntitledRowDoesNotFailTheRestOfThePublish()
+    {
+        await Start(2);
+        await session.Execute(new InsertPlanRows([PlanRow.New("", "acme/repo")]), Today);
+        var untitled = session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:", StringComparison.Ordinal));
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [
+            new("I2", PlanField.Predecessors, new[] { untitled.Identity }),
+            new("I1", PlanField.Title, "Edited")]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.Multiple(() => {
+            Assert.That(result.Succeeded, Is.True, result.Error);
+            Assert.That(FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I1").Row.Title, Is.EqualTo("Edited"), "The valid edit is sent.");
+            Assert.That(session.Changes(Today).Fields.TryGetValue("I2", out var fields) && fields.Contains(PlanField.Predecessors), Is.True,
+                "The 先行 link to the untitled row stays unpublished.");
+        });
+        var sent = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(sent, Does.Contain("updateIssue"));
+        Assert.That(sent, Does.Not.Contain("createIssue"));
+        Assert.That(sent, Does.Not.Contain("blockingIssueId"), "A 先行 link to the untitled row is held.");
+        Assert.That(sent, Does.Not.Contain(untitled.Identity), "No write may name a row this publish does not create.");
+    }
+
+    // #247 M1: the exemption is exact. A real write failure still reports the publish as unfinished,
+    // while the held order change stays held and nothing is sent for the untitled row or its dependants.
+    [Test]
+    public async Task ARealFieldFailureStillFailsThePublishWithAHeldOrderChangePresent()
+    {
+        await Start(3, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I2" ? i with { Row = i.Row with { Parent = "I1" } } : i).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2"])
+        });
+        await session.Execute(new InsertPlanRows([PlanRow.New("", "acme/repo")], "I2"), Today);
+        var untitled = session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:", StringComparison.Ordinal));
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [
+            new("I3", PlanField.Title, "Edited"), new("I3", PlanField.Actual, 4m)]), Today);
+        Scenario("field-denied");
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.Multiple(() => {
+            Assert.That(result.Succeeded, Is.False, "A genuine field failure is not a held write.");
+            Assert.That(result.Error, Is.EqualTo("未完了の変更があります。確認後に再発行してください。"));
+            Assert.That(session.Document.Sync.Failures.Any(f => f.Identity == "I3" && f.Field == PlanField.Actual), Is.True,
+                "The real failure is what keeps the publish unfinished.");
+            Assert.That(session.Changes(Today).Fields.TryGetValue("I1", out var order) && order.Contains(PlanField.SubIssueOrder), Is.True,
+                "The held order change is still present alongside the real failure.");
+        });
+        var sent = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(sent, Does.Contain("updateIssue"));
+        Assert.That(sent, Does.Not.Contain("createIssue"));
+        Assert.That(sent, Does.Not.Contain("reprioritizeSubIssue"));
+        Assert.That(sent, Does.Not.Contain(untitled.Identity), "Nothing is sent for the untitled row or its dependants.");
+    }
+
     [Test]
     public async Task ClosingAndCancellingRowsPublishTheirStateReason()
     {
