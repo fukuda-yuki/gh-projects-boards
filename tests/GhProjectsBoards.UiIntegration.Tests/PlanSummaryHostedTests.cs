@@ -13,10 +13,11 @@ internal sealed partial class PlanWorkspaceHostedTests
     private async Task SummaryPlan()
     {
         readDay = new(2026, 10, 5);
+        // The tasks carry a start: a task without dates has no load until the PMO dates it (#236 rule 5).
         FakePlanEditor.Save(root, new([
-            new(new("I1", "設計 A", "acme/repo") { Estimate = 16, Remaining = 16, Actual = 4, Assignees = ["U1"] }, "", true) { Phase = "SA" },
-            new(new("I2", "設計 B", "acme/repo") { Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"] }, "", true) { Phase = "SA" },
-            new(new("I3", "実装", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U2"] }, "", true) { Phase = "PG" }], 4) { Phases = ["SA", "PG"] });
+            new(new("I1", "設計 A", "acme/repo") { Estimate = 16, Remaining = 16, Actual = 4, Assignees = ["U1"], Start = readDay }, "", true) { Phase = "SA" },
+            new(new("I2", "設計 B", "acme/repo") { Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"], Start = readDay }, "", true) { Phase = "SA" },
+            new(new("I3", "実装", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U2"], Start = readDay }, "", true) { Phase = "PG" }], 4) { Phases = ["SA", "PG"] });
         await Open("設計 A");
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             ProjectStart = readDay, ProjectEnd = new(2026, 10, 30), StatusDate = readDay }), readDay);

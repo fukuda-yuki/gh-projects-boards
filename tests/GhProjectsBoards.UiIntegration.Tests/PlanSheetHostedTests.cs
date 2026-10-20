@@ -680,7 +680,8 @@ internal sealed partial class PlanSheetHostedTests
     [TestCase("moved", "完了予定 10/2 を過ぎて未完了 · +1 日", true, "")]
     [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1 日", false, "")]
     // The predecessor state names its cause through the selection line's link, not the pill's detail line.
-    [TestCase("predecessor", "見込終了 10/7 (水) · 10/5 から +2 日", false, "")]
+    // The successor starts when the predecessor's 10/7 work is used up, so it does not share that day.
+    [TestCase("predecessor", "見込終了 10/8 (木) · 10/5 から +3 日", false, "")]
     // A typed start constraint moves the plan start, so the plan end follows it and no slip remains: the
     // delivered model has no lateness to show here (the published-basis slip this state used to show is gone).
     [TestCase("constraint", "", false, "")]

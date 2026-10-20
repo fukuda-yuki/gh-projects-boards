@@ -121,6 +121,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         if (reset) {
             await OpenResetDialog();
+            // A later edit reschedules only the edited task and its successors (#236), not the whole plan.
+            await Ui.Run(() => Assert.That(Ui.DialogText("PlanResetConfirm"),
+                Does.Contain("日程は GitHub の値をそのまま表示し、タスクを編集するまで動きません。").And.Not.Contain("全体を再計算")));
             await Ui.Run(() => Ui.DialogButton("PlanResetConfirm", "PrimaryButton"));
             await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
             await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Contain("日程は GitHub の値のままです。")));
@@ -363,6 +366,13 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Find<InfoBar>("PlanRefreshResult").IsOpen = false;
         });
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 7);
+        // A reset never lists added Issues, so its bar offers no filter for them either.
+        await OpenResetDialog();
+        await Ui.Run(() => Ui.DialogButton("PlanResetConfirm", "PrimaryButton"));
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Tree(Ui.Find<InfoBar>("PlanRefreshResult")).OfType<Button>().Select(AutomationProperties.GetAutomationId),
+            Does.Not.Contain("PlanRefreshAddedFilter")));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
@@ -2085,6 +2095,9 @@ internal sealed partial class PlanWorkspaceHostedTests
     [TestCase("company", "2026-10-06")]
     public async Task SettingChangesRecalculateAndOneUndoRestoresThePreviousDates(string setting, string expected)
     {
+        // A settings change moves only a task that already has dates (#236 rule 5).
+        var seeded = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, seeded with { Issues = seeded.Issues.Select(i => i with { Row = i.Row with { Start = new(2026, 10, 5), End = new(2026, 10, 5) } }).ToImmutableArray() });
         await Open();
         // A 基準日 change alone does not reschedule (#236 part B): only a calendar, Project-period or rate
         // change can move dates, so the setup that establishes the previous dates sets the Project period.
@@ -2109,6 +2122,9 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task HolidayImportRecalculatesAndSettingsFileRoundTripsThroughRealControls()
     {
+        // A settings change moves only a task that already has dates (#236 rule 5).
+        var seeded = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, seeded with { Issues = seeded.Issues.Select(i => i with { Row = i.Row with { Start = new(2026, 10, 5), End = new(2026, 10, 5) } }).ToImmutableArray() });
         await Open();
         await Ui.Run(async () => await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = new(2026, 10, 5) }), new(2026, 10, 5)));
         var holidayPath = Path.Combine(root, "holidays.csv");
