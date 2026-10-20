@@ -181,6 +181,53 @@ internal sealed class PlanSummaryTests
     }
 
     [Test]
+    public void ForecastFinishPhaseAndMilestoneFollowTheForecastSchedule()
+    {
+        // #236 decision 5: 完了見込 and 差 come from the forecast schedule. A fixed task keeps its plan end
+        // (10/7) while its 40h of remaining work is forecast from the 基準日 to 10/9, so the band and every
+        // measure that shares the finish rule must report the forecast end.
+        var row = new PlanRow("I", "Fixed", "a/b") { Phase = "UI", MilestoneTitle = "UI 完了", Start = Day, End = Day.AddDays(2), Fixed = true, Estimate = 40, Remaining = 40 };
+        var document = Document(row);
+        document = document with {
+            Baseline = document.Baseline with { Milestones = [new("UI 完了", Day.AddDays(4), false, false)] },
+            State = document.State with {
+                Settings = document.State.Settings with {
+                    PhaseMilestones = ImmutableDictionary<string, string>.Empty.Add("UI", "UI 完了") } }
+        };
+        var result = Calculate(document);
+        Assert.Multiple(() => {
+            Assert.That(result.Total.Finish, Is.EqualTo(Day.AddDays(4)), "The band's finish is the latest forecast end.");
+            Assert.That(result.ForecastFinish, Is.EqualTo(Day.AddDays(4)));
+            Assert.That(result.FinishDifference, Is.EqualTo(-4), "10/12 is a bundled holiday, so the signed difference counts 10/13–10/16.");
+            Assert.That(result.Phases.Single(p => p.Phase == "UI").Tasks.Finish, Is.EqualTo(Day.AddDays(4)));
+            Assert.That(result.Phases.Single(p => p.Phase == "UI").Difference, Is.Zero, "The milestone due date is the forecast end.");
+            Assert.That(result.Milestones.Single().Forecast, Is.EqualTo(Day.AddDays(4)));
+            Assert.That(result.Milestones.Single().Difference, Is.Zero);
+        });
+    }
+
+    [Test]
+    public void KeptWorkWithoutAForecastContributesItsRetainedPlanEnd()
+    {
+        // A kept row (no Estimate and no Remaining) has no forecast; its retained plan end still finishes the
+        // version, which keeps the kept-date rule in docs/spec.md and the milestone contract true (#236 M2).
+        var result = Calculate(Document(new PlanRow("I", "Kept", "a/b") { Start = Day, End = Day.AddDays(3) }));
+        Assert.That(result.ForecastFinish, Is.EqualTo(Day.AddDays(3)));
+    }
+
+    [Test]
+    public void ATaskWithNoEndMakesTheFinishUnknownRatherThanInventingOne()
+    {
+        var dated = new PlanRow("D", "Dated", "a/b") { Start = Day, End = Day.AddDays(1) };
+        var undated = new PlanRow("U", "Undated", "a/b");
+        Assert.Multiple(() => {
+            Assert.That(Calculate(Document(undated)).ForecastFinish, Is.Null, "An undated-only plan has no finish.");
+            Assert.That(Calculate(Document(dated, undated)).ForecastFinish, Is.Null,
+                "A task without any end makes the Project finish unknown instead of contributing a date.");
+        });
+    }
+
+    [Test]
     public void MonthlyUnknownWorkStaysUnallocatedAndExtendsThroughKnownLaterFinish()
     {
         var d = Document(new("I", "Unknown", "a/b") { Assignees = ["U1"] },

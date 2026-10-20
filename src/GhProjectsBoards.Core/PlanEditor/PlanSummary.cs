@@ -27,7 +27,11 @@ internal sealed record SummaryPlan(int? WorkingDays, int? ElapsedDays, int? Rema
 
 internal static class PlanSummary
 {
-    private static DateOnly? Finish(ScheduledTask task) => task.Input.Closed ? task.Input.CloseDate ?? task.End.Value : task.End.Value;
+    // #236 decision 5: 完了見込 is the latest end on the forecast schedule. Open work finishes at its
+    // forecast end; closed work at the close date; kept work and work with no forecast keep its retained
+    // plan end, so a kept row still finishes the version (docs/spec.md).
+    private static DateOnly? Finish(ScheduledTask task) => task.Input.Closed ? task.Input.CloseDate ?? task.End.Value
+        : task.ForecastEnd ?? task.End.Value;
     private static int? Difference(DateOnly? target, DateOnly? forecast, Func<int, int, int> days) => target is { } t && forecast is { } f
         ? f >= t ? days(t.DayNumber + 1, f.DayNumber) : -days(f.DayNumber + 1, t.DayNumber) : null;
     private static Func<int, int, int> WorkingDays(PlanCalendar calendar)
