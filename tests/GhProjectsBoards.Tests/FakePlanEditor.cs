@@ -427,6 +427,9 @@ internal static class FakePlanEditor
                     else if (mutation == "reopenIssue") row = row with { Closed = false, Cancelled = false, CloseDate = null };
                     else if (mutation == "archiveProjectV2Item")
                     {
+                        // GitHub requires the Project as well as the item; without it the input is rejected.
+                        if (!input.TryGetProperty("projectId", out var project) || string.IsNullOrEmpty(project.GetString()))
+                        { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "INVALID", message = "Argument 'projectId' on InputObject 'ArchiveProjectV2ItemInput' is required." })); data[alias] = null; continue; }
                         issue = issue with { Archived = true }; selection = "item"; id = ItemId("T-" + identity);
                     }
                     else if (mutation is not ("updateIssue" or "addLabelsToLabelable" or "removeLabelsFromLabelable" or "updateProjectV2ItemPosition"

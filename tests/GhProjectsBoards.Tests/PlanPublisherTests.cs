@@ -1137,7 +1137,7 @@ internal sealed partial class PlanPublisherTests
         var state = FakePlanEditor.Load(root);
         Assert.That(state.Issues.Single().Archived, Is.True);
         Assert.That(state.Issues.Single().Added, Is.True, "The Issue and its membership remain; only the item is archived.");
-        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("archiveProjectV2Item"));
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("archiveProjectV2Item").And.Contain("\"projectId\""));
         Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("deleteIssue"));
         // The archived row leaves the plan; it is not kept as an item GitHub can no longer return.
         Assert.That(session.Document.State.Rows.Select(r => r.Identity), Does.Not.Contain("I1"));

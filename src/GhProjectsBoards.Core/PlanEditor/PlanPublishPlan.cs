@@ -95,7 +95,7 @@ internal static class PlanPublishPlan
             {
                 changes.Add(new(row.Identity, PlanField.Removed, PlanValues.Get(before, PlanField.Removed), "true"));
                 Add(row.Identity, PlanPublishStage.State, "archiveProjectV2Item", "ArchiveProjectV2ItemInput",
-                    new { itemId = "item:" + row.Identity }, "item { id }");
+                    new { projectId = document.Project.NodeId, itemId = "item:" + row.Identity }, "item { id }");
                 continue;
             }
             if (isNew)
