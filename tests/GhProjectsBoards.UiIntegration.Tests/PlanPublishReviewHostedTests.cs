@@ -313,7 +313,7 @@ internal sealed partial class PlanPublishReviewHostedTests
     }
 
     [TestCase(-1), TestCase(0), Category("PlanReset")]
-    public async Task ReviewNamesResetOriginAfterTheNextPlanningEdit(int dayOffset)
+    public async Task ReviewAfterAResetNamesNoRecalculationOrigin(int dayOffset)
     {
         readDay = Today.AddDays(dayOffset);
         await Open(1);
@@ -327,8 +327,8 @@ internal sealed partial class PlanPublishReviewHostedTests
         });
         await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Ready<TextBlock>("PlanPublishStatusDate");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
-            Is.EqualTo(DateMessage(dayOffset) + "（GitHub の状態に戻したあとの再計算）")));
+        // A reset moves no dates (#236), so there is no recalculation whose origin the line could name.
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text, Is.EqualTo(DateMessage(dayOffset))));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

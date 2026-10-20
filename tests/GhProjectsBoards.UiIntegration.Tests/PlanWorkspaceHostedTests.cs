@@ -113,9 +113,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         readDay = PlanClock.Today;
         FakePlanEditor.Save(root, new([
             new(new("I1", "設計", "acme/repo"), "", true),
-            // No stored dates: the settings change moves this row's derived schedule, which is what makes a
-            // recalculation notice meaningful now that a stored date is kept (#236).
-            new(new("I2", "Undated task", "acme/repo") { Parent = "I1", Remaining = 16 }, "", true),
+            // A dated task whose first working day becomes a company day off: its end moves a day later. A
+            // settings change reschedules only tasks that have dates (#236).
+            new(new("I2", "Dated task", "acme/repo") { Parent = "I1", Remaining = 16, Start = readDay, End = readDay.AddDays(1) }, "", true),
             new(new("I3", "Unchanged task", "acme/repo"), "", true)
         ], 4));
         await Open();
@@ -143,12 +143,13 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue165-recalculation-" + reset));
         await Ui.Run(() => {
-            // PlanTasks holds row identities, not titles: the undated row is I2 in this fixture.
+            // PlanTasks holds row identities, not titles: the moved row is I2 in this fixture.
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Does.Contain("I2"));
             Ui.Click("PlanUndo");
         });
         await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Find<ListView>("PlanTasks").Items.Count, Is.EqualTo(4)));
+        // Undo restores the date; the filter is a view, not an edit, so it stays until the PMO clears it.
+        Assert.That(workspace.Session!.Document.State.Rows.Single(r => r.Identity == "I2").End, Is.EqualTo(readDay.AddDays(1)));
         // #236 part B: the recalculation notice is not closed by Undo - it is replaced when the next
         // operation starts (PlanWorkspaceBusy closes it before running one). The subject survives as the
         // notice not outliving its recalculation: a refresh replaces it, and Redo never brings it back.
