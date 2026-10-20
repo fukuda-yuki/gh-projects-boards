@@ -148,16 +148,17 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
                 var fields = project.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem && f.Availability == ValueAvailability.Present)
                     .Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType));
                 var repositories = project.Issues.Values.Select(i => i.Repository.NameWithOwner).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-                var names = await ReadAssignablePeople(lease, Context, repositories, token);
-                names = names.SetItems(project.Issues.Values.SelectMany(i => i.Native?.Assignees ?? []).DistinctBy(p => p.Id)
-                    .Select(p => new KeyValuePair<string, string>(p.Id.NodeId, p.Login)));
+                // #253: the Project's people are the people assigned in it. The complete read already returns
+                // each Issue's assignees, so opening never reads a repository's assignable-user list.
+                var names = ImmutableDictionary.CreateBuilder<string, string>();
+                foreach (var person in project.Issues.Values.SelectMany(i => i.Native?.Assignees ?? [])) names[person.Id.NodeId] = person.Login;
                 var people = names.Select(p => new PlanResource(p.Key, p.Value, 100, null)).ToImmutableArray();
                 var settings = new ProjectPlanSettings { StatusDate = today(), Columns = PlanColumnMatching.Match(fields), People = people,
                     DefaultRepository = repositories.Length == 1 ? repositories[0] : null };
                 var remote = PlanSnapshot.From(read, settings);
                 settings = PlanInitialSettings.From(remote.Baseline, settings);
                 var document = new PlanDocument(choice.Id, remote.Baseline, new(remote.Baseline.Rows, settings))
-                { Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names } };
+                { Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names.ToImmutable() } };
                 progress?.Report(new("日程を計算"));
                 token.ThrowIfCancellationRequested();
                 adoptionStarted = true;
@@ -177,60 +178,6 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         if (Service is null || Context is null || choice.Id.Scope != Scope) throw new InvalidOperationException("接続先が一致しません。");
         await store.SetAsideUnreadable(choice.Id);
         await Open(choice, token, progress);
-    }
-    private static async Task<ImmutableDictionary<string, string>> ReadAssignablePeople(
-        GhProjectsBoards.App.GitHub.GhConnectionService.OperationLease lease,
-        GhProjectsBoards.App.GitHub.ConnectionContext context, IEnumerable<string> repositories, CancellationToken token)
-    {
-        var people = ImmutableDictionary.CreateBuilder<string, string>();
-        foreach (var name in repositories)
-        {
-            var parts = name.Split('/');
-            var identities = new HashSet<string>();
-            var cursors = new HashSet<string>();
-            string? after = null;
-            int? total = null;
-            do
-            {
-                var response = await lease.SendAsync(GhProjectsBoards.App.GitHub.ApiRequest.GraphQl(
-                    "query PlanAssignableUsers($owner:String!,$name:String!,$after:String){viewer{databaseId} repository(owner:$owner,name:$name){nameWithOwner assignableUsers(first:100,after:$after){totalCount nodes{id login} pageInfo{hasNextPage endCursor}}}}",
-                    new { owner = parts[0], name = parts[1], after }), token);
-                token.ThrowIfCancellationRequested();
-                if (!response.IsSuccess || response.Data is not { } body)
-                    throw new InvalidOperationException("担当者の一覧を取得できません。再試行してください。");
-                var data = body.GetProperty("data");
-                if (data.GetProperty("viewer").GetProperty("databaseId").GetInt64() != context.ViewerId)
-                    throw new InvalidOperationException("接続先のアカウントが変わりました。再接続してください。");
-                var repository = data.GetProperty("repository");
-                if (repository.ValueKind == System.Text.Json.JsonValueKind.Null ||
-                    !string.Equals(repository.GetProperty("nameWithOwner").GetString(), name, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("担当者のリポジトリを確認できません。");
-                var connection = repository.GetProperty("assignableUsers");
-                var count = connection.GetProperty("totalCount").GetInt32();
-                if (total is not null && total != count) throw new InvalidOperationException("担当者の一覧が変わりました。再試行してください。");
-                total = count;
-                foreach (var person in connection.GetProperty("nodes").EnumerateArray())
-                {
-                    if (person.ValueKind != System.Text.Json.JsonValueKind.Object)
-                        throw new InvalidOperationException("担当者の一覧を最後まで取得できません。");
-                    var id = person.GetProperty("id").GetString();
-                    var login = person.GetProperty("login").GetString();
-                    if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(login) || !identities.Add(id))
-                        throw new InvalidOperationException("担当者の一覧を最後まで取得できません。");
-                    people[id] = login;
-                }
-                var page = connection.GetProperty("pageInfo");
-                if (!page.GetProperty("hasNextPage").GetBoolean())
-                {
-                    if (identities.Count != total) throw new InvalidOperationException("担当者の一覧を最後まで取得できません。");
-                    break;
-                }
-                after = page.GetProperty("endCursor").GetString();
-                if (string.IsNullOrWhiteSpace(after) || !cursors.Add(after))
-                    throw new InvalidOperationException("担当者の一覧を最後まで取得できません。");
-            } while (true);
-        }
-        return people.ToImmutable();
     }
     public async Task<PlanRefreshResult?> Refresh(CancellationToken token = default, IProgress<RemoteProgress>? progress = null)
     {

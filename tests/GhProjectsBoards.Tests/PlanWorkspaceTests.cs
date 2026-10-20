@@ -1,3 +1,4 @@
+using System.Text.Json;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
 using NUnit.Framework;
@@ -219,30 +220,48 @@ internal sealed class PlanWorkspaceTests
     }
 
     [Test]
-    public async Task FreshUnassignedProjectResolvesLatePageAssigneeWithoutCreationPermissionOrEdits()
+    public async Task FirstOpenSendsNoAssignableUserRequestAndStoresExactlyTheIssueAssignees()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-intake-people-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         try
         {
-            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"planFault\":\"repository-denied\"}");
-            FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
-            var workspace = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([
+                new(new("I1", "Assigned", "acme/repo") { Assignees = ["U1"] }, "", true),
+                new(new("I2", "Also assigned", "acme/repo") { Assignees = ["U2"] }, "", true),
+                new(new("I3", "Unassigned", "acme/repo"), "", true)
+            ], 4));
+            var store = new PlanStore(root);
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(store, () => day);
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            var reports = new List<RemoteProgress>();
-            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice, progress: new InlineProgress<RemoteProgress>(reports.Add));
-            Assert.That(reports, Does.Contain(new RemoteProgress("プロジェクトの項目を取得", 1, 1)));
-            Assert.That(reports.Last().Stage, Is.EqualTo("日程を計算"));
-            reports.Clear();
-            await workspace.Refresh(progress: new InlineProgress<RemoteProgress>(reports.Add));
-            Assert.That(reports, Does.Contain(new RemoteProgress("プロジェクトの項目を取得", 1, 1)));
-            Assert.That(reports.Last().Stage, Is.EqualTo("日程を計算"));
+            var choice = (await workspace.Listings("fixture-user"))[0].Choice;
+            File.WriteAllText(Path.Combine(root, "calls.jsonl"), "");
+            await workspace.Open(choice);
+            var queries = RecordedQueries(root);
+            Assert.Multiple(() =>
+            {
+                // Acceptance bullet 2: opening a Project requests no assignable-user list at all.
+                Assert.That(queries, Has.None.Contains("assignableUsers"), "Opening a Project must not read every assignable user.");
+                Assert.That(queries, Has.None.Contains("PlanAssignableUsers"));
+                Assert.That(queries, Has.Some.Contains("ProjectFields"), "The ordinary Project read still happens.");
+                Assert.That(queries, Has.Some.Contains("ProjectItems("), "The ordinary item read still happens.");
+                Assert.That(queries, Has.Some.Contains("ProjectItemDetails"), "The Issue assignees still arrive with that read.");
+            });
             var session = workspace.Session!;
-            Assert.That(PlanSheetEditing.Parse(session.Document, PlanField.Assignees, "late-user", DateOnly.FromDateTime(DateTime.Today)), Is.EqualTo(new[] { "U101" }));
-            Assert.That(workspace.People.Single(p => p.Identity == "U101").Rate, Is.EqualTo(100));
-            Assert.That(session.Document.State.Rows.Single().Assignees, Is.Empty);
-            Assert.That(session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.Zero);
-            Assert.That(session.UndoCount, Is.Zero);
+            var people = session.Document.State.Settings.People;
+            Assert.Multiple(() =>
+            {
+                Assert.That(people.Select(p => p.Identity), Is.EquivalentTo(new[] { "U1", "U2" }), "The people are exactly the distinct Issue assignees.");
+                Assert.That(people, Has.All.Matches<PlanResource>(p => p.Rate == 100 && p.Allowance is null), "Each intake person starts at 100% with no allowance.");
+                Assert.That(session.Document.Sync.PeopleNames.Keys, Is.EquivalentTo(new[] { "U1", "U2" }), "No catalog-only login is retained as metadata.");
+                Assert.That(session.Document.Sync.PeopleNames["U1"], Is.EqualTo("person-U1"));
+            });
+            var stored = await store.LoadAsync(choice.Id);
+            Assert.That(stored.Status, Is.EqualTo(PlanLoadStatus.Loaded));
+            Assert.That(stored.Checkpoint!.Document.State.Settings.People.Select(p => p.Identity), Is.EquivalentTo(new[] { "U1", "U2" }),
+                "The adopted checkpoint holds no person outside the Issues' assignees.");
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         }
         finally { Directory.Delete(root, true); }
@@ -358,28 +377,41 @@ internal sealed class PlanWorkspaceTests
         finally { Directory.Delete(root, true); }
     }
 
-    [TestCase("catalog-network")]
-    [TestCase("catalog-incomplete")]
-    [TestCase("catalog-identity")]
-    public async Task FailedAssignableCatalogDoesNotAdoptOrSaveAPartialProject(string fault)
+    [Test]
+    public async Task ASavedPlanReopensWithNoCatalogOrProjectRead()
     {
-        var root = Path.Combine(Path.GetTempPath(), "ghpb-intake-failure-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-intake-reopen-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         try
         {
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
-            FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
+            FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Assignees = ["U1"], Remaining = 8 }, "", true)], 2));
+            GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com",
+                new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
             var store = new PlanStore(root);
-            var workspace = new PlanWorkspace(store, () => DateOnly.FromDateTime(DateTime.Today));
-            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
-            var original = workspace.Session;
-            var choice = (await workspace.Listings("acme"))[0].Choice;
-            File.WriteAllText(Path.Combine(root, "scenario.json"), $"{{\"planEditor\":true,\"workspace\":true,\"planFault\":\"{fault}\"}}");
-            Assert.ThrowsAsync<InvalidOperationException>(() => workspace.Open(choice));
-            Assert.That(workspace.Session, Is.SameAs(original));
-            Assert.That(workspace.Registered.Select(p => p.Id), Does.Not.Contain(choice.Id));
-            Assert.That(File.Exists(store.FileFor(choice.Id)), Is.False);
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(store, () => day);
+            await workspace.Connect(Service());
+            var choice = (await workspace.Listings("fixture-user"))[0].Choice;
+            await workspace.Open(choice);
+            var local = await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "未発行の設計")]), day);
+            Assert.That(local.Succeeded, Is.True, local.Error);
+            await workspace.Flush();
+            var people = workspace.People.Select(p => p.Identity).ToArray();
+            File.WriteAllText(Path.Combine(root, "calls.jsonl"), "");
+            var restarted = new PlanWorkspace(store, () => day);
+            await restarted.Connect(Service());
+            var queries = RecordedQueries(root);
+            Assert.Multiple(() =>
+            {
+                Assert.That(queries, Has.None.Contains("assignableUsers"), "Reopening a saved document reads no catalog.");
+                Assert.That(queries, Has.None.Contains("ProjectFields"), "A saved document reopens from its checkpoint.");
+                Assert.That(queries, Has.None.Contains("ProjectItems("));
+                Assert.That(queries, Has.None.Contains("ProjectItemDetails"));
+            });
+            Assert.That(restarted.Session, Is.Not.Null);
+            Assert.That(restarted.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"), "Local work survives the reopen.");
+            Assert.That(restarted.People.Select(p => p.Identity), Is.EqualTo(people));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         }
         finally { Directory.Delete(root, true); }
@@ -497,6 +529,17 @@ internal sealed class PlanWorkspaceTests
             Assert.That(workspace.People.Single(p => p.Identity == "U2").Rate, Is.EqualTo(100));
         }
         finally { Directory.Delete(root, true); }
+    }
+
+    // The GraphQL queries the fake received, so a case can assert the requests a flow does and does not send.
+    private static string[] RecordedQueries(string root)
+    {
+        var path = Path.Combine(root, "calls.jsonl");
+        return File.Exists(path)
+            ? File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => JsonSerializer.Deserialize<JsonElement>(line))
+                .Select(call => call.TryGetProperty("query", out var query) && query.ValueKind == JsonValueKind.String ? query.GetString()! : "")
+                .Where(query => query.Length > 0).ToArray()
+            : [];
     }
 
 }

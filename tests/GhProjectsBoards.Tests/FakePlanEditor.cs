@@ -170,16 +170,6 @@ internal static class FakePlanEditor
             Save(root, state with { AddedFields = state.AddedFields.Add(role.ToString()), MutationBatches = state.MutationBatches + 1 });
             Write(new { data = new { createProjectV2Field = new { projectV2Field = new { id = "F-" + role, name, dataType = Type(role) } } } }); return 0;
         }
-        if (query.Contains("PlanAssignableUsers"))
-        {
-            var second = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String;
-            if (second && fault == "catalog-network") { Console.Write("HTTP/2 502 Failed\n\n{}"); return 1; }
-            var name = variables.GetProperty("owner").GetString() + "/" + variables.GetProperty("name").GetString();
-            var nodes = second ? new object[] { new { id = "U101", login = "late-user" } } : [new { id = "U1", login = "alice" }, new { id = "U2", login = "person-U2" }];
-            Write(new { data = new { viewer = new { databaseId = fault == "catalog-identity" ? 99 : 42 }, repository = new {
-                nameWithOwner = name, viewerCanCreateIssues = fault != "repository-denied",
-                assignableUsers = Page(nodes, fault == "catalog-incomplete" ? 4 : 3, !second, second ? null : "next") } } }); return 0;
-        }
         if (query.Contains("PlanCsvRepository"))
         {
             if (fault == "csv-network") { Console.Write("HTTP/2 502 Failed\n\n{}"); return 1; }
