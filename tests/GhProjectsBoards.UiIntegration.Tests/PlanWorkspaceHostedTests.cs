@@ -673,7 +673,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         var onPlan = new PlanRow("I3", "予定どおり", "acme/repo") { Parent = "I1", Start = date.AddDays(3), End = date.AddDays(3), Estimate = 8, Remaining = 8 };
         var outside = new PlanRow("I4", "別の要求", "acme/repo") { Start = date.AddDays(3), End = date.AddDays(3), Estimate = 8, Remaining = 8 };
         FakePlanEditor.Save(root, new([new(requirement, "", true), new(overdue, "", true), new(onPlan, "", true), new(outside, "", true)], 5));
-        await Open();
+        await Open("要求事項");
         await Ui.Ready<Button>("PlanStatusOverdueFilter");
         await Ui.Run(() => Ui.Click("PlanStatusOverdueFilter"));
         await Ui.Idle();
