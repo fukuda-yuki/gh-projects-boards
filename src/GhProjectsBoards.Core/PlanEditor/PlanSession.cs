@@ -470,6 +470,10 @@ internal sealed class PlanSession
             }
             PlanState State(PlanState state) => state with { Rows = Leave(state.Rows).Select(Row).ToImmutableArray() };
             var state = State(document.State);
+            // #231: remember the archives this publish verified. A later read that returns one of these
+            // Issues re-adopts it in the read position instead of treating it as a newly found Issue.
+            if (archived.Count > 0)
+                state = state with { ArchivedIdentities = state.ArchivedIdentities.Union(archived, StringComparer.Ordinal).ToImmutableArray() };
             var histories = checkpoint.Undo;
             // Creation and archiving are irreversible history barriers. Later edits still remain individually undoable.
             var barrier = -1;

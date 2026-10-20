@@ -98,7 +98,14 @@ internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray
 { public ImmutableArray<PlanMilestone> Milestones { get; init; } = [];
   public ImmutableArray<PlanRepositoryOption> RepositoryMilestones { get; init; } = [];
   public ImmutableArray<PlanRepositoryOption> RepositoryLabels { get; init; } = []; }
-internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings);
+internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings)
+{
+    // #231: verified Project-item archives this plan performed. A later read that returns one of these
+    // Issues is re-adopting an Issue this plan already knew, not meeting a new one, so it keeps the
+    // position the read reports instead of the #245 tail placement. Persisted with the plan and pruned
+    // when the Issue comes back.
+    public ImmutableArray<string> ArchivedIdentities { get; init; } = [];
+}
 internal sealed record PlanDocument(ScopedId Project, PlanBaseline Baseline, PlanState State)
 {
     public PlanSync Sync { get; init; } = new();
