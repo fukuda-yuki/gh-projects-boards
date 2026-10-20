@@ -155,10 +155,35 @@ internal sealed class PlanSummaryTests
         var unknown = Calculate(Document(new PlanRow("I", "Unknown", "a/b")));
         Assert.That(unknown.Total.Remaining, Is.EqualTo(new SummaryValue(null, 1)));
         Assert.That(unknown.Total.Progress.Value, Is.Null);
+        Assert.That(unknown.Capacity, Is.Null, "No task assigns a person, so Project capacity is unknown.");
         Assert.That(unknown.RequiredLoad, Is.Null);
         var zero = Calculate(Document(new PlanRow("I", "Zero", "a/b") { Remaining = 0 }));
         Assert.That(zero.Total.Progress.Value, Is.Null);
-        Assert.That(zero.RequiredLoad, Is.Zero);
+        Assert.That(zero.Capacity, Is.Null);
+        Assert.That(zero.RequiredLoad, Is.Null, "Unknown capacity makes required load unknown rather than 0.");
+    }
+
+    [Test]
+    public void PersonRowsCapacityAndMonthsUseThePeopleAssignedNow()
+    {
+        var d = Document(
+            new PlanRow("A", "Assigned", "a/b") { Assignees = ["U1"], Remaining = 8 },
+            new PlanRow("B", "Late assigned", "a/b") { Assignees = ["U3"], Remaining = 16 });
+        d = d with { State = d.State with { Settings = d.State.Settings with { People = [new("U1", "Alice", 50, null), new("U2", "Bob", 100, null)] } },
+            Sync = d.Sync with { PeopleNames = d.Sync.PeopleNames.Add("U3", "person-U3") } };
+        var result = Calculate(d);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.People.Select(p => p.Identity), Is.EqualTo(new[] { "U1", "U3" }),
+                "A stored person with no task is absent; a row assignee without a stored entry appears.");
+            Assert.That(result.People.Single(p => p.Identity == "U1").Capacity, Is.EqualTo(36));
+            var added = result.People.Single(p => p.Identity == "U3");
+            Assert.That((added.Name, added.Capacity), Is.EqualTo(("person-U3", 72m)), "An assigned person with no stored entry uses 100% and the read name.");
+            Assert.That(result.Capacity, Is.EqualTo(108), "Project capacity sums the people assigned now.");
+            Assert.That(result.RequiredLoad, Is.EqualTo(24m / 108));
+        });
+        var people = result.Months!.People.Select(p => p.Identity).Where(id => id is not (PlanPeople.Unassigned or PlanPeople.Multiple));
+        Assert.That(people, Is.EqualTo(new[] { "U1", "U3" }), "The month matrix lists the same assigned people.");
     }
 
     [Test]

@@ -42,10 +42,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         get
         {
             if (Session is not { } session) return [];
-            var document = session.Document;
-            return document.State.Settings.People.Select(p => p with { Name = document.Sync.PeopleNames.GetValueOrDefault(p.Identity, p.Name) })
-                .Concat(document.State.Rows.SelectMany(r => r.Assignees).Distinct().Where(id => document.State.Settings.People.All(p => p.Identity != id))
-                    .Select(id => new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null))).ToArray();
+            return PlanPeople.Assigned(session.Document);
         }
     }
     public static PlanWorkspace ForUser(Func<DateOnly> today) => new(PlanStore.ForUser(), today);

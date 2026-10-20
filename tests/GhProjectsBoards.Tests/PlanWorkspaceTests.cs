@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.Json;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
@@ -378,6 +379,109 @@ internal sealed class PlanWorkspaceTests
     }
 
     [Test]
+    public async Task SettingsPeopleFollowAssignmentAndKeepStoredRateAndAllowance()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-people-assignment-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2));
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            var session = workspace.Session!;
+            Assert.Multiple(() =>
+            {
+                Assert.That(workspace.People.Select(p => p.Identity), Is.EqualTo(new[] { "U1" }), "A fresh document lists exactly the Issue assignee.");
+                Assert.That((workspace.People.Single().Name, workspace.People.Single().Rate), Is.EqualTo(("person-U1", 100m)));
+            });
+            var stored = await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { People = [new("U1", "person-U1", 50, 80)] }), day);
+            Assert.That(stored.Succeeded, Is.True, stored.Error);
+            Assert.That((workspace.People.Single().Rate, workspace.People.Single().Allowance), Is.EqualTo((50m, (decimal?)80)));
+            var unassign = await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Assignees, Array.Empty<string>())]), day);
+            Assert.That(unassign.Succeeded, Is.True, unassign.Error);
+            Assert.That(workspace.People, Is.Empty, "A person no row holds leaves the settings list.");
+            var kept = session.Document.State.Settings.People.Single(p => p.Identity == "U1");
+            Assert.That((kept.Rate, kept.Allowance), Is.EqualTo((50m, (decimal?)80)), "Their stored rate and allowance stay in settings.");
+            var reassign = await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Assignees, new[] { "U1", "U2" })]), day);
+            Assert.That(reassign.Succeeded, Is.True, reassign.Error);
+            Assert.That(workspace.People.Select(p => p.Identity), Is.EqualTo(new[] { "U1", "U2" }),
+                "A stored person keeps settings order; a row assignee with no stored entry follows.");
+            Assert.That((workspace.People[0].Rate, workspace.People[0].Allowance), Is.EqualTo((50m, (decimal?)80)),
+                "The stored values return unchanged when the person is assigned again.");
+            var added = workspace.People.Single(p => p.Identity == "U2");
+            Assert.That((added.Rate, added.Allowance), Is.EqualTo((100m, (decimal?)null)), "A new row assignee starts at 100% with no allowance.");
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task PeopleIncludeCancelledPendingRemovalAndRequirementRows()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-people-rowstates-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([
+                new(new("I1", "Requirement", "acme/repo") { Assignees = ["U3"] }, "", true),
+                new(new("I2", "Task", "acme/repo") { Parent = "I1", Assignees = ["U1"] }, "", true),
+                new(new("I3", "Other", "acme/repo") { Assignees = ["U2"] }, "", true)
+            ], 4));
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            var session = workspace.Session!;
+            Assert.That(workspace.People.Select(p => p.Identity), Is.EquivalentTo(new[] { "U1", "U2", "U3" }),
+                "A requirement row's assignee is a real assignment.");
+            var cancel = await session.Execute(new ClosePlanRows(["I2"], Cancelled: true), day);
+            Assert.That(cancel.Succeeded, Is.True, cancel.Error);
+            var remove = await session.Execute(new RemovePlanRows(["I3"]), day);
+            Assert.That(remove.Succeeded, Is.True, remove.Error);
+            Assert.That(workspace.People.Select(p => p.Identity), Is.EquivalentTo(new[] { "U1", "U2", "U3" }),
+                "A 中止 row and a row pending この版から外す still hold their assignees.");
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task LegacyStoredPeopleStayStoredButTheListShowsTheAssignedOnes()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-people-legacy-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2));
+            GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com",
+                new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
+            var store = new PlanStore(root);
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(store, () => day);
+            await workspace.Connect(Service());
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            var session = workspace.Session!;
+            // A plan created before #253 holds every assignable user as a stored person.
+            var people = new[] { new PlanResource("U1", "person-U1", 50, 80) }
+                .Concat(Enumerable.Range(0, 999).Select(i => new PlanResource("legacy-" + i, "legacy-" + i, 100, null))).ToImmutableArray();
+            var stored = await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { People = people }), day);
+            Assert.That(stored.Succeeded, Is.True, stored.Error);
+            await workspace.Flush();
+            var restarted = new PlanWorkspace(store, () => day);
+            await restarted.Connect(Service());
+            Assert.That(restarted.Session, Is.Not.Null);
+            Assert.That(restarted.Session!.Document.State.Settings.People, Has.Length.EqualTo(1000), "No migration prunes the stored entries.");
+            Assert.That(restarted.People.Select(p => p.Identity), Is.EqualTo(new[] { "U1" }),
+                "The settings list shows only the assigned person.");
+            Assert.That((restarted.People.Single().Rate, restarted.People.Single().Allowance), Is.EqualTo((50m, (decimal?)80)));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
     public async Task ASavedPlanReopensWithNoCatalogOrProjectRead()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-intake-reopen-" + Guid.NewGuid().ToString("N"));
@@ -525,6 +629,8 @@ internal sealed class PlanWorkspaceTests
             var state = FakePlanEditor.Load(root);
             FakePlanEditor.Save(root, state with { Issues = [state.Issues[0] with { Row = state.Issues[0].Row with { Assignees = ["U2"] } }] });
             await workspace.Refresh();
+            Assert.That(workspace.People.Select(p => p.Identity), Is.EqualTo(new[] { "U2" }),
+                "The person no row holds is hidden; the newly assigned one appears.");
             Assert.That(workspace.People.Single(p => p.Identity == "U2").Name, Is.EqualTo("person-U2"));
             Assert.That(workspace.People.Single(p => p.Identity == "U2").Rate, Is.EqualTo(100));
         }
