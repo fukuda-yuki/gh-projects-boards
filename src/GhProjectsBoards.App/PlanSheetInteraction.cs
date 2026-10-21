@@ -213,6 +213,36 @@ internal sealed partial class PlanSheetView
         if (wholeRow) SelectWholeRow(selected, true);
         FocusSelected();
     }
+    // #256: the native ListView answers PageDown/PageUp by rebinding about three pages of rows for each page
+    // it moves. The sheet moves one page itself, as Excel does: the selection moves by the rows the viewport
+    // shows and the rows scroll by the same amount, so the selection keeps its place on screen.
+    private double? pageOffset;
+    internal void MovePage(bool down, bool extend)
+    {
+        if (Fields.Length == 0 || RowIds.Count == 0 || rowScroll is not { } scroll) return;
+        var wholeRow = wholeRowSelection && extend;
+        var page = Math.Max(1, (int)(scroll.ViewportHeight / RowHeight)) * (down ? 1 : -1);
+        var row = Math.Clamp(Math.Max(0, RowIds.IndexOf(selected)) + page, 0, RowIds.Count - 1);
+        // A press that arrives before the previous page is drawn adds to that page's offset, so held keys
+        // draw only where they end.
+        var offset = Math.Clamp((pageOffset ?? scroll.VerticalOffset) + page * RowHeight, 0, scroll.ScrollableHeight);
+        var top = row * RowHeight;
+        if (top < offset) offset = top;
+        else if (top + RowHeight > offset + scroll.ViewportHeight) offset = top + RowHeight - scroll.ViewportHeight;
+        pageOffset = offset == scroll.VerticalOffset ? null : offset;
+        scroll.ChangeView(null, offset, null, true);
+        Select(RowIds[row], Fields[Math.Max(0, Array.IndexOf(Fields, selectedField))], extend);
+        if (wholeRow) SelectWholeRow(selected, true);
+        FocusCell(selected, selectedField, scrollIntoView: false);
+    }
+    private void PageKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key is not (VirtualKey.PageDown or VirtualKey.PageUp) || Down(VirtualKey.Control) || Down(VirtualKey.Menu)) return;
+        // An open editor and the IME keep their own keys.
+        if (args.OriginalSource is PlanSheetCell { Editing: true } or PlanSheetCell { Composing: true }) return;
+        args.Handled = true;
+        MovePage(args.Key == VirtualKey.PageDown, Down(VirtualKey.Shift));
+    }
     internal event Action? CommandRowFocusRequested;
     private (string Identity, string Field)? filterReturnCell;
     internal bool HandleFocusShortcut(VirtualKey key)

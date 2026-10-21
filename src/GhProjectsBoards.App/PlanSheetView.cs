@@ -264,6 +264,7 @@ internal sealed partial class PlanSheetView : Grid
         List.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["PlanSheetRowsPanel"];
         List.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanSheetRowTemplate"];
         List.ContainerContentChanging += RowContentChanging;
+        List.PreviewKeyDown += PageKeyDown;
         List.ItemContainerStyle = new Style(typeof(ListViewItem)) { BasedOn = (Style)Application.Current.Resources["PlanListViewItemStyle"], Setters = {
             new Setter(Control.PaddingProperty, new Thickness(0)), new Setter(Control.BorderThicknessProperty, new Thickness(0)),
             new Setter(FrameworkElement.MinHeightProperty, 0d),
@@ -903,6 +904,7 @@ internal sealed partial class PlanSheetView : Grid
     }
     private void RowViewportChanged(object? sender, ScrollViewerViewChangedEventArgs args)
     {
+        if (!args.IsIntermediate) pageOffset = null;
         if (Problems.Count > 0) UpdateInputProblem();
     }
     private bool InputProblemCellIsVisible(PlanSheetCell cell)
