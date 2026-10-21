@@ -18,6 +18,8 @@ internal sealed partial class PlanSheetView
     // #231: the row-state commands also live in the overflow, with the same enablement and hints as the row
     // context menu, so the keyboard route does not depend on a pointer.
     private AppBarButton completeRows = null!, cancelRows = null!, removeRows = null!, reopenRows = null!;
+    // #247: 行を削除 is the same row command in the overflow as in the row menu, beside the primary and Ctrl+-.
+    private AppBarButton deleteOverflow = null!;
     private Flyout? predecessorFlyout;
 
     private void InitializeOverview(CommandBar commands)
@@ -58,6 +60,11 @@ internal sealed partial class PlanSheetView
             AutomationProperties.SetHelpText(button, hint ?? "");
             ToolTipService.SetToolTip(button, hint is null ? button.Label : button.Label + ": " + hint);
         }
+        // #247: 行を削除 carries the row menu's refusal (a published Issue cannot be deleted) in the overflow too.
+        var deleteReason = DeleteReason(CommandTargets);
+        deleteOverflow.IsEnabled = deleteReason is null; deleteOverflow.AllowFocusWhenDisabled = true;
+        AutomationProperties.SetHelpText(deleteOverflow, deleteReason ?? "");
+        ToolTipService.SetToolTip(deleteOverflow, deleteReason is null ? deleteOverflow.Label : deleteOverflow.Label + ": " + deleteReason);
         predecessorAdd.IsEnabled = Rows.ContainsKey(selected);
         foreach (var (button, unlink) in new[] { (linkTasks, false), (unlinkTasks, true) }) {
             var unavailable = TaskLinkUnavailable(unlink) ?? PlanTaskLinks.Prepare(Session.Document.State, MoveTargets, unlink).Reason;

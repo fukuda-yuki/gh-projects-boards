@@ -198,6 +198,7 @@ internal sealed partial class PlanSheetView : Grid
         commands.SecondaryCommands.Add(new AppBarSeparator());
         // #231: the row-state commands from the keyboard. The row context menu is the pointer route; both use
         // the same targets, eligibility and reasons.
+        deleteOverflow = Overflow("行を削除", "PlanSheetDeleteOverflow", Symbol.Delete, DeleteRows, "Ctrl+-");
         completeRows = Overflow("完了にする", "PlanSheetCompleteRows", Symbol.Accept, () => RowStateReport(CommandTargets, PlanRowAction.Complete, "完了にしました"), queued: false);
         cancelRows = Overflow("中止にする", "PlanSheetCancelRows", Symbol.Cancel, () => RowStateReport(CommandTargets, PlanRowAction.Cancel, "中止にしました"), queued: false);
         removeRows = Overflow("この版から外す", "PlanSheetRemoveRows", Symbol.Remove, () => RowStateReport(CommandTargets, PlanRowAction.Remove, "この版から外しました"), queued: false);
@@ -461,7 +462,7 @@ internal sealed partial class PlanSheetView : Grid
             // Nesting them inside that same queue would wait on themselves.
             if (!queueInSheet) { await action(); return; }
             await Run(async () => {
-                if (id is "PlanSheetInsert" or "PlanSheetDelete" or "PlanSheetIndent" or "PlanSheetOutdent") await CommitPending();
+                if (id is "PlanSheetInsert" or "PlanSheetDelete" or "PlanSheetDeleteOverflow" or "PlanSheetIndent" or "PlanSheetOutdent") await CommitPending();
                 await action();
             }, id);
         };
