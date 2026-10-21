@@ -45,6 +45,9 @@ internal sealed partial class PlanSheetView
     // type is what stops the second source coming back: every drawing path reads the schedule the bars use.
     internal sealed record Edge(int From, int To);
     internal IReadOnlyList<Edge> Edges { get; private set; } = [];
+    // The links whose arrow passes through each row, in Edges order, so a row draws its slice without
+    // scanning every link in the version (#256).
+    internal IReadOnlyList<Edge>[] EdgesByRow { get; private set; } = [];
     internal static bool Down(VirtualKey key) => (InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
     // Ctrl+-: the numeric keypad reports Subtract, the main row reports the OEM minus code (Excel's
     // Ctrl+- accepts both), so 行を削除 must too (#247).
@@ -74,6 +77,10 @@ internal sealed partial class PlanSheetView
         Edges = RowIds.Where(Rows.ContainsKey).SelectMany(id => Rows[id].Predecessors
             .Where(p => indexes.ContainsKey(p) && Schedule.GetValueOrDefault(p)?.End.Value is not null && Schedule[id].Start.Value is not null)
             .Select(p => new Edge(indexes[p], indexes[id]))).ToArray();
+        var byRow = new List<Edge>?[RowIds.Count];
+        foreach (var edge in Edges)
+            for (var row = Math.Min(edge.From, edge.To); row <= Math.Max(edge.From, edge.To); row++) (byRow[row] ??= []).Add(edge);
+        EdgesByRow = byRow.Select(edges => (IReadOnlyList<Edge>?)edges ?? []).ToArray();
     }
     internal bool IsSelected(string identity, string field)
     {

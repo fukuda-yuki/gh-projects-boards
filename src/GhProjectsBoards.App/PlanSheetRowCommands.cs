@@ -160,8 +160,21 @@ internal sealed partial class PlanSheetView
     internal string? RowStateTag(string identity)
     {
         if (!Rows.TryGetValue(identity, out var row)) return null;
-        var baseline = Session.Document.Baseline.Rows.FirstOrDefault(r => r.Identity == identity);
+        var baseline = BaselineRow(identity);
         return TagFor(row, baseline) ?? ReopenTagFor(row, baseline);
+    }
+    // Every bound row asks for its baseline; a lookup by identity keeps that off a scan of the version (#256).
+    private ImmutableArray<PlanRow> indexedBaseline;
+    private Dictionary<string, PlanRow> baselineByIdentity = [];
+    private PlanRow? BaselineRow(string identity)
+    {
+        var rows = Session.Document.Baseline.Rows;
+        if (rows != indexedBaseline) {
+            var index = new Dictionary<string, PlanRow>();
+            foreach (var row in rows) index.TryAdd(row.Identity, row);
+            baselineByIdentity = index; indexedBaseline = rows;
+        }
+        return baselineByIdentity.GetValueOrDefault(identity);
     }
     // 中止 and この版から外す dim the row whether pending or already published (中止 stays in the plan).
     internal bool IsDimmed(string identity) => Rows.TryGetValue(identity, out var row) && (row.Cancelled || row.Removed);
@@ -177,7 +190,7 @@ internal sealed partial class PlanSheetView
     internal bool IsPendingClose(string identity)
     {
         if (!Rows.TryGetValue(identity, out var row)) return false;
-        var baseline = Session.Document.Baseline.Rows.FirstOrDefault(r => r.Identity == identity);
+        var baseline = BaselineRow(identity);
         return baseline is not null && row.Closed != baseline.Closed;
     }
 }
