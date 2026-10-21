@@ -38,10 +38,14 @@ internal sealed class PlanWorkspaceLifetimeHostedTests
     public async Task UnloadedWorkspaceReleasesItsVisualTree()
     {
         var released = await MountAndRelease();
-        for (var attempt = 0; attempt < 5 && released.IsAlive; attempt++)
+        // XAML drops its references to an unloaded tree a few frames later (about 0.2 s on the dev machine), not
+        // on the next dispatcher tick, so give it a bounded time; a real leak stays reachable throughout.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (released.IsAlive && DateTime.UtcNow < deadline)
         {
             await Task.Run(() => { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); });
             await Ui.Run(() => { });
+            if (released.IsAlive) await Task.Delay(100);
         }
         Assert.That(released.IsAlive, Is.False, "An unloaded workspace must not stay reachable through its title bar.");
     }
