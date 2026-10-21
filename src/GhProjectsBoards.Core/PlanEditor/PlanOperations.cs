@@ -107,6 +107,8 @@ internal static class PlanOperations
             Uri.CheckHostName(d.Project.Scope.Host) != UriHostNameType.Unknown && d.Project.Scope.Host == d.Project.Scope.Host.ToLowerInvariant(), "プロジェクトの識別情報が不正です。");
         ValidateSettings(d.State.Settings);
         ValidateRows(d.Baseline.Rows); ValidateRows(d.State.Rows);
+        Require(!d.State.ArchivedIdentities.IsDefault && d.State.ArchivedIdentities.Distinct().Count() == d.State.ArchivedIdentities.Length &&
+            d.State.ArchivedIdentities.All(id => id.Length > 0 && !IsLocal(id)), "アーカイブした行の記録が不正です。");
         PlanSheetColumns.ValidateOwnership(d);
         Unique(d.Baseline.Milestones.Select(m => m.Title).ToImmutableArray());
         Require(d.Baseline.Milestones.All(m => !string.IsNullOrWhiteSpace(m.Title)), "マイルストーンの名前が不正です。");
@@ -503,7 +505,8 @@ internal static class PlanOperations
         }
         order = nextOrder ?? order;
         Require(order.Length == rows.Count && order.Distinct().Count() == order.Length && order.All(rows.ContainsKey), "操作履歴の行順が不正です。");
-        return new(order.Select(id => rows[id]).ToImmutableArray(), nextSettings ?? state.Settings);
+        // The remembered archives are a GitHub observation, not an undoable edit.
+        return new(order.Select(id => rows[id]).ToImmutableArray(), nextSettings ?? state.Settings) { ArchivedIdentities = state.ArchivedIdentities };
     }
     internal static PlanBaseline ReplayBaseline(PlanBaseline baseline, PlanPatch patch, bool forward)
     {

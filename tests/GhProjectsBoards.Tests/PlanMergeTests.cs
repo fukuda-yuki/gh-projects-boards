@@ -81,6 +81,86 @@ internal sealed class PlanMergeTests
         Assert.That(result.Sync.NativeOrders["P"], Is.EqualTo(new[] { "C", "A", "B" }));
         Assert.That(result.Sync.Conflicts.Any(c => c.Field == PlanField.SubIssueOrder), Is.False);
     }
+    // #231 C3: a verified archive this plan remembers is an Issue it already knew. When the read
+    // returns it, it keeps the position the read reports; #245's tail placement is only for an Issue
+    // the plan meets for the first time.
+    [Test]
+    public void ReturningArchivedIdentityKeepsTheReadPositionAndAsksForNoRewrite()
+    {
+        var p = new PlanRow("P", "P", "acme/repo");
+        var a = new PlanRow("A", "A", "acme/repo") { Parent = "P" };
+        var b = new PlanRow("B", "B", "acme/repo") { Parent = "P" };
+        var c = new PlanRow("C", "C", "acme/repo") { Parent = "P" };
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), new([p, a, c], []),
+            new([p, a, c], new()) { ArchivedIdentities = ["B"] });
+        var merged = PlanMerge.NativeOrder(document, PlanMerge.Merge(document, new PlanBaseline([p, a, b, c], [])),
+            ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("P", ["A", "B", "C"]));
+        Assert.Multiple(() =>
+        {
+            Assert.That(merged.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "P", "A", "B", "C" }),
+                "The returning Issue keeps the read position instead of the parent's subtree tail.");
+            Assert.That(merged.State.ArchivedIdentities, Is.Empty, "The remembered archive is pruned when the Issue returns.");
+            Assert.That(PlanOperations.SiblingOrderChange(merged, "P"), Is.Null, "The review has no sub-issue-order line.");
+            Assert.That(merged.Sync.Conflicts, Is.Empty);
+            Assert.That(PlanOperations.Changes(merged, new(2026, 10, 21)).Fields.Values.SelectMany(fields => fields),
+                Has.None.EqualTo(PlanField.SubIssueOrder));
+            Assert.That(PlanOperations.Changes(merged, new(2026, 10, 21)).Fields.Values.SelectMany(fields => fields),
+                Has.None.EqualTo(PlanField.Order));
+        });
+    }
+    [Test]
+    public void ReturningArchivedIdentityKeepsTheReadOrderWhenGitHubOrdersDiffer()
+    {
+        // The Project item returns at the parent's tail while GitHub's native sub-issue order still has
+        // its old slot. The plan adopts the read order and asks for no write, because a difference
+        // between GitHub's own two orders is not a local change (#167).
+        var p = new PlanRow("P", "P", "acme/repo");
+        var a = new PlanRow("A", "A", "acme/repo") { Parent = "P" };
+        var b = new PlanRow("B", "B", "acme/repo") { Parent = "P" };
+        var c = new PlanRow("C", "C", "acme/repo") { Parent = "P" };
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), new([p, a, c], []),
+            new([p, a, c], new()) { ArchivedIdentities = ["B"] });
+        var merged = PlanMerge.NativeOrder(document, PlanMerge.Merge(document, new PlanBaseline([p, a, c, b], [])),
+            ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("P", ["A", "B", "C"]));
+        Assert.Multiple(() =>
+        {
+            Assert.That(merged.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "P", "A", "C", "B" }), "The read order stands.");
+            Assert.That(merged.State.ArchivedIdentities, Is.Empty);
+            Assert.That(PlanOperations.SiblingOrderChange(merged, "P"), Is.Null, "No line for a difference the PMO did not make.");
+            Assert.That(merged.Sync.Conflicts.Any(c => c.Field == PlanField.SubIssueOrder), Is.False,
+                "The membership difference a return creates is not a local order change.");
+        });
+    }
+    [Test]
+    public void MultipleReturningArchivedChildrenKeepTheReadOrder()
+    {
+        var p = new PlanRow("P", "P", "acme/repo");
+        PlanRow Child(string id) => new(id, id, "acme/repo") { Parent = "P" };
+        var a = Child("A"); var b = Child("B"); var c = Child("C"); var d = Child("D");
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), new([p, a, d], []),
+            new([p, a, d], new()) { ArchivedIdentities = ["B", "C"] });
+        var merged = PlanMerge.Merge(document, new PlanBaseline([p, a, b, d, c], []));
+        Assert.Multiple(() =>
+        {
+            Assert.That(merged.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "P", "A", "B", "D", "C" }));
+            Assert.That(merged.State.ArchivedIdentities, Is.Empty);
+        });
+    }
+    [Test]
+    public void GenuinelyNewIssueStillFollowsTheParentTailAlongsideReturningRows()
+    {
+        // Only the remembered Issue keeps its read slot; an Issue the plan has never seen keeps #245.
+        var p = new PlanRow("P", "P", "acme/repo");
+        PlanRow Child(string id) => new(id, id, "acme/repo") { Parent = "P" };
+        var a = Child("A"); var b = Child("B"); var c = Child("C"); var n = Child("N");
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), new([p, a, c], []),
+            new([p, a, c], new()) { ArchivedIdentities = ["B"] });
+        var merged = PlanMerge.Merge(document, new PlanBaseline([p, a, b, c, n], []));
+        Assert.That(merged.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "P", "A", "B", "C", "N" }),
+            "The returning Issue stays at B's read slot while the new Issue is imported at the parent's tail.");
+        Assert.That(merged.State.ArchivedIdentities, Is.Empty);
+    }
+
     [TestCase("B", "B", "R", "R", false)]
     [TestCase("B", "L", "B", "L", false)]
     [TestCase("B", "L", "L", "L", false)]

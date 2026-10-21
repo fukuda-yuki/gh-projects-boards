@@ -1229,6 +1229,71 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(0));
     }
 
+    // #231 C3: an Issue that comes back after this app archived its Project item is returning, not
+    // newly found. It keeps the position the read reports instead of being re-placed after its parent's
+    // last child, so the plan has no position or sub-issue-order difference to review or publish.
+    [Test]
+    public async Task ARestoredIssueKeepsTheReadPositionAndNeedsNoOrderRewrite()
+    {
+        await Start(4, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2", "I3", "I4"])
+        });
+        await session.Execute(new RemovePlanRows(["I3"]), Today);
+        var archived = await publisher.PublishAsync(session, Today);
+        Assert.That(archived.Succeeded, Is.True, archived.Error);
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I4" }));
+        Assert.That(session.Document.State.ArchivedIdentities, Is.EqualTo(new[] { "I3" }), "The verified archive is remembered with the plan.");
+        await Reopen();
+        Assert.That(session.Document.State.ArchivedIdentities, Is.EqualTo(new[] { "I3" }), "The memory survives closing and reopening.");
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Edited locally")]), Today);
+        await session.Undo(Today);
+        Assert.That(session.Document.State.ArchivedIdentities, Is.EqualTo(new[] { "I3" }), "The memory is a GitHub observation, so Undo keeps it.");
+        // A read while the item is still archived does not return it, so the memory must survive it.
+        var stillArchived = await publisher.RefreshAsync(session, Today);
+        Assert.That(stillArchived.Succeeded, Is.True, stillArchived.Error);
+        Assert.That(session.Document.State.Rows.Any(r => r.Identity == "I3"), Is.False);
+        Assert.That(session.Document.State.ArchivedIdentities, Is.EqualTo(new[] { "I3" }), "A read that still misses the archive does not forget it.");
+        // GitHub's archived item is restored at the Project position it had, and the native sub-issue
+        // order kept its slot; the next read returns both.
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Select(i => i.Row.Identity == "I3" ? i with { Archived = false } : i).ToImmutableArray() });
+        var refreshed = await publisher.RefreshAsync(session, Today);
+        Assert.That(refreshed.Succeeded, Is.True, refreshed.Error);
+        var changes = session.Changes(Today).Fields;
+        Assert.Multiple(() => {
+            Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I3", "I4" }),
+                "The returning Issue keeps the position the read reports.");
+            Assert.That(changes.Values.SelectMany(fields => fields), Has.None.EqualTo(PlanField.Order), "The plan asks for no position rewrite.");
+            Assert.That(changes.Values.SelectMany(fields => fields), Has.None.EqualTo(PlanField.SubIssueOrder), "The plan asks for no sub-issue-order rewrite.");
+            Assert.That(PlanOperations.SiblingOrderChange(session.Document, "I1"), Is.Null, "The review has no sub-issue-order line to show.");
+            Assert.That(session.Document.Sync.Conflicts.Any(c => c.Field == PlanField.SubIssueOrder), Is.False);
+            Assert.That(session.Document.State.ArchivedIdentities, Is.Empty, "The memory is pruned once the Issue comes back.");
+        });
+    }
+
+    // #231: archiving a published row moves the unpublished children that stay in the plan to its
+    // parent, and the verified archive is what later reads may find again.
+    [Test]
+    public async Task ArchivingARowMovesItsLocalChildToItsParent()
+    {
+        await Start(3, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity switch { "I2" => i with { Row = i.Row with { Parent = "I1" } }, "I3" => i with { Row = i.Row with { Parent = "I2" } }, _ => i }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2"]).Add("I2", ["I3"])
+        });
+        var child = PlanRow.New("", "acme/repo");
+        await session.Execute(new InsertPlanRows([child], "I3"), Today);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == child.Identity).Parent, Is.EqualTo("I2"));
+        await session.Execute(new RemovePlanRows(["I2"]), Today);
+        var archived = await publisher.PublishAsync(session, Today);
+        Assert.That(archived.Succeeded, Is.True, archived.Error);
+        var rows = session.Document.State.Rows;
+        Assert.That(string.Join(",", rows.Select(r => r.Identity)), Is.EqualTo("I1," + child.Identity), "The published subtree leaves the plan; the unpublished child stays.");
+        Assert.That(rows.Single(r => r.Identity == child.Identity).Parent, Is.EqualTo("I1"), "The archived row's local child moves to its parent.");
+        Assert.That(session.Document.Baseline.Rows.Any(r => r.Identity == child.Identity), Is.False, "The child is not published, so it has no baseline row.");
+        Assert.That(session.Changes(Today).Fields.ContainsKey(child.Identity), Is.True, "The child stays a held new row.");
+    }
+
     [Test]
     public async Task OneRowsStateFailureStaysPendingAndDoesNotStopTheOthers()
     {

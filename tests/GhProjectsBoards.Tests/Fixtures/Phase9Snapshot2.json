@@ -1766,7 +1766,8 @@
       "showOverdueMark": true,
       "showLaterMark": true,
       "showOverEstimateMark": true
-    }
+    },
+    "archivedIdentities": []
   },
   "sync": {
     "unverified": [],
