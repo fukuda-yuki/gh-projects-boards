@@ -10,9 +10,10 @@ internal static class ProjectQueries
     public static readonly string Predecessors = "query PlanningPredecessors($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id blockedBy(first:100, after:$after) { " + PageInfo + " nodes { id } } } } }";
     public static readonly string SubIssues = "query PlanSubIssues($id:ID!,$after:String){node(id:$id){__typename ... on Issue{id subIssues(first:100,after:$after){" + PageInfo + " nodes{id}}}}}";
     // #253: verify one typed login against the row's repository on demand, with the read-only lease. The
-    // repository-scoped connection is the assignment-eligibility check; first:2 keeps the response bounded while
-    // the app requires exactly one node whose login equals the typed text.
-    public static readonly string ResolveAssignee = "query PlanResolveAssignee($owner:String!,$name:String!,$login:String){viewer{databaseId} repository(owner:$owner,name:$name){nameWithOwner assignableUsers(first:2,query:$login){totalCount nodes{id login}}}}";
+    // repository-scoped connection is the assignment-eligibility check. Its query is a substring search on login
+    // and name ordered by login (`rob` also returns `a-rob` and a user named Robo, ahead of `rob`), so the app
+    // reads matches until it meets the node whose login equals the typed text.
+    public static readonly string ResolveAssignee = "query PlanResolveAssignee($owner:String!,$name:String!,$login:String,$after:String){viewer{databaseId} repository(owner:$owner,name:$name){nameWithOwner assignableUsers(first:100,after:$after,query:$login){totalCount nodes{id login} pageInfo{hasNextPage endCursor}}}}";
     private const string FieldReference = "field { ... on ProjectV2FieldCommon { id project { id } } }";
     private const string Values = """
         nodes {

@@ -782,11 +782,11 @@ internal sealed class PlanWorkspaceTests
         try
         {
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
-            // A fixture can declare a repository with 1,000 assignable people; the resolver still asks for
-            // one typed login (first:2) and answers with only that login's exact match.
+            // A fixture can declare a repository with 1,000 assignable people; the resolver still asks only for
+            // the typed login and takes that login's exact match.
             var users = Enumerable.Range(1, 1000).Select(i => new PlanFakeUser("BU" + i, "bulk-user-" + i)).ToImmutableArray();
             FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2)
-                { AssignableUsers = users, AssignableTotalCount = 1000 });
+                { AssignableUsers = users });
             var day = new DateOnly(2026, 10, 13);
             var workspace = new PlanWorkspace(new(root), () => day);
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
@@ -796,7 +796,32 @@ internal sealed class PlanWorkspaceTests
             Assert.That(resolved, Is.EqualTo(new PlanResource("BU500", "bulk-user-500", 100, null)));
             var queries = RecordedQueries(root);
             Assert.That(queries.Count(query => query.Contains("PlanResolveAssignee")), Is.EqualTo(1), "One lookup for one login.");
-            Assert.That(queries.Count(query => query.Contains("assignableUsers(first:100")), Is.Zero, "Never a page of the 1,000 assignable users.");
+            Assert.That(queries.Where(query => query.Contains("assignableUsers(")).All(query => query.Contains("query:$login")), Is.True,
+                "Never a page of the 1,000 assignable users, only a search for the typed login.");
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task ATypedLoginThatOtherLoginsContainIsStillFound()
+    {
+        // GitHub searches assignable users by substring and orders them by login, so in a large organisation
+        // `rob` arrives after `a-rob` and `b-rob`. The exact login must still resolve, never be refused.
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-resolve-substring-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            var users = new[] { "a-rob", "b-rob", "c-rob", "rob", "roberta" }.Select((login, i) => new PlanFakeUser("R" + i, login)).ToImmutableArray();
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2) { AssignableUsers = users });
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            File.WriteAllText(Path.Combine(root, "calls.jsonl"), "");
+            var resolved = await workspace.ResolveAssigneeAsync("acme/repo", "rob");
+            Assert.That(resolved, Is.EqualTo(new PlanResource("R3", "rob", 100, null)));
+            Assert.That(RecordedQueries(root).Count(query => query.Contains("PlanResolveAssignee")), Is.EqualTo(1), "One lookup for one login.");
         }
         finally { Directory.Delete(root, true); }
     }

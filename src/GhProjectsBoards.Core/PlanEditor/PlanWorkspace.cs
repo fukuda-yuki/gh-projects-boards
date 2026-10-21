@@ -89,34 +89,44 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         return PlanCsvImport.Prepare(session.Document, file, repositories, today());
     }
     // #253: verify one typed login against the row's repository on the read-only lease, so assigning a person
-    // never needs the repository's whole assignable-user list. The response must be the connected viewer's, the
-    // same repository, and exactly one node whose login equals the typed text; the result is the stored person
-    // shape the registration command carries. A refusal or a failed lookup writes nothing.
+    // never needs the repository's whole assignable-user list. The response must be the connected viewer's and the
+    // same repository; the search pages only while no node's login equals the typed text, which a typed login
+    // ends on the first page. The result is the stored person shape the registration command carries. A refusal
+    // or a failed lookup writes nothing.
     public async Task<PlanResource> ResolveAssigneeAsync(string repository, string login, CancellationToken token = default)
     {
         if (Service is null || Context is null) throw new InvalidOperationException("接続してください。");
         if (!PlanOperations.Repository(repository)) throw new InvalidOperationException("担当者のリポジトリを確認できません。");
         var parts = repository.Split('/');
         using var lease = await Service.BeginOperationAsync(Context, token, mutation: false);
-        var response = await lease.SendAsync(GhProjectsBoards.App.GitHub.ApiRequest.GraphQl(ProjectQueries.ResolveAssignee,
-            new { owner = parts[0], name = parts[1], login }), token);
-        token.ThrowIfCancellationRequested();
-        if (!response.IsSuccess || response.Data is not { } body)
-            throw new InvalidOperationException("担当者の確認に失敗しました。再試行してください。");
-        var data = body.GetProperty("data");
-        if (data.GetProperty("viewer").GetProperty("databaseId").GetInt64() != Context.ViewerId)
-            throw new InvalidOperationException("接続先のアカウントが変わりました。再接続してください。");
-        var found = data.GetProperty("repository");
-        if (found.ValueKind == System.Text.Json.JsonValueKind.Null ||
-            !string.Equals(found.GetProperty("nameWithOwner").GetString(), repository, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("担当者のリポジトリを確認できません。");
-        var nodes = found.GetProperty("assignableUsers").GetProperty("nodes").EnumerateArray()
-            .Where(node => node.ValueKind == System.Text.Json.JsonValueKind.Object)
-            .Select(node => (Id: node.GetProperty("id").GetString(), Login: node.GetProperty("login").GetString()))
-            .Where(node => !string.IsNullOrWhiteSpace(node.Id) && !string.IsNullOrWhiteSpace(node.Login)).ToArray();
-        var exact = nodes.Where(node => node.Login!.Equals(login, StringComparison.OrdinalIgnoreCase)).ToArray();
-        if (exact.Length != 1) throw new ArgumentException("担当者を確認できません: " + login);
-        return new PlanResource(exact[0].Id!, exact[0].Login!, 100, null);
+        var cursors = new HashSet<string>(StringComparer.Ordinal);
+        string? after = null;
+        while (true)
+        {
+            var response = await lease.SendAsync(GhProjectsBoards.App.GitHub.ApiRequest.GraphQl(ProjectQueries.ResolveAssignee,
+                new { owner = parts[0], name = parts[1], login, after }), token);
+            token.ThrowIfCancellationRequested();
+            if (!response.IsSuccess || response.Data is not { } body)
+                throw new InvalidOperationException("担当者の確認に失敗しました。再試行してください。");
+            var data = body.GetProperty("data");
+            if (data.GetProperty("viewer").GetProperty("databaseId").GetInt64() != Context.ViewerId)
+                throw new InvalidOperationException("接続先のアカウントが変わりました。再接続してください。");
+            var found = data.GetProperty("repository");
+            if (found.ValueKind == System.Text.Json.JsonValueKind.Null ||
+                !string.Equals(found.GetProperty("nameWithOwner").GetString(), repository, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("担当者のリポジトリを確認できません。");
+            var connection = found.GetProperty("assignableUsers");
+            var exact = connection.GetProperty("nodes").EnumerateArray()
+                .Where(node => node.ValueKind == System.Text.Json.JsonValueKind.Object)
+                .Select(node => (Id: node.GetProperty("id").GetString(), Login: node.GetProperty("login").GetString()))
+                .Where(node => !string.IsNullOrWhiteSpace(node.Id) && login.Equals(node.Login, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (exact.Length > 1) throw new ArgumentException("担当者を確認できません: " + login);
+            if (exact.Length == 1) return new PlanResource(exact[0].Id!, exact[0].Login!, 100, null);
+            var page = connection.GetProperty("pageInfo");
+            if (!page.GetProperty("hasNextPage").GetBoolean()) throw new ArgumentException("担当者を確認できません: " + login);
+            after = page.GetProperty("endCursor").GetString();
+            if (string.IsNullOrWhiteSpace(after) || !cursors.Add(after)) throw new InvalidOperationException("担当者の確認に失敗しました。再試行してください。");
+        }
     }
     public async Task Connect(GhProjectsBoards.App.GitHub.GhConnectionService service, CancellationToken token = default)
     {
