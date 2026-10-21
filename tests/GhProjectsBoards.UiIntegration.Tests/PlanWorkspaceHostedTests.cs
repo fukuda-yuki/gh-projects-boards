@@ -702,7 +702,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         readDay = new DateOnly(2026, 10, 5);
         FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2));
         await Open();
-        var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+        // Read the visual tree on the XAML dispatcher thread like every other direct tree walk.
+        PlanSheetView sheet = null!;
+        await Ui.Run(() => sheet = Ui.Tree(view).OfType<PlanSheetView>().Single());
         await Ui.Run(() => { sheet.Select("I1", PlanField.Title, false); sheet.Refresh(); });
         await Ui.Run(() => sheet.ShowRowMenu("I1", PlanField.Title, sheet.Realized.Single(row => row.Identity == "I1")));
         await Ui.Ready<MenuFlyoutItem>("PlanRowComplete");
