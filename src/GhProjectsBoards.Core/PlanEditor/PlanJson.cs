@@ -56,6 +56,13 @@ internal static class PlanJson
     }
     private static PlanDocument ReplayHistory(PlanDocument document, PlanPatch patch, bool forward)
     {
+        var next = Step(document, patch, forward);
+        // Use the complete load contract, including reconciliation identities, for each reachable state.
+        Validate(new(1, 0, next, [], []), next.Project);
+        return next;
+    }
+    private static PlanDocument Step(PlanDocument document, PlanPatch patch, bool forward)
+    {
         var state = PlanOperations.Replay(document.State, patch, forward);
         if (document.Sync.Publish is { DispatchStarted: true } attempt)
             PlanOperations.Require(patch.BeforeSettings is null && attempt.Writes.All(w => state.Rows.Any(r => r.Identity == w.Identity)),
@@ -66,9 +73,26 @@ internal static class PlanJson
         // A never-dispatched record is released on reopen before any user can travel through history.
         if (next.Sync.Publish is { DispatchStarted: false } pending && pending.Writes.All(w => w.State == PlanWriteState.Pending))
             next = next with { Sync = next.Sync with { Publish = null, NotBefore = null, Unverified = [] } };
-        // Use the complete load contract, including reconciliation identities, for each reachable state.
-        Validate(new(1, 0, next, [], []), next.Project);
         return next;
+    }
+    // #256: replaying and validating the whole history costs one full document validation per entry, on
+    // every command. A command, Undo or Redo puts one patch on top of a history that was already replayable
+    // (load and every save keep it so). When stepping that patch back from the new document reproduces the
+    // previous document, every older state is unchanged and nothing needs replaying. Failures are left out:
+    // they name only a field and a reason, so they are valid in every state, and edits only narrow them.
+    // Anything else (a publish attempt, a baseline or list the patch does not restore exactly) takes the
+    // full RetainReplayableHistory.
+    internal static bool Restores(PlanDocument before, PlanDocument after, PlanPatch patch, bool forward)
+    {
+        if (before.Sync.Publish is not null || after.Sync.Publish is not null) return false;
+        PlanDocument back;
+        try { back = Step(after, patch, !forward); }
+        catch (Exception ex) when (IsDataError(ex)) { return false; }
+        static bool Same(ImmutableArray<PlanRow> a, ImmutableArray<PlanRow> b)
+            => a.Length == b.Length && a.Zip(b).All(p => PlanOperations.RowEqual(p.First, p.Second));
+        return Same(back.State.Rows, before.State.Rows) && PlanOperations.SettingsEqual(back.State.Settings, before.State.Settings)
+            && back.State.ArchivedIdentities.SequenceEqual(before.State.ArchivedIdentities) && Same(back.Baseline.Rows, before.Baseline.Rows)
+            && (back with { State = before.State, Baseline = back.Baseline with { Rows = before.Baseline.Rows }, Sync = back.Sync with { Failures = before.Sync.Failures } }) == before;
     }
     internal static PlanCheckpoint RetainReplayableHistory(PlanCheckpoint checkpoint)
     {
