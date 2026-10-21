@@ -41,10 +41,10 @@ internal sealed partial class PlanSheetView
             rowMenu.Items.Add(new MenuFlyoutSeparator());
         }
         AddRowItem("行を削除", "PlanRowDelete", "Ctrl+-", DeleteReason(targets), () => DeleteRows(targets));
-        AddRowItem("完了にする", "PlanRowComplete", "", targets, PlanRowAction.Complete, () => RowStateReport(targets, PlanRowAction.Complete, "完了にしました"));
-        AddRowItem("中止にする", "PlanRowCancel", "", targets, PlanRowAction.Cancel, () => RowStateReport(targets, PlanRowAction.Cancel, "中止にしました"));
-        AddRowItem("この版から外す", "PlanRowRemove", "", targets, PlanRowAction.Remove, () => RowStateReport(targets, PlanRowAction.Remove, "この版から外しました"));
-        AddRowItem("未完了に戻す", "PlanRowReopen", "", targets, PlanRowAction.Reopen, () => RowStateReport(targets, PlanRowAction.Reopen, "未完了に戻しました"));
+        AddRowItem("完了にする", "PlanRowComplete", "", targets, PlanRowAction.Complete, () => RowStateReport(targets, PlanRowAction.Complete));
+        AddRowItem("中止にする", "PlanRowCancel", "", targets, PlanRowAction.Cancel, () => RowStateReport(targets, PlanRowAction.Cancel));
+        AddRowItem("この版から外す", "PlanRowRemove", "", targets, PlanRowAction.Remove, () => RowStateReport(targets, PlanRowAction.Remove));
+        AddRowItem("未完了に戻す", "PlanRowReopen", "", targets, PlanRowAction.Reopen, () => RowStateReport(targets, PlanRowAction.Reopen));
         rowMenu.Closed += (_, _) => { rowMenuIdentity = null; };
         if (position is { } point) rowMenu.ShowAt(target, new FlyoutShowOptions { Position = point });
         else rowMenu.ShowAt(target, new FlyoutShowOptions { Position = new Point(target.ActualWidth / 2, target.ActualHeight / 2) });
@@ -120,7 +120,7 @@ internal sealed partial class PlanSheetView
         return published ? "GitHub の Issue は削除できません。完了・中止・この版から外す を使ってください" : null;
     }
 
-    private async Task RowStateReport(ImmutableArray<string> targets, PlanRowAction action, string done)
+    private async Task RowStateReport(ImmutableArray<string> targets, PlanRowAction action)
     {
         var (allowed, denied) = Permitted(targets);
         var eligibility = allowed.IsEmpty ? new PlanRowEligibility([], []) : Eligibility(allowed, action);
@@ -142,9 +142,18 @@ internal sealed partial class PlanSheetView
         // tree while a container is being realised (#231).
         foreach (var row in Realized) row.RepaintStateMark();
         UpdateReason();
-        // Say what happened and what was left alone; choosing another row or cell dismisses it.
-        error.Text = skipped.Skipped.IsEmpty ? done : done + "。" + SkipReason(skipped);
+        // The command is a pending local operation until the publish confirms it (#231), so report the action
+        // and what was left alone rather than a past-tense outcome. Choosing another row or cell dismisses it.
+        error.Text = skipped.Skipped.IsEmpty ? PendingReport(action) : PendingReport(action) + "。" + SkipReason(skipped);
     }
+    // The same command（未発行）grammar the tag and the selection line use (docs/spec.md).
+    internal static string PendingReport(PlanRowAction action) => action switch
+    {
+        PlanRowAction.Complete => "完了にする（未発行）",
+        PlanRowAction.Cancel => "中止にする（未発行）",
+        PlanRowAction.Remove => "この版から外す（未発行）",
+        _ => "未完了に戻す（未発行）"
+    };
 
     // The tag a row carries while a state command is pending: the command's own name, so the tag and the
     // outlined lateness marks (never filled) cannot be read as the same thing.

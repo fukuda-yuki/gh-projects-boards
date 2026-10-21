@@ -200,6 +200,29 @@ internal sealed partial class PlanSheetHostedTests
         });
     }
 
+    [TestCase("PlanRowComplete", "完了にする（未発行）")]
+    [TestCase("PlanRowCancel", "中止にする（未発行）")]
+    [TestCase("PlanRowRemove", "この版から外す（未発行）")]
+    [TestCase("PlanRowReopen", "未完了に戻す（未発行）")]
+    public async Task RowStateCommandReportsThePendingActionInsteadOfAPastTenseOutcome(string itemId, string expected)
+    {
+        // #231 C1: the command is local until the publish confirms it, so its report names the action and says
+        // （未発行）; a past-tense outcome would claim a GitHub change that has not happened.
+        var reopen = itemId == "PlanRowReopen";
+        var row = reopen
+            ? new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Closed = true, CloseDate = Today }
+            : new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+        await MountPresentation([row], [row]);
+        await Select(1, PlanField.Title);
+        await ChooseFromRowMenu("I1", itemId);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        await Ui.Run(() => {
+            var text = Ui.Find<TextBlock>("PlanSheetError").Text;
+            Assert.That(text, Is.EqualTo(expected));
+            Assert.That(text, Does.Not.Contain("しました"), "no past-tense claim before the publish confirms it");
+        });
+    }
+
     [Test]
     public async Task ATaskAlreadyClosedOrCancelledOnGitHubCarriesNoPendingTag()
     {

@@ -694,6 +694,38 @@ internal sealed partial class PlanWorkspaceHostedTests
 
 
     [Test, Category("ShellChrome")]
+    public async Task WorkspaceUndoAndRedoDismissTheRowCommandReport()
+    {
+        // #231 C2: the report describes the operation; a history change removes it, so it cannot claim a
+        // state the Undo took back. Redo must not resurrect the stale sentence.
+        readDay = new DateOnly(2026, 10, 5);
+        FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2));
+        await Open();
+        var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+        await Ui.Run(() => { sheet.Select("I1", PlanField.Title, false); sheet.Refresh(); });
+        await Ui.Run(() => sheet.ShowRowMenu("I1", PlanField.Title, sheet.Realized.Single(row => row.Identity == "I1")));
+        await Ui.Ready<MenuFlyoutItem>("PlanRowComplete");
+        await Ui.Run(() => {
+            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Popup<MenuFlyoutItem>("PlanRowComplete")!);
+            ((IInvokeProvider)peer.GetPattern(PatternInterface.Invoke)).Invoke();
+        });
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Closed);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("完了にする（未発行）"));
+            Ui.Click("PlanUndo");
+        });
+        await Ui.Until(() => !workspace.Session!.Document.State.Rows.Single().Closed);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty, "undo dismisses the stale report");
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Ui.Click("PlanRedo");
+        });
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Closed);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty, "redo does not resurrect the report"));
+    }
+
+    [Test, Category("ShellChrome")]
     public async Task ProjectPickerChecksOnlyOpenProjectAndSeparatesIconCommands()
     {
         await Open();
