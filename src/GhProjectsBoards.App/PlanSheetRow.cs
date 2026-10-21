@@ -119,6 +119,7 @@ public sealed class PlanSheetRow : Grid
         chartClip.Children.Add(chart);
         chartClip.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         chartClip.PointerWheelChanged += (_, args) => Owner?.ScrollTimeline(args);
+        BringIntoViewRequested += (_, args) => { if (Owner?.HoldingView == true) args.Handled = true; };
         Children.Add(sheetClip); Children.Add(chartClip); SetColumn(chartClip, 1);
         idHandle = new(this) { Content = id };
         idCell.Children.Add(idHandle); idCell.Children.Add(selectionAccent);

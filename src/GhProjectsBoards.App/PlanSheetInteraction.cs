@@ -241,10 +241,19 @@ internal sealed partial class PlanSheetView
         Select(RowIds[row], Fields[Math.Max(0, Array.IndexOf(Fields, selectedField))], extend);
         if (wholeRow) SelectWholeRow(selected, true);
         FocusCell(selected, selectedField, scrollIntoView: false);
+        HoldingView = true;
     }
+    // The page move has already placed the rows. The target cell takes focus in a container that may not
+    // be arranged at its new place yet, and the focus's later bring-into-view requests would scroll to
+    // that stale position, as far as the top of the plan. They are ignored until the next other key,
+    // click or focus request.
+    internal bool HoldingView { get; private set; }
     private void PageKeyDown(object sender, KeyRoutedEventArgs args)
     {
-        if (args.Key is not (VirtualKey.PageDown or VirtualKey.PageUp) || Down(VirtualKey.Control) || Down(VirtualKey.Menu)) return;
+        if (args.Key is not (VirtualKey.PageDown or VirtualKey.PageUp) || Down(VirtualKey.Control) || Down(VirtualKey.Menu)) {
+            if (args.Key is not (VirtualKey.Shift or VirtualKey.Control or VirtualKey.Menu)) HoldingView = false;
+            return;
+        }
         // An open editor and the IME keep their own keys.
         if (args.OriginalSource is PlanSheetCell { Editing: true } or PlanSheetCell { Composing: true }) return;
         args.Handled = true;
@@ -279,7 +288,7 @@ internal sealed partial class PlanSheetView
     internal void FocusSelected() => FocusCell(selected, selectedField);
     private void FocusCell(string identity, string field, bool scrollIntoView = true)
     {
-        requestedFocus = (identity, field);
+        requestedFocus = (identity, field); HoldingView = false;
         List.LayoutUpdated -= FocusAfterLayout;
         List.LayoutUpdated += FocusAfterLayout;
         if (scrollIntoView) List.ScrollIntoView(identity);

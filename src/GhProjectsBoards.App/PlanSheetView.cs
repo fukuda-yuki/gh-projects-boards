@@ -265,6 +265,7 @@ internal sealed partial class PlanSheetView : Grid
         List.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanSheetRowTemplate"];
         List.ContainerContentChanging += RowContentChanging;
         List.PreviewKeyDown += PageKeyDown;
+        List.AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => HoldingView = false), true);
         List.ItemContainerStyle = new Style(typeof(ListViewItem)) { BasedOn = (Style)Application.Current.Resources["PlanListViewItemStyle"], Setters = {
             new Setter(Control.PaddingProperty, new Thickness(0)), new Setter(Control.BorderThicknessProperty, new Thickness(0)),
             new Setter(FrameworkElement.MinHeightProperty, 0d),

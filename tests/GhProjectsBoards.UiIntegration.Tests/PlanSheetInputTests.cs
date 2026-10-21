@@ -357,6 +357,8 @@ internal sealed partial class PlanSheetHostedTests
         bool Selected(int row) => Ui.Tree(sheet).OfType<Control>().FirstOrDefault(c => AutomationProperties.GetAutomationId(c) == Cell(row)) is { } cell
             && SelectProvider(Cell(row)).IsSelected;
         bool Focused(int row) => Selected(row) && Ui.Find<Control>(Cell(row)).FocusState != FocusState.Unfocused;
+        // The focused cell's own bring-into-view arrives frames after focus; the page must still be where it was put.
+        async Task Settled() { await SheetNativeInput.Rendered(); await SheetNativeInput.Rendered(); await Ui.LowPriorityIdle(); }
         await SelectFocusedCell(3, PlanField.Remaining);
         ScrollViewer scroll = null!; var page = 0; var top = 0d;
         await Ui.Run(() => { scroll = ScrollMeasurementViewport(); page = (int)(scroll.ViewportHeight / sheet.RowHeight); top = scroll.VerticalOffset; });
@@ -364,17 +366,22 @@ internal sealed partial class PlanSheetHostedTests
         var target = 3 + page;
         await SheetNativeInput.Press(VirtualKey.PageDown);
         await Ui.Until(() => Focused(target));
+        await Settled();
         await Ui.Run(() => {
             Assert.That(scroll.VerticalOffset - top, Is.EqualTo(page * sheet.RowHeight).Within(1));
             Assert.That(Selected(3), Is.False);
         });
         await SheetNativeInput.Press(VirtualKey.PageDown, VirtualKey.Shift);
         await Ui.Until(() => Focused(target + page));
-        await Ui.Run(() => Assert.That(Selected(target), Is.True, "Shift+PageDown extends the selection."));
+        await Settled();
+        await Ui.Run(() => {
+            Assert.That(scroll.VerticalOffset - top, Is.EqualTo(2 * page * sheet.RowHeight).Within(1));
+            Assert.That(Selected(target), Is.True, "Shift+PageDown extends the selection.");
+        });
         await SheetNativeInput.Press(VirtualKey.PageUp);
         await SheetNativeInput.Press(VirtualKey.PageUp);
         await Ui.Until(() => Focused(3));
-        await SheetNativeInput.Rendered();
+        await Settled();
         await Ui.Run(() => {
             Assert.That(scroll.VerticalOffset, Is.EqualTo(top).Within(1));
             Assert.That(Selected(target), Is.False);
