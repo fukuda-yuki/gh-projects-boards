@@ -98,19 +98,34 @@ internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray
 { public ImmutableArray<PlanMilestone> Milestones { get; init; } = [];
   public ImmutableArray<PlanRepositoryOption> RepositoryMilestones { get; init; } = [];
   public ImmutableArray<PlanRepositoryOption> RepositoryLabels { get; init; } = []; }
-internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings);
+internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings)
+{
+    // #231: verified Project-item archives this plan performed. A later read that returns one of these
+    // Issues is re-adopting an Issue this plan already knew, not meeting a new one, so it keeps the
+    // position the read reports instead of the #245 tail placement. Persisted with the plan and pruned
+    // when the Issue comes back.
+    public ImmutableArray<string> ArchivedIdentities { get; init; } = [];
+}
 internal sealed record PlanDocument(ScopedId Project, PlanBaseline Baseline, PlanState State)
 {
     public PlanSync Sync { get; init; } = new();
 }
 internal sealed record PlanCellChange(string Identity, string Field, object? Value);
 internal abstract record PlanCommand;
-internal sealed record EditPlanCells(PlanOperationKind Kind, ImmutableArray<PlanCellChange> Cells) : PlanCommand;
+internal sealed record EditPlanCells(PlanOperationKind Kind, ImmutableArray<PlanCellChange> Cells) : PlanCommand
+{
+    // #253: people one on-demand lookup verified ride in the command that assigns them, so the assignment and
+    // their registration are one Undo step and one save, exactly as InsertPlanRows.CsvPeople does for CSV import.
+    public ImmutableArray<PlanResource> NewPeople { get; init; } = [];
+}
 internal sealed record FillPlanCells(PlanOperationKind Kind, string Source, ImmutableArray<string> Targets, ImmutableArray<string> Fields) : PlanCommand;
 internal sealed record ClearPlanCells(ImmutableArray<string> Targets, ImmutableArray<string> Fields) : PlanCommand;
 internal sealed record InsertPlanRows(ImmutableArray<PlanRow> Rows, string? Before = null, PlanOperationKind Kind = PlanOperationKind.Insert) : PlanCommand
 {
     public ImmutableArray<PlanResource> CsvPeople { get; init; } = [];
+    // #253: a person resolved while editing a new row's 担当者 is registered with the insert, for the same
+    // one-operation reason as CsvPeople.
+    public ImmutableArray<PlanResource> NewPeople { get; init; } = [];
     public bool AllowDuplicateCsv { get; init; }
 }
 internal sealed record IndentPlanRows(ImmutableArray<string> Targets, bool Outdent = false) : PlanCommand;

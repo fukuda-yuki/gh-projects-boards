@@ -107,6 +107,8 @@ internal static class PlanOperations
             Uri.CheckHostName(d.Project.Scope.Host) != UriHostNameType.Unknown && d.Project.Scope.Host == d.Project.Scope.Host.ToLowerInvariant(), "プロジェクトの識別情報が不正です。");
         ValidateSettings(d.State.Settings);
         ValidateRows(d.Baseline.Rows); ValidateRows(d.State.Rows);
+        Require(!d.State.ArchivedIdentities.IsDefault && d.State.ArchivedIdentities.Distinct().Count() == d.State.ArchivedIdentities.Length &&
+            d.State.ArchivedIdentities.All(id => id.Length > 0 && !IsLocal(id)), "アーカイブした行の記録が不正です。");
         PlanSheetColumns.ValidateOwnership(d);
         Unique(d.Baseline.Milestones.Select(m => m.Title).ToImmutableArray());
         Require(d.Baseline.Milestones.All(m => !string.IsNullOrWhiteSpace(m.Title)), "マイルストーンの名前が不正です。");
@@ -166,6 +168,11 @@ internal static class PlanOperations
                 kind = edit.Kind;
                 Require(kind is PlanOperationKind.Cell or PlanOperationKind.Paste or PlanOperationKind.Fill or PlanOperationKind.CtrlD or PlanOperationKind.Clear, "セル操作の種類が不正です。");
                 Require(edit.Cells.Select(c => (c.Identity, c.Field)).Distinct().Count() == edit.Cells.Length, "同じセルを重複して指定できません。");
+                // #253: people an on-demand lookup verified become stored before the cell is validated, so the
+                // assignment and their registration are one command, one Undo step and one save.
+                if (!edit.NewPeople.IsEmpty)
+                    state = state with { Settings = state.Settings with { People = state.Settings.People.AddRange(
+                        edit.NewPeople.Where(p => !state.Settings.People.Any(old => old.Identity == p.Identity))) } };
                 var summaries = rows.Where(r => r.Parent is not null).Select(r => r.Parent!).ToHashSet();
                 foreach (var c in edit.Cells)
                 {
@@ -204,10 +211,14 @@ internal static class PlanOperations
             case InsertPlanRows insert:
                 kind = insert.Kind;
                 Require(kind is PlanOperationKind.Insert or PlanOperationKind.CsvImport, "挿入操作の種類が不正です。");
+                // #253: a person resolved for a new row's 担当者 is registered with the insert, as CsvPeople is
+                // for CSV import, so the row and its person are one operation.
+                if (!insert.CsvPeople.IsEmpty || !insert.NewPeople.IsEmpty)
+                    state = state with { Settings = state.Settings with { People = state.Settings.People.AddRange(
+                        insert.CsvPeople.Concat(insert.NewPeople).Where(p => !state.Settings.People.Any(old => old.Identity == p.Identity))) } };
                 if (kind == PlanOperationKind.CsvImport)
                 {
                     Require(insert.AllowDuplicateCsv || !insert.Rows.Any(r => r.CsvSourceHash is not null && rows.Any(old => old.CsvSourceHash == r.CsvSourceHash)), "同じCSVは追加済みです。重複して追加するか確認してください。");
-                    state = state with { Settings = state.Settings with { People = state.Settings.People.AddRange(insert.CsvPeople.Where(p => !state.Settings.People.Any(old => old.Identity == p.Identity))) } };
                 }
                 var index = insert.Before is null ? rows.Count : rows.FindIndex(r => r.Identity == insert.Before);
                 Require(index >= 0, "挿入先がありません。");
@@ -503,7 +514,8 @@ internal static class PlanOperations
         }
         order = nextOrder ?? order;
         Require(order.Length == rows.Count && order.Distinct().Count() == order.Length && order.All(rows.ContainsKey), "操作履歴の行順が不正です。");
-        return new(order.Select(id => rows[id]).ToImmutableArray(), nextSettings ?? state.Settings);
+        // The remembered archives are a GitHub observation, not an undoable edit.
+        return new(order.Select(id => rows[id]).ToImmutableArray(), nextSettings ?? state.Settings) { ArchivedIdentities = state.ArchivedIdentities };
     }
     internal static PlanBaseline ReplayBaseline(PlanBaseline baseline, PlanPatch patch, bool forward)
     {
@@ -565,6 +577,21 @@ internal static class PlanOperations
         PlanField.Predecessors => row.Predecessors.Any(held.Contains) || before.Predecessors.Any(held.Contains),
         _ => false
     };
+    // A remaining unpublished change that is held by design: it can only be sent by naming a row this
+    // publish cannot create (#247). The parent's child order counts as held when its changed children
+    // name one, exactly as PlanPublishPlan holds that order write whole. The publish review marks the
+    // same pairs 保留 from HoldsField/SiblingOrderChange; keeping the answer in one place stops the
+    // completeness check from reporting a failure the review already explains as held.
+    internal static bool HoldsRemainingChange(PlanDocument document, string identity, string field, ImmutableHashSet<string> held)
+    {
+        if (document.State.Rows.FirstOrDefault(r => r.Identity == identity) is not { } row) return false;
+        if (field is PlanField.Parent or PlanField.Predecessors)
+        {
+            var before = document.Baseline.Rows.FirstOrDefault(r => r.Identity == identity) ?? new(identity, "", row.Repository);
+            return HoldsField(row, before, field, held);
+        }
+        return field == PlanField.SubIssueOrder && SiblingOrderChange(document, identity) is { } sibling && sibling.After.Any(held.Contains);
+    }
     internal const string NothingEligible = "この操作ができる行がありません。";
     // #231: which rows of a selection a row-state command applies to. A requirement row stands for its
     // whole subtree, as with Link; the rest are skipped with the reason that makes them ineligible.

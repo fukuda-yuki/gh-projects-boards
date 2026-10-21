@@ -175,8 +175,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         commandButtons.Children.Add(new TextBlock { Text = "基準日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
         commandButtons.Children.Add(statusDateHost);
         commandButtons.Children.Add(CommandDivider());
-        commandButtons.Children.Add(undoButton = Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
-        commandButtons.Children.Add(redoButton = Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); RenderTasks(); RenderSettings(); }));
+        commandButtons.Children.Add(undoButton = Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); sheet?.DismissStatus(); RenderTasks(); RenderSettings(); }));
+        commandButtons.Children.Add(redoButton = Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); sheet?.DismissStatus(); RenderTasks(); RenderSettings(); }));
         commandButtons.Children.Add(CommandDivider());
         unpublished.VerticalAlignment = VerticalAlignment.Center;
         unpublished.TextAlignment = TextAlignment.Center;
@@ -443,10 +443,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         ClearPublishResult();
         var reporter = BeginBusy(reset ? "reset" : "refresh", reset ? "GitHub の状態に戻しています" : "最新の情報を取得しています");
         var outcome = reset ? "GitHub の状態に戻す操作を中止しました" : "更新を中止しました";
+        PlanRefreshResult? refreshed = null;
         try {
             var result = reset ? await workspace.Reset(OperationToken, reporter) : await workspace.Refresh(OperationToken, reporter);
             if (result is not null) {
-                if (reset) ShowResetResult(result.StatusDate); else ShowRefreshResult(result);
+                if (reset) ShowResetResult(result.StatusDate); else refreshed = result;
             }
             outcome = reset ? "GitHub の状態に戻しました" : "最新の情報に更新しました";
             refreshFailure.IsOpen = false; ClearSaveFailures();
@@ -467,6 +468,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
         finally {
             EndBusy(outcome);
             RenderTasks(); RenderSettings();
+            // The bar's lateness counts come from the rendered sheet, so they are read after the sheet has taken
+            // in the read and its 基準日; before that they were the previous week's counts.
+            if (refreshed is not null) ShowRefreshResult(refreshed);
         }
     }
     private bool showingRecalculation;
@@ -752,7 +756,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
                 next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }),
-                    reapplyStoredPlan: ReapplyStoredPlanAsync, savePlanCopy: SavePlanCopyAsync);
+                    reapplyStoredPlan: ReapplyStoredPlanAsync, savePlanCopy: SavePlanCopyAsync,
+                    // #253: verify a typed login on demand for the row's repository through the read-only lease.
+                    resolveAssignee: (repository, login, token) => ReferenceEquals(workspace.Session, session)
+                        ? workspace.ResolveAssigneeAsync(repository, login, token)
+                        : throw new InvalidOperationException("プロジェクトが変更されました。"));
                 next.CommandRowFocusRequested += () => {
                     if (!ReferenceEquals(sheet, next)) return;
                     if (DetailVisible && PlanSheetView.Down(Windows.System.VirtualKey.Shift)) FocusDetail(); else FocusCommandRow();

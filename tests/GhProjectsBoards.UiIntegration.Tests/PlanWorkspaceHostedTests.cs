@@ -250,7 +250,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [TestCase(false, true), TestCase(true, true), TestCase(false, false), Category("PlanReadDate")]
-    public async Task RefreshResultNamesDateAndChangedTasksAndFilterCanBeCleared(bool closeBar, bool advanceDate)
+    public async Task RefreshResultNamesTheReadTimeWithoutDateChangesAndItsFilterCanBeCleared(bool closeBar, bool advanceDate)
     {
         readDay = new(2026, 10, 6);
         FakePlanEditor.Save(root, new([
@@ -377,7 +377,34 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("PlanReadDate")]
-    public async Task RefreshResultSaysMovedBackWhenPmoSelectedALaterStatusDate()
+    public async Task RefreshBarCountsTheLatenessOfTheReadNotOfThePreviousStatusDate()
+    {
+        // The weekly flow: last week's 基準日 is still set when the PMO refreshes, and the refresh moves it to
+        // the read day. The bar's counts must be the ones the refreshed sheet shows, not last week's.
+        readDay = new(2026, 10, 6);
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "設計", "acme/repo"), "", true),
+            new(new("I2", "In progress", "acme/repo") { Parent = "I1", Actual = 8, Remaining = 8, Start = new(2026, 10, 5), End = new(2026, 10, 6) }, "", true)
+        ], 3));
+        await Open();
+        await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(new DateTime(2026, 10, 20)));
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.StatusDate == new DateOnly(2026, 10, 20));
+        await Ui.Ready<Button>("PlanStatusOverdueFilter");
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(workspace.Session!.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 6)), "The read day becomes the 基準日.");
+            Assert.That(Ui.Tree(Ui.Root).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanStatusOverdueFilter"), Is.False,
+                "On the read day the task is not overdue.");
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Not.Contain("期限超過"),
+                "The bar reports the refreshed sheet's lateness, not the previous 基準日's.");
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PlanReadDate")]
+    public async Task RefreshResultKeepsThePmoStatusDateAndReportsNoMovedDate()
     {
         readDay = new(2026, 10, 6);
         await Open();
@@ -602,7 +629,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
             Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
                 Is.EqualTo(new[] { "上へ移動", "下へ移動", "階層順に並べ替え", "|", "コピー", "貼り付け", "下へコピー", "クリア", "|",
-                    "完了にする", "中止にする", "この版から外す", "未完了に戻す", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
+                    "行を削除", "完了にする", "中止にする", "この版から外す", "未完了に戻す", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
             Assert.That(commands.OfType<AppBarButton>().Take(2).Select(b => b.KeyboardAcceleratorTextOverride), Is.EqualTo(new[] { "Alt+Shift+↑", "Alt+Shift+↓" }));
             Assert.That(commands.OfType<AppBarButton>().Skip(3).Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
                 Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
@@ -661,6 +688,75 @@ internal sealed partial class PlanWorkspaceHostedTests
                 .Select(b => b.Content as string ?? "").Where(t => t.Length > 0).ToArray();
             Assert.That(string.Join(" · ", marks), Is.EqualTo(expectedMarks));
         });
+    }
+
+    [Test, Category("ShellChrome")]
+    public async Task StatusCountFilterKeepsAncestorRequirementRowsDimmedForContext()
+    {
+        var date = new DateOnly(2026, 10, 5);
+        readDay = date;
+        var requirement = new PlanRow("I1", "要求事項", "acme/repo");
+        var overdue = new PlanRow("I2", "遅れ", "acme/repo") { Parent = "I1", Start = date.AddDays(-3), End = date.AddDays(-3), Estimate = 8, Remaining = 8 };
+        var onPlan = new PlanRow("I3", "予定どおり", "acme/repo") { Parent = "I1", Start = date.AddDays(3), End = date.AddDays(3), Estimate = 8, Remaining = 8 };
+        var outside = new PlanRow("I4", "別の要求", "acme/repo") { Start = date.AddDays(3), End = date.AddDays(3), Estimate = 8, Remaining = 8 };
+        FakePlanEditor.Save(root, new([new(requirement, "", true), new(overdue, "", true), new(onPlan, "", true), new(outside, "", true)], 5));
+        await Open("要求事項");
+        await Ui.Ready<Button>("PlanStatusOverdueFilter");
+        await Ui.Run(() => Ui.Click("PlanStatusOverdueFilter"));
+        await Ui.Idle();
+        await Ui.Run(() => {
+            var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            // The matched row and its ancestor requirement row stay; unrelated rows leave the view.
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I1", "I2", "" }));
+            // XAML stores Opacity as a float, so compare against the float value the product sets.
+            Assert.That(sheet.Realized.Single(row => row.Identity == "I1").Opacity, Is.EqualTo(0.55f),
+                "A count filter keeps the ancestor requirement row for context and dims it.");
+            Assert.That(sheet.Realized.Single(row => row.Identity == "I2").Opacity, Is.EqualTo(1),
+                "The matched task keeps its ordinary weight.");
+            sheet.ClearIdentityFilter();
+        });
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 5);
+        await Ui.Run(() => Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().Realized.Single(row => row.Identity == "I1").Opacity, Is.EqualTo(1),
+            "Clearing the filter restores the ancestor row."));
+    }
+
+
+    [Test, Category("ShellChrome")]
+    public async Task WorkspaceUndoAndRedoDismissTheRowCommandReport()
+    {
+        // #231 C2: the report describes the operation; a history change removes it, so it cannot claim a
+        // state the Undo took back. Redo must not resurrect the stale sentence.
+        readDay = new DateOnly(2026, 10, 5);
+        FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2));
+        await Open();
+        // Read the visual tree on the XAML dispatcher thread like every other direct tree walk.
+        PlanSheetView sheet = null!;
+        await Ui.Run(() => sheet = Ui.Tree(view).OfType<PlanSheetView>().Single());
+        await Ui.Run(() => { sheet.Select("I1", PlanField.Title, false); sheet.Refresh(); });
+        await Ui.Run(() => sheet.ShowRowMenu("I1", PlanField.Title, sheet.Realized.Single(row => row.Identity == "I1")));
+        await Ui.Ready<MenuFlyoutItem>("PlanRowComplete");
+        await Ui.Run(() => {
+            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Popup<MenuFlyoutItem>("PlanRowComplete")!);
+            ((IInvokeProvider)peer.GetPattern(PatternInterface.Invoke)).Invoke();
+        });
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Closed);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("完了にする（未発行）"));
+            Ui.Click("PlanUndo");
+        });
+        await Ui.Until(() => !workspace.Session!.Document.State.Rows.Single().Closed);
+        // The undo button clears the report after the undo completes, so let the command finish before reading it.
+        await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length == 0);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty, "undo dismisses the stale report");
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Ui.Click("PlanRedo");
+        });
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Closed);
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty, "redo does not resurrect the report"));
     }
 
     [Test, Category("ShellChrome")]
@@ -1046,7 +1142,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task CsvPickerValidatesWholeFileThenImportsAndUndoesOneOperation()
     {
         await Open();
-        // Release the first-take-in date hold before measuring the CSV's additional changes.
+        // An earlier edit is an ordinary unpublished change; measure the CSV's additional changes from it.
         await CommitText("PlanCell1_Title", "設計の変更");
         await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Title == "設計の変更");
         var unpublishedBeforeCsv = workspace.Session!.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount;
@@ -1159,6 +1255,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsAllowanceEntryKeepsTheNextCellFocusedAcrossRecalculation()
     {
+        AssignPeopleThroughFixture("U2");
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
@@ -1179,6 +1276,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsQueuedEditsAndInvalidTextSurviveOtherCellsSaving()
     {
+        AssignPeopleThroughFixture("U2", "U3");
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null), new("U3", "carol", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
@@ -2041,6 +2139,17 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<ComboBox>("PlanMapEstimate");
         await Ui.Idle();
     }
+    // #253: the settings page lists only the people a row holds, so a case that seeds stored people for the
+    // rate/allowance editors first assigns them through real Project Issues instead of relying on a stored list.
+    private void AssignPeopleThroughFixture(params string[] identities)
+    {
+        var state = FakePlanEditor.Load(root);
+        var issues = state.Issues;
+        var next = state.NextId;
+        foreach (var identity in identities)
+            issues = issues.Add(new(new("I" + next++, "担当 " + identity, "acme/repo") { Assignees = [identity] }, "", true));
+        FakePlanEditor.Save(root, state with { Issues = issues, NextId = next });
+    }
     private async Task CommitText(string id, string value)
     {
         await Ui.Run(() => {
@@ -2654,6 +2763,155 @@ internal sealed partial class PlanWorkspaceHostedTests
         var reopened = await PlanSession.OpenAsync(new(root), workspace.Selected!.Id, new(2026, 10, 6));
         var settings = reopened.Session!.Document.State.Settings;
         Assert.That(settings.CompanyDaysOff, Is.EqualTo(new[] { day }));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    private async Task TypeIntoCell(string id, string value)
+    {
+        await Ui.Run(() => {
+            var input = Ui.Find<TextBox>(id);
+            Assert.That(input.Focus(FocusState.Programmatic), Is.True);
+            input.Text = value;
+        });
+    }
+    private async Task CommitByFocusLoss()
+    {
+        await Ui.Run(() => Ui.Find<Button>("PlanShowSettings").Focus(FocusState.Programmatic));
+        await Ui.Idle();
+    }
+    private static string[] RecordedHostedQueries(string root)
+    {
+        var path = Path.Combine(root, "calls.jsonl");
+        return File.Exists(path)
+            ? File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => JsonSerializer.Deserialize<JsonElement>(line))
+                .Select(call => call.TryGetProperty("query", out var query) && query.ValueKind == JsonValueKind.String ? query.GetString()! : "")
+                .Where(query => query.Length > 0).ToArray()
+            : [];
+    }
+
+    // #253 behavior 11/12: Settings lists only the people a row holds, and a typed login that is not yet a
+    // Project person is verified on demand and registered with the assignment.
+    [Test, Category("PlanWorkspaceReview")]
+    public async Task SettingsListsOnlyAssignedPeopleAndAResolvedLoginJoinsThem()
+    {
+        await Open();
+        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(view).OfType<NumberBox>().Any(n => AutomationProperties.GetAutomationId(n) == "PlanRateU2"), Is.False,
+                "A person no task holds is not in the settings list.");
+            Ui.Click("PlanSettingsBack");
+        });
+        await Ui.Idle();
+        File.WriteAllText(Path.Combine(root, "calls.jsonl"), "");
+        // A name the sheet already knows is local: no lookup is sent for the ordinary edit.
+        await TypeIntoCell("PlanCell1_Assignees", "person-U1");
+        await CommitByFocusLoss();
+        Assert.That(RecordedHostedQueries(root).Any(query => query.Contains("PlanResolveAssignee")), Is.False,
+            "A locally known assignee needs no GitHub lookup.");
+        await TypeIntoCell("PlanCell1_Assignees", "person-U2");
+        await CommitByFocusLoss();
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Assignees.Contains("U2"));
+        Assert.That(RecordedHostedQueries(root).Count(query => query.Contains("PlanResolveAssignee")), Is.EqualTo(1),
+            "One lookup for the one typed login the sheet did not know.");
+        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU2");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<NumberBox>("PlanRateU2").Value, Is.EqualTo(100), "The looked-up login is stored at 100% and listed.");
+            Assert.That(workspace.Session!.UndoCount, Is.EqualTo(1));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    // #253 behavior 12 / the recorded in-flight presentation: the status line names the login, the typed text
+    // stays in the editing cell, nothing is written until the lookup returns, and the commit is one Undo.
+    [Test, Category("PlanWorkspaceReview")]
+    public async Task InFlightAssigneeLookupNamesTheLoginWhileTheTypedTextStaysInTheCell()
+    {
+        await Open();
+        var session = workspace.Session!;
+        var before = PlanJson.Text(session.Document);
+        var undo = session.UndoCount;
+        File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"holdQuery\":\"PlanResolveAssignee\"}");
+        await TypeIntoCell("PlanCell1_Assignees", "late-user");
+        await CommitByFocusLoss();
+        try
+        {
+            await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+            // The lookup is a tracked operation while the fake holds the query, so Ui.Idle would wait on it;
+            // wait for the in-flight status line instead.
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("担当者 late-user を確認しています…"));
+                Assert.That(Ui.Find<TextBox>("PlanCell1_Assignees").Text, Is.EqualTo("late-user"), "The typed text stays in the editing cell while the lookup runs.");
+                Assert.That(PlanJson.Text(workspace.Session!.Document), Is.EqualTo(before));
+                Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+            });
+        }
+        finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Assignees.Contains("U101"));
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty);
+            Assert.That(workspace.Session!.UndoCount, Is.EqualTo(undo + 1), "The assignment and the registration are one Undo step.");
+            Assert.That(workspace.Session.Document.State.Settings.People.Single(p => p.Identity == "U101").Rate, Is.EqualTo(100));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    // #253 behavior 13: a login GitHub cannot assign is refused at the cell, nothing is written, and correcting
+    // the text clears the message.
+    [Test, Category("PlanWorkspaceReview")]
+    public async Task RefusedAssigneeLookupShowsTheLoginAtTheCellAndWritesNothing()
+    {
+        await Open();
+        var session = workspace.Session!;
+        var before = PlanJson.Text(session.Document);
+        var undo = session.UndoCount;
+        await TypeIntoCell("PlanCell1_Assignees", "nobody");
+        await CommitByFocusLoss();
+        await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is { IsLoaded: true });
+        await Ui.Run(() => {
+            Assert.That(((TextBlock)Ui.Popup<Border>("SheetInputProblem")!.Child).Text, Is.EqualTo("担当者を確認できません: nobody"));
+            Assert.That(PlanJson.Text(workspace.Session!.Document), Is.EqualTo(before), "A refused lookup writes nothing.");
+            Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        // The refused commit already moved focus to the settings button, so re-enter the cell before correcting
+        // the text; setting the text while focus stays away would not commit.
+        await TypeIntoCell("PlanCell1_Assignees", "person-U1");
+        await CommitByFocusLoss();
+        await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is null);
+        await Ui.Run(() => {
+            Assert.That(workspace.Session!.Document.State.Rows.Single().Assignees, Is.EqualTo(new[] { "U1" }));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty, "the refusal message does not outlive the correction");
+        });
+    }
+
+    // #253: Escape (CancelEdit) while the lookup is in flight cancels it through its token: nothing is written
+    // and the cell returns to its accepted value.
+    [Test, Category("PlanWorkspaceReview")]
+    public async Task EscapeDuringAnAssigneeLookupCancelsItWithoutWriting()
+    {
+        await Open();
+        var session = workspace.Session!;
+        var before = PlanJson.Text(session.Document);
+        var undo = session.UndoCount;
+        File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"holdQuery\":\"PlanResolveAssignee\"}");
+        await TypeIntoCell("PlanCell1_Assignees", "late-user");
+        await CommitByFocusLoss();
+        try
+        {
+            await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+            await Ui.Run(() => Ui.Tree(view).OfType<PlanSheetView>().Single().CancelEdit("I1", PlanField.Assignees));
+            await Ui.Idle();
+        }
+        finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(PlanJson.Text(workspace.Session!.Document), Is.EqualTo(before), "A cancelled lookup writes nothing.");
+            Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty);
+            Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().Pending, Is.Empty);
+        });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

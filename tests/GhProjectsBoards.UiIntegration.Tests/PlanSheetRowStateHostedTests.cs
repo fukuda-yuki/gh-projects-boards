@@ -166,6 +166,64 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test]
+    public async Task OverflowOffersRowDeleteWithTheRowMenusState()
+    {
+        // #247 decision: 行を削除 also sits in the app-owned その他のオプション overflow, with the row menu's
+        // name, shortcut, enabled state and refusal; the primary beside 行を挿入 stays.
+        var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+        await MountPresentation([published], [published]);
+        await Select(1, PlanField.Title);
+        await Ui.Run(() => Ui.Click("PlanSheetMore"));
+        await Ui.Ready<MenuFlyoutItem>("PlanSheetDeleteOverflow");
+        await Ui.Run(() => {
+            var item = Ui.Find<MenuFlyoutItem>("PlanSheetDeleteOverflow");
+            Assert.That(item.KeyboardAcceleratorTextOverride, Is.EqualTo("Ctrl+-"));
+            Assert.That(item.IsEnabled, Is.False, "a published Issue cannot be deleted from the plan");
+            Assert.That(AutomationProperties.GetHelpText(item), Does.Contain("完了・中止・この版から外す"));
+            Ui.Find<AppBarButton>("PlanSheetMore").Flyout.Hide();
+        });
+        await Ui.Idle();
+        // A local row can be deleted from the same menu, as one Undo step, like the primary command.
+        await Ui.Run(async () => { await session.Execute(new InsertPlanRows([PlanRow.New("Local", "acme/repo")]), Today); sheet.Refresh(); });
+        var local = session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:", StringComparison.Ordinal));
+        await Ui.Until(() => sheet.Realized.Any(r => r.Identity == local.Identity));
+        await Ui.Run(() => { sheet.Select(local.Identity, PlanField.Title, false); sheet.Refresh(); });
+        var undo = session.UndoCount;
+        await Ui.Run(() => Ui.Click("PlanSheetMore"));
+        await Ui.Ready<MenuFlyoutItem>("PlanSheetDeleteOverflow");
+        await Ui.Run(() => Assert.That(Ui.Find<MenuFlyoutItem>("PlanSheetDeleteOverflow").IsEnabled, Is.True));
+        await InvokeRowItem("PlanSheetDeleteOverflow");
+        await Ui.Until(() => session.Document.State.Rows.All(r => r.Identity != local.Identity));
+        await Ui.Run(() => {
+            Assert.That(session.UndoCount, Is.EqualTo(undo + 1), "the overflow delete is one Undo step");
+            Assert.That(session.Document.State.Rows.Select(r => r.Identity), Does.Not.Contain(local.Identity));
+        });
+    }
+
+    [TestCase("PlanRowComplete", "完了にする（未発行）")]
+    [TestCase("PlanRowCancel", "中止にする（未発行）")]
+    [TestCase("PlanRowRemove", "この版から外す（未発行）")]
+    [TestCase("PlanRowReopen", "未完了に戻す（未発行）")]
+    public async Task RowStateCommandReportsThePendingActionInsteadOfAPastTenseOutcome(string itemId, string expected)
+    {
+        // #231 C1: the command is local until the publish confirms it, so its report names the action and says
+        // （未発行）; a past-tense outcome would claim a GitHub change that has not happened.
+        var reopen = itemId == "PlanRowReopen";
+        var row = reopen
+            ? new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Closed = true, CloseDate = Today }
+            : new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+        await MountPresentation([row], [row]);
+        await Select(1, PlanField.Title);
+        await ChooseFromRowMenu("I1", itemId);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        await Ui.Run(() => {
+            var text = Ui.Find<TextBlock>("PlanSheetError").Text;
+            Assert.That(text, Is.EqualTo(expected));
+            Assert.That(text, Does.Not.Contain("しました"), "no past-tense claim before the publish confirms it");
+        });
+    }
+
+    [Test]
     public async Task ATaskAlreadyClosedOrCancelledOnGitHubCarriesNoPendingTag()
     {
         // Read from GitHub, not commanded here: the tag names a command still to publish, so a finished task

@@ -27,7 +27,11 @@ internal sealed record SummaryPlan(int? WorkingDays, int? ElapsedDays, int? Rema
 
 internal static class PlanSummary
 {
-    private static DateOnly? Finish(ScheduledTask task) => task.Input.Closed ? task.Input.CloseDate ?? task.End.Value : task.End.Value;
+    // #236 decision 5: 完了見込 is the latest end on the forecast schedule. Open work finishes at its
+    // forecast end; closed work at the close date; kept work and work with no forecast keep its retained
+    // plan end, so a kept row still finishes the version (docs/spec.md).
+    private static DateOnly? Finish(ScheduledTask task) => task.Input.Closed ? task.Input.CloseDate ?? task.End.Value
+        : task.ForecastEnd ?? task.End.Value;
     private static int? Difference(DateOnly? target, DateOnly? forecast, Func<int, int, int> days) => target is { } t && forecast is { } f
         ? f >= t ? days(t.DayNumber + 1, f.DayNumber) : -days(f.DayNumber + 1, t.DayNumber) : null;
     private static Func<int, int, int> WorkingDays(PlanCalendar calendar)
@@ -118,12 +122,14 @@ internal static class PlanSummary
             return new(phase.Length == 0 ? null : phase, sum) { Target = target, Difference = Difference(target, sum.Finish, days) };
         }
         var phaseTotals = phases.Select(p => PhaseRow(p, phaseGroups[p].ToArray())).ToArray();
+        // #253: the summary names the people assigned in this Project, the same derivation settings uses.
+        var assignedPeople = PlanPeople.Assigned(document);
         var people = new List<SummaryPerson>();
-        var identities = settings.People.Select(p => p.Identity)
+        var identities = assignedPeople.Select(p => p.Identity)
             .Concat(new[] { PlanPeople.Unassigned, PlanPeople.Multiple }.Where(personGroups.Contains));
         foreach (var identity in identities)
         {
-            var person = settings.People.FirstOrDefault(p => p.Identity == identity);
+            var person = assignedPeople.FirstOrDefault(p => p.Identity == identity);
             var assigned = personGroups[identity].ToArray();
             decimal? capacity = person is null ? null : remaining * 8m * person.Rate / 100;
             if (capacity is { } available && person?.Allowance is { } allowance)
@@ -134,8 +140,8 @@ internal static class PlanSummary
             people.Add(new(identity, name, phases.Select(p => PhaseRow(p, cells[(identity, p)].ToArray())).ToArray(),
                 personTotal, capacity, capacity > 0 ? personTotal.Remaining.Value / capacity : null));
         }
-        decimal? projectCapacity = remaining.HasValue && settings.People.Length > 0
-            ? people.Where(p => settings.People.Any(s => s.Identity == p.Identity)).Sum(p => p.Capacity) : null;
+        decimal? projectCapacity = remaining.HasValue && assignedPeople.Length > 0
+            ? people.Where(p => assignedPeople.Any(s => s.Identity == p.Identity)).Sum(p => p.Capacity) : null;
         var load = projectCapacity > 0 ? total.Remaining.Value / projectCapacity : null;
         PeoplePlan? months = null;
         if (settings.ProjectStart is { } monthStart && settings.ProjectEnd is { } monthEnd)

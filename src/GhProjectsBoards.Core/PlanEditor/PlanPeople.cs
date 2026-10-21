@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using GhProjectsBoards.Core.Projects;
 namespace GhProjectsBoards.Core.PlanEditor;
 
@@ -25,6 +26,22 @@ internal sealed record PeoplePlan(IReadOnlyList<PlanPeriod> Periods, IReadOnlyLi
 internal static class PlanPeople
 {
     internal const string Unassigned = "unassigned", Multiple = "multiple";
+    // #253: the Project's people are the people assigned in it. A stored person appears only while a row holds
+    // that identity; 中止, a pending この版から外す and requirement rows still count, because the row leaves the
+    // plan only when a publish and read confirm it. Their stored rate and allowance stay in settings, so the
+    // values return unchanged when a row holds them again. A row assignee with no stored entry appears at 100%
+    // with the readable login the read returned. Settings, the summary and PlanPeople share this derivation.
+    internal static ImmutableArray<PlanResource> Assigned(PlanDocument document)
+    {
+        var order = document.State.Rows.SelectMany(r => r.Assignees).Distinct(StringComparer.Ordinal).ToArray();
+        var assigned = order.ToHashSet(StringComparer.Ordinal);
+        var stored = document.State.Settings.People.Where(p => assigned.Contains(p.Identity))
+            .Select(p => p with { Name = document.Sync.PeopleNames.GetValueOrDefault(p.Identity, p.Name) }).ToArray();
+        var known = stored.Select(p => p.Identity).ToHashSet(StringComparer.Ordinal);
+        return stored.Concat(order.Where(id => !known.Contains(id))
+            .Select(id => new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null)))
+            .ToImmutableArray();
+    }
     internal static PeoplePlan Calculate(PlanDocument document, DateOnly today, DateOnly anchor, PlanPeriodScale scale, int count)
         => Calculate(document, PlanOperations.Schedule(document, today), anchor, scale, count);
 
@@ -49,13 +66,13 @@ internal static class PlanPeople
         var scheduled = schedule.Where(s => !s.IsSummary).ToArray();
         string Owner(ScheduledTask task) => task.Input.Assignees.Length switch { 0 => Unassigned, 1 => task.Input.Assignees[0], _ => Multiple };
         var byOwner = scheduled.ToLookup(Owner);
-        var ids = settings.People.Select(p => p.Identity).Concat(scheduled.SelectMany(s => s.Input.Assignees)).Distinct().ToArray();
+        var people = Assigned(document);
+        var ids = people.Select(p => p.Identity).ToArray();
         var output = new List<PersonLoad>();
         foreach (var id in ids.Concat([Unassigned, Multiple]))
         {
             var ambiguous = id is Unassigned or Multiple;
-            var person = ambiguous ? null : settings.People.FirstOrDefault(p => p.Identity == id) ??
-                new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null);
+            var person = ambiguous ? null : people.First(p => p.Identity == id);
             var tasks = byOwner[id].ToArray();
             var missing = new HashSet<string>(); var unallocated = new List<string>();
             decimal? Total(Func<ScheduledTask, decimal?> value, string label) {

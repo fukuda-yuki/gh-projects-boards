@@ -53,6 +53,28 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
     }
     [Test]
+    public async Task SummaryFinishFollowsTheForecastSchedule()
+    {
+        readDay = new(2026, 10, 5);
+        // A fixed task keeps its retained plan end 10/7, but 40h of remaining work from the 基準日 forecasts
+        // its finish on 10/9: 完了見込 and 差 must follow the forecast schedule, not the plan end (#236 M2).
+        var row = new PlanRow("I1", "Fixed late", "acme/repo") { Estimate = 40, Remaining = 40, Start = readDay, End = readDay.AddDays(2), Fixed = true };
+        FakePlanEditor.Save(root, new([new(row, "", true)], 2) { AddedFields = [nameof(PlanField.Fixed)] });
+        await Open("Fixed late");
+        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
+            ProjectStart = readDay, ProjectEnd = new(2026, 10, 30), StatusDate = readDay }), readDay);
+        await Ui.Run(() => Ui.Click("PlanShowSummary"));
+        await Ui.Ready<TextBlock>("SummaryFinish");
+        await Ui.Run(() => {
+            var finish = Ui.Find<TextBlock>("SummaryFinish");
+            Assert.That(finish.Text, Does.StartWith("10/9 (金)"), "完了見込 is the forecast end, not the retained plan end 10/7.");
+            // 10/9 to the 10/30 Project end: 10/12 is a bundled holiday, so 14 working days remain.
+            Assert.That(finish.Text, Does.Contain("終了日より 14 稼働日前"));
+        });
+    }
+
+
+    [Test]
     public async Task SummaryMeasureSelectionAndExactFilterDoNotChangeThePlan()
     {
         await SummaryPlan();

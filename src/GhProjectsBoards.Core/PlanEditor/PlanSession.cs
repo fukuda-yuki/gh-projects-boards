@@ -107,9 +107,10 @@ internal sealed class PlanSession
             return SaveAfterPlanningCommand(document, kind, today);
         }
     }
-    // A settings change that affects the schedule (calendar, Project start, 基準日) reports the tasks it
-    // moved with a filter. An ordinary cell edit reschedules what it touches and shows those dates as
-    // unpublished changes instead; no command reports a whole-plan recalculation (#236).
+    // A settings change that affects the schedule (calendar, Project period, people rates) reports the tasks
+    // it moved with a filter. A 基準日 change is deliberately not a reschedule trigger (#236). An ordinary
+    // cell edit reschedules what it touches and shows those dates as unpublished changes instead; no command
+    // reports a whole-plan recalculation.
     private Task<PlanSaveResult> SaveAfterPlanningCommand(PlanDocument before, PlanOperationKind kind, DateOnly today)
     {
         var after = checkpoint.Document;
@@ -470,6 +471,10 @@ internal sealed class PlanSession
             }
             PlanState State(PlanState state) => state with { Rows = Leave(state.Rows).Select(Row).ToImmutableArray() };
             var state = State(document.State);
+            // #231: remember the archives this publish verified. A later read that returns one of these
+            // Issues re-adopts it in the read position instead of treating it as a newly found Issue.
+            if (archived.Count > 0)
+                state = state with { ArchivedIdentities = state.ArchivedIdentities.Union(archived, StringComparer.Ordinal).ToImmutableArray() };
             var histories = checkpoint.Undo;
             // Creation and archiving are irreversible history barriers. Later edits still remain individually undoable.
             var barrier = -1;

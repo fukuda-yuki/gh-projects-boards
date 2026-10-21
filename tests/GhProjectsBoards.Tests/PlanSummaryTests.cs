@@ -155,10 +155,35 @@ internal sealed class PlanSummaryTests
         var unknown = Calculate(Document(new PlanRow("I", "Unknown", "a/b")));
         Assert.That(unknown.Total.Remaining, Is.EqualTo(new SummaryValue(null, 1)));
         Assert.That(unknown.Total.Progress.Value, Is.Null);
+        Assert.That(unknown.Capacity, Is.Null, "No task assigns a person, so Project capacity is unknown.");
         Assert.That(unknown.RequiredLoad, Is.Null);
         var zero = Calculate(Document(new PlanRow("I", "Zero", "a/b") { Remaining = 0 }));
         Assert.That(zero.Total.Progress.Value, Is.Null);
-        Assert.That(zero.RequiredLoad, Is.Zero);
+        Assert.That(zero.Capacity, Is.Null);
+        Assert.That(zero.RequiredLoad, Is.Null, "Unknown capacity makes required load unknown rather than 0.");
+    }
+
+    [Test]
+    public void PersonRowsCapacityAndMonthsUseThePeopleAssignedNow()
+    {
+        var d = Document(
+            new PlanRow("A", "Assigned", "a/b") { Assignees = ["U1"], Remaining = 8 },
+            new PlanRow("B", "Late assigned", "a/b") { Assignees = ["U3"], Remaining = 16 });
+        d = d with { State = d.State with { Settings = d.State.Settings with { People = [new("U1", "Alice", 50, null), new("U2", "Bob", 100, null)] } },
+            Sync = d.Sync with { PeopleNames = d.Sync.PeopleNames.Add("U3", "person-U3") } };
+        var result = Calculate(d);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.People.Select(p => p.Identity), Is.EqualTo(new[] { "U1", "U3" }),
+                "A stored person with no task is absent; a row assignee without a stored entry appears.");
+            Assert.That(result.People.Single(p => p.Identity == "U1").Capacity, Is.EqualTo(36));
+            var added = result.People.Single(p => p.Identity == "U3");
+            Assert.That((added.Name, added.Capacity), Is.EqualTo(("person-U3", 72m)), "An assigned person with no stored entry uses 100% and the read name.");
+            Assert.That(result.Capacity, Is.EqualTo(108), "Project capacity sums the people assigned now.");
+            Assert.That(result.RequiredLoad, Is.EqualTo(24m / 108));
+        });
+        var people = result.Months!.People.Select(p => p.Identity).Where(id => id is not (PlanPeople.Unassigned or PlanPeople.Multiple));
+        Assert.That(people, Is.EqualTo(new[] { "U1", "U3" }), "The month matrix lists the same assigned people.");
     }
 
     [Test]
@@ -178,6 +203,53 @@ internal sealed class PlanSummaryTests
     {
         var d = Document(new PlanRow("I", "Closed", "a/b") { Closed = true, CloseDate = Day, End = Day.AddDays(4) });
         Assert.That(Calculate(d).ForecastFinish, Is.EqualTo(Day));
+    }
+
+    [Test]
+    public void ForecastFinishPhaseAndMilestoneFollowTheForecastSchedule()
+    {
+        // #236 decision 5: 完了見込 and 差 come from the forecast schedule. A fixed task keeps its plan end
+        // (10/7) while its 40h of remaining work is forecast from the 基準日 to 10/9, so the band and every
+        // measure that shares the finish rule must report the forecast end.
+        var row = new PlanRow("I", "Fixed", "a/b") { Phase = "UI", MilestoneTitle = "UI 完了", Start = Day, End = Day.AddDays(2), Fixed = true, Estimate = 40, Remaining = 40 };
+        var document = Document(row);
+        document = document with {
+            Baseline = document.Baseline with { Milestones = [new("UI 完了", Day.AddDays(4), false, false)] },
+            State = document.State with {
+                Settings = document.State.Settings with {
+                    PhaseMilestones = ImmutableDictionary<string, string>.Empty.Add("UI", "UI 完了") } }
+        };
+        var result = Calculate(document);
+        Assert.Multiple(() => {
+            Assert.That(result.Total.Finish, Is.EqualTo(Day.AddDays(4)), "The band's finish is the latest forecast end.");
+            Assert.That(result.ForecastFinish, Is.EqualTo(Day.AddDays(4)));
+            Assert.That(result.FinishDifference, Is.EqualTo(-4), "10/12 is a bundled holiday, so the signed difference counts 10/13–10/16.");
+            Assert.That(result.Phases.Single(p => p.Phase == "UI").Tasks.Finish, Is.EqualTo(Day.AddDays(4)));
+            Assert.That(result.Phases.Single(p => p.Phase == "UI").Difference, Is.Zero, "The milestone due date is the forecast end.");
+            Assert.That(result.Milestones.Single().Forecast, Is.EqualTo(Day.AddDays(4)));
+            Assert.That(result.Milestones.Single().Difference, Is.Zero);
+        });
+    }
+
+    [Test]
+    public void KeptWorkWithoutAForecastContributesItsRetainedPlanEnd()
+    {
+        // A kept row (no Estimate and no Remaining) has no forecast; its retained plan end still finishes the
+        // version, which keeps the kept-date rule in docs/spec.md and the milestone contract true (#236 M2).
+        var result = Calculate(Document(new PlanRow("I", "Kept", "a/b") { Start = Day, End = Day.AddDays(3) }));
+        Assert.That(result.ForecastFinish, Is.EqualTo(Day.AddDays(3)));
+    }
+
+    [Test]
+    public void ATaskWithNoEndMakesTheFinishUnknownRatherThanInventingOne()
+    {
+        var dated = new PlanRow("D", "Dated", "a/b") { Start = Day, End = Day.AddDays(1) };
+        var undated = new PlanRow("U", "Undated", "a/b");
+        Assert.Multiple(() => {
+            Assert.That(Calculate(Document(undated)).ForecastFinish, Is.Null, "An undated-only plan has no finish.");
+            Assert.That(Calculate(Document(dated, undated)).ForecastFinish, Is.Null,
+                "A task without any end makes the Project finish unknown instead of contributing a date.");
+        });
     }
 
     [Test]

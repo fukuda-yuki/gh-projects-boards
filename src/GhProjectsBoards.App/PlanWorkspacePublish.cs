@@ -71,7 +71,8 @@ internal sealed partial class PlanWorkspaceView
         var dateText = statusDate.ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"));
         publishStatusDate.Text = pastStatusDate
             ? "注意: 基準日 " + dateText + " は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。"
-            : "日付は基準日 " + dateText + " で計算したものです。";
+            // The dates in the review are the plan's stored values (#236); the 基準日 only decides lateness.
+            : "日付は計画の値です。基準日 " + dateText + " で遅れを判定しています。";
         publishStatusDate.Foreground = PlanSheetView.Brush(pastStatusDate ? "SheetChangedMarkBrush" : "TextFillColorPrimaryBrush");
         AutomationProperties.SetName(publishStatusDate, publishStatusDate.Text);
         var conflicts = PlanOperations.BlockingConflicts(document);
@@ -143,7 +144,8 @@ internal sealed partial class PlanWorkspaceView
                 var oldValue = PlanValues.Get(before, field); var newValue = PlanValues.Get(current, field);
                 if (oldValue == newValue && conflict is null || isNew && field is PlanField.Title or PlanField.Repository) continue;
                 // A relationship that would name a row this publish does not create is held, not written.
-                var holds = PlanOperations.HoldsField(current, before, field, held);
+                // The same Core predicate decides this line and the publish's completeness (#247).
+                var holds = PlanOperations.HoldsRemainingChange(document, row.Identity, field, held);
                 if (!holds && changes.Fields.TryGetValue(row.Identity, out var fields) && fields.Contains(field)) Group(row.Identity).HasWritableChanges = true;
                 var line = ReviewLine(document, row.Identity, field, oldValue, newValue, conflict, isNew);
                 if (holds) line.Text += "（タイトルのない新しい行のため保留）";
@@ -160,8 +162,9 @@ internal sealed partial class PlanWorkspaceView
             if (sibling is null && conflict is null) continue;
             var previous = sibling?.Before ?? PlanOperations.PreviousSiblingOrder(document, parent);
             var children = sibling?.After ?? PlanOperations.PlanChildren(document, parent);
-            // An order that names a row this publish does not create is held whole (#247).
-            var holdsOrder = children.Any(held.Contains);
+            // An order that names a row this publish does not create is held whole (#247). The same Core
+            // predicate decides this line and the publish's completeness.
+            var holdsOrder = PlanOperations.HoldsRemainingChange(document, parent, PlanField.SubIssueOrder, held);
             if (sibling is not null && !holdsOrder) Group(parent).HasWritableChanges = true;
             var orderLine = ReviewLine(document, parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent));
             if (holdsOrder) orderLine.Text += "（タイトルのない新しい行のため保留）";

@@ -86,7 +86,9 @@ internal static class PlanMerge
             ? storedOrder.Concat(mineOrder.Where(id => !storedOrder.Contains(id))).ToArray()
             : mineOrder.Concat(storedOrder.Where(id => !mineIds.Contains(id))).ToArray();
         var settings = PlanOperations.SettingsEqual(saved.Settings, mine.Settings) ? stored.Settings : mine.Settings;
-        return new(order.Select(id => rows[id]).ToImmutableArray(), settings);
+        // Remembered archives are a GitHub observation; keep either window's memory of them.
+        return new(order.Select(id => rows[id]).ToImmutableArray(), settings)
+            { ArchivedIdentities = stored.ArchivedIdentities.Union(mine.ArchivedIdentities, StringComparer.Ordinal).ToImmutableArray() };
     }
     internal static string[] MergeOrder(IEnumerable<string> primary, IEnumerable<string> secondary)
     {
@@ -138,6 +140,9 @@ internal static class PlanMerge
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
         var local = document.State.Rows.ToDictionary(r => r.Identity);
         var incoming = remote.Rows.ToDictionary(r => r.Identity);
+        // #231: an Issue this plan archived and GitHub returned is re-adopted where the read has it;
+        // #245's tail placement is only for Issues this plan meets for the first time.
+        var returning = document.State.ArchivedIdentities.ToHashSet(StringComparer.Ordinal);
         var conflicts = new List<PlanConflict>();
         var unavailable = baseline.Keys.Where(id => !incoming.ContainsKey(id)).ToImmutableArray();
         foreach (var r in remote.Rows)
@@ -197,7 +202,7 @@ internal static class PlanMerge
         }
         var order = MergeOrder((adoptOrder ? remote.Rows : document.State.Rows).Select(r => r.Identity),
             (adoptOrder ? document.State.Rows : remote.Rows).Select(r => r.Identity));
-        var added = remote.Rows.Where(r => !baseline.ContainsKey(r.Identity) && !localIds.Contains(r.Identity)
+        var added = remote.Rows.Where(r => !baseline.ContainsKey(r.Identity) && !localIds.Contains(r.Identity) && !returning.Contains(r.Identity)
             && r.Parent is { } parent && local.ContainsKey(parent)).Select(r => local[r.Identity]).ToImmutableArray();
         var rows = order.Select(id => local[id]).ToImmutableArray();
         if (!added.IsEmpty) {
@@ -209,7 +214,9 @@ internal static class PlanMerge
         {
             Baseline = remote with { Rows = remote.Rows.AddRange(document.Baseline.Rows.Where(r => unavailable.Contains(r.Identity)))
                 .Select(r => r with { ExtraValues = r.ExtraValues.RemoveRange(removed.Keys) }).ToImmutableArray() },
-            State = document.State with { Rows = rows },
+            State = document.State with { Rows = rows,
+                // A remembered archive the read returned is adopted; the memory has done its job.
+                ArchivedIdentities = document.State.ArchivedIdentities.Where(id => !incoming.ContainsKey(id)).ToImmutableArray() },
             Sync = document.Sync with { Conflicts = conflicts.ToImmutableArray(), Unavailable = unavailable }
         };
     }
