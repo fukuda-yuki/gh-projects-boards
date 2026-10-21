@@ -602,7 +602,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
             Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
                 Is.EqualTo(new[] { "上へ移動", "下へ移動", "階層順に並べ替え", "|", "コピー", "貼り付け", "下へコピー", "クリア", "|",
-                    "完了にする", "中止にする", "この版から外す", "未完了に戻す", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
+                    "行を削除", "完了にする", "中止にする", "この版から外す", "未完了に戻す", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
             Assert.That(commands.OfType<AppBarButton>().Take(2).Select(b => b.KeyboardAcceleratorTextOverride), Is.EqualTo(new[] { "Alt+Shift+↑", "Alt+Shift+↓" }));
             Assert.That(commands.OfType<AppBarButton>().Skip(3).Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
                 Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
@@ -681,7 +681,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
             // The matched row and its ancestor requirement row stay; unrelated rows leave the view.
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I1", "I2", "" }));
-            Assert.That(sheet.Realized.Single(row => row.Identity == "I1").Opacity, Is.EqualTo(0.55),
+            // XAML stores Opacity as a float, so compare against the float value the product sets.
+            Assert.That(sheet.Realized.Single(row => row.Identity == "I1").Opacity, Is.EqualTo(0.55f),
                 "A count filter keeps the ancestor requirement row for context and dims it.");
             Assert.That(sheet.Realized.Single(row => row.Identity == "I2").Opacity, Is.EqualTo(1),
                 "The matched task keeps its ordinary weight.");
