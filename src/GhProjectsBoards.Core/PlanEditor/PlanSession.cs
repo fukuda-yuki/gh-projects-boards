@@ -114,11 +114,12 @@ internal sealed class PlanSession
     private Task<PlanSaveResult> SaveAfterPlanningCommand(PlanDocument before, PlanOperationKind kind, DateOnly today)
     {
         var after = checkpoint.Document;
-        if (kind != PlanOperationKind.Settings) return QueueSave();
+        var replayable = PlanJson.Restores(before, after, checkpoint.Undo[^1], forward: true);
+        if (kind != PlanOperationKind.Settings) return QueueSave(replayable);
         var changed = PlanOperations.ChangedTaskDates(before, after, today);
-        if (changed.IsEmpty) return QueueSave();
+        if (changed.IsEmpty) return QueueSave(replayable);
         var date = after.State.Settings.StatusDate ?? today;
-        return WithRecalculation(QueueSave(), new PlanRefreshResult(date, date, changed));
+        return WithRecalculation(QueueSave(replayable), new PlanRefreshResult(date, date, changed));
     }
     private static async Task<PlanSaveResult> WithRecalculation(Task<PlanSaveResult> save, PlanRefreshResult result)
         // The shared save task and lastSave stay notification-free for later commands and retries.
@@ -131,7 +132,7 @@ internal sealed class PlanSession
         {
             var from = forward ? checkpoint.Redo : checkpoint.Undo;
             if (from.IsEmpty) return CurrentSave();
-            var patch = from[^1];
+            var patch = from[^1]; var before = checkpoint.Document;
             RequireEditable();
             if (checkpoint.Document.Sync.Publish is not null && patch.BeforeSettings is not null)
                 throw new InvalidOperationException("発行結果を確認してから設定を変更してください。");
@@ -143,13 +144,16 @@ internal sealed class PlanSession
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Baseline = baseline, Sync = checkpoint.Document.Sync with { Publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state), Failures = forward && patch.Kind == PlanOperationKind.Reset ? [] : checkpoint.Document.Sync.Failures, LocalOrderChoices = (forward ? patch.AfterLocalOrderChoices : patch.BeforeLocalOrderChoices) ?? checkpoint.Document.Sync.LocalOrderChoices, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? checkpoint.Document.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? checkpoint.Document.Sync.Unavailable } },
                 Undo = forward ? checkpoint.Undo.Add(patch) : checkpoint.Undo.RemoveAt(checkpoint.Undo.Length - 1),
                 Redo = forward ? checkpoint.Redo.RemoveAt(checkpoint.Redo.Length - 1) : checkpoint.Redo.Add(patch) };
-            return QueueSave();
+            // Travel takes the same step a history replay takes, so the history it leaves behind is the old
+            // history's tail; the patch it moves to the other side is safe when it steps back to `before`.
+            return QueueSave(PlanJson.Restores(before, checkpoint.Document, patch, forward));
         }
     }
     private Task<PlanSaveResult> CurrentSave() => pending ?? Task.FromResult(lastSave);
-    private Task<PlanSaveResult> QueueSave()
+    // `replayable`: the caller knows the checkpoint's history is still replayable (see PlanJson.Restores).
+    private Task<PlanSaveResult> QueueSave(bool replayable = false)
     {
-        checkpoint = PlanJson.RetainReplayableHistory(checkpoint);
+        if (!replayable) checkpoint = PlanJson.RetainReplayableHistory(checkpoint);
         if (pending is not null) return pending;
         pending = Task.Run(SaveLoop);
         return pending;
@@ -175,10 +179,10 @@ internal sealed class PlanSession
         {
             // Flush waits for work already requested; only explicit retry restarts a failed save.
             if (pending is not null || savedRevision == checkpoint.Revision || !lastSave.Succeeded) return CurrentSave();
-            return QueueSave();
+            return QueueSave(replayable: true);
         }
     }
-    public Task<PlanSaveResult> RetrySaveAsync() { lock (gate) return savedRevision == checkpoint.Revision ? CurrentSave() : QueueSave(); }
+    public Task<PlanSaveResult> RetrySaveAsync() { lock (gate) return savedRevision == checkpoint.Revision ? CurrentSave() : QueueSave(replayable: true); }
     // #248: the stored plan changed underneath this window. Read it again, reapply the edits this
     // window made after its last successful save, and store the merged plan. Nothing is discarded.
     public async Task<PlanReconcileResult> ReapplyStoredAsync(DateOnly today)

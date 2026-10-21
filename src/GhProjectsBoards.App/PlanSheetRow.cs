@@ -83,7 +83,20 @@ public sealed class PlanSheetRow : Grid
         internal string LineId = "", HeadId = "", RowIdentity = "";
     }
     private readonly Dictionary<(string From, string To), DependencyVisual> dependencyVisuals = [];
+    // #256: a rebound row reuses its bar shapes instead of allocating native shapes on every bind. A shape
+    // the current task does not draw is collapsed and loses its automation id, so no stale bar is found.
+    private static readonly string[] TaskShapeOrder = ["endpoint", "task", "summary", "milestone", "progress", "lateTask", "lateSummary", "lateLabel"];
+    private readonly Dictionary<string, FrameworkElement> taskShapes = [];
+    private static readonly FontFamily TextFont = new("Segoe UI"), IconFont = new("Segoe Fluent Icons");
+    private FontFamily? indicatorFontFamily;
     private NativePath? crossingPath;
+    // #256: a link that passes a row draws a vertical stroke across it. One open figure walks down one
+    // crossing and up the next; its connecting runs lie at -2 and RowHeight + 2, outside the row's clip, so
+    // only the crossings show. A rebound row replaces only the run's points; a figure and a segment per
+    // crossing allocated dozens of native objects on every bind and forced blocking collections.
+    private readonly PathFigure crossingFigure = new() { IsClosed = false, IsFilled = false };
+    private readonly PolyLineSegment crossingRun = new();
+    private PathGeometry? crossingGeometry;
     private double[] crossingXs = [], visibleCrossingXs = [];
     private double crossingHeight;
     private Brush? crossingBrush;
@@ -106,6 +119,7 @@ public sealed class PlanSheetRow : Grid
         chartClip.Children.Add(chart);
         chartClip.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         chartClip.PointerWheelChanged += (_, args) => Owner?.ScrollTimeline(args);
+        BringIntoViewRequested += (_, args) => { if (Owner?.HoldingView == true) args.Handled = true; };
         Children.Add(sheetClip); Children.Add(chartClip); SetColumn(chartClip, 1);
         idHandle = new(this) { Content = id };
         idCell.Children.Add(idHandle); idCell.Children.Add(selectionAccent);
@@ -178,7 +192,7 @@ public sealed class PlanSheetRow : Grid
         tagChip.Text = rowTag ?? "";
         tagChip.Visibility = rowTag is null ? Visibility.Collapsed : Visibility.Visible;
         tagChip.Foreground = PlanSheetView.Brush(rowTag == "中止にする" ? "SystemFillColorCautionBrush" : "TextFillColorSecondaryBrush");
-        tagChip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        if (rowTag is not null) tagChip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         Cells[index].ReserveForTag(rowTag is null ? 0 : tagChip.DesiredSize.Width + 8);
         if (strikeLine is null) {
             strikeLine = new Border { Height = 1, VerticalAlignment = VerticalAlignment.Center,
@@ -223,7 +237,7 @@ public sealed class PlanSheetRow : Grid
         // A recycled row keeps native dependency geometry, but none of the old
         // task's paint or automation identity may escape before rebinding finishes.
         chart.Opacity = 0;
-        taskChart.Children.Clear(); chartPresentation = null;
+        HideTaskShapes(); chartPresentation = null;
         foreach (var visual in dependencyVisuals.Values) {
             AutomationProperties.SetAutomationId(visual.Line, ""); visual.LineId = "";
             if (visual.Head is { } head) AutomationProperties.SetAutomationId(head, "");
@@ -412,7 +426,8 @@ public sealed class PlanSheetRow : Grid
         indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : overdueMark || yellowMark ? "\uE7BA"
             : owner.IsDimmed(Identity) ? "\uE711"
             : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
-        indicator.FontFamily = new FontFamily(indicator.Glyph == "\u2022" ? "Segoe UI" : "Segoe Fluent Icons");
+        var indicatorFont = indicator.Glyph == "\u2022" ? TextFont : IconFont;
+        if (!ReferenceEquals(indicatorFont, indicatorFontFamily)) { indicator.FontFamily = indicatorFont; indicatorFontFamily = indicatorFont; }
         indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || overdueMark ? "SystemFillColorCriticalBrush"
             : yellowMark || owner.IsCancelled(Identity) ? "SystemFillColorCautionBrush"
             : done ? "IndicatorDoneBrush" : typed ? "IndicatorTypedBrush" : "SheetChangedMarkBrush");
@@ -451,7 +466,7 @@ public sealed class PlanSheetRow : Grid
         if (Owner is not { } owner || boundIdentity is null) { chart.Opacity = 0; return; }
         AutomationProperties.SetAutomationId(chartSeparator, "PlanChartSeparator" + owner.PlanIds.GetValueOrDefault(Identity));
         if (!owner.Schedule.TryGetValue(Identity, out var task)) {
-            dependencyChart.Children.Clear(); dependencyVisuals.Clear(); taskChart.Children.Clear();
+            dependencyChart.Children.Clear(); dependencyVisuals.Clear(); HideTaskShapes();
             crossingXs = []; ClearCrossings();
             chartPresentation = null; chart.Opacity = 1;
             return;
@@ -469,7 +484,7 @@ public sealed class PlanSheetRow : Grid
             ActualTheme, PlanSheetView.Brush("GanttTaskBrush"));
         if (presentation != chartPresentation) {
             chartPresentation = presentation;
-            taskChart.Children.Clear(); DrawTask(owner, number, task);
+            HideTaskShapes(); DrawTask(owner, number, task);
         }
         chart.Opacity = 1;
     }
@@ -478,9 +493,14 @@ public sealed class PlanSheetRow : Grid
         var current = new HashSet<(string From, string To)>();
         var crossings = new HashSet<double>();
         var brush = PlanSheetView.Brush("GanttArrowBrush");
-        foreach (var edge in owner.Edges)
+        var edges = rowIndex >= 0 && rowIndex < owner.EdgesByRow.Length ? owner.EdgesByRow[rowIndex] : [];
+        // A rebound row takes over the previous task's arrow shapes it no longer needs instead of
+        // allocating new native shapes (#256).
+        var wanted = edges.Where(e => e.From == rowIndex || e.To == rowIndex).Select(e => (owner.RowIds[e.From], owner.RowIds[e.To])).ToHashSet();
+        var spare = new Stack<DependencyVisual>(dependencyVisuals.Where(p => !wanted.Contains(p.Key)).Select(p => p.Value));
+        foreach (var key in dependencyVisuals.Keys.Where(key => !wanted.Contains(key)).ToArray()) dependencyVisuals.Remove(key);
+        foreach (var edge in edges)
         {
-            if (rowIndex < Math.Min(edge.From, edge.To) || rowIndex > Math.Max(edge.From, edge.To)) continue;
             var successor = owner.Schedule[owner.RowIds[edge.To]];
             var successorMilestone = successor.IsMilestone && successor.Start.Value == successor.End.Value;
             var predecessor = owner.Schedule[owner.RowIds[edge.From]];
@@ -505,8 +525,9 @@ public sealed class PlanSheetRow : Grid
             var key = (owner.RowIds[edge.From], owner.RowIds[edge.To]);
             current.Add(key);
             if (!dependencyVisuals.TryGetValue(key, out var visual)) {
-                visual = new DependencyVisual(); dependencyVisuals.Add(key, visual);
-                dependencyChart.Children.Add(visual.Line); DependencyShapesCreated++;
+                if (spare.TryPop(out var taken)) { visual = taken; DependencyShapesReused++; DependencyShapesReusedAcrossBindings++; }
+                else { visual = new DependencyVisual(); dependencyChart.Children.Add(visual.Line); DependencyShapesCreated++; }
+                dependencyVisuals.Add(key, visual);
             } else {
                 DependencyShapesReused++;
                 if (visual.RowIdentity != Identity) DependencyShapesReusedAcrossBindings++;
@@ -554,10 +575,11 @@ public sealed class PlanSheetRow : Grid
         }
         // Retain only this row's current edges, never the union of its scroll history.
         foreach (var key in dependencyVisuals.Keys.Where(key => !current.Contains(key)).ToArray()) {
-            var visual = dependencyVisuals[key];
+            spare.Push(dependencyVisuals[key]); dependencyVisuals.Remove(key);
+        }
+        foreach (var visual in spare) {
             dependencyChart.Children.Remove(visual.Line);
             if (visual.Head is { } head) dependencyChart.Children.Remove(head);
-            dependencyVisuals.Remove(key);
         }
         crossingXs = crossings.Order().ToArray();
         if (!ReferenceEquals(crossingBrush, brush)) {
@@ -589,20 +611,46 @@ public sealed class PlanSheetRow : Grid
             if (crossingIdentity != Identity) DependencyShapesReusedAcrossBindings++;
         }
         crossingIdentity = Identity;
-        if (crossingHeight != owner.RowHeight || !visibleCrossingXs.SequenceEqual(visible)) {
-            var origin = visible[0];
-            var geometry = new PathGeometry();
-            foreach (var x in visible) {
-                var figure = new PathFigure { StartPoint = new(x - origin, -2), IsClosed = false, IsFilled = false };
-                figure.Segments.Add(new LineSegment { Point = new(x - origin, owner.RowHeight + 2) });
-                geometry.Figures.Add(figure);
+        if (crossingPath.Data is null || crossingHeight != owner.RowHeight || !visibleCrossingXs.SequenceEqual(visible)) {
+            var origin = visible[0]; double top = -2, bottom = owner.RowHeight + 2;
+            var points = new PointCollection { new(0, bottom) };
+            for (var i = 1; i < visible.Length; i++) {
+                var from = i % 2 == 0 ? top : bottom;
+                points.Add(new(visible[i] - origin, from)); points.Add(new(visible[i] - origin, from == top ? bottom : top));
             }
-            crossingPath.Data = geometry; Canvas.SetLeft(crossingPath, origin);
+            crossingFigure.StartPoint = new(0, top); crossingRun.Points = points;
+            if (crossingGeometry is null) {
+                crossingFigure.Segments.Add(crossingRun);
+                crossingGeometry = new PathGeometry(); crossingGeometry.Figures.Add(crossingFigure);
+            }
+            if (!ReferenceEquals(crossingPath.Data, crossingGeometry)) crossingPath.Data = crossingGeometry;
+            Canvas.SetLeft(crossingPath, origin);
             visibleCrossingXs = visible; crossingHeight = owner.RowHeight; DependencyPointsUpdated++;
         }
         crossingPath.Visibility = Visibility.Visible;
         var id = "PlanArrowCrossings" + number;
         if (crossingId != id) { AutomationProperties.SetAutomationId(crossingPath, id); crossingId = id; }
+    }
+    private T TaskShape<T>(string kind, Func<T> create) where T : FrameworkElement
+    {
+        if (!taskShapes.TryGetValue(kind, out var shape)) {
+            shape = create();
+            // Keep the drawing order fixed (bar under progress, slip and label) whatever order a row first needs them in.
+            var rank = Array.IndexOf(TaskShapeOrder, kind);
+            taskChart.Children.Insert(taskShapes.Keys.Count(k => Array.IndexOf(TaskShapeOrder, k) < rank), shape);
+            taskShapes.Add(kind, shape);
+        }
+        shape.Visibility = Visibility.Visible;
+        return (T)shape;
+    }
+    private void HideTaskShapes()
+    {
+        foreach (var shape in taskShapes.Values) {
+            if (shape.Visibility == Visibility.Collapsed) continue;
+            shape.Visibility = Visibility.Collapsed;
+            AutomationProperties.SetAutomationId(shape, ""); AutomationProperties.SetName(shape, "");
+            ToolTipService.SetToolTip(shape, null);
+        }
     }
     private void DrawTask(PlanSheetView owner, int number, ScheduledTask task)
     {
@@ -610,13 +658,11 @@ public sealed class PlanSheetRow : Grid
         {
             if ((task.Start.Value ?? task.End.Value) is { } known)
             {
-                var endpoint = new Polygon { Width = 8, Height = 10,
-                    Points = [new(0, 0), new(8, 5), new(0, 10)],
-                    Fill = PlanSheetView.Brush("TextFillColorSecondaryBrush") };
+                var endpoint = TaskShape("endpoint", () => new Polygon { Width = 8, Height = 10, Points = [new(0, 0), new(8, 5), new(0, 10)] });
+                endpoint.Fill = PlanSheetView.Brush("TextFillColorSecondaryBrush");
                 Canvas.SetLeft(endpoint, ChartX(owner, known)); Canvas.SetTop(endpoint, (owner.RowHeight - 10) / 2);
                 AutomationProperties.SetAutomationId(endpoint, "PlanEndpoint" + number);
                 AutomationProperties.SetName(endpoint, $"ID {number} {(task.Start.Value is not null ? "開始" : "終了")} {known:yyyy-MM-dd}");
-                taskChart.Children.Add(endpoint);
             }
             return;
         }
@@ -625,27 +671,34 @@ public sealed class PlanSheetRow : Grid
         var milestone = task.IsMilestone && start == end;
         decimal? share = !task.IsSummary && task.Input.IsComplete ? 1m : task.WorkCompleteFraction;
         Shape bar;
-        if (task.IsSummary)
-            bar = new Polygon { Points = [new(0, 0), new(width, 0), new(width, 10), new(Math.Max(0, width - 4), 6), new(Math.Min(4, width), 6), new(0, 10)],
-                Fill = PlanSheetView.Brush("GanttSummaryBrush"), Width = width, Height = 10 };
-        else if (milestone)
-            bar = new Polygon { Points = [new(5, 0), new(10, 5), new(5, 10), new(0, 5)], Width = 10, Height = 10,
-                Fill = PlanSheetView.Brush("GanttTaskBrush") };
-        else bar = new Rectangle { Width = width, Height = 14, RadiusX = 3, RadiusY = 3,
-            Fill = PlanSheetView.Brush("GanttTaskTintBrush"), Stroke = PlanSheetView.Brush("GanttTaskBrush"), StrokeThickness = 1 };
+        if (task.IsSummary) {
+            var summaryBar = TaskShape("summary", () => new Polygon { Height = 10 });
+            summaryBar.Points = [new(0, 0), new(width, 0), new(width, 10), new(Math.Max(0, width - 4), 6), new(Math.Min(4, width), 6), new(0, 10)];
+            summaryBar.Width = width; summaryBar.Fill = PlanSheetView.Brush("GanttSummaryBrush");
+            bar = summaryBar;
+        }
+        else if (milestone) {
+            bar = TaskShape("milestone", () => new Polygon { Points = [new(5, 0), new(10, 5), new(5, 10), new(0, 5)], Width = 10, Height = 10 });
+            bar.Fill = PlanSheetView.Brush("GanttTaskBrush");
+        }
+        else {
+            bar = TaskShape("task", () => new Rectangle { Height = 14, RadiusX = 3, RadiusY = 3, StrokeThickness = 1 });
+            bar.Width = width; bar.Fill = PlanSheetView.Brush("GanttTaskTintBrush"); bar.Stroke = PlanSheetView.Brush("GanttTaskBrush");
+        }
         Canvas.SetLeft(bar, x); Canvas.SetTop(bar, (owner.RowHeight - (task.IsSummary ? 6 : bar.Height)) / 2);
         var lateness = owner.LatenessOf(Identity);
         var late = lateness?.DaysLater;
         var overdue = lateness?.Level == PlanLatenessLevel.Overdue;
+        var barName = $"ID {number} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
+            + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" {(overdue ? "期限超過" : "予定より遅れ")} +{days} 日" : "");
         AutomationProperties.SetAutomationId(bar, "PlanBar" + number);
-        AutomationProperties.SetName(bar, $"ID {number} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
-            + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" {(overdue ? "期限超過" : "予定より遅れ")} +{days} 日" : ""));
-        ToolTipService.SetToolTip(bar, AutomationProperties.GetName(bar));
-        taskChart.Children.Add(bar);
+        AutomationProperties.SetName(bar, barName);
+        ToolTipService.SetToolTip(bar, barName);
         if (!task.IsSummary && !milestone && share is > 0) {
-            var progress = PlanSheetView.Id(new Rectangle { IsHitTestVisible = false, Width = width * (double)share.Value, Height = 14, RadiusX = 3, RadiusY = 3,
-                Fill = PlanSheetView.Brush("GanttTaskBrush") }, "PlanProgress" + number);
-            Canvas.SetLeft(progress, x); Canvas.SetTop(progress, (owner.RowHeight - 14) / 2); taskChart.Children.Add(progress);
+            var progress = TaskShape("progress", () => new Rectangle { IsHitTestVisible = false, Height = 14, RadiusX = 3, RadiusY = 3 });
+            progress.Width = width * (double)share.Value; progress.Fill = PlanSheetView.Brush("GanttTaskBrush");
+            AutomationProperties.SetAutomationId(progress, "PlanProgress" + number);
+            Canvas.SetLeft(progress, x); Canvas.SetTop(progress, (owner.RowHeight - 14) / 2);
         }
         if (!milestone && late is { } count && owner.ForecastEndOf(Identity) is { } forecast && forecast > end) {
             // The slip runs from the day after the plan end to the forecast end (#236 part B). It is the
@@ -653,18 +706,22 @@ public sealed class PlanSheetRow : Grid
             var lateX = ChartX(owner, end) + owner.DayWidth;
             var lateWidth = ChartX(owner, forecast) + owner.DayWidth - lateX;
             if (lateWidth <= 0) return;
-            Shape segment = task.IsSummary
-                ? new Polygon { Width = lateWidth, Height = 10, Points = [new(0, 0), new(lateWidth, 0), new(lateWidth, 10), new(Math.Max(0, lateWidth - 4), 6), new(0, 6)] }
-                : new Rectangle { Width = lateWidth, Height = 14, RadiusX = 3, RadiusY = 3 };
-            segment.IsHitTestVisible = false;
+            Shape segment;
+            if (task.IsSummary) {
+                var summarySegment = TaskShape("lateSummary", () => new Polygon { Height = 10, IsHitTestVisible = false, StrokeThickness = 1, StrokeDashArray = [3, 2] });
+                summarySegment.Points = [new(0, 0), new(lateWidth, 0), new(lateWidth, 10), new(Math.Max(0, lateWidth - 4), 6), new(0, 6)];
+                segment = summarySegment;
+            }
+            else segment = TaskShape("lateTask", () => new Rectangle { Height = 14, RadiusX = 3, RadiusY = 3, IsHitTestVisible = false, StrokeThickness = 1, StrokeDashArray = [3, 2] });
+            segment.Width = lateWidth;
             segment.Fill = overdue ? PlanSheetView.Brush("GanttLateTintBrush") : null; segment.Stroke = PlanSheetView.Brush("GanttLateBrush");
-            segment.StrokeThickness = 1; segment.StrokeDashArray = [3, 2];
             AutomationProperties.SetAutomationId(segment, "PlanLate" + number);
-            Canvas.SetLeft(segment, lateX); Canvas.SetTop(segment, task.IsSummary ? Canvas.GetTop(bar) : (owner.RowHeight - 14) / 2); taskChart.Children.Add(segment);
+            Canvas.SetLeft(segment, lateX); Canvas.SetTop(segment, task.IsSummary ? Canvas.GetTop(bar) : (owner.RowHeight - 14) / 2);
             if (!overdue || !owner.ShowLatenessLabels) return;
-            var label = PlanSheetView.Id(new TextBlock { Text = $"+{count}日", FontSize = 11, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Foreground = PlanSheetView.Brush("GanttLateBrush") }, "PlanLateLabel" + number);
-            Canvas.SetLeft(label, x + width + 6); Canvas.SetTop(label, (owner.RowHeight - 16) / 2); taskChart.Children.Add(label);
+            var label = TaskShape("lateLabel", () => new TextBlock { FontSize = 11, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+            label.Text = $"+{count}日"; label.Foreground = PlanSheetView.Brush("GanttLateBrush");
+            AutomationProperties.SetAutomationId(label, "PlanLateLabel" + number);
+            Canvas.SetLeft(label, x + width + 6); Canvas.SetTop(label, (owner.RowHeight - 16) / 2);
         }
     }
 }

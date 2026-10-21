@@ -45,6 +45,9 @@ internal sealed partial class PlanSheetView
     // type is what stops the second source coming back: every drawing path reads the schedule the bars use.
     internal sealed record Edge(int From, int To);
     internal IReadOnlyList<Edge> Edges { get; private set; } = [];
+    // The links whose arrow passes through each row, in Edges order, so a row draws its slice without
+    // scanning every link in the version (#256).
+    internal IReadOnlyList<Edge>[] EdgesByRow { get; private set; } = [];
     internal static bool Down(VirtualKey key) => (InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
     // Ctrl+-: the numeric keypad reports Subtract, the main row reports the OEM minus code (Excel's
     // Ctrl+- accepts both), so 行を削除 must too (#247).
@@ -74,6 +77,10 @@ internal sealed partial class PlanSheetView
         Edges = RowIds.Where(Rows.ContainsKey).SelectMany(id => Rows[id].Predecessors
             .Where(p => indexes.ContainsKey(p) && Schedule.GetValueOrDefault(p)?.End.Value is not null && Schedule[id].Start.Value is not null)
             .Select(p => new Edge(indexes[p], indexes[id]))).ToArray();
+        var byRow = new List<Edge>?[RowIds.Count];
+        foreach (var edge in Edges)
+            for (var row = Math.Min(edge.From, edge.To); row <= Math.Max(edge.From, edge.To); row++) (byRow[row] ??= []).Add(edge);
+        EdgesByRow = byRow.Select(edges => (IReadOnlyList<Edge>?)edges ?? []).ToArray();
     }
     internal bool IsSelected(string identity, string field)
     {
@@ -213,6 +220,45 @@ internal sealed partial class PlanSheetView
         if (wholeRow) SelectWholeRow(selected, true);
         FocusSelected();
     }
+    // #256: the native ListView answers PageDown/PageUp by rebinding about three pages of rows for each page
+    // it moves. The sheet moves one page itself, as Excel does: the selection moves by the rows the viewport
+    // shows and the rows scroll by the same amount, so the selection keeps its place on screen.
+    private double? pageOffset;
+    internal void MovePage(bool down, bool extend)
+    {
+        if (Fields.Length == 0 || RowIds.Count == 0 || rowScroll is not { } scroll) return;
+        var wholeRow = wholeRowSelection && extend;
+        var page = Math.Max(1, (int)(scroll.ViewportHeight / RowHeight)) * (down ? 1 : -1);
+        var row = Math.Clamp(Math.Max(0, RowIds.IndexOf(selected)) + page, 0, RowIds.Count - 1);
+        // A press that arrives before the previous page is drawn adds to that page's offset, so held keys
+        // draw only where they end.
+        var offset = Math.Clamp((pageOffset ?? scroll.VerticalOffset) + page * RowHeight, 0, scroll.ScrollableHeight);
+        var top = row * RowHeight;
+        if (top < offset) offset = top;
+        else if (top + RowHeight > offset + scroll.ViewportHeight) offset = top + RowHeight - scroll.ViewportHeight;
+        pageOffset = offset == scroll.VerticalOffset ? null : offset;
+        scroll.ChangeView(null, offset, null, true);
+        Select(RowIds[row], Fields[Math.Max(0, Array.IndexOf(Fields, selectedField))], extend);
+        if (wholeRow) SelectWholeRow(selected, true);
+        FocusCell(selected, selectedField, scrollIntoView: false);
+        HoldingView = true;
+    }
+    // The page move has already placed the rows. The target cell takes focus in a container that may not
+    // be arranged at its new place yet, and the focus's later bring-into-view requests would scroll to
+    // that stale position, as far as the top of the plan. They are ignored until the next other key,
+    // click or focus request.
+    internal bool HoldingView { get; private set; }
+    private void PageKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key is not (VirtualKey.PageDown or VirtualKey.PageUp) || Down(VirtualKey.Control) || Down(VirtualKey.Menu)) {
+            if (args.Key is not (VirtualKey.Shift or VirtualKey.Control or VirtualKey.Menu)) HoldingView = false;
+            return;
+        }
+        // An open editor and the IME keep their own keys.
+        if (args.OriginalSource is PlanSheetCell { Editing: true } or PlanSheetCell { Composing: true }) return;
+        args.Handled = true;
+        MovePage(args.Key == VirtualKey.PageDown, Down(VirtualKey.Shift));
+    }
     internal event Action? CommandRowFocusRequested;
     private (string Identity, string Field)? filterReturnCell;
     internal bool HandleFocusShortcut(VirtualKey key)
@@ -242,7 +288,7 @@ internal sealed partial class PlanSheetView
     internal void FocusSelected() => FocusCell(selected, selectedField);
     private void FocusCell(string identity, string field, bool scrollIntoView = true)
     {
-        requestedFocus = (identity, field);
+        requestedFocus = (identity, field); HoldingView = false;
         List.LayoutUpdated -= FocusAfterLayout;
         List.LayoutUpdated += FocusAfterLayout;
         if (scrollIntoView) List.ScrollIntoView(identity);

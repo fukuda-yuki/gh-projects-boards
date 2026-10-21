@@ -722,4 +722,26 @@ internal sealed class PlanDocumentTests
         await reopened.Undo(Today); Assert.That(reopened.Document.State.Rows.Select(r => r.Remaining), Is.All.Null);
         TestContext.Out.WriteLine($"1000 tasks; edit_return_ms={editMs:F3}; edit_through_durable_save_ms={watch.Elapsed.TotalMilliseconds:F3}; restore_ms={reopenWatch.Elapsed.TotalMilliseconds:F3}; checkpoint_bytes={bytes}; runtime={Environment.Version}; OS={Environment.OSVersion}");
     }
+    [Test, Explicit("Real isolated-storage timing; not a CI timing gate")]
+    public async Task ThousandTasksEditUndoAndRedoReturnAsFastWithAFullHistory()
+    {
+        var session = await Create(Initial(1000)); var row = session.Document.State.Rows[^1].Identity;
+        Task<PlanSaveResult> Edit(int i) => session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new(row, PlanField.Remaining, (decimal)(i % 50 + 1))]), Today);
+        static double Median(IEnumerable<double> values) { var sorted = values.Order().ToArray(); return sorted[sorted.Length / 2]; }
+        // Only the synchronous return is the edit-to-screen cost; the durable save continues in the background.
+        double Returned(Func<Task<PlanSaveResult>> action) { var watch = Stopwatch.StartNew(); action(); return watch.Elapsed.TotalMilliseconds; }
+        await Edit(0);
+        var early = Enumerable.Range(1, 10).Select(i => Returned(() => Edit(i))).ToArray();
+        for (var i = 11; i < 195; i++) Edit(i);
+        var late = Enumerable.Range(195, 10).Select(i => Returned(() => Edit(i))).ToArray();
+        Assert.That(session.UndoCount, Is.EqualTo(200));
+        var undo = Enumerable.Range(0, 10).Select(_ => Returned(() => session.Undo(Today))).ToArray();
+        var redo = Enumerable.Range(0, 10).Select(_ => Returned(() => session.Redo(Today))).ToArray();
+        Assert.That((await session.FlushAsync()).Succeeded, Is.True);
+        Assert.That((await Reopen()).UndoCount, Is.EqualTo(200));
+        TestContext.Out.WriteLine($"1000 tasks; edit_return_ms early(1-10 history)={Median(early):F1} late(195-204)={Median(late):F1}; undo_ms={Median(undo):F1}; redo_ms={Median(redo):F1}");
+        // #256: the edit-to-screen cost must not grow with the kept history (it grew by one full validation per entry).
+        var bound = Median(early) * 3 + 20;
+        Assert.That(Median(late), Is.LessThan(bound)); Assert.That(Median(undo), Is.LessThan(bound)); Assert.That(Median(redo), Is.LessThan(bound));
+    }
 }
