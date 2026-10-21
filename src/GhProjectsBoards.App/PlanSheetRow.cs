@@ -90,6 +90,13 @@ public sealed class PlanSheetRow : Grid
     private static readonly FontFamily TextFont = new("Segoe UI"), IconFont = new("Segoe Fluent Icons");
     private FontFamily? indicatorFontFamily;
     private NativePath? crossingPath;
+    // #256: a link that passes a row draws a vertical stroke across it. One open figure walks down one
+    // crossing and up the next; its connecting runs lie at -2 and RowHeight + 2, outside the row's clip, so
+    // only the crossings show. A rebound row replaces only the run's points; a figure and a segment per
+    // crossing allocated dozens of native objects on every bind and forced blocking collections.
+    private readonly PathFigure crossingFigure = new() { IsClosed = false, IsFilled = false };
+    private readonly PolyLineSegment crossingRun = new();
+    private PathGeometry? crossingGeometry;
     private double[] crossingXs = [], visibleCrossingXs = [];
     private double crossingHeight;
     private Brush? crossingBrush;
@@ -603,15 +610,20 @@ public sealed class PlanSheetRow : Grid
             if (crossingIdentity != Identity) DependencyShapesReusedAcrossBindings++;
         }
         crossingIdentity = Identity;
-        if (crossingHeight != owner.RowHeight || !visibleCrossingXs.SequenceEqual(visible)) {
-            var origin = visible[0];
-            var geometry = new PathGeometry();
-            foreach (var x in visible) {
-                var figure = new PathFigure { StartPoint = new(x - origin, -2), IsClosed = false, IsFilled = false };
-                figure.Segments.Add(new LineSegment { Point = new(x - origin, owner.RowHeight + 2) });
-                geometry.Figures.Add(figure);
+        if (crossingPath.Data is null || crossingHeight != owner.RowHeight || !visibleCrossingXs.SequenceEqual(visible)) {
+            var origin = visible[0]; double top = -2, bottom = owner.RowHeight + 2;
+            var points = new PointCollection { new(0, bottom) };
+            for (var i = 1; i < visible.Length; i++) {
+                var from = i % 2 == 0 ? top : bottom;
+                points.Add(new(visible[i] - origin, from)); points.Add(new(visible[i] - origin, from == top ? bottom : top));
             }
-            crossingPath.Data = geometry; Canvas.SetLeft(crossingPath, origin);
+            crossingFigure.StartPoint = new(0, top); crossingRun.Points = points;
+            if (crossingGeometry is null) {
+                crossingFigure.Segments.Add(crossingRun);
+                crossingGeometry = new PathGeometry(); crossingGeometry.Figures.Add(crossingFigure);
+            }
+            if (!ReferenceEquals(crossingPath.Data, crossingGeometry)) crossingPath.Data = crossingGeometry;
+            Canvas.SetLeft(crossingPath, origin);
             visibleCrossingXs = visible; crossingHeight = owner.RowHeight; DependencyPointsUpdated++;
         }
         crossingPath.Visibility = Visibility.Visible;

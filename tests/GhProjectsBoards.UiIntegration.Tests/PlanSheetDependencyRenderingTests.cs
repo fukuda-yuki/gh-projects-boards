@@ -143,19 +143,24 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(path.StrokeThickness, Is.EqualTo(1));
         Assert.That(path.Data, Is.TypeOf<PathGeometry>());
         var geometry = (PathGeometry)path.Data;
+        // One open stroke runs down each crossing and up the next; the runs between crossings lie at -2 and
+        // RowHeight + 2, outside the row's clip, so what the row shows is the vertical strokes alone.
+        Assert.That(geometry.Figures, Has.Count.EqualTo(1));
+        var figure = geometry.Figures[0];
+        Assert.That(figure.IsClosed, Is.False);
+        Assert.That(figure.IsFilled, Is.False);
+        Assert.That(figure.Segments, Has.Count.EqualTo(1));
+        Assert.That(figure.Segments[0], Is.TypeOf<PolyLineSegment>());
+        var points = new[] { figure.StartPoint }.Concat(((PolyLineSegment)figure.Segments[0]).Points).ToArray();
+        Assert.That(points.Length % 2, Is.Zero);
         var actual = new List<double>();
         var localXs = new List<double>();
-        foreach (var figure in geometry.Figures) {
-            Assert.That(figure.IsClosed, Is.False);
-            Assert.That(figure.IsFilled, Is.False);
-            Assert.That(figure.Segments, Has.Count.EqualTo(1));
-            Assert.That(figure.Segments[0], Is.TypeOf<LineSegment>());
-            var end = ((LineSegment)figure.Segments[0]).Point;
-            Assert.That(end.X, Is.EqualTo(figure.StartPoint.X));
-            Assert.That(figure.StartPoint.Y, Is.EqualTo(-2));
-            Assert.That(end.Y, Is.EqualTo(sheet.RowHeight + 2));
-            actual.Add(path.TransformToVisual(sheet).TransformPoint(figure.StartPoint).X);
-            localXs.Add(figure.StartPoint.X);
+        for (var i = 0; i < points.Length; i += 2) {
+            Assert.That(points[i + 1].X, Is.EqualTo(points[i].X), "Each crossing is a vertical stroke.");
+            Assert.That(new[] { points[i].Y, points[i + 1].Y }.Order(), Is.EqualTo(new[] { -2, sheet.RowHeight + 2 }));
+            if (i > 0) Assert.That(points[i].Y, Is.EqualTo(points[i - 1].Y), "The run to the next crossing stays outside the row.");
+            actual.Add(path.TransformToVisual(sheet).TransformPoint(points[i]).X);
+            localXs.Add(points[i].X);
         }
         Assert.That(actual.Order().ToArray(), Is.EqualTo(expected).Within(0.01), "Crossings align with their endpoint tips.");
         Assert.That(localXs.Min(), Is.Zero.Within(0.01));

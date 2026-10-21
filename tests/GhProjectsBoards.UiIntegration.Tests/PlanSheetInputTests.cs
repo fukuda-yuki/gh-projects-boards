@@ -352,29 +352,32 @@ internal sealed partial class PlanSheetHostedTests
     {
         // #256: like Excel, a page moves the selection by the rows the viewport shows and scrolls the rows by
         // the same amount; the native list moved focus to the last visible row and rebound three pages.
+        string Cell(int row) => $"PlanCell{row}_{PlanField.Remaining}";
+        // A row that is still being realized after the scroll is not selected yet.
+        bool Selected(int row) => Ui.Tree(sheet).OfType<Control>().FirstOrDefault(c => AutomationProperties.GetAutomationId(c) == Cell(row)) is { } cell
+            && SelectProvider(Cell(row)).IsSelected;
+        bool Focused(int row) => Selected(row) && Ui.Find<Control>(Cell(row)).FocusState != FocusState.Unfocused;
         await SelectFocusedCell(3, PlanField.Remaining);
-        var scroll = ScrollMeasurementViewport(); var page = 0; var top = 0d;
-        await Ui.Run(() => { page = (int)(scroll.ViewportHeight / sheet.RowHeight); top = scroll.VerticalOffset; });
+        ScrollViewer scroll = null!; var page = 0; var top = 0d;
+        await Ui.Run(() => { scroll = ScrollMeasurementViewport(); page = (int)(scroll.ViewportHeight / sheet.RowHeight); top = scroll.VerticalOffset; });
         Assert.That(page, Is.GreaterThan(2));
         var target = 3 + page;
         await SheetNativeInput.Press(VirtualKey.PageDown);
-        await Ui.Until(() => SelectProvider($"PlanCell{target}_{PlanField.Remaining}").IsSelected
-            && Ui.Find<Control>($"PlanCell{target}_{PlanField.Remaining}").FocusState != FocusState.Unfocused);
+        await Ui.Until(() => Focused(target));
         await Ui.Run(() => {
             Assert.That(scroll.VerticalOffset - top, Is.EqualTo(page * sheet.RowHeight).Within(1));
-            Assert.That(SelectProvider($"PlanCell3_{PlanField.Remaining}").IsSelected, Is.False);
+            Assert.That(Selected(3), Is.False);
         });
         await SheetNativeInput.Press(VirtualKey.PageDown, VirtualKey.Shift);
-        await Ui.Until(() => SelectProvider($"PlanCell{target + page}_{PlanField.Remaining}").IsSelected);
-        await Ui.Run(() => Assert.That(SelectProvider($"PlanCell{target}_{PlanField.Remaining}").IsSelected, Is.True, "Shift+PageDown extends the selection."));
+        await Ui.Until(() => Focused(target + page));
+        await Ui.Run(() => Assert.That(Selected(target), Is.True, "Shift+PageDown extends the selection."));
         await SheetNativeInput.Press(VirtualKey.PageUp);
         await SheetNativeInput.Press(VirtualKey.PageUp);
-        await Ui.Until(() => SelectProvider($"PlanCell3_{PlanField.Remaining}").IsSelected
-            && Ui.Find<Control>($"PlanCell3_{PlanField.Remaining}").FocusState != FocusState.Unfocused);
+        await Ui.Until(() => Focused(3));
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
             Assert.That(scroll.VerticalOffset, Is.EqualTo(top).Within(1));
-            Assert.That(SelectProvider($"PlanCell{target}_{PlanField.Remaining}").IsSelected, Is.False);
+            Assert.That(Selected(target), Is.False);
         });
     }
 
