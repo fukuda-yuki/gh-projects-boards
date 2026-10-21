@@ -176,4 +176,37 @@ internal sealed class PlanSheetEditingTests
         else Assert.Throws<ArgumentException>(() => PlanSheetEditing.Paste(Document, ["I1", "I2", "I3"],
             [PlanField.Remaining, PlanField.Actual], new(0, 0, height, width), text, Day));
     }
+    [Test]
+    public void UnresolvedAssigneesKeepsOnlyValuesWithoutAUniqueLocalMatch()
+    {
+        Assert.That(PlanSheetEditing.UnresolvedAssignees(Document, "alice"), Is.Empty, "A stored person resolves locally.");
+        Assert.That(PlanSheetEditing.UnresolvedAssignees(Document, "ALICE"), Is.Empty, "Name matching is case-insensitive.");
+        Assert.That(PlanSheetEditing.UnresolvedAssignees(Document, "late-user"), Is.EqualTo(new[] { "late-user" }));
+        Assert.That(PlanSheetEditing.UnresolvedAssignees(Document, "alice, late-user"), Is.EqualTo(new[] { "late-user" }));
+        var resolved = ImmutableArray.Create(new PlanResource("U101", "late-user", 100, null));
+        Assert.That(PlanSheetEditing.UnresolvedAssignees(Document, "late-user", resolved), Is.Empty, "A verified login needs no second lookup.");
+    }
+    [Test]
+    public void ResolvedPeopleParseOnlyFromTheirVerifiedLogin()
+    {
+        Assert.Throws<ArgumentException>(() => PlanSheetEditing.Parse(Document, PlanField.Assignees, "late-user", Day));
+        var resolved = ImmutableArray.Create(new PlanResource("U101", "late-user", 100, null));
+        Assert.That(PlanSheetEditing.Parse(Document, PlanField.Assignees, "LATE-USER", Day, "I1", resolved), Is.EqualTo(new[] { "U101" }));
+        // A resolved person and a stored name that both match stay ambiguous rather than guessing.
+        var colliding = ImmutableArray.Create(new PlanResource("U101", "alice", 100, null));
+        Assert.Throws<ArgumentException>(() => PlanSheetEditing.Parse(Document, PlanField.Assignees, "alice", Day, "I1", colliding));
+    }
+    [Test]
+    public void PasteCollectsPendingAssigneesAndCarriesResolvedPeople()
+    {
+        string[] rows = ["I1", "I2"], columns = [PlanField.Assignees];
+        var selection = new CellRange(0, 0, 2, 1);
+        var pending = PlanSheetEditing.PendingAssignees(Document, rows, columns, selection, "alice\nlate-user");
+        Assert.That(pending, Is.EqualTo(new[] { ("acme/repo", "late-user") }), "Only the login without a local match is verified.");
+        Assert.Throws<ArgumentException>(() => PlanSheetEditing.Paste(Document, rows, columns, selection, "alice\nlate-user", Day));
+        var resolved = ImmutableArray.Create(new PlanResource("U101", "late-user", 100, null));
+        var command = PlanSheetEditing.Paste(Document, rows, columns, selection, "alice\nlate-user", Day, resolved);
+        Assert.That(command.Cells.Single(c => c.Identity == "I1").Value, Is.EqualTo(new[] { "U1" }));
+        Assert.That(command.Cells.Single(c => c.Identity == "I2").Value, Is.EqualTo(new[] { "U101" }));
+    }
 }

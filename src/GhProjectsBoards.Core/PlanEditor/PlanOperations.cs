@@ -168,6 +168,11 @@ internal static class PlanOperations
                 kind = edit.Kind;
                 Require(kind is PlanOperationKind.Cell or PlanOperationKind.Paste or PlanOperationKind.Fill or PlanOperationKind.CtrlD or PlanOperationKind.Clear, "セル操作の種類が不正です。");
                 Require(edit.Cells.Select(c => (c.Identity, c.Field)).Distinct().Count() == edit.Cells.Length, "同じセルを重複して指定できません。");
+                // #253: people an on-demand lookup verified become stored before the cell is validated, so the
+                // assignment and their registration are one command, one Undo step and one save.
+                if (!edit.NewPeople.IsEmpty)
+                    state = state with { Settings = state.Settings with { People = state.Settings.People.AddRange(
+                        edit.NewPeople.Where(p => !state.Settings.People.Any(old => old.Identity == p.Identity))) } };
                 var summaries = rows.Where(r => r.Parent is not null).Select(r => r.Parent!).ToHashSet();
                 foreach (var c in edit.Cells)
                 {
@@ -206,10 +211,14 @@ internal static class PlanOperations
             case InsertPlanRows insert:
                 kind = insert.Kind;
                 Require(kind is PlanOperationKind.Insert or PlanOperationKind.CsvImport, "挿入操作の種類が不正です。");
+                // #253: a person resolved for a new row's 担当者 is registered with the insert, as CsvPeople is
+                // for CSV import, so the row and its person are one operation.
+                if (!insert.CsvPeople.IsEmpty || !insert.NewPeople.IsEmpty)
+                    state = state with { Settings = state.Settings with { People = state.Settings.People.AddRange(
+                        insert.CsvPeople.Concat(insert.NewPeople).Where(p => !state.Settings.People.Any(old => old.Identity == p.Identity))) } };
                 if (kind == PlanOperationKind.CsvImport)
                 {
                     Require(insert.AllowDuplicateCsv || !insert.Rows.Any(r => r.CsvSourceHash is not null && rows.Any(old => old.CsvSourceHash == r.CsvSourceHash)), "同じCSVは追加済みです。重複して追加するか確認してください。");
-                    state = state with { Settings = state.Settings with { People = state.Settings.People.AddRange(insert.CsvPeople.Where(p => !state.Settings.People.Any(old => old.Identity == p.Identity))) } };
                 }
                 var index = insert.Before is null ? rows.Count : rows.FindIndex(r => r.Identity == insert.Before);
                 Require(index >= 0, "挿入先がありません。");

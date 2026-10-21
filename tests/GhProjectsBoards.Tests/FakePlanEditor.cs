@@ -8,7 +8,11 @@ namespace GhProjectsBoards.Tests;
 
 internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } public string? Phase { get; init; } }
 internal sealed record PlanFakeMilestone(string Id, string Repository, string Title, DateOnly? DueDate, bool Closed = false);
-internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanColumnDefinition> ExtraFields { get; init; } = []; public ImmutableArray<PlanRepositoryOption> Labels { get; init; } = []; public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+// #253: a repository's assignable people for the on-demand resolver. A fixture declares them (and optionally a
+// larger totalCount), so it can report a 1,000-user repository while the resolver still returns only the typed
+// login's exact match.
+internal sealed record PlanFakeUser(string Id, string Login);
+internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanColumnDefinition> ExtraFields { get; init; } = []; public ImmutableArray<PlanRepositoryOption> Labels { get; init; } = []; public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public ImmutableArray<PlanFakeUser> AssignableUsers { get; init; } = []; public int? AssignableTotalCount { get; init; } public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -21,6 +25,30 @@ internal static class FakePlanEditor
         var state = Load(root);
         var fault = scenario.TryGetProperty("planFault", out var faultNode) ? faultNode.GetString() : null;
         var faultBatch = scenario.TryGetProperty("faultBatch", out var batchNode) ? batchNode.GetInt32() : 1;
+        // #253: the default assignable people are the users the old catalog fixture served, so a case can type
+        // a login that is not yet a Project person. A fixture replaces them with assignableUsers and may declare
+        // a larger assignableTotalCount.
+        var assignablePeople = state.AssignableUsers.IsDefaultOrEmpty
+            ? [new PlanFakeUser("U1", "alice"), new PlanFakeUser("U2", "person-U2"), new PlanFakeUser("U101", "late-user")]
+            : state.AssignableUsers;
+        if (query.Contains("PlanResolveAssignee"))
+        {
+            if (fault == "resolve-network") { Console.Write("HTTP/2 502 Failed\n\n{}"); return 1; }
+            var owner = variables.GetProperty("owner").GetString()!;
+            var name = variables.GetProperty("name").GetString()!;
+            var login = variables.GetProperty("login").GetString()!;
+            if (fault == "resolve-denied")
+            {
+                Write(new { data = new { viewer = new { databaseId = 42 }, repository = (object?)null } });
+                return 0;
+            }
+            var matches = assignablePeople.Where(u => u.Login.Equals(login, StringComparison.OrdinalIgnoreCase)).Take(2).ToArray();
+            Write(new { data = new { viewer = new { databaseId = fault == "resolve-identity" ? 99 : 42 },
+                repository = new { nameWithOwner = owner + "/" + name, assignableUsers = new {
+                    totalCount = state.AssignableTotalCount ?? assignablePeople.Length,
+                    nodes = matches.Select(u => (object)new { id = u.Id, login = u.Login }).ToArray() } } } });
+            return 0;
+        }
         // #201: a publish reads and verifies only the items it writes, so a fault aimed at the Project's
         // item read must reach both the complete item walk and the scoped publication read.
         var itemRead = query.Contains("ProjectItems") || query.Contains("PlanPublishItems") || query.Contains("ProjectItemDetails");

@@ -637,6 +637,205 @@ internal sealed class PlanWorkspaceTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Test]
+    public async Task OnDemandResolutionAssignsAndRegistersAsOneUndoStepWithoutMutations()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-resolve-assign-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2));
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            File.WriteAllText(Path.Combine(root, "calls.jsonl"), "");
+            var resolved = await workspace.ResolveAssigneeAsync("acme/repo", "late-user");
+            Assert.That(resolved, Is.EqualTo(new PlanResource("U101", "late-user", 100, null)));
+            var calls = RecordedCalls(root);
+            var lookups = calls.Where(call => QueryOf(call).Contains("PlanResolveAssignee")).ToArray();
+            Assert.That(lookups, Has.Length.EqualTo(1), "Exactly one lookup is sent for the typed login.");
+            var variables = lookups[0].GetProperty("variables");
+            Assert.Multiple(() =>
+            {
+                Assert.That(variables.GetProperty("owner").GetString(), Is.EqualTo("acme"));
+                Assert.That(variables.GetProperty("name").GetString(), Is.EqualTo("repo"));
+                Assert.That(variables.GetProperty("login").GetString(), Is.EqualTo("late-user"));
+                Assert.That(RecordedQueries(root).Count(query => query.Contains("assignableUsers(")), Is.EqualTo(1), "The lookup is the only assignable-user read, and it is bounded to the typed login.");
+            });
+            var save = await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell,
+                [new("I1", PlanField.Assignees, new[] { "U1", "U101" })]) { NewPeople = [resolved] }, day);
+            Assert.That(save.Succeeded, Is.True, save.Error);
+            var session = workspace.Session;
+            Assert.Multiple(() =>
+            {
+                Assert.That(session.Document.State.Rows.Single().Assignees, Is.EqualTo(new[] { "U1", "U101" }));
+                Assert.That(session.Document.State.Settings.People.Single(p => p.Identity == "U101"),
+                    Is.EqualTo(new PlanResource("U101", "late-user", 100, null)), "The looked-up person is stored at 100% in the same command.");
+                Assert.That(workspace.People.Select(p => p.Identity), Is.EquivalentTo(new[] { "U1", "U101" }));
+                Assert.That(session.UndoCount, Is.EqualTo(1), "The assignment and the registration are one Undo step.");
+            });
+            await session.Undo(day);
+            Assert.Multiple(() =>
+            {
+                Assert.That(session.Document.State.Rows.Single().Assignees, Is.EqualTo(new[] { "U1" }), "Undo removes the assignment.");
+                Assert.That(session.Document.State.Settings.People.Any(p => p.Identity == "U101"), Is.False, "Undo removes the registration in the same step.");
+            });
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero, "A lookup never sends a mutation.");
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task UnknownLoginIsRefusedWithoutWriting()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-resolve-unknown-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2));
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            var session = workspace.Session!;
+            var before = PlanJson.Text(session.Document);
+            var undo = session.UndoCount;
+            var error = Assert.ThrowsAsync<ArgumentException>(() => workspace.ResolveAssigneeAsync("acme/repo", "nobody"));
+            Assert.That(error!.Message, Is.EqualTo("担当者を確認できません: nobody"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before), "A refused lookup changes nothing.");
+                Assert.That(session.UndoCount, Is.EqualTo(undo));
+            });
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [TestCase("resolve-network", "担当者の確認に失敗しました。再試行してください。")]
+    [TestCase("resolve-identity", "接続先のアカウントが変わりました。再接続してください。")]
+    [TestCase("resolve-denied", "担当者のリポジトリを確認できません。")]
+    public async Task FailedLookupIsRefusedWithItsMessageWithoutWriting(string fault, string message)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-resolve-failure-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2));
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            var session = workspace.Session!;
+            var before = PlanJson.Text(session.Document);
+            var undo = session.UndoCount;
+            File.WriteAllText(Path.Combine(root, "scenario.json"), $"{{\"planEditor\":true,\"workspace\":true,\"planFault\":\"{fault}\"}}");
+            var error = Assert.ThrowsAsync<InvalidOperationException>(() => workspace.ResolveAssigneeAsync("acme/repo", "late-user"));
+            Assert.That(error!.Message, Is.EqualTo(message));
+            Assert.Multiple(() =>
+            {
+                Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before), "A failed lookup changes nothing.");
+                Assert.That(session.UndoCount, Is.EqualTo(undo));
+            });
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task AResolvedPersonPublishesTheirNodeId()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-resolve-publish-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2));
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            var resolved = await workspace.ResolveAssigneeAsync("acme/repo", "late-user");
+            var session = workspace.Session!;
+            var save = await session.Execute(new EditPlanCells(PlanOperationKind.Cell,
+                [new("I1", PlanField.Assignees, new[] { "U1", "U101" })]) { NewPeople = [resolved] }, day);
+            Assert.That(save.Succeeded, Is.True, save.Error);
+            var result = await new PlanPublisher(workspace.Service!, workspace.Context!).PublishAsync(session, day);
+            Assert.That(result.Succeeded, Is.True, result.Error);
+            var mutations = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl"));
+            Assert.That(mutations, Has.Some.Contains("addAssigneesToAssignable"));
+            Assert.That(mutations, Has.Some.Contains("U101"), "The publish sends the node id the lookup returned.");
+            Assert.That(session.Changes(day).TaskCount, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task LargeAssignableRepositoryResolvesOneTypedLoginWithOneRequest()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-resolve-large-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            // A fixture can declare a repository with 1,000 assignable people; the resolver still asks for
+            // one typed login (first:2) and answers with only that login's exact match.
+            var users = Enumerable.Range(1, 1000).Select(i => new PlanFakeUser("BU" + i, "bulk-user-" + i)).ToImmutableArray();
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2)
+                { AssignableUsers = users, AssignableTotalCount = 1000 });
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            File.WriteAllText(Path.Combine(root, "calls.jsonl"), "");
+            var resolved = await workspace.ResolveAssigneeAsync("acme/repo", "BULK-USER-500");
+            Assert.That(resolved, Is.EqualTo(new PlanResource("BU500", "bulk-user-500", 100, null)));
+            var queries = RecordedQueries(root);
+            Assert.That(queries.Count(query => query.Contains("PlanResolveAssignee")), Is.EqualTo(1), "One lookup for one login.");
+            Assert.That(queries.Count(query => query.Contains("assignableUsers(first:100")), Is.Zero, "Never a page of the 1,000 assignable users.");
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task NewRowAssignmentRegistersTheResolvedPersonWithTheInsert()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-resolve-newrow-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo") { Assignees = ["U1"] }, "", true)], 2));
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            var session = workspace.Session!;
+            var row = PlanRow.New("New task", "acme/repo") with { Assignees = ["U101"] };
+            var save = await session.Execute(new InsertPlanRows([row]) { NewPeople = [new PlanResource("U101", "late-user", 100, null)] }, day);
+            Assert.That(save.Succeeded, Is.True, save.Error);
+            Assert.Multiple(() =>
+            {
+                Assert.That(session.Document.State.Rows.Single(r => r.Identity == row.Identity).Assignees, Is.EqualTo(new[] { "U101" }));
+                Assert.That(session.Document.State.Settings.People.Single(p => p.Identity == "U101").Rate, Is.EqualTo(100),
+                    "A person resolved for a new row is registered with the insert.");
+                Assert.That(session.UndoCount, Is.EqualTo(1));
+            });
+            await session.Undo(day);
+            Assert.Multiple(() =>
+            {
+                Assert.That(session.Document.State.Rows.Any(r => r.Identity == row.Identity), Is.False);
+                Assert.That(session.Document.State.Settings.People.Any(p => p.Identity == "U101"), Is.False, "One Undo removes the row and its person.");
+            });
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     // The GraphQL queries the fake received, so a case can assert the requests a flow does and does not send.
     private static string[] RecordedQueries(string root)
     {
@@ -647,5 +846,16 @@ internal sealed class PlanWorkspaceTests
                 .Where(query => query.Length > 0).ToArray()
             : [];
     }
+
+    private static JsonElement[] RecordedCalls(string root)
+    {
+        var path = Path.Combine(root, "calls.jsonl");
+        return File.Exists(path)
+            ? File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => JsonSerializer.Deserialize<JsonElement>(line)).ToArray()
+            : [];
+    }
+
+    private static string QueryOf(JsonElement call)
+        => call.TryGetProperty("query", out var query) && query.ValueKind == JsonValueKind.String ? query.GetString()! : "";
 
 }
