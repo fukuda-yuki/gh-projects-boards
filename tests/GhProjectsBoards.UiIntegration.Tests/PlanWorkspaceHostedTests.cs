@@ -719,12 +719,16 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Click("PlanUndo");
         });
         await Ui.Until(() => !workspace.Session!.Document.State.Rows.Single().Closed);
+        // The undo button clears the report after the undo completes, so let the command finish before reading it.
+        await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length == 0);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty, "undo dismisses the stale report");
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Collapsed));
             Ui.Click("PlanRedo");
         });
         await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Closed);
+        await Ui.Idle();
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty, "redo does not resurrect the report"));
     }
 
@@ -2805,7 +2809,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         try
         {
             await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
-            await Ui.Idle();
+            // The lookup is a tracked operation while the fake holds the query, so Ui.Idle would wait on it;
+            // wait for the in-flight status line instead.
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
             await Ui.Run(() => {
                 Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("担当者 late-user を確認しています…"));
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Assignees").Text, Is.EqualTo("late-user"), "The typed text stays in the editing cell while the lookup runs.");
@@ -2815,6 +2821,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         }
         finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
         await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Assignees.Contains("U101"));
+        await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty);
             Assert.That(workspace.Session!.UndoCount, Is.EqualTo(undo + 1), "The assignment and the registration are one Undo step.");
@@ -2841,10 +2848,15 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
-        await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Assignees").Text = "person-U1");
+        // The refused commit already moved focus to the settings button, so re-enter the cell before correcting
+        // the text; setting the text while focus stays away would not commit.
+        await TypeIntoCell("PlanCell1_Assignees", "person-U1");
         await CommitByFocusLoss();
         await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is null);
-        await Ui.Run(() => Assert.That(workspace.Session!.Document.State.Rows.Single().Assignees, Is.EqualTo(new[] { "U1" })));
+        await Ui.Run(() => {
+            Assert.That(workspace.Session!.Document.State.Rows.Single().Assignees, Is.EqualTo(new[] { "U1" }));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty, "the refusal message does not outlive the correction");
+        });
     }
 
     // #253: Escape (CancelEdit) while the lookup is in flight cancels it through its token: nothing is written
