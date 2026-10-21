@@ -58,7 +58,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
         await Ui.Run(() => {
             Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Closed, Is.False, "the denied row is untouched");
-            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("完了にしました。1行を除外します（" + PlanSheetView.NoPermissionReason + "）"));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("完了にする（未発行）。1行を除外します（" + PlanSheetView.NoPermissionReason + "）"));
         });
     }
 }

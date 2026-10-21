@@ -199,10 +199,10 @@ internal sealed partial class PlanSheetView : Grid
         // #231: the row-state commands from the keyboard. The row context menu is the pointer route; both use
         // the same targets, eligibility and reasons.
         deleteOverflow = Overflow("行を削除", "PlanSheetDeleteOverflow", Symbol.Delete, DeleteRows, "Ctrl+-");
-        completeRows = Overflow("完了にする", "PlanSheetCompleteRows", Symbol.Accept, () => RowStateReport(CommandTargets, PlanRowAction.Complete, "完了にしました"), queued: false);
-        cancelRows = Overflow("中止にする", "PlanSheetCancelRows", Symbol.Cancel, () => RowStateReport(CommandTargets, PlanRowAction.Cancel, "中止にしました"), queued: false);
-        removeRows = Overflow("この版から外す", "PlanSheetRemoveRows", Symbol.Remove, () => RowStateReport(CommandTargets, PlanRowAction.Remove, "この版から外しました"), queued: false);
-        reopenRows = Overflow("未完了に戻す", "PlanSheetReopenRows", Symbol.Refresh, () => RowStateReport(CommandTargets, PlanRowAction.Reopen, "未完了に戻しました"), queued: false);
+        completeRows = Overflow("完了にする", "PlanSheetCompleteRows", Symbol.Accept, () => RowStateReport(CommandTargets, PlanRowAction.Complete), queued: false);
+        cancelRows = Overflow("中止にする", "PlanSheetCancelRows", Symbol.Cancel, () => RowStateReport(CommandTargets, PlanRowAction.Cancel), queued: false);
+        removeRows = Overflow("この版から外す", "PlanSheetRemoveRows", Symbol.Remove, () => RowStateReport(CommandTargets, PlanRowAction.Remove), queued: false);
+        reopenRows = Overflow("未完了に戻す", "PlanSheetReopenRows", Symbol.Refresh, () => RowStateReport(CommandTargets, PlanRowAction.Reopen), queued: false);
         commands.SecondaryCommands.Add(new AppBarSeparator());
         if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
         if (exportCsv is not null) Overflow("CSV に書き出し…", "PlanSheetCsvExport", Symbol.Save, exportCsv, queued: false);
@@ -518,8 +518,12 @@ internal sealed partial class PlanSheetView : Grid
         await tail;
         await CommitPending();
     }
+    // The status line explains one operation; a history change makes that explanation stale, so the two
+    // history paths dismiss it explicitly instead of clearing on unrelated renders (#231 C2).
+    internal void DismissStatus() => error.Text = "";
     private async Task ChangeHistory(bool redo)
     {
+        DismissStatus();
         await CommitPending();
         var before = Session.Document.State.Rows.Select(r => r.Identity).ToArray();
         Check(redo ? await Session.Redo(Today) : await Session.Undo(Today));

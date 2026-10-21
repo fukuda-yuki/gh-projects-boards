@@ -175,8 +175,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         commandButtons.Children.Add(new TextBlock { Text = "基準日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
         commandButtons.Children.Add(statusDateHost);
         commandButtons.Children.Add(CommandDivider());
-        commandButtons.Children.Add(undoButton = Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
-        commandButtons.Children.Add(redoButton = Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); RenderTasks(); RenderSettings(); }));
+        commandButtons.Children.Add(undoButton = Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); sheet?.DismissStatus(); RenderTasks(); RenderSettings(); }));
+        commandButtons.Children.Add(redoButton = Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); sheet?.DismissStatus(); RenderTasks(); RenderSettings(); }));
         commandButtons.Children.Add(CommandDivider());
         unpublished.VerticalAlignment = VerticalAlignment.Center;
         unpublished.TextAlignment = TextAlignment.Center;
