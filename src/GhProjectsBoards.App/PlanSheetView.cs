@@ -145,14 +145,19 @@ internal sealed partial class PlanSheetView : Grid
     private Task tail = Task.CompletedTask;
     private long commandSequence;
     private readonly Dictionary<long, string> commands = [];
+    // #253: an on-demand lookup of typed 担当者 logins. The workspace supplies the read; Escape or unload
+    // cancels it through this token and nothing is written.
+    private readonly Func<string, string, CancellationToken, Task<PlanResource>>? resolveAssignee;
+    private CancellationTokenSource? lookup;
     private bool frameSubscribed;
     internal string WorkDescription => $"loaded={IsLoaded}, disposed={disposed}, commands=[{string.Join(", ", commands.Values)}], tail={tail.Status}, clipboard={clipboardWork}, dragTimer={dragScroll.IsEnabled}, frame={frameSubscribed}, focusTarget={requestedFocus}, pendingCells={Pending.Count}, realizedRows={Realized.Count}, zoomOpen={zoom.IsDropDownOpen}, calendarOpen={statusDate.IsCalendarOpen}";
     internal event Action? Changed;
     internal event Action<PlanSaveResult>? SaveFeedbackChanged;
     internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? openColumns = null, Func<Task>? exportCsv = null,
-        Func<Task>? reapplyStoredPlan = null, Func<Task>? savePlanCopy = null)
+        Func<Task>? reapplyStoredPlan = null, Func<Task>? savePlanCopy = null, Func<string, string, CancellationToken, Task<PlanResource>>? resolveAssignee = null)
     {
         Session = session;
+        this.resolveAssignee = resolveAssignee;
         this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
         this.writeClipboard = writeClipboard is null ? WriteClipboard : (content, _) => writeClipboard(content);
         for (var r = 0; r < 4; r++) RowDefinitions.Add(new() { Height = GridLength.Auto });
@@ -578,7 +583,19 @@ internal sealed partial class PlanSheetView : Grid
                 FinishInput();
                 Refresh(); metrics.End(pendingFrame, "unchanged"); return;
             }
-            var value = PlanSheetEditing.Parse(Session.Document, field, text, Today, identity);
+            // #253: a typed login the sheet cannot resolve locally is verified against the row's repository
+            // before the cell commits; the typed text stays in the editing cell and the status line names it.
+            var resolved = ImmutableArray<PlanResource>.Empty;
+            if (field == PlanField.Assignees) {
+                var repository = identity.Length == 0
+                    ? Session.Document.State.Settings.DefaultRepository ?? ""
+                    : Session.Document.State.Rows.SingleOrDefault(r => r.Identity == identity)?.Repository ?? "";
+                var pending = PlanSheetEditing.UnresolvedAssignees(Session.Document, text)
+                    .Select(login => (Repository: repository, Login: login)).ToArray();
+                resolved = await ResolveAssignees(pending);
+                error.Text = "";
+            }
+            var value = PlanSheetEditing.Parse(Session.Document, field, text, Today, identity, resolved);
             PlanCommand command;
             if (identity.Length == 0)
             {
@@ -588,10 +605,10 @@ internal sealed partial class PlanSheetView : Grid
                 // Use the same typed edit semantics (End -> Fixed) for a new row.
                 var temporary = Session.Document with { State = Session.Document.State with { Rows = Session.Document.State.Rows.Add(row) } };
                 var edited = PlanOperations.Apply(temporary, new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, field, value)]), Today).State.Rows[^1];
-                command = new InsertPlanRows([edited]);
+                command = new InsertPlanRows([edited]) { NewPeople = resolved };
                 selected = anchor = row.Identity;
             }
-            else command = new EditPlanCells(PlanOperationKind.Cell, [new(identity, field, value)]);
+            else command = new EditPlanCells(PlanOperationKind.Cell, [new(identity, field, value)]) { NewPeople = resolved };
             // Execute accepts the immutable local operation synchronously. Present it now;
             // durable persistence still gates the next command and normal window close.
             var save = Session.Execute(command, Today);
@@ -602,11 +619,43 @@ internal sealed partial class PlanSheetView : Grid
             CompositionTarget.Rendered -= FrameRendered; CompositionTarget.Rendered += FrameRendered; frameSubscribed = true;
             Check(await save);
         }
+        catch (OperationCanceledException) when (!lifetime.IsCancellationRequested)
+        {
+            // Escape or a cancelled workspace operation cancels the lookup: nothing is written and the cell
+            // keeps its typed text for the PMO to correct or confirm again.
+            error.Text = ""; metrics.End(pendingFrame, "cancelled");
+        }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             Problems[(identity, field)] = ex.Message; RefreshRealized(); metrics.End(pendingFrame, "rejected");
             throw new InputRejectedException(ex.Message, ex);
         }
+    }
+    // #253: verify the logins the sheet could not resolve locally, one read per login and repository. The
+    // status line names the login while the typed text stays in the editing cell. A failed lookup refuses the
+    // cell; the caller writes nothing.
+    private async Task<ImmutableArray<PlanResource>> ResolveAssignees(IReadOnlyList<(string Repository, string Login)> pending)
+    {
+        if (pending.Count == 0) return ImmutableArray<PlanResource>.Empty;
+        if (resolveAssignee is null) throw new ArgumentException("担当者を確認できません: " + pending[0].Login);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+        lookup = cancellation;
+        try
+        {
+            var resolved = ImmutableArray.CreateBuilder<PlanResource>();
+            foreach (var (repository, login) in pending)
+            {
+                if (string.IsNullOrWhiteSpace(repository)) throw new ArgumentException("担当者のリポジトリを確認できません。");
+                error.Text = $"担当者 {login} を確認しています…";
+                resolved.Add(await resolveAssignee(repository, login, cancellation.Token));
+            }
+            return resolved.ToImmutable();
+        }
+        finally { if (ReferenceEquals(lookup, cancellation)) lookup = null; }
+    }
+    private void CancelLookup()
+    {
+        lookup?.Cancel(); lookup = null;
     }
     private void FrameRendered(object? sender, RenderedEventArgs args)
     {
@@ -615,6 +664,7 @@ internal sealed partial class PlanSheetView : Grid
     }
     internal void CancelEdit(string identity, string field)
     {
+        CancelLookup();
         Pending.Remove((identity, field)); Problems.Remove((identity, field)); error.Text = "";
         Refresh();
     }

@@ -752,7 +752,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
                 next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }),
-                    reapplyStoredPlan: ReapplyStoredPlanAsync, savePlanCopy: SavePlanCopyAsync);
+                    reapplyStoredPlan: ReapplyStoredPlanAsync, savePlanCopy: SavePlanCopyAsync,
+                    // #253: verify a typed login on demand for the row's repository through the read-only lease.
+                    resolveAssignee: (repository, login, token) => ReferenceEquals(workspace.Session, session)
+                        ? workspace.ResolveAssigneeAsync(repository, login, token)
+                        : throw new InvalidOperationException("プロジェクトが変更されました。"));
                 next.CommandRowFocusRequested += () => {
                     if (!ReferenceEquals(sheet, next)) return;
                     if (DetailVisible && PlanSheetView.Down(Windows.System.VirtualKey.Shift)) FocusDetail(); else FocusCommandRow();
