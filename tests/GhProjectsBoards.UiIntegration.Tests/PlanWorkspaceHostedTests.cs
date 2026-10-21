@@ -1221,6 +1221,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsAllowanceEntryKeepsTheNextCellFocusedAcrossRecalculation()
     {
+        AssignPeopleThroughFixture("U2");
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
@@ -1241,6 +1242,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsQueuedEditsAndInvalidTextSurviveOtherCellsSaving()
     {
+        AssignPeopleThroughFixture("U2", "U3");
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null), new("U3", "carol", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
@@ -2102,6 +2104,17 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanShowSettings"));
         await Ui.Ready<ComboBox>("PlanMapEstimate");
         await Ui.Idle();
+    }
+    // #253: the settings page lists only the people a row holds, so a case that seeds stored people for the
+    // rate/allowance editors first assigns them through real Project Issues instead of relying on a stored list.
+    private void AssignPeopleThroughFixture(params string[] identities)
+    {
+        var state = FakePlanEditor.Load(root);
+        var issues = state.Issues;
+        var next = state.NextId;
+        foreach (var identity in identities)
+            issues = issues.Add(new(new("I" + next++, "担当 " + identity, "acme/repo") { Assignees = [identity] }, "", true));
+        FakePlanEditor.Save(root, state with { Issues = issues, NextId = next });
     }
     private async Task CommitText(string id, string value)
     {
