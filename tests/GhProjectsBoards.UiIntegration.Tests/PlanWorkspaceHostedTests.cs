@@ -1222,6 +1222,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsAllowanceEntryKeepsTheNextCellFocusedAcrossRecalculation()
     {
+        AssignPeopleThroughFixture("U2");
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
@@ -1242,6 +1243,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsQueuedEditsAndInvalidTextSurviveOtherCellsSaving()
     {
+        AssignPeopleThroughFixture("U2", "U3");
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null), new("U3", "carol", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
@@ -2104,6 +2106,17 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<ComboBox>("PlanMapEstimate");
         await Ui.Idle();
     }
+    // #253: the settings page lists only the people a row holds, so a case that seeds stored people for the
+    // rate/allowance editors first assigns them through real Project Issues instead of relying on a stored list.
+    private void AssignPeopleThroughFixture(params string[] identities)
+    {
+        var state = FakePlanEditor.Load(root);
+        var issues = state.Issues;
+        var next = state.NextId;
+        foreach (var identity in identities)
+            issues = issues.Add(new(new("I" + next++, "担当 " + identity, "acme/repo") { Assignees = [identity] }, "", true));
+        FakePlanEditor.Save(root, state with { Issues = issues, NextId = next });
+    }
     private async Task CommitText(string id, string value)
     {
         await Ui.Run(() => {
@@ -2717,6 +2730,147 @@ internal sealed partial class PlanWorkspaceHostedTests
         var reopened = await PlanSession.OpenAsync(new(root), workspace.Selected!.Id, new(2026, 10, 6));
         var settings = reopened.Session!.Document.State.Settings;
         Assert.That(settings.CompanyDaysOff, Is.EqualTo(new[] { day }));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    private async Task TypeIntoCell(string id, string value)
+    {
+        await Ui.Run(() => {
+            var input = Ui.Find<TextBox>(id);
+            Assert.That(input.Focus(FocusState.Programmatic), Is.True);
+            input.Text = value;
+        });
+    }
+    private async Task CommitByFocusLoss()
+    {
+        await Ui.Run(() => Ui.Find<Button>("PlanShowSettings").Focus(FocusState.Programmatic));
+        await Ui.Idle();
+    }
+    private static string[] RecordedHostedQueries(string root)
+    {
+        var path = Path.Combine(root, "calls.jsonl");
+        return File.Exists(path)
+            ? File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => JsonSerializer.Deserialize<JsonElement>(line))
+                .Select(call => call.TryGetProperty("query", out var query) && query.ValueKind == JsonValueKind.String ? query.GetString()! : "")
+                .Where(query => query.Length > 0).ToArray()
+            : [];
+    }
+
+    // #253 behavior 11/12: Settings lists only the people a row holds, and a typed login that is not yet a
+    // Project person is verified on demand and registered with the assignment.
+    [Test, Category("PlanWorkspaceReview")]
+    public async Task SettingsListsOnlyAssignedPeopleAndAResolvedLoginJoinsThem()
+    {
+        await Open();
+        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(view).OfType<NumberBox>().Any(n => AutomationProperties.GetAutomationId(n) == "PlanRateU2"), Is.False,
+                "A person no task holds is not in the settings list.");
+            Ui.Click("PlanSettingsBack");
+        });
+        await Ui.Idle();
+        File.WriteAllText(Path.Combine(root, "calls.jsonl"), "");
+        // A name the sheet already knows is local: no lookup is sent for the ordinary edit.
+        await TypeIntoCell("PlanCell1_Assignees", "person-U1");
+        await CommitByFocusLoss();
+        Assert.That(RecordedHostedQueries(root).Any(query => query.Contains("PlanResolveAssignee")), Is.False,
+            "A locally known assignee needs no GitHub lookup.");
+        await TypeIntoCell("PlanCell1_Assignees", "person-U2");
+        await CommitByFocusLoss();
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Assignees.Contains("U2"));
+        Assert.That(RecordedHostedQueries(root).Count(query => query.Contains("PlanResolveAssignee")), Is.EqualTo(1),
+            "One lookup for the one typed login the sheet did not know.");
+        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU2");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<NumberBox>("PlanRateU2").Value, Is.EqualTo(100), "The looked-up login is stored at 100% and listed.");
+            Assert.That(workspace.Session!.UndoCount, Is.EqualTo(1));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    // #253 behavior 12 / the recorded in-flight presentation: the status line names the login, the typed text
+    // stays in the editing cell, nothing is written until the lookup returns, and the commit is one Undo.
+    [Test, Category("PlanWorkspaceReview")]
+    public async Task InFlightAssigneeLookupNamesTheLoginWhileTheTypedTextStaysInTheCell()
+    {
+        await Open();
+        var session = workspace.Session!;
+        var before = PlanJson.Text(session.Document);
+        var undo = session.UndoCount;
+        File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"holdQuery\":\"PlanResolveAssignee\"}");
+        await TypeIntoCell("PlanCell1_Assignees", "late-user");
+        await CommitByFocusLoss();
+        try
+        {
+            await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+            await Ui.Idle();
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("担当者 late-user を確認しています…"));
+                Assert.That(Ui.Find<TextBox>("PlanCell1_Assignees").Text, Is.EqualTo("late-user"), "The typed text stays in the editing cell while the lookup runs.");
+                Assert.That(PlanJson.Text(workspace.Session!.Document), Is.EqualTo(before));
+                Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+            });
+        }
+        finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Assignees.Contains("U101"));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty);
+            Assert.That(workspace.Session!.UndoCount, Is.EqualTo(undo + 1), "The assignment and the registration are one Undo step.");
+            Assert.That(workspace.Session.Document.State.Settings.People.Single(p => p.Identity == "U101").Rate, Is.EqualTo(100));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    // #253 behavior 13: a login GitHub cannot assign is refused at the cell, nothing is written, and correcting
+    // the text clears the message.
+    [Test, Category("PlanWorkspaceReview")]
+    public async Task RefusedAssigneeLookupShowsTheLoginAtTheCellAndWritesNothing()
+    {
+        await Open();
+        var session = workspace.Session!;
+        var before = PlanJson.Text(session.Document);
+        var undo = session.UndoCount;
+        await TypeIntoCell("PlanCell1_Assignees", "nobody");
+        await CommitByFocusLoss();
+        await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is { IsLoaded: true });
+        await Ui.Run(() => {
+            Assert.That(((TextBlock)Ui.Popup<Border>("SheetInputProblem")!.Child).Text, Is.EqualTo("担当者を確認できません: nobody"));
+            Assert.That(PlanJson.Text(workspace.Session!.Document), Is.EqualTo(before), "A refused lookup writes nothing.");
+            Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Assignees").Text = "person-U1");
+        await CommitByFocusLoss();
+        await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is null);
+        await Ui.Run(() => Assert.That(workspace.Session!.Document.State.Rows.Single().Assignees, Is.EqualTo(new[] { "U1" })));
+    }
+
+    // #253: Escape (CancelEdit) while the lookup is in flight cancels it through its token: nothing is written
+    // and the cell returns to its accepted value.
+    [Test, Category("PlanWorkspaceReview")]
+    public async Task EscapeDuringAnAssigneeLookupCancelsItWithoutWriting()
+    {
+        await Open();
+        var session = workspace.Session!;
+        var before = PlanJson.Text(session.Document);
+        var undo = session.UndoCount;
+        File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"holdQuery\":\"PlanResolveAssignee\"}");
+        await TypeIntoCell("PlanCell1_Assignees", "late-user");
+        await CommitByFocusLoss();
+        try
+        {
+            await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+            await Ui.Run(() => Ui.Tree(view).OfType<PlanSheetView>().Single().CancelEdit("I1", PlanField.Assignees));
+            await Ui.Idle();
+        }
+        finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(PlanJson.Text(workspace.Session!.Document), Is.EqualTo(before), "A cancelled lookup writes nothing.");
+            Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty);
+            Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().Pending, Is.Empty);
+        });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

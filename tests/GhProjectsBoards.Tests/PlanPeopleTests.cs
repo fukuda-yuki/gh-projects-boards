@@ -126,13 +126,25 @@ internal sealed class PlanPeopleTests
     [Test]
     public void CurrentAssigneeOwnsActualAndNoOtherProjectContributes()
     {
-        var d = Document([Row("I1", 40) with { Actual = 56, Assignees = ["U2"] }]);
+        var d = Document([Row("I1", 40) with { Actual = 56, Assignees = ["U2"] }, Row("I2", 0) with { Actual = 0 }]);
         var other = Document([Row("I9", 900)]);
         var result = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Month, 1);
         Assert.That(result.People.Single(p => p.Identity == "U1").Actual, Is.Zero);
         Assert.That(result.People.Single(p => p.Identity == "U2").Forecast, Is.EqualTo(96));
         Assert.That(result.People.Sum(p => p.Remaining), Is.EqualTo(40));
         Assert.That(other.State.Rows[0].Remaining, Is.EqualTo(900));
+    }
+    [Test]
+    public void LoadRowsUseThePeopleAssignedNowNotEveryStoredPerson()
+    {
+        var d = Document([Row("I1"), Row("I2") with { Assignees = ["U3"] }],
+            new() { StatusDate = Day, People = [new("U1", "alice", 50, 80), new("U2", "bob", 100, null)] });
+        var report = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Day, 1);
+        Assert.That(report.People.Select(p => p.Identity), Is.EqualTo(new[] { "U1", "U3", PlanPeople.Unassigned, PlanPeople.Multiple }),
+            "A stored person no row holds has no load row.");
+        var added = report.People.Single(p => p.Identity == "U3");
+        Assert.That((added.Rate, added.Allowance), Is.EqualTo((100m, (decimal?)null)), "A row assignee with no stored entry loads at 100%.");
+        Assert.That(added.Remaining, Is.EqualTo(4));
     }
     [TestCase(PlanPeriodScale.Week)]
     [TestCase(PlanPeriodScale.Month)]

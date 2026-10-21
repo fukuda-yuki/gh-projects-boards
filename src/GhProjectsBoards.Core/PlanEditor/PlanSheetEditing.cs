@@ -21,7 +21,8 @@ internal static class PlanSheetEditing
     internal static string EditBaseline(PlanRow? row, string field, string editText)
         => field == PlanField.Remaining ? row?.Remaining?.ToString(CultureInfo.CurrentCulture) ?? "" : editText;
 
-    internal static object? Parse(PlanDocument document, string field, string text, DateOnly today, string? identity = null)
+    internal static object? Parse(PlanDocument document, string field, string text, DateOnly today, string? identity = null,
+        ImmutableArray<PlanResource> resolved = default)
     {
         if (field is PlanField.Labels or PlanField.MilestoneTitle)
         {
@@ -67,8 +68,7 @@ internal static class PlanSheetEditing
             case PlanField.Predecessors:
                 return Split(PlanInput.Fold(text)).Select(value => Predecessor(document, value)).Distinct().ToImmutableArray();
             case PlanField.Assignees:
-                var people = document.State.Settings.People.Select(p => (p.Identity, Name: document.Sync.PeopleNames.GetValueOrDefault(p.Identity, p.Name)))
-                    .Concat(document.Sync.PeopleNames.Select(p => (Identity: p.Key, Name: p.Value))).Distinct().ToArray();
+                var people = KnownPeople(document, resolved);
                 return Split(text).Select(value => {
                     var matches = people.Where(p => p.Name.Equals(value, StringComparison.OrdinalIgnoreCase)).Select(p => p.Identity).Distinct().ToArray();
                     if (matches.Length != 1) throw new ArgumentException("担当者を確認してください: " + value);
@@ -79,6 +79,21 @@ internal static class PlanSheetEditing
                 return text;
             default: throw new ArgumentException("この列は編集できません。");
         }
+    }
+    private static (string Identity, string Name)[] KnownPeople(PlanDocument document, ImmutableArray<PlanResource> resolved)
+    {
+        var known = document.State.Settings.People.Select(p => (p.Identity, Name: document.Sync.PeopleNames.GetValueOrDefault(p.Identity, p.Name)))
+            .Concat(document.Sync.PeopleNames.Select(p => (Identity: p.Key, Name: p.Value)));
+        return (resolved.IsDefaultOrEmpty ? known : known.Concat(resolved.Select(p => (p.Identity, Name: p.Name)))).Distinct().ToArray();
+    }
+    // #253: the typed logins the sheet must verify against GitHub before it can commit. A value that already
+    // matches exactly one known name (stored person or read login) is resolved locally and sends no request.
+    internal static string[] UnresolvedAssignees(PlanDocument document, string text, ImmutableArray<PlanResource> resolved = default)
+    {
+        var people = KnownPeople(document, resolved);
+        return Split(text).Where(value => people
+            .Where(p => p.Name.Equals(value, StringComparison.OrdinalIgnoreCase)).Select(p => p.Identity).Distinct().Count() != 1)
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
     private static string[] Split(string text) => text.Split([',', '、'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     // #237: `#N` names Issue N wherever plan order put its row, and a bare number stays a plan row ID.
@@ -104,18 +119,12 @@ internal static class PlanSheetEditing
         => document.Sync.IssueLinks.TryGetValue(identity, out var link) &&
             int.TryParse(link.Caption[(link.Caption.LastIndexOf('#') + 1)..], out var number) ? number : null;
     internal static EditPlanCells Paste(PlanDocument document, IReadOnlyList<string> rows,
-        IReadOnlyList<string> columns, CellRange selection, string text, DateOnly today)
+        IReadOnlyList<string> columns, CellRange selection, string text, DateOnly today, ImmutableArray<PlanResource> resolved = default)
     {
-        var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-        if (lines.Length > 1 && lines[^1] == "") lines = lines[..^1];
-        var matrix = lines.Select(line => line.Split('\t')).ToArray();
-        if (matrix.Any(row => row.Length != matrix[0].Length)) throw new ArgumentException("TSVの列数が一致していません。");
-        var single = matrix.Length == 1 && matrix[0].Length == 1;
-        var target = PasteRange(selection, matrix.Length, matrix[0].Length, rows.Count, columns.Count);
+        var (target, matrix, expand) = PasteLayout(rows, columns, selection, text);
         var existing = document.State.Rows.Select(row => row.Identity).ToHashSet();
         if (rows.Skip(target.Row).Take(target.RowCount).Any(id => !existing.Contains(id)))
             throw new ArgumentException("空行を除いて範囲を選択してください。");
-        var expand = single && !selection.Single;
         var changes = ImmutableArray.CreateBuilder<PlanCellChange>();
         for (var r = 0; r < target.RowCount; r++)
             for (var c = 0; c < target.ColumnCount; c++)
@@ -123,9 +132,44 @@ internal static class PlanSheetEditing
                 var value = matrix[expand ? 0 : r][expand ? 0 : c];
                 if (value.Length == 0) continue;
                 var field = columns[target.Column + c];
-                changes.Add(new(rows[target.Row + r], field, Parse(document, field, value, today, rows[target.Row + r])));
+                changes.Add(new(rows[target.Row + r], field, Parse(document, field, value, today, rows[target.Row + r], resolved)));
             }
         return new(PlanOperationKind.Paste, changes.ToImmutable());
+    }
+    // #253: the typed logins a text paste must verify against GitHub before it can parse the cells. A login
+    // that exactly one known name resolves is local and sends no request, exactly as for a single cell.
+    internal static ImmutableArray<(string Repository, string Login)> PendingAssignees(PlanDocument document, IReadOnlyList<string> rows,
+        IReadOnlyList<string> columns, CellRange selection, string text)
+    {
+        var (target, matrix, expand) = PasteLayout(rows, columns, selection, text);
+        var existing = document.State.Rows.Select(row => row.Identity).ToHashSet();
+        if (rows.Skip(target.Row).Take(target.RowCount).Any(id => !existing.Contains(id)))
+            throw new ArgumentException("空行を除いて範囲を選択してください。");
+        var pending = ImmutableArray.CreateBuilder<(string Repository, string Login)>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var r = 0; r < target.RowCount; r++)
+            for (var c = 0; c < target.ColumnCount; c++)
+            {
+                if (columns[target.Column + c] != PlanField.Assignees) continue;
+                var value = matrix[expand ? 0 : r][expand ? 0 : c];
+                if (value.Length == 0) continue;
+                var repository = document.State.Rows.Single(row => row.Identity == rows[target.Row + r]).Repository;
+                if (repository.Length == 0) repository = document.State.Settings.DefaultRepository ?? "";
+                foreach (var login in UnresolvedAssignees(document, value))
+                    if (seen.Add(repository + "\u0000" + login)) pending.Add((repository, login));
+            }
+        return pending.ToImmutable();
+    }
+    private static (CellRange Target, string[][] Matrix, bool Expand) PasteLayout(IReadOnlyList<string> rows,
+        IReadOnlyList<string> columns, CellRange selection, string text)
+    {
+        var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+        if (lines.Length > 1 && lines[^1] == "") lines = lines[..^1];
+        var matrix = lines.Select(line => line.Split('\t')).ToArray();
+        if (matrix.Any(line => line.Length != matrix[0].Length)) throw new ArgumentException("TSVの列数が一致していません。");
+        var single = matrix.Length == 1 && matrix[0].Length == 1;
+        var target = PasteRange(selection, matrix.Length, matrix[0].Length, rows.Count, columns.Count);
+        return (target, matrix, single && !selection.Single);
     }
     internal static CellRange PasteRange(CellRange selection, int sourceRows, int sourceColumns, int rowCount, int columnCount)
     {

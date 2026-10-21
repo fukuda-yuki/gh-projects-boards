@@ -441,7 +441,16 @@ internal sealed partial class PlanSheetView
                 }
             command = new(PlanOperationKind.Paste, changes.ToImmutable());
         }
-        else command = PlanSheetEditing.Paste(Session.Document, visible, columns, range, text, Today);
+        else
+        {
+            // #253: a pasted login the sheet cannot resolve locally is verified first, one lookup per distinct
+            // login and repository, and the verified people ride in the same paste command.
+            var pending = PlanSheetEditing.PendingAssignees(Session.Document, visible, columns, range, text);
+            var resolved = await ResolveAssignees(pending);
+            error.Text = "";
+            command = PlanSheetEditing.Paste(Session.Document, visible, columns, range, text, Today, resolved);
+            if (!resolved.IsEmpty) command = command with { NewPeople = resolved };
+        }
         foreach (var change in command.Cells) RequireNoPending([change.Identity], [change.Field]);
         Check(await Session.Execute(command, Today)); Refresh();
     }
