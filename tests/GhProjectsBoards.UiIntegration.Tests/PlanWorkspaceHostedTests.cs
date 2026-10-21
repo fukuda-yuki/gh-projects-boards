@@ -377,6 +377,33 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("PlanReadDate")]
+    public async Task RefreshBarCountsTheLatenessOfTheReadNotOfThePreviousStatusDate()
+    {
+        // The weekly flow: last week's 基準日 is still set when the PMO refreshes, and the refresh moves it to
+        // the read day. The bar's counts must be the ones the refreshed sheet shows, not last week's.
+        readDay = new(2026, 10, 6);
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "設計", "acme/repo"), "", true),
+            new(new("I2", "In progress", "acme/repo") { Parent = "I1", Actual = 8, Remaining = 8, Start = new(2026, 10, 5), End = new(2026, 10, 6) }, "", true)
+        ], 3));
+        await Open();
+        await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(new DateTime(2026, 10, 20)));
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.StatusDate == new DateOnly(2026, 10, 20));
+        await Ui.Ready<Button>("PlanStatusOverdueFilter");
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(workspace.Session!.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 6)), "The read day becomes the 基準日.");
+            Assert.That(Ui.Tree(Ui.Root).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanStatusOverdueFilter"), Is.False,
+                "On the read day the task is not overdue.");
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Not.Contain("期限超過"),
+                "The bar reports the refreshed sheet's lateness, not the previous 基準日's.");
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PlanReadDate")]
     public async Task RefreshResultKeepsThePmoStatusDateAndReportsNoMovedDate()
     {
         readDay = new(2026, 10, 6);
