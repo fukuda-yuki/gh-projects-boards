@@ -24,7 +24,7 @@ internal static class PlanSheetColumns
         ("ForecastEnd", "見込終了"), ("Predecessors", "先行"), ("StartNoEarlierThan", "開始日指定"), ("Fixed", "日程固定"), ("Status", "ステータス")];
     // #258 D2: an organization Issue Field value belongs to the Issue, so a publish from this Project changes it
     // in every Project that holds the Issue. The sheet header, the settings and the publish review say so.
-    internal const string IssueFieldSuffix = "（Organization の Issue フィールド）";
+    internal const string IssueFieldSuffix = "（Issue フィールド）";
     internal const string IssueFieldShared = "値は Issue に保存され、この Issue を含むすべてのプロジェクトで共通です。";
     internal static bool IsIssueField(PlanDocument document, string key)
     {
