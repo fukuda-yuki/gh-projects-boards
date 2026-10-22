@@ -798,7 +798,8 @@ internal sealed partial class PlanSheetView : Grid
     private string HeaderHelp(Column column)
     {
         var source = PlanSheetColumns.All(Session.Document).First(c => c.Key == (column.Indicator ? "Indicator" : column.Field ?? "Id")).GitHub;
-        return EffortPrefix(column) + (source == "—" && column.Field is not null ? "未設定" : "GitHub: " + source);
+        return EffortPrefix(column) + (source == "—" && column.Field is not null ? "未設定" : "GitHub: " + source)
+            + (column.Field is { } field && PlanSheetColumns.IsIssueField(Session.Document, field) ? "\n" + PlanSheetColumns.IssueFieldShared : "");
     }
     internal static string DateText(DateOnly? day, bool full = false) => day is { } value
         ? value.ToString(full ? "yyyy-MM-dd" : "M/d", CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)value.DayOfWeek] + ")" : "";

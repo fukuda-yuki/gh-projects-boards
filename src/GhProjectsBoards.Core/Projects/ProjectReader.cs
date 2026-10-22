@@ -354,8 +354,43 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             var availability = owner == FieldOwner.ProjectItem && (dataType == "SINGLE_SELECT"
                 && type == "ProjectV2SingleSelectField" || dataType is "NUMBER" or "DATE" or "TEXT" && type == "ProjectV2Field" || dataType == "ITERATION" && type == "ProjectV2IterationField")
                 ? ValueAvailability.Present : ValueAvailability.Unsupported;
+            string? issueFieldId = null;
+            if (Boolean(node, "isIssueField") && ReadIssueField(node, type, dataType) is { } issueField)
+            {
+                (issueFieldId, options) = issueField;
+                availability = ValueAvailability.Present;
+            }
             fields.Add(id, new(id, projectId, Text(node, "name", allowEmpty: true), type, dataType, owner,
-                options.AsReadOnly(), availability));
+                options.AsReadOnly(), availability) { IssueFieldId = issueFieldId });
+        }
+
+        // #258: an organization Issue Field the app can read and write. A data type without a plan value
+        // (multi-select) or a field the viewer cannot see stays unsupported, so it is never offered.
+        private static (string Id, List<SelectOption> Options)? ReadIssueField(JsonElement node, string type, string dataType)
+        {
+            var field = Optional(node, "issueField");
+            if (field.ValueKind != JsonValueKind.Object) return null;
+            var expected = dataType switch
+            {
+                "DATE" when type == "ProjectV2Field" => "IssueFieldDate",
+                "NUMBER" when type == "ProjectV2Field" => "IssueFieldNumber",
+                "TEXT" when type == "ProjectV2Field" => "IssueFieldText",
+                "SINGLE_SELECT" when type == "ProjectV2SingleSelectField" => "IssueFieldSingleSelect",
+                _ => null
+            };
+            if (expected is null || Text(field, "__typename") != expected) return null;
+            var options = new List<SelectOption>();
+            if (expected == "IssueFieldSingleSelect")
+            {
+                var ids = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var option in Array(field, "options").EnumerateArray())
+                {
+                    var optionId = Text(option, "id");
+                    if (!ids.Add(optionId)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
+                    options.Add(new(optionId, Text(option, "name", allowEmpty: true)));
+                }
+            }
+            return (Text(field, "id"), options);
         }
 
         private async Task AddItemAsync(JsonElement node)
@@ -387,6 +422,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                         Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
                         ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content),
                             StateReason = ReadStateReason(content),
+                            CanSetFields = Optional(content, "viewerCanSetFields").ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, _ => null },
                             Labels = ReadIssueLabels(content),
                             Milestone = Property(content, "milestone").ValueKind == JsonValueKind.Null ? new(ValueAvailability.Empty)
                                 : new(ValueAvailability.Present, ReadMilestone(Property(content, "milestone"), Id(repository))) };
@@ -582,6 +618,11 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 item.Values.Add(new(fieldId, valueId, type, ValueAvailability.Unsupported));
                 return;
             }
+            if (definition.IssueFieldId is not null)
+            {
+                AddIssueFieldValue(item, node, type, fieldId, definition);
+                return;
+            }
             if (definition.DataType is "TEXT" or "ITERATION")
             {
                 var raw = Optional(node, definition.DataType == "TEXT" ? "text" : "title");
@@ -629,6 +670,51 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             if (availability == ValueAvailability.Unavailable)
                 problems.Add(new(ReadProblemKind.IncompleteTraversal, "option"));
             item.Values.Add(new(fieldId, valueId, type, availability, optionId));
+        }
+
+        // #258: the Project item wraps the Issue's own value. A null inner value is an Issue without one.
+        private void AddIssueFieldValue(ItemBuilder item, JsonElement node, string type, ScopedId fieldId, ProjectFieldDefinition definition)
+        {
+            var inner = Optional(node, "issueFieldValue");
+            if (type != "ProjectV2ItemIssueFieldValue" || inner.ValueKind is not (JsonValueKind.Object or JsonValueKind.Null))
+            {
+                item.Values.Add(new(fieldId, null, type, ValueAvailability.Unavailable));
+                problems.Add(new(ReadProblemKind.IncompleteTraversal, "issue-field-value"));
+                return;
+            }
+            if (inner.ValueKind == JsonValueKind.Null)
+            {
+                item.Values.Add(new(fieldId, null, type, ValueAvailability.Empty));
+                return;
+            }
+            var valueId = Text(inner, "id");
+            if (!valueIds.Add(valueId)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
+            var raw = Optional(inner, definition.DataType == "SINGLE_SELECT" ? "optionId" : "value");
+            var expected = definition.DataType switch
+            {
+                "DATE" => "IssueFieldDateValue", "NUMBER" => "IssueFieldNumberValue",
+                "TEXT" => "IssueFieldTextValue", _ => "IssueFieldSingleSelectValue"
+            };
+            string? scalar = null, optionId = null;
+            try
+            {
+                if (Text(inner, "__typename") == expected)
+                {
+                    if (definition.DataType == "NUMBER" && raw.ValueKind == JsonValueKind.Number) scalar = PlanningScalars.RemoteNumber(raw);
+                    else if (definition.DataType == "DATE" && raw.ValueKind == JsonValueKind.String) scalar = PlanningScalars.RemoteDate(raw.GetString()!);
+                    else if (definition.DataType == "TEXT" && raw.ValueKind == JsonValueKind.String) scalar = raw.GetString();
+                    else if (definition.DataType == "SINGLE_SELECT" && raw.ValueKind == JsonValueKind.String
+                        && definition.Options.Any(option => option.Id == raw.GetString())) optionId = raw.GetString();
+                }
+            }
+            catch (Exception e) when (e is FormatException or OverflowException or InvalidOperationException) { }
+            if (scalar is null && optionId is null)
+            {
+                item.Values.Add(new(fieldId, valueId, type, ValueAvailability.Unavailable));
+                problems.Add(new(ReadProblemKind.IncompleteTraversal, "issue-field-value"));
+                return;
+            }
+            item.Values.Add(new(fieldId, valueId, type, ValueAvailability.Present, optionId, scalar));
         }
 
         private ProjectItemReadModel BuildItem(ItemBuilder item, bool complete)

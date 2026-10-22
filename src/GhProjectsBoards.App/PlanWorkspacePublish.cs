@@ -16,6 +16,8 @@ internal sealed partial class PlanWorkspaceView
     // #201: a publish reads and verifies only the items it writes, so it does not refresh the plan.
     private readonly TextBlock publishScope = Id(new TextBlock { TextWrapping = TextWrapping.Wrap,
         Text = "発行は計画を最新の情報に更新しません。他の変更は「最新の情報に更新」で取り込みます。" }, "PlanPublishScope");
+    // #258 D2: an Issue Field write changes the Issue itself, so every Project holding it shows the new value.
+    private readonly TextBlock publishIssueFields = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishIssueFields");
     private readonly TextBlock publishResult = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishResult");
     private PlanDocument? publishedDocument;
     private Button openPublish = null!;
@@ -42,7 +44,7 @@ internal sealed partial class PlanWorkspaceView
         close.Click += (_, _) => { if (!closing && !publishing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
         var header = new StackPanel { Spacing = 8 };
-        header.Children.Add(actions); header.Children.Add(publishSummary); header.Children.Add(publishScope); header.Children.Add(publishResult); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
+        header.Children.Add(actions); header.Children.Add(publishSummary); header.Children.Add(publishIssueFields); header.Children.Add(publishScope); header.Children.Add(publishResult); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
         AutomationProperties.SetLiveSetting(publishBlockedReason, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         AutomationProperties.SetLiveSetting(publishResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.Children.Add(header);
@@ -90,6 +92,7 @@ internal sealed partial class PlanWorkspaceView
         // created inside one (#247). Their writes are held, so the review must not present them as writes.
         var held = PlanOperations.HeldRows(document);
         var untitled = PlanOperations.UntitledNewRows(document).ToHashSet(StringComparer.Ordinal);
+        var issueFieldTasks = new HashSet<string>(StringComparer.Ordinal);
         void MoveToRow(string identity) { Show("tasks"); sheet?.RevealAddedRow(identity); }
         void RowActions(PlanPublishReviewLine line, string identity)
         {
@@ -149,6 +152,11 @@ internal sealed partial class PlanWorkspaceView
                 if (!holds && changes.Fields.TryGetValue(row.Identity, out var fields) && fields.Contains(field)) Group(row.Identity).HasWritableChanges = true;
                 var line = ReviewLine(document, row.Identity, field, oldValue, newValue, conflict, isNew);
                 if (holds) line.Text += "（タイトルのない新しい行のため保留）";
+                else if (oldValue != newValue && PlanSheetColumns.IsIssueField(document, field))
+                {
+                    line.Text += "（Issue フィールド）";
+                    issueFieldTasks.Add(row.Identity);
+                }
                 Group(row.Identity).Lines.Add(line);
             }
         }
@@ -217,6 +225,9 @@ internal sealed partial class PlanWorkspaceView
         publishSummary.Text = workspace.Selected is { } project
             ? $"{project.Title} ({project.OwnerLogin} / プロジェクト {project.Number}) の {reviewTaskCount} タスクを GitHub に書き込みます" : "";
         publishSummary.Visibility = reviewTaskCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        publishIssueFields.Text = issueFieldTasks.Count == 0 ? "" : $"「Issue フィールド」の値（{issueFieldTasks.Count} タスク）は Issue 自体に書き込みます。この Issue を含むほかのプロジェクトにも同じ値が表示されます。";
+        publishIssueFields.Visibility = issueFieldTasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        AutomationProperties.SetName(publishIssueFields, publishIssueFields.Text);
         reviewLines.ItemsSource = rendered;
         UpdatePublishAvailability();
     }

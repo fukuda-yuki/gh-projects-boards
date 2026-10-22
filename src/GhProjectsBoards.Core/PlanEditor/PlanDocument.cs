@@ -34,7 +34,9 @@ internal static class PlanField
 
 internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, Delete, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset, Close, Cancel, Reopen, Remove }
 internal sealed record PlanColumnDefinition(string Id, string Name, string DataType)
-{ public ImmutableArray<string> Options { get; init; } = []; }
+{ public ImmutableArray<string> Options { get; init; } = [];
+  // #258: an organization Issue Field. Its value belongs to the Issue, so every Project holding the Issue shares it.
+  public bool IssueField { get; init; } }
 internal sealed record PlanColumnMapping(string Role, string FieldId, string Name, string DataType);
 internal sealed record PlanResource(string Identity, string Name, decimal Rate, decimal? Allowance);
 internal sealed record PlanHoliday(DateOnly Date, string Name);

@@ -30,9 +30,13 @@ internal static class ProjectQueries
           ... on ProjectV2ItemFieldPullRequestValue { FIELD_REFERENCE }
           ... on ProjectV2ItemFieldReviewerValue { FIELD_REFERENCE }
           ... on ProjectV2ItemFieldUserValue { FIELD_REFERENCE }
-          ... on ProjectV2ItemIssueFieldValue { FIELD_REFERENCE }
+          ... on ProjectV2ItemIssueFieldValue { FIELD_REFERENCE issueFieldValue { ISSUE_FIELD_VALUE } }
         }
         """;
+    // #258: an organization Issue Field value has no ID of its own on the Project item; the value inside it does.
+    private const string IssueFieldValue = "__typename ... on IssueFieldDateValue { id value } ... on IssueFieldNumberValue { id value } ... on IssueFieldTextValue { id value } ... on IssueFieldSingleSelectValue { id optionId }";
+    // #258: on the Project side an Issue Field reports options: []; its options live on the organization field.
+    private const string IssueField = "__typename ... on IssueFieldDate { id } ... on IssueFieldNumber { id } ... on IssueFieldText { id } ... on IssueFieldSingleSelect { id options { id name } }";
     public static readonly string Fields = """
         query ProjectFields($id: ID!, $after: String) {
           node(id: $id) {
@@ -44,13 +48,14 @@ internal static class ProjectQueries
                 nodes {
                   __typename
                   ... on ProjectV2FieldCommon { id name dataType isIssueField project { id } }
-                  ... on ProjectV2SingleSelectField { options { id name } }
+                  ... on ProjectV2Field { issueField { ISSUE_FIELD } }
+                  ... on ProjectV2SingleSelectField { options { id name } issueField { ISSUE_FIELD } }
                 }
               }
             }
           }
         }
-        """.Replace("PAGE_INFO", PageInfo);
+        """.Replace("PAGE_INFO", PageInfo).Replace("ISSUE_FIELD", IssueField);
     public static readonly string Items = "query ProjectItems($id:ID!,$after:String){node(id:$id){__typename ... on ProjectV2{id items(first:100,after:$after){" + PageInfo + " nodes{id}}}}}";
     public static readonly string ItemDetails = """
         query ProjectItemDetails($ids:[ID!]!) {
@@ -62,7 +67,7 @@ internal static class ProjectQueries
                 __typename
                 ... on Node { id }
                 ... on Issue {
-                  labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
+                  labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt viewerCanUpdate viewerCanSetFields milestone { id title dueOn state } NATIVE
                   repository { id nameWithOwner owner { id } }
                 }
               }
@@ -70,10 +75,10 @@ internal static class ProjectQueries
             }
           }
         }
-        """.Replace("NATIVE", Native).Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
+        """.Replace("NATIVE", Native).Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference).Replace("ISSUE_FIELD_VALUE", IssueFieldValue);
     internal static string ItemValueSelection(int index)
         => ("v" + index + ":node(id:$id" + index + "){__typename ... on ProjectV2Item{id project{id} fieldValues(first:100,after:$after" + index + "){PAGE_INFO VALUES}}}")
-            .Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
+            .Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference).Replace("ISSUE_FIELD_VALUE", IssueFieldValue);
     // #201: the publication read resolves only the Issues it is about to write to their Project items,
     // so a publish never walks the Project's item connection. ProjectItemDetails then reads those items.
     public static readonly string PublishItems = """

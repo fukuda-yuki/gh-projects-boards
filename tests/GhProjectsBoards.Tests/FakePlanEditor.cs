@@ -131,6 +131,15 @@ internal static class FakePlanEditor
                 var raw = issue.Row.ExtraValues.GetValueOrDefault("Project:" + definition.Id)?.Json;
                 if (raw is null or "null") continue;
                 var type = definition.DataType switch { "TEXT" => "Text", "NUMBER" => "Number", "DATE" => "Date", "ITERATION" => "Iteration", _ => "SingleSelect" };
+                // #258: an organization Issue Field value is the Issue's own, wrapped by the Project item without an ID.
+                if (definition.IssueField)
+                {
+                    var inner = new JsonObject { ["__typename"] = "IssueField" + type + "Value", ["id"] = issue.Row.Identity + "-" + definition.Id,
+                        [type == "SingleSelect" ? "optionId" : "value"] = type == "SingleSelect" ? JsonValue.Create("IFO-" + JsonSerializer.Deserialize<string>(raw)) : JsonNode.Parse(raw) };
+                    result.Add(new JsonObject { ["__typename"] = "ProjectV2ItemIssueFieldValue",
+                        ["field"] = JsonSerializer.SerializeToNode(new { id = definition.Id, project = new { id = projectId } }), ["issueFieldValue"] = inner });
+                    continue;
+                }
                 var key = definition.DataType switch { "TEXT" => "text", "NUMBER" => "number", "DATE" => "date", "ITERATION" => "title", _ => "optionId" };
                 result.Add(new JsonObject { ["__typename"] = "ProjectV2ItemField" + type + "Value", ["id"] = issue.Row.Identity + "-" + definition.Id,
                     ["field"] = JsonSerializer.SerializeToNode(new { id = definition.Id, project = new { id = projectId } }),
@@ -152,7 +161,8 @@ internal static class FakePlanEditor
                     closedAt = row.Closed && row.CloseDate is { } closeDate ? new DateTimeOffset(closeDate.ToDateTime(new TimeOnly(12, 0)),
                         TimeZoneInfo.Local.GetUtcOffset(closeDate.ToDateTime(new TimeOnly(12, 0)))).ToUniversalTime().ToString("O") : null,
                     // #231: only this fault denies Issue update permission, so the ordinary fixtures stay writable.
-                    viewerCanUpdate = !(fault == "no-update-permission" && row.Identity == "I1"), repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository, owner = new { id = "O1" } },
+                    viewerCanUpdate = !(fault == "no-update-permission" && row.Identity == "I1"),
+                    viewerCanSetFields = !(fault == "no-set-fields" && row.Identity == "I1"), repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository, owner = new { id = "O1" } },
                     assignees = Page(row.Assignees.Select(id => (object)new { id, login = workspace ? "person-" + id : id }), row.Assignees.Length),
                     blockedBy = Page(row.Predecessors.Select(id => (object)new { id }), row.Predecessors.Length),
                     subIssues = query.Contains("subIssues(", StringComparison.Ordinal) ? Children(row.Identity) : null,
@@ -195,6 +205,13 @@ internal static class FakePlanEditor
             Write(new { data = new { nodes = nodes.ToArray(), viewer = new { databaseId = 42 } } });
             return 0;
         }
+        // #258: an organization Issue Field reports options: [] on the Project; its options are on the organization field.
+        object ExtraField(PlanColumnDefinition f) => f.IssueField
+            ? (object)new { __typename = f.DataType == "SINGLE_SELECT" ? "ProjectV2SingleSelectField" : "ProjectV2Field", id = f.Id, name = f.Name, dataType = f.DataType, isIssueField = true, project = new { id = projectId },
+                options = Array.Empty<object>(), issueField = (object)new { __typename = "IssueField" + f.DataType switch { "TEXT" => "Text", "NUMBER" => "Number", "DATE" => "Date", "MULTI_SELECT" => "MultiSelect", _ => "SingleSelect" },
+                    id = "IF-" + f.Id, options = f.Options.Select(o => new { id = "IFO-" + o, name = o }).ToArray() } }
+            : new { __typename = f.DataType == "SINGLE_SELECT" ? "ProjectV2SingleSelectField" : f.DataType == "ITERATION" ? "ProjectV2IterationField" : "ProjectV2Field", id = f.Id, name = f.Name, dataType = f.DataType, isIssueField = false, project = new { id = projectId },
+                options = f.Options.Select(o => new { id = "extra-" + o, name = o }).ToArray(), issueField = (object?)null };
         object? node = null;
         if (query.Contains("PlanAddField"))
         {
@@ -258,7 +275,7 @@ internal static class FakePlanEditor
         }
         else if (query.Contains("ProjectFields"))
             node = new { __typename = "ProjectV2", id = projectId, number = 3, url = "https://github.com/users/acme/projects/3", title = "Plan", viewerCanUpdate = true,
-                owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field).Concat(state.Phases.IsEmpty ? [] : [PhaseField()]).Concat(state.ExtraFields.Select(f => (object)new { __typename = f.DataType == "SINGLE_SELECT" ? "ProjectV2SingleSelectField" : f.DataType == "ITERATION" ? "ProjectV2IterationField" : "ProjectV2Field", id = f.Id, name = f.Name, dataType = f.DataType, isIssueField = false, project = new { id = projectId }, options = f.Options.Select(o => new { id = "extra-" + o, name = o }).ToArray() })), fieldRoles.Length + (state.Phases.IsEmpty ? 0 : 1) + state.ExtraFields.Length) };
+                owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field).Concat(state.Phases.IsEmpty ? [] : [PhaseField()]).Concat(state.ExtraFields.Select(ExtraField)), fieldRoles.Length + (state.Phases.IsEmpty ? 0 : 1) + state.ExtraFields.Length) };
         else if (query.Contains("ProjectItems") || query.Contains("ProjectItemDetails"))
         {
             var all = state.Issues.Where(i => i.Added && !(fault == "membership-delay" && state.MutationBatches is > 0 and <= 4 && state.ReadAttempts < 2 && int.Parse(i.Row.Identity[1..]) % 2 == 0)).ToArray();
@@ -382,6 +399,15 @@ internal static class FakePlanEditor
                         }
                         selection = "projectV2Item";
                     }
+                    else if (mutation == "setIssueFieldValue")
+                    {
+                        var entry = input.GetProperty("issueFields").EnumerateArray().Single();
+                        var definition = state.ExtraFields.Single(f => f.IssueField && "IF-" + f.Id == entry.GetProperty("fieldId").GetString());
+                        var json = entry.TryGetProperty("delete", out var delete) && delete.GetBoolean() ? "null"
+                            : entry.TryGetProperty("singleSelectOptionId", out var option) ? JsonSerializer.Serialize(definition.Options.Single(o => "IFO-" + o == option.GetString()))
+                            : entry.EnumerateObject().Single(p => p.Name != "fieldId").Value.GetRawText();
+                        if (fault != "mismatch") row = PlanValues.Set(row, "Project:" + definition.Id, json);
+                    }
                     else if (mutation == "updateProjectV2ItemPosition")
                     {
                         issues.RemoveAt(index);
@@ -458,7 +484,7 @@ internal static class FakePlanEditor
                     }
                     else if (mutation is not ("updateIssue" or "addLabelsToLabelable" or "removeLabelsFromLabelable" or "updateProjectV2ItemPosition"
                         or "addAssigneesToAssignable" or "removeAssigneesFromAssignable" or "addBlockedBy" or "removeBlockedBy"
-                        or "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue") && !mutation.Contains("ItemFieldValue"))
+                        or "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" or "setIssueFieldValue") && !mutation.Contains("ItemFieldValue"))
                         throw new InvalidOperationException("Unsupported fake mutation: " + mutation);
                     issues[index] = issue with { Row = row };
                     if (selection != "item") id = selection == "projectV2Item" ? ItemId("T-" + identity) : identity;

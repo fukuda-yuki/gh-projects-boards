@@ -33,6 +33,7 @@ internal static class PlanPublishPlan
                 "addLabelsToLabelable" or "removeLabelsFromLabelable" => (PlanPublishStage.Fields, "labelable { __typename }"),
                 // #231: the row-state commands.
                 "closeIssue" or "reopenIssue" => (PlanPublishStage.State, "issue { id }"),
+                "setIssueFieldValue" => (PlanPublishStage.Fields, "issue { id }"),
                 "archiveProjectV2Item" => (PlanPublishStage.State, "item { id }"),
                 "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" => (PlanPublishStage.Hierarchy, "issue { id }"),
                 "addBlockedBy" or "removeBlockedBy" => (PlanPublishStage.Dependencies, "issue { id }"),
@@ -44,11 +45,13 @@ internal static class PlanPublishPlan
                 document.State.Rows.Any(r => r.Identity == write.Identity), "発行操作の対象または形式が不正です。");
             PlanOperations.Require(write.Field is null || write.Field == PlanField.MilestoneTitle && write.Mutation == "updateIssue"
                 || write.Field == PlanField.Labels && write.Mutation is "addLabelsToLabelable" or "removeLabelsFromLabelable"
-                || (write.Field == PlanField.Status || PlanSheetColumns.IsExtra(write.Field)) && write.Mutation is "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue", "発行列の指定が不正です。");
+                || (write.Field == PlanField.Status || PlanSheetColumns.IsExtra(write.Field)) && write.Mutation is "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue"
+                || (PlanSheetColumns.IsExtra(write.Field) || PlanColumnMatching.Roles.Any(r => r.Role == write.Field)) && write.Mutation == "setIssueFieldValue", "発行列の指定が不正です。");
+            PlanOperations.Require(write.Mutation != "setIssueFieldValue" || write.Field is not null, "発行列の指定が不正です。");
             using var input = System.Text.Json.JsonDocument.Parse(write.Input);
             PlanOperations.Require(input.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object, "発行入力が不正です。");
             if (write.Field == PlanField.MilestoneTitle) PlanOperations.Require(input.RootElement.TryGetProperty("milestoneId",out _) && !input.RootElement.TryGetProperty("title",out _),"マイルストーンの発行入力が不正です。");
-            if (write.Field is not null && PlanSheetColumns.IsExtra(write.Field)) PlanOperations.Require(input.RootElement.GetProperty("fieldId").GetString() == write.Field[8..],"追加列の発行先が一致しません。");
+            if (write.Field is not null && PlanSheetColumns.IsExtra(write.Field) && write.Mutation != "setIssueFieldValue") PlanOperations.Require(input.RootElement.GetProperty("fieldId").GetString() == write.Field[8..],"追加列の発行先が一致しません。");
             var target = write.Mutation switch
             {
                 "addLabelsToLabelable" or "removeLabelsFromLabelable" => "labelableId",
@@ -56,7 +59,7 @@ internal static class PlanPublishPlan
                 "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => "assignableId",
                 "addBlockedBy" or "removeBlockedBy" => "issueId",
                 "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" => "subIssueId",
-                "closeIssue" or "reopenIssue" => "issueId",
+                "closeIssue" or "reopenIssue" or "setIssueFieldValue" => "issueId",
                 "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" or "updateProjectV2ItemPosition" or "archiveProjectV2Item" => "itemId", _ => null
             };
             if (target is not null) PlanOperations.Require(input.RootElement.GetProperty(target).GetString() == (target == "itemId" ? "item:" : "") + write.Identity, "発行対象が行と一致しません。");
@@ -80,6 +83,20 @@ internal static class PlanPublishPlan
             if (References(text, held)) return -1;
             writes.Add(new(writes.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), id, stage, mutation, type, text, selection));
             return writes.Count - 1;
+        }
+        // #258: an organization Issue Field value is the Issue's own, so it is written on the Issue with the
+        // organization field ID. Each write carries one field, keeping the per-field ledger, verification and
+        // conflict handling the Project field writes use; a publish batch still sends them together.
+        void AddIssueField(PlanRow row, string field, Projects.ProjectFieldDefinition definition, object? value)
+        {
+            if (remote.CannotSetFields.Contains(row.Identity))
+                throw new InvalidOperationException($"「{row.Title}」の Issue フィールドを変更する権限がありません。この変更を元に戻してから発行してください。");
+            var entry = new Dictionary<string, object?> { ["fieldId"] = definition.IssueFieldId };
+            if (value is null) entry["delete"] = true;
+            else entry[definition.DataType switch { "DATE" => "dateValue", "NUMBER" => "numberValue", "TEXT" => "textValue", _ => "singleSelectOptionId" }] = value;
+            var at = Add(row.Identity, PlanPublishStage.Fields, "setIssueFieldValue", "SetIssueFieldValueInput",
+                new Dictionary<string, object?> { ["issueId"] = row.Identity, ["issueFields"] = new[] { entry } }, "issue { id }");
+            if (at >= 0) writes[at] = writes[at] with { Field = field };
         }
         var rows = document.State.Rows;
         foreach (var scheduled in PlanOperations.Schedule(document, today))
@@ -129,8 +146,14 @@ internal static class PlanPublishPlan
                     if (row.ExtraValues.GetValueOrDefault(field)?.Availability is not (Projects.ValueAvailability.Present or Projects.ValueAvailability.Empty)
                         || before.ExtraValues.GetValueOrDefault(field)?.Availability is Projects.ValueAvailability.Unavailable or Projects.ValueAvailability.Unsupported)
                         throw new InvalidOperationException("追加列の値を読み取れません。最新の情報に更新してください。");
-                    var input = new Dictionary<string,object?> { ["projectId"] = document.Project.NodeId, ["itemId"] = "item:" + row.Identity, ["fieldId"] = definition.Id.NodeId };
                     var value = PlanExtraEditing.Value(row,field);
+                    if (definition.IssueFieldId is not null)
+                    {
+                        AddIssueField(row, field, definition, value is null ? null : definition.DataType == "SINGLE_SELECT"
+                            ? definition.Options.Single(o => o.Name == (string)value).Id : value);
+                        continue;
+                    }
+                    var input = new Dictionary<string,object?> { ["projectId"] = document.Project.NodeId, ["itemId"] = "item:" + row.Identity, ["fieldId"] = definition.Id.NodeId };
                     if (value is not null) input["value"] = definition.DataType switch {
                         "TEXT" => new { text = (string)value }, "NUMBER" => (object)new { number = (decimal)value },
                         "DATE" => new { date = (string)value },
@@ -215,6 +238,19 @@ internal static class PlanPublishPlan
                             ?? throw new InvalidOperationException("列を割り当ててください: " + field);
                         var definition = remote.Fields.Single(f => f.Id.NodeId == mapping.FieldId);
                         var clear = av == "null" || field == PlanField.Fixed && !row.Fixed;
+                        if (definition.IssueFieldId is not null)
+                        {
+                            AddIssueField(row, field, definition, clear ? null : field switch
+                            {
+                                PlanField.Estimate => row.Estimate, PlanField.Remaining => row.Remaining, PlanField.Actual => row.Actual,
+                                PlanField.Start => row.Start!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), PlanField.End => row.End!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                                PlanField.StartNoEarlierThan => row.StartNoEarlierThan!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                                PlanField.Phase => definition.Options.Single(o => o.Name == row.Phase).Id,
+                                PlanField.Fixed => definition.Options.Single(o => o.Name == "固定").Id,
+                                _ => throw new InvalidOperationException("未対応の列です。")
+                            });
+                            break;
+                        }
                         var input = new Dictionary<string, object?> { ["projectId"] = document.Project.NodeId, ["itemId"] = "item:" + row.Identity, ["fieldId"] = mapping.FieldId };
                         if (!clear) input["value"] = field switch
                         {

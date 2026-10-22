@@ -182,7 +182,9 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
                 token.ThrowIfCancellationRequested();
                 if (read.Outcome != ProjectReadOutcome.Complete || read.Project is null) throw new InvalidOperationException("プロジェクトを取得できません。");
                 var project = read.Project;
-                var fields = project.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem && f.Availability == ValueAvailability.Present)
+                // #258: an organization Issue Field matches by name like a Project field; a name shared by both
+                // is ambiguous and stays unmapped.
+                var fields = project.Fields.Where(f => (f.ValueOwner == FieldOwner.ProjectItem || f.IssueFieldId is not null) && f.Availability == ValueAvailability.Present)
                     .Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType));
                 var repositories = project.Issues.Values.Select(i => i.Repository.NameWithOwner).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
                 // #253: the Project's people are the people assigned in it. The complete read already returns
