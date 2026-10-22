@@ -2060,7 +2060,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<NumberBox>().Any(n => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(n) == "PlanRateU2"), Is.True);
-            Assert.That(Ui.Find<ComboBox>("PlanMapStartNoEarlierThan").Items.Cast<PlanColumnDefinition>().Any(c => c.Name == "開始日指定"), Is.True);
+            Assert.That(Ui.Find<ComboBox>("PlanMapStartNoEarlierThan").Items.Cast<PlanFieldChoice>().Any(c => c.Label == "開始日指定"), Is.True);
             Assert.That(Ui.Find<ScrollViewer>("PlanSettingsScroll").Visibility, Is.EqualTo(Visibility.Visible));
         });
     }
@@ -2195,7 +2195,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
-            Assert.That(((GhProjectsBoards.Core.PlanEditor.PlanColumnDefinition)Ui.Find<ComboBox>("PlanMapFixed").SelectedItem).Name, Is.EqualTo("日程固定"));
+            Assert.That(((PlanFieldChoice)Ui.Find<ComboBox>("PlanMapFixed").SelectedItem).Label, Is.EqualTo("日程固定"));
             Assert.That(Ui.Tree(view).OfType<Button>().Any(b => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(b) == "PlanAddFields"), Is.False);
         });
         Assert.That(FakePlanEditor.Load(root).AddedFields.Length, Is.EqualTo(2));
@@ -2320,8 +2320,8 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(AutomationProperties.GetName(combo), Is.EqualTo(caption));
             }
             var estimate = Ui.Find<ComboBox>("PlanMapEstimate");
-            Assert.That(((PlanColumnDefinition)estimate.SelectedItem).Name, Is.EqualTo("Estimate"));
-            Assert.That(estimate.Items.Cast<PlanColumnDefinition>().Select(c => c.Name), Does.Contain("Remaining"));
+            Assert.That(((PlanFieldChoice)estimate.SelectedItem).Label, Is.EqualTo("Estimate"));
+            Assert.That(estimate.Items.Cast<PlanFieldChoice>().Select(c => c.Label), Does.Contain("Remaining"));
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
@@ -2412,7 +2412,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         FakePlanEditor.Save(root, fake with { Phases = ["SA", "UI"], Issues = fake.Issues.Select(i => i with { Phase = "SA" }).ToImmutableArray() });
         await Open(); await Settings();
         await Ui.Run(() => {
-            Assert.That(((PlanColumnDefinition)Ui.Find<ComboBox>("PlanMapPhase").SelectedItem).Id, Is.EqualTo("F-Phase"));
+            Assert.That(((PlanFieldChoice)Ui.Find<ComboBox>("PlanMapPhase").SelectedItem).Definition.Id, Is.EqualTo("F-Phase"));
             Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程 · 工程なし 0 タスク"));
             Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_SA").Text, Is.EqualTo("1"));
             Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_UI").Text, Is.EqualTo("0"));
@@ -2448,7 +2448,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             if (kind == "rate") Ui.Find<NumberBox>("PlanRateU1").Value = 0;
             else {
                 var combo = Ui.Find<ComboBox>("PlanMapEstimate");
-                combo.SelectedItem = combo.Items.Cast<PlanColumnDefinition>().Single(c => c.Name == "Remaining");
+                combo.SelectedItem = combo.Items.Cast<PlanFieldChoice>().Single(c => c.Label == "Remaining");
             }
         });
         await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
@@ -2456,7 +2456,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             Assert.That(workspace.Session!.UndoCount, Is.Zero);
             if (kind == "rate") Assert.That(Ui.Find<NumberBox>("PlanRateU1").Value, Is.EqualTo(100));
-            else Assert.That(((PlanColumnDefinition)Ui.Find<ComboBox>("PlanMapEstimate").SelectedItem).Name, Is.EqualTo("Estimate"));
+            else Assert.That(((PlanFieldChoice)Ui.Find<ComboBox>("PlanMapEstimate").SelectedItem).Label, Is.EqualTo("Estimate"));
         });
     }
 
