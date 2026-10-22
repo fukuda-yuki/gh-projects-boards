@@ -136,8 +136,9 @@ internal sealed partial class PlanPublisherTests
     {
         await StartWithIssueFields();
         // The same choices the settings drop-down lists: the Project's readable fields of the role's data type.
+        // 日程固定 reads only a field whose values are 固定, so a field holding other options is left out here.
         foreach (var role in PlanColumnMatching.Roles)
-            foreach (var choice in session.Document.Baseline.Columns.Where(c => c.DataType == role.Type))
+            foreach (var choice in session.Document.Baseline.Columns.Where(c => c.DataType == role.Type && (role.Role != PlanField.Fixed || c.Options.Contains("固定"))))
             {
                 var columns = session.Document.State.Settings.Columns.Where(c => c.Role != role.Role && c.FieldId != choice.Id)
                     .Append(new PlanColumnMapping(role.Role, choice.Id, choice.Name, choice.DataType)).ToImmutableArray();
