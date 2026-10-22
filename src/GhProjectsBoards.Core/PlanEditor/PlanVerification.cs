@@ -76,6 +76,20 @@ internal static class PlanVerification
                     return option is not null && (PlanSheetColumns.IsExtra(role) ? PlanExtraEditing.Value(row, role) as string : role == PlanField.Phase ? row.Phase : row.Status) == option.Name;
                 }
                 return JsonNode.DeepEquals(JsonNode.Parse(PlanValues.Get(row, role)), value.Value);
+            // #258: an organization Issue Field write is verified by the value the Issue reports back.
+            case "setIssueFieldValue":
+                var issueRole = Field(write, settings);
+                var entry = input["issueFields"]!.AsArray().Single()!.AsObject();
+                if (entry["delete"]?.GetValue<bool>() == true) return PlanValues.Get(row, issueRole) == (issueRole == PlanField.Fixed ? "false" : "null");
+                var fieldId = entry["fieldId"]!.GetValue<string>();
+                var written = entry.Single(p => p.Key != "fieldId");
+                if (written.Key == "singleSelectOptionId")
+                {
+                    var name = remote.Fields.SingleOrDefault(f => f.IssueFieldId == fieldId)?.Options.SingleOrDefault(o => o.Id == written.Value?.GetValue<string>())?.Name;
+                    return name is not null && (issueRole == PlanField.Fixed ? row.Fixed && name == "固定"
+                        : (PlanSheetColumns.IsExtra(issueRole) ? PlanExtraEditing.Value(row, issueRole) as string : row.Phase) == name);
+                }
+                return JsonNode.DeepEquals(JsonNode.Parse(PlanValues.Get(row, issueRole)), written.Value);
             default: return false;
         }
     }

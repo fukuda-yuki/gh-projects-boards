@@ -15,7 +15,9 @@ internal sealed record PlanRemoteSnapshot(PlanBaseline Baseline, ImmutableDictio
   public ImmutableDictionary<string, PlanIssueLink> IssueLinks { get; init; } = ImmutableDictionary<string, PlanIssueLink>.Empty;
   public ImmutableDictionary<string, ImmutableArray<string>> SubIssueOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty;
   // #231: rows whose Issue the viewer cannot update, observed by this read.
-  public ImmutableArray<string> CannotUpdate { get; init; } = []; }
+  public ImmutableArray<string> CannotUpdate { get; init; } = [];
+  // #258: rows whose Issue Field values the viewer cannot set, observed by this read.
+  public ImmutableArray<string> CannotSetFields { get; init; } = []; }
 internal static class PlanSnapshot
 {
     internal static string ReadDiagnostic(ProjectReadResult result) => $"{result.Outcome}: " + string.Join("; ",
@@ -58,7 +60,8 @@ internal static class PlanSnapshot
           SubIssueOrders = p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId)).ToImmutableDictionary(i => i.Id.NodeId, i => i.Native!.SubIssues.Select(c => c.NodeId).ToImmutableArray()),
           // #231: only a definite false observation disables a command; an unavailable capability is not treated
           // as a denial, so a read that could not see permission leaves the observation alone.
-          CannotUpdate = DeniedUpdates(p, items) };
+          CannotUpdate = DeniedUpdates(p, items),
+          CannotSetFields = DeniedFieldWrites(p, items) };
     }
     // #201: assembles the scoped observation into the whole-Project snapshot shape the merge, verification
     // and adoption paths expect. The written rows and their items come from the read; a row outside the
@@ -96,11 +99,15 @@ internal static class PlanSnapshot
           // outside the scope is carried over while the row stays in the plan, and dropped when it leaves. A row
           // the read covered but did not deliver is gone, so its entry goes too.
           CannotUpdate = document.Sync.CannotUpdate.Where(id => !observed.Any(r => r.Identity == id) && rows.Any(r => r.Identity == id))
-              .Concat(DeniedUpdates(p, items)).Distinct(StringComparer.Ordinal).ToImmutableArray() };
+              .Concat(DeniedUpdates(p, items)).Distinct(StringComparer.Ordinal).ToImmutableArray(),
+          CannotSetFields = DeniedFieldWrites(p, items) };
     }
     // #231: the identities this read observed with a definite inability to update, keyed the way the rows are.
     private static ImmutableArray<string> DeniedUpdates(ProjectReadModel p, ImmutableDictionary<string, string> items)
         => p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId) && i.Capability?.CanUpdate == false)
+            .Select(i => i.Id.NodeId).Distinct(StringComparer.Ordinal).ToImmutableArray();
+    private static ImmutableArray<string> DeniedFieldWrites(ProjectReadModel p, ImmutableDictionary<string, string> items)
+        => p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId) && i.CanSetFields == false)
             .Select(i => i.Id.NodeId).Distinct(StringComparer.Ordinal).ToImmutableArray();
     private static ProjectReadModel RequireComplete(ProjectReadResult result, string message)
     {
@@ -110,8 +117,10 @@ internal static class PlanSnapshot
         if (statusField is not null && statusField.Availability != ValueAvailability.Present) throw new InvalidOperationException("Status を読み取れません。");
         return p;
     }
+    // The fields whose values the app reads. A field it cannot read is never offered as a column or a mapping.
     private static ImmutableArray<PlanColumnDefinition> Columns(ProjectReadModel p)
-        => p.Fields.Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType) { Options = f.Options.Select(o => o.Name).ToImmutableArray() }).ToImmutableArray();
+        => p.Fields.Where(f => f.Availability == ValueAvailability.Present).Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType)
+            { Options = f.Options.Select(o => o.Name).ToImmutableArray(), IssueField = f.IssueFieldId is not null }).ToImmutableArray();
     private static ImmutableArray<PlanMilestone> Milestones(ProjectReadModel p)
         => p.Milestones.GroupBy(m => m.Title, StringComparer.Ordinal).Select(g => new PlanMilestone(g.Key,
             g.Max(m => m.DueDate), g.All(m => m.Closed), g.Select(m => m.DueDate).Distinct().Count() > 1)).ToImmutableArray();
@@ -158,7 +167,7 @@ internal static class PlanSnapshot
             foreach (var mapping in settings.Columns)
             {
                 var field = p.Fields.SingleOrDefault(f => f.Id.NodeId == mapping.FieldId);
-                if (field is null || field.DataType != mapping.DataType || field.ValueOwner != FieldOwner.ProjectItem ||
+                if (field is null || field.DataType != mapping.DataType || field.ValueOwner != FieldOwner.ProjectItem && field.IssueFieldId is null ||
                     field.Availability != ValueAvailability.Present) throw new InvalidOperationException("割り当てた列を読み取れません。");
                 var value = item.Values.SingleOrDefault(v => v.FieldId?.NodeId == mapping.FieldId);
                 if (value is not null && value.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
@@ -178,7 +187,7 @@ internal static class PlanSnapshot
                 };
                 row = PlanValues.Set(row, mapping.Role, json);
             }
-            foreach (var definition in p.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem))
+            foreach (var definition in p.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem || f.IssueFieldId is not null))
             {
                 var key = "Project:" + definition.Id.NodeId;
                 var value = item.Values.SingleOrDefault(v => v.FieldId?.NodeId == key[8..]);

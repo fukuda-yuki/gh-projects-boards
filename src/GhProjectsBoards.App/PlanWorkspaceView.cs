@@ -826,12 +826,15 @@ internal sealed partial class PlanWorkspaceView : UserControl
             settings.Children.Add(SettingsHeading("GitHub のフィールド"));
             foreach (var role in PlanColumnMatching.Roles)
             {
-                var choices = new[] { new PlanColumnDefinition("", "未設定", role.Type) }.Concat(session.Document.Baseline.Columns.Where(c => c.DataType == role.Type)).ToArray();
-                var combo = Id(new ComboBox { Header = PlanSheetView.FullName(PlanSheetView.Columns.Single(c => c.Field == role.Role)), ItemsSource = choices, DisplayMemberPath = "Name", Width = 280 }, "PlanMap" + role.Role);
+                // #258: an organization Issue Field is named as one, so it stays distinguishable from a Project
+                // field with the same name.
+                var choices = new[] { new PlanColumnDefinition("", "未設定", role.Type) }.Concat(session.Document.Baseline.Columns.Where(c => c.DataType == role.Type))
+                    .Select(c => new PlanFieldChoice(c, c.IssueField ? c.Name + PlanSheetColumns.IssueFieldSuffix : c.Name)).ToArray();
+                var combo = Id(new ComboBox { Header = PlanSheetView.FullName(PlanSheetView.Columns.Single(c => c.Field == role.Role)), ItemsSource = choices, DisplayMemberPath = "Label", Width = 280 }, "PlanMap" + role.Role);
                 AutomationProperties.SetName(combo, (string)combo.Header);
-                combo.SelectedItem = choices.FirstOrDefault(c => c.Id == value.Columns.SingleOrDefault(m => m.Role == role.Role)?.FieldId) ?? choices[0];
+                combo.SelectedItem = choices.FirstOrDefault(c => c.Definition.Id == value.Columns.SingleOrDefault(m => m.Role == role.Role)?.FieldId) ?? choices[0];
                 combo.SelectionChanged += async (_, _) => {
-                    if (rendering || generation != settingsGeneration || combo.SelectedItem is not PlanColumnDefinition selected) return;
+                    if (rendering || generation != settingsGeneration || combo.SelectedItem is not PlanFieldChoice { Definition: var selected }) return;
                     await Run(async () => {
                         await ChangeSettings(s => s with { Columns = s.Columns.Where(c => c.Role != role.Role)
                             .Concat(selected.Id.Length == 0 ? [] : new[] { new PlanColumnMapping(role.Role, selected.Id, selected.Name, selected.DataType) }).ToImmutableArray() });
@@ -839,7 +842,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                     });
                     if (generation != settingsGeneration) return;
                     rendering = true;
-                    try { combo.SelectedItem = choices.FirstOrDefault(c => c.Id == session.Document.State.Settings.Columns.SingleOrDefault(m => m.Role == role.Role)?.FieldId) ?? choices[0]; }
+                    try { combo.SelectedItem = choices.FirstOrDefault(c => c.Definition.Id == session.Document.State.Settings.Columns.SingleOrDefault(m => m.Role == role.Role)?.FieldId) ?? choices[0]; }
                     finally { rendering = false; }
                 };
                 settings.Children.Add(combo);
@@ -1258,3 +1261,4 @@ internal sealed partial class PlanWorkspaceView : UserControl
         }
     }
 }
+internal sealed record PlanFieldChoice(PlanColumnDefinition Definition, string Label);

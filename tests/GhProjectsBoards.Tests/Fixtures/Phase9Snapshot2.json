@@ -759,133 +759,155 @@
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C3Y",
         "name": "Title",
         "dataType": "TITLE",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C3g",
         "name": "Assignees",
         "dataType": "ASSIGNEES",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "F-Status",
         "name": "Status",
         "dataType": "SINGLE_SELECT",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C30",
         "name": "Labels",
         "dataType": "LABELS",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C38",
         "name": "Linked pull requests",
         "dataType": "LINKED_PULL_REQUESTS",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4I",
         "name": "Milestone",
         "dataType": "MILESTONE",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4M",
         "name": "Repository",
         "dataType": "REPOSITORY",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4c",
         "name": "Reviewers",
         "dataType": "REVIEWERS",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4g",
         "name": "Parent issue",
         "dataType": "PARENT_ISSUE",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4o",
         "name": "Sub-issues progress",
         "dataType": "SUB_ISSUES_PROGRESS",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4s",
         "name": "Created",
         "dataType": "CREATED",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C40",
         "name": "Updated",
         "dataType": "UPDATED",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C48",
         "name": "Closed",
         "dataType": "CLOSED",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C_0",
         "name": "Priority",
         "dataType": "SINGLE_SELECT",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C_4",
         "name": "Size",
         "dataType": "SINGLE_SELECT",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "F-Estimate",
         "name": "Estimate",
         "dataType": "NUMBER",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "F-Start",
         "name": "Start date",
         "dataType": "DATE",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "F-End",
         "name": "Target date",
         "dataType": "DATE",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "F-Remaining",
         "name": "Remaining",
         "dataType": "NUMBER",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "F-Actual",
         "name": "Actual",
         "dataType": "NUMBER",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "F-StartNoEarlierThan",
         "name": "\u958B\u59CB\u65E5\u6307\u5B9A",
         "dataType": "DATE",
-        "options": []
+        "options": [],
+        "issueField": false
       },
       {
         "id": "F-Fixed",
         "name": "\u65E5\u7A0B\u56FA\u5B9A",
         "dataType": "SINGLE_SELECT",
-        "options": []
+        "options": [],
+        "issueField": false
       }
     ],
     "milestones": [],

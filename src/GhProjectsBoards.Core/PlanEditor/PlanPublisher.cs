@@ -76,7 +76,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             foreach (var (role, name, type) in new[] { (PlanField.StartNoEarlierThan, "開始日指定", "DATE"), (PlanField.Fixed, "日程固定", "SINGLE_SELECT") })
             {
                 var matches = result.Project.Fields.Where(f => f.Name == name).ToArray();
-                if (matches.Length > 1 || matches.Any(f => f.DataType != type || f.ValueOwner != FieldOwner.ProjectItem))
+                if (matches.Length > 1 || matches.Any(f => f.DataType != type || f.Availability != ValueAvailability.Present || f.ValueOwner != FieldOwner.ProjectItem && f.IssueFieldId is null))
                     throw new InvalidOperationException("同名の列の型または識別子を確認してください: " + name);
                 string id;
                 if (matches.Length == 1)

@@ -25,7 +25,9 @@ internal sealed record IssueReadModel(ScopedId Id, RepositoryReadModel Repositor
 { public ReadValue<NativeLabel[]> Labels { get; init; } = new(ValueAvailability.NotLoaded);
   public ReadValue<MilestoneReadModel> Milestone { get; init; } = new(ValueAvailability.NotLoaded);
   public ReadValue<DateTimeOffset?> ClosedAt { get; init; } = new(ValueAvailability.NotLoaded);
-  public ReadValue<IssueStateReason?> StateReason { get; init; } = new(ValueAvailability.NotLoaded); }
+  public ReadValue<IssueStateReason?> StateReason { get; init; } = new(ValueAvailability.NotLoaded);
+  // #258: organization Issue Field values are written on the Issue; this is GitHub's permission for that.
+  public bool? CanSetFields { get; init; } }
 internal sealed record MilestoneReadModel(ScopedId Id, ScopedId RepositoryId, string Title, DateOnly? DueDate, bool Closed);
 internal sealed record NativeLabel(string Id, string Name);
 internal sealed record RepositoryLabel(ScopedId RepositoryId, string Id, string Name);
@@ -36,7 +38,12 @@ internal sealed record CapabilityObservation(bool? CanUpdate, DateTimeOffset Obs
 internal sealed record SelectOption(string Id, string Name);
 internal sealed record ProjectFieldDefinition(ScopedId Id, ScopedId ProjectId, string Name,
     string TypeName, string DataType, FieldOwner ValueOwner, IReadOnlyList<SelectOption> Options,
-    ValueAvailability Availability);
+    ValueAvailability Availability)
+{
+    // #258: an organization Issue Field added to the Project. Its value belongs to the Issue and is written
+    // with this organization field ID, not the Project field ID.
+    public string? IssueFieldId { get; init; }
+}
 internal sealed record ProjectFieldValue(ScopedId? FieldId, string? ValueId, string TypeName,
     ValueAvailability Availability, string? OptionId = null, string? Scalar = null);
 internal sealed record ProjectItemReadModel(ScopedId Id, ProjectItemKind Kind, string TypeName,
