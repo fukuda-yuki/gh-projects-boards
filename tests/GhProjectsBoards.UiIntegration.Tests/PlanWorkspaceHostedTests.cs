@@ -2319,6 +2319,34 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test]
+    public async Task SettingsListsOnlyTheExcludedKindsThatArePresent()
+    {
+        FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { Drafts = 2, PullRequests = 0, Redacted = 0, HiddenItems = 0 });
+        await Open(); await Settings();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanExcludedCounts").Text, Is.EqualTo("計画対象外: ドラフト 2 件")));
+        await Ui.Run(() => Ui.Click("PlanSettingsBack")); await Ui.Idle();
+        FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { Drafts = 0 });
+        await Ui.ClickCommand("PlanRefresh"); await Ui.Idle(); await Settings();
+        await Ui.Run(() => Assert.That(Ui.Tree(Ui.Root).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "PlanExcludedCounts"), Is.False));
+    }
+
+    [Test]
+    public async Task SettingsLabelsPersonColumnsOnceAndKeepsEachControlNamed()
+    {
+        await Open(); await Settings();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanPeopleHeaderRate").Text, Is.EqualTo("稼働率 (%)"));
+            Assert.That(Ui.Find<TextBlock>("PlanPeopleHeaderAllowance").Text, Is.EqualTo("上限工数 h"));
+            var rate = Ui.Find<NumberBox>("PlanRateU1");
+            var allowance = Ui.Find<TextBox>("PlanAllowanceU1");
+            Assert.That(rate.Header, Is.Null);
+            Assert.That(allowance.Header, Is.Null);
+            Assert.That(AutomationProperties.GetName(rate), Does.EndWith(" 稼働率 (%)"));
+            Assert.That(AutomationProperties.GetName(allowance), Does.EndWith(" 上限工数 h"));
+        });
+    }
+
+    [Test]
     public async Task SettingsMappingHeadersUseJapaneseConceptsAndKeepGitHubFieldNames()
     {
         await Open(); await Settings();
@@ -2425,14 +2453,14 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open(); await Settings();
         await Ui.Run(() => {
             Assert.That(((PlanFieldChoice)Ui.Find<ComboBox>("PlanMapPhase").SelectedItem).Definition.Id, Is.EqualTo("F-Phase"));
-            Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程 · 工程なし 0 タスク"));
+            Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程"));
             Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_SA").Text, Is.EqualTo("1"));
             Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_UI").Text, Is.EqualTo("0"));
             Assert.That(Ui.Find<ComboBox>("PlanPhaseMilestone_SA").Items.Cast<string>(), Is.EqualTo(new[] { "なし" }));
             Ui.Find<ComboBox>("PlanMapPhase").SelectedIndex = 0;
         });
         await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Does.StartWith("工程のフィールドが未設定です。")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程のフィールドが未設定です。")));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

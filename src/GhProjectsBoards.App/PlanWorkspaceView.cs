@@ -876,11 +876,20 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 dates => ChangeSettings(s => s with { CompanyDaysOff = dates })));
             settings.Children.Add(SettingsHeading("担当者"));
             var people = workspace.People;
+            if (people.Any())
+            {
+                var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+                header.Children.Add(new TextBlock { Text = "担当者", Width = 150 });
+                header.Children.Add(Id(new TextBlock { Text = "稼働率 (%)", Width = 150 }, "PlanPeopleHeaderRate"));
+                header.Children.Add(Id(new TextBlock { Text = "上限工数 h", Width = 150 }, "PlanPeopleHeaderAllowance"));
+                settings.Children.Add(header);
+            }
             foreach (var person in people)
             {
                 var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
                 line.Children.Add(new TextBlock { Text = person.Name, Width = 150, VerticalAlignment = VerticalAlignment.Center });
-                var rate = Id(new NumberBox { Header = "稼働率 (%)", Value = (double)person.Rate, Minimum = 0, Maximum = 100, Width = 150 }, "PlanRate" + person.Identity);
+                var rate = Id(new NumberBox { Value = (double)person.Rate, Minimum = 0, Maximum = 100, Width = 150 }, "PlanRate" + person.Identity);
+                AutomationProperties.SetName(rate, person.Name + " 稼働率 (%)");
                 rate.ValueChanged += async (_, _) => {
                     if (rendering || generation != settingsGeneration) return;
                     if (!double.IsNaN(rate.Value)) await Run(() => ChangePerson(person, p => p with { Rate = (decimal)rate.Value }));
@@ -907,7 +916,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                         ? number : throw new ArgumentException("上限工数は0以上の数値で入力してください（単位: h）。");
                     await ChangePerson(person, p => p with { Allowance = hours });
                 });
-                allowance.MinWidth = 150; allowance.Width = 150;
+                allowance.Header = null; allowance.MinWidth = 150; allowance.Width = 150;
                 AutomationProperties.SetName(allowance, person.Name + " 上限工数 h");
                 line.Children.Add(allowance);
                 settings.Children.Add(line);
@@ -927,10 +936,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 phaseTargets.Children.Clear();
                 var mapping = session.Document.State.Settings.Columns.SingleOrDefault(c => c.Role == PlanField.Phase);
                 var field = session.Document.Baseline.Columns.SingleOrDefault(c => c.Id == mapping?.FieldId);
-                if (field is null) { phaseDetails.Text = "工程のフィールドが未設定です。プロジェクトの単一選択フィールドを 工程 に割り当てると、サマリーで工程別に集計します。"; return; }
+                if (field is null) { phaseDetails.Text = "工程のフィールドが未設定です。"; return; }
                 var parents = session.Document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!).ToHashSet();
                 var counts = session.Document.State.Rows.Where(r => !parents.Contains(r.Identity)).ToLookup(r => r.Phase ?? "");
-                phaseDetails.Text = field.Name + $" · 工程なし {counts[""].Count()} タスク";
+                var unphased = counts[""].Count();
+                phaseDetails.Text = field.Name + (unphased > 0 ? $" · 工程なし {unphased:N0} タスク" : "");
                 Grid PhaseRow(string option, string count, FrameworkElement target) {
                     var row = new Grid { ColumnSpacing = 12 };
                     foreach (var width in new[] { 100d, 100d, 320d }) row.ColumnDefinitions.Add(new() { Width = new(width) });
@@ -940,14 +950,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
                     row.Children.Add(tasks); Grid.SetColumn(tasks, 1); row.Children.Add(target); Grid.SetColumn(target, 2);
                     return row;
                 }
-                phaseTargets.Children.Add(PhaseRow("工程", "タスク", Label("マイルストーン（任意）")));
+                phaseTargets.Children.Add(PhaseRow("工程", "タスク", Label("目標日（マイルストーン）")));
                 var milestones = session.Document.Baseline.Milestones.OrderBy(m => m.Title, StringComparer.Ordinal).ToArray();
-                var labels = new[] { "なし" }.Concat(milestones.Select(m => m.Title + " · " + (m.DueDate?.ToString("M/d") ?? "期日なし"))).ToArray();
+                var labels = new[] { "なし" }.Concat(milestones.Select(m => m.Title + " · " + (m.DueDate?.ToString("M/d") ?? "目標日なし"))).ToArray();
                 foreach (var option in field.Options) {
                     int Accepted() => Array.FindIndex(milestones, m => m.Title == session.Document.State.Settings.PhaseMilestones.GetValueOrDefault(option)) + 1;
                     var combo = Id(new ComboBox { ItemsSource = labels, HorizontalAlignment = HorizontalAlignment.Stretch,
                         SelectedIndex = Accepted() }, "PlanPhaseMilestone_" + option);
-                    AutomationProperties.SetName(combo, option + " マイルストーン（任意）");
+                    AutomationProperties.SetName(combo, option + " 目標日（マイルストーン）");
                     combo.SelectionChanged += async (_, _) => {
                         if (rendering || generation != settingsGeneration) return;
                         var selected = combo.SelectedIndex;
@@ -962,7 +972,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 }
             }
             ShowPhases(); settings.Children.Add(phaseDetails); settings.Children.Add(phaseTargets);
-            settings.Children.Add(new TextBlock { Text = "GitHub のマイルストーンを工程に対応させると、その期日を目標日としてサマリーに完了見込との差を出します。期日は GitHub で管理し、ここでは入力しません。", TextWrapping = TextWrapping.Wrap });
             foreach (var phaseMap in settings.Children.OfType<ComboBox>().Where(c => AutomationProperties.GetAutomationId(c) == "PlanMapPhase"))
                 phaseMap.SelectionChanged += async (_, _) => { await operation; if (generation == settingsGeneration) ShowPhases(); };
             RenderColumnSettings(session, generation);
@@ -979,7 +988,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }));
             settings.Children.Add(files);
             RenderAssistSettings();
-            settings.Children.Add(Id(Label($"計画対象外: ドラフト {session.Document.Sync.DraftCount} 件・プルリクエスト {session.Document.Sync.PullRequestCount} 件・参照できない項目 {session.Document.Sync.InaccessibleCount} 件"), "PlanExcludedCounts"));
+            var sync = session.Document.Sync;
+            var excluded = new[] { ("ドラフト", sync.DraftCount), ("プルリクエスト", sync.PullRequestCount), ("参照できない項目", sync.InaccessibleCount) }
+                .Where(e => e.Item2 > 0).Select(e => $"{e.Item1} {e.Item2:N0} 件").ToArray();
+            if (excluded.Length > 0) settings.Children.Add(Id(Label("計画対象外: " + string.Join("・", excluded)), "PlanExcludedCounts"));
         }
         finally { rendering = false; }
     }
@@ -994,9 +1006,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var reset = Button("既定に戻す", "PlanColumnReset", async () => { await ChangeSettings(s => s with { SheetColumns = [] }); RenderSettings(); });
         heading.Children.Add(reset); Grid.SetColumn(reset, 1);
         settings.Children.Add(heading);
-        settings.Children.Add(Id(new TextBlock {
-            Text = "表示する列、順序（ドラッグ）、表示名、幅を選びます。このプロジェクトのフィールドはすべて選べます。編集できる列は、計画シートで編集して発行します。",
-            TextWrapping = TextWrapping.Wrap }, "PlanColumnIntro"));
         var columns = PlanSheetColumns.All(session.Document);
         Grid Line() {
             var line = new Grid { ColumnSpacing = 8, MinHeight = 40 };
@@ -1073,7 +1082,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
             var source = new TextBlock { Text = column.GitHub, TextTrimming = TextTrimming.CharacterEllipsis };
             ToolTipService.SetToolTip(source, column.GitHub); Cell(line, source, 4);
             Cell(line, Id(Label(column.Type), "PlanColumnType" + column.Key), 5);
-            Cell(line, Id(Label(column.Editability), "PlanColumnMode" + column.Key), 6);
+            var mode = Id(Label(column.Editability), "PlanColumnMode" + column.Key);
+            if (column.Key == "Repository") ToolTipService.SetToolTip(mode, "リポジトリを変えると Issue の移管になるため、読み取りのみです。");
+            Cell(line, mode, 6);
             var index = columns.IndexOf(column);
             async Task Move(int target) { if (generation != settingsGeneration) return; await ChangeSettings(_ => PlanSheetColumns.Move(session.Document, column.Key, target)); RenderSettings(); }
             Button Arrow(string direction, string glyph, int target) {
@@ -1097,9 +1108,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
             });
         };
         table.Children.Add(list); settings.Children.Add(table);
-        settings.Children.Add(Id(new TextBlock {
-            Text = "見出しにマウスを置くと GitHub のフィールド名を表示します。リポジトリは移すと Issue の移管になるため、読み取りのみです。",
-            TextWrapping = TextWrapping.Wrap }, "PlanColumnFootnote"));
     }
     private Task ChangePerson(PlanResource fallback, Func<PlanResource, PlanResource> change) => ChangeSettings(s =>
     {
