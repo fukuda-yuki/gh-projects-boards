@@ -89,7 +89,7 @@ Give each item one verdict: **pass**, **partial**, **fail** or **unverified**. A
 | C3 | 「基準日」 label and a date picker showing the weekday | S1 |
 | C4 | 元に戻す / やり直し are borderless, with hover fill | S1 |
 | C5 | Thin vertical separators: 基準日 \| Undo/Redo \| unpublished + GitHub commands | S1 |
-| C6 | Amber count badge + 未発行のタスク; 未発行 0 タスク at zero | S1, S3 |
+| C6 | 未発行 N タスク in a fixed-width badge: amber when N > 0, neutral at 0 | S1, S3 |
 | C7 | 発行… is the only accent-filled button | S1 |
 | D1 | Left-aligned labelled commands in the agreed groups and order | S1 |
 | D2 | Separator between the task and overview groups | S1 |

@@ -173,6 +173,13 @@ internal sealed partial class PlanSheetHostedTests
         var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
+        const string refusal = "GitHub の Issue は削除できません。完了・中止・この版から外す を使ってください";
+        await Ui.Run(() => {
+            // The primary command agrees with the menus: it never offers a deletion the plan refuses.
+            var primary = Ui.Find<AppBarButton>("PlanSheetDelete");
+            Assert.That(primary.IsEnabled, Is.False);
+            Assert.That(ToolTipService.GetToolTip(primary), Is.EqualTo(refusal));
+        });
         await Ui.Run(() => Ui.Click("PlanSheetMore"));
         await Ui.Ready<MenuFlyoutItem>("PlanSheetDeleteOverflow");
         await Ui.Run(() => {
@@ -180,6 +187,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(item.KeyboardAcceleratorTextOverride, Is.EqualTo("Ctrl+-"));
             Assert.That(item.IsEnabled, Is.False, "a published Issue cannot be deleted from the plan");
             Assert.That(AutomationProperties.GetHelpText(item), Does.Contain("完了・中止・この版から外す"));
+            Assert.That(ToolTipService.GetToolTip(item), Is.EqualTo(refusal));
             Ui.Find<AppBarButton>("PlanSheetMore").Flyout.Hide();
         });
         await Ui.Idle();
@@ -191,7 +199,10 @@ internal sealed partial class PlanSheetHostedTests
         var undo = session.UndoCount;
         await Ui.Run(() => Ui.Click("PlanSheetMore"));
         await Ui.Ready<MenuFlyoutItem>("PlanSheetDeleteOverflow");
-        await Ui.Run(() => Assert.That(Ui.Find<MenuFlyoutItem>("PlanSheetDeleteOverflow").IsEnabled, Is.True));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<MenuFlyoutItem>("PlanSheetDeleteOverflow").IsEnabled, Is.True);
+            Assert.That(Ui.Find<AppBarButton>("PlanSheetDelete").IsEnabled, Is.True);
+        });
         await InvokeRowItem("PlanSheetDeleteOverflow");
         await Ui.Until(() => session.Document.State.Rows.All(r => r.Identity != local.Identity));
         await Ui.Run(() => {

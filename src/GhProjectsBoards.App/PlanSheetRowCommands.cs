@@ -40,7 +40,10 @@ internal sealed partial class PlanSheetView
             AddClipboardItem("貼り付け", "PlanRowPaste", "Ctrl+V", Windows.System.VirtualKey.V);
             rowMenu.Items.Add(new MenuFlyoutSeparator());
         }
-        AddRowItem("行を削除", "PlanRowDelete", "Ctrl+-", DeleteReason(targets), () => DeleteRows(targets));
+        var deleteReason = DeleteReason(targets);
+        AddRowItem("行を削除", "PlanRowDelete", "Ctrl+-", deleteReason, () => DeleteRows(targets));
+        // The refusal is the whole message: it already names the commands to use instead.
+        if (deleteReason is not null) ToolTipService.SetToolTip(rowMenu.Items[^1], deleteReason);
         AddRowItem("完了にする", "PlanRowComplete", "", targets, PlanRowAction.Complete, () => RowStateReport(targets, PlanRowAction.Complete));
         AddRowItem("中止にする", "PlanRowCancel", "", targets, PlanRowAction.Cancel, () => RowStateReport(targets, PlanRowAction.Cancel));
         AddRowItem("この版から外す", "PlanRowRemove", "", targets, PlanRowAction.Remove, () => RowStateReport(targets, PlanRowAction.Remove));

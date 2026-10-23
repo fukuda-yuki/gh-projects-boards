@@ -139,7 +139,6 @@ internal sealed partial class PlanSheetView
         ToolTipService.SetToolTip(selectedTitle, selectedTitle.Text);
         AutomationProperties.SetName(selection, selection.Text + " " + selectedTitle.Text);
         var hasSelection = Schedule.TryGetValue(selected, out var task);
-        emptyHint.Visibility = hasSelection ? Visibility.Collapsed : Visibility.Visible;
         detailToggle.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
         successorLink.Visibility = Visibility.Collapsed; successorLink.Content = "";
         predecessorLink.Visibility = Visibility.Collapsed; predecessorLink.Content = "";
@@ -153,12 +152,12 @@ internal sealed partial class PlanSheetView
             }
             if (!task.IsSummary && late.OverdueKind is { } kind && late.MissedDate is { } missed) {
                 var missedDate = missed.ToString("M/d", CultureInfo.InvariantCulture);
-                slip.Text = kind == PlanOverdueKind.Finish ? $"完了予定 {missedDate} を過ぎて未完了" : $"開始予定 {missedDate} を過ぎて未着手";
-                if (late.DaysLater is { } days) slip.Text += $" · +{days} 日";
+                slip.Text = kind == PlanOverdueKind.Finish ? $"終了日 {missedDate} を過ぎて未完了" : $"開始日 {missedDate} を過ぎて未着手";
+                if (late.DaysLater is { } days) slip.Text += $" · +{days}日";
             } else if (late.DaysLater is { } days && task.End.Value is { } planned) {
                 // The plan end and the forecast end are what the lateness compares (#236); publishing no
                 // longer defines it, so the earlier "発行済み" wording is retired.
-                slip.Text = $"見込終了 {ForecastLabel(selected)} · {planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日";
+                slip.Text = $"見込終了 {ForecastLabel(selected)} · {planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days}日";
             }
             if (!task.IsSummary && task.End.Value is { } end && ForecastEndOf(selected) is { } forecast && forecast > end) {
                 var delayed = LaterDescendantsOf(selected).Length;
@@ -187,11 +186,16 @@ internal sealed partial class PlanSheetView
             issueLink.Content = link.Caption; issueLink.NavigateUri = uri; issueLink.Visibility = Visibility.Visible;
         } else { issueLink.Content = ""; issueLink.NavigateUri = null; issueLink.Visibility = Visibility.Collapsed; }
         AutomationProperties.SetName(issueLink, issueLink.Content?.ToString() ?? "");
-        reason.Text = task is not null ? (task.StartReason is "子タスクの集計" or "完了" or "日程固定" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason) : "";
-        if (task is not null && PlanLateness.EndReason(task) is { } endReason) reason.Text += " · " + endReason;
-        if (task?.Warnings.Count > 0) reason.Text += " · " + string.Join(" / ", task.Warnings);
+        // A requirement row's dates are its children's: naming that adds nothing, so its line leaves room for
+        // the 配下 lateness summary instead.
+        var reasons = new List<string>();
+        if (task is { IsSummary: false })
+            reasons.Add(task.StartReason is "完了" or "日程固定" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason);
+        if (task is not null && PlanLateness.EndReason(task) is { } endReason) reasons.Add(endReason);
+        if (task?.Warnings.Count > 0) reasons.Add(string.Join(" / ", task.Warnings));
         var remoteProblem = RemoteProblem(selected);
-        if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;
+        if (remoteProblem.Length > 0) reasons.Add(remoteProblem);
+        reason.Text = string.Join(" · ", reasons);
         if (BlockingConflicts.FirstOrDefault(c => c.Identity == selected && c.Field == selectedField) is { } conflict)
             reason.Text = "競合: GitHub では " + PlanWorkspaceView.ReviewValue(Session.Document, selectedField, conflict.Remote);
         if (ReadOnlyReason(selected, selectedField) is { } readOnlyReason)

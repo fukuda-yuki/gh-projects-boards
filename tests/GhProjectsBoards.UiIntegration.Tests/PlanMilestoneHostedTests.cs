@@ -142,12 +142,12 @@ internal sealed partial class PlanWorkspaceHostedTests
                         $"{AutomationProperties.GetAutomationId(label)} overlaps {AutomationProperties.GetAutomationId(other)}");
                 }
             }
-            foreach (var marker in markers) Assert.That(AutomationProperties.GetName(marker), Does.Contain("期日").And.Contain("完了見込").And.Contain("+"));
+            foreach (var marker in markers) Assert.That(AutomationProperties.GetName(marker), Does.Contain("目標日").And.Contain("完了見込").And.Contain("+"));
         });
     }
 
     [TestCase(false, false, ""), TestCase(true, false, "クローズ")]
-    [TestCase(false, true, "期日がリポジトリで異なります"), TestCase(true, true, "クローズ · 期日がリポジトリで異なります")]
+    [TestCase(false, true, "目標日がリポジトリで異なります"), TestCase(true, true, "クローズ · 目標日がリポジトリで異なります")]
     public async Task MilestoneStateOnlyShowsClosedAndDateConflictWithCountSeparation(bool closed, bool conflict, string expected)
     {
         readDay = new(2026, 10, 5);
@@ -197,7 +197,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanMilestone_1")); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Where(i => i.Length > 0), Is.EqualTo(new[] { "I1" }));
-            Assert.That(Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("Empty · 期日を過ぎるタスクはありません")), Is.True);
+            Assert.That(Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("Empty · 目標日を過ぎるタスクはありません")), Is.True);
         });
     }
 

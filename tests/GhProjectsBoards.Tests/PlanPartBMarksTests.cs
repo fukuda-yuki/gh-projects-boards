@@ -34,7 +34,7 @@ internal sealed class PlanPartBMarksTests
 
         Assert.That(task.ForecastEnd, Is.Not.Null);
         Assert.That(PlanSheetText.ForecastEnd(task, late.Tasks["I1"]),
-            Is.EqualTo(PlanSheetText.Date(task.ForecastEnd!.Value) + " +" + late.Tasks["I1"].DaysLater));
+            Is.EqualTo(PlanSheetText.Date(task.ForecastEnd!.Value) + " +" + late.Tasks["I1"].DaysLater + "日"));
         // The plan end is before the 基準日, so the red 期限超過 mark wins; the slip still shows the forecast.
         Assert.That(late.OverdueTasks, Is.EqualTo(1));
         Assert.That(late.Tasks["I1"].DaysLater, Is.GreaterThan(0));
