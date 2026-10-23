@@ -33,7 +33,8 @@ internal sealed partial class PlanWorkspaceView
         detailReload = Id(new Button { Content = "再読み込み" }, "PlanDetailReload");
     private readonly Grid detailBody = new();
     private readonly Grid detailIdentityLine = new(), detailStateLine = new() { Visibility = Visibility.Collapsed };
-    private readonly TextBlock detailIdentitySeparator = Label(" · "), detailStateSeparator = Label(" · ");
+    // A TextBlock drops trailing spaces from its measured width, so the separators carry their gap as margin.
+    private readonly TextBlock detailIdentitySeparator = new() { Text = "·", Margin = new(4, 0, 4, 0) }, detailStateSeparator = new() { Text = "·", Margin = new(4, 0, 4, 0) };
     private readonly ContentControl detailHeader = new() { HorizontalContentAlignment = HorizontalAlignment.Stretch, IsTabStop = false };
     private readonly ScrollViewer detailMarkdown = Id(new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
         HorizontalContentAlignment = HorizontalAlignment.Stretch, Visibility = Visibility.Collapsed }, "PlanDetailMarkdown");
@@ -327,18 +328,12 @@ internal sealed partial class PlanWorkspaceView
         content.Children.Add(SettingsHeading(DetailCommentHeading(issue.CommentCount)));
         foreach (var comment in issue.Comments) { Text(comment.Author + " · " + DetailTime(comment.CreatedAt)); Text(DetailMarkdownText(comment.Body)); }
         if (issue.CommentCount == 0) Text("コメントはありません");
-        if (issue.CommentCount > 5) {
-            var caption = $"すべてのコメントを GitHub で見る ({issue.CommentCount} 件)";
-            var link = new HyperlinkButton { Content = Label(caption), HorizontalContentAlignment = HorizontalAlignment.Stretch };
-            AutomationProperties.SetName(link, caption); ToolTipService.SetToolTip(link, caption);
-            link.Click += async (_, _) => await OpenDetailLink(issue.Url); content.Children.Add(link);
-        }
         detailMarkdown.Content = content; detailMarkdown.Visibility = Visibility.Visible;
         detailMarkdown.ChangeView(null, 0, null, true);
     }
     private static string DetailMarkdownText(string value) => Regex.Replace(value, "<!--.*?-->", "", RegexOptions.Singleline);
     private static string DetailCommentHeading(int count) => count == 0 ? "コメント"
-        : count <= 5 ? $"コメント ({count} 件)" : $"コメント (全 {count} 件中 最新 5 件)";
+        : count <= 5 ? $"コメント {count} 件" : $"コメント {count} 件（最新 5 件）";
     private static string DetailHtml(IssueDetail issue)
     {
         var html = new StringBuilder("""
@@ -362,8 +357,6 @@ internal sealed partial class PlanWorkspaceView
             html.Append("<section class='comment'><div class='meta'>").Append(WebUtility.HtmlEncode(comment.Author + " · " + DetailTime(comment.CreatedAt)))
                 .Append("</div>").Append(comment.BodyHtml).Append("</section>");
         if (issue.CommentCount == 0) html.Append("<p>コメントはありません</p>");
-        if (issue.CommentCount > 5) html.Append("<p><a href=\"").Append(WebUtility.HtmlEncode(issue.Url)).Append("\">すべてのコメントを GitHub で見る (")
-                .Append(issue.CommentCount).Append(" 件)</a></p>");
         return html.Append("</body></html>").ToString();
     }
     private async Task OpenDetailLink(string? target)

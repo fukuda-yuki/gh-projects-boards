@@ -126,8 +126,9 @@ internal static class FakeGhProgram
                     + "<a id='fixture-fragment' href='#section'>Section</a>"
                     + "<a id='fixture-other' href='file:///ignored'>Other</a><input type='checkbox' checked disabled>",
                 updatedAt = "2026-10-15T08:30:00Z", repository = new { nameWithOwner = issue.Row.Repository },
-                comments = new { totalCount = commentCount, nodes = Enumerable.Range(1, Math.Min(commentCount, 5)).Select(i => new {
-                    author = i == 1 ? null : new { login = "fixture-user" }, createdAt = $"2026-10-{10 + i}T08:00:00Z",
+                // GitHub returns comments(last: 5): the newest five, oldest first.
+                comments = new { totalCount = commentCount, nodes = Enumerable.Range(Math.Max(commentCount - 4, 1), Math.Min(commentCount, 5)).Select(i => new {
+                    author = i == Math.Max(commentCount - 4, 1) ? null : new { login = "fixture-user" }, createdAt = $"2026-10-{10 + i}T08:00:00Z",
                     url = issueUrl + "#issuecomment-" + i, body = "<!-- hidden\ncomment metadata -->Comment " + i, bodyHTML = "<p>Comment " + i + "</p>"
                 }).ToArray() }
             } } });
