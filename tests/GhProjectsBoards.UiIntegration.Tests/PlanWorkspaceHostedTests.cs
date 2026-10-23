@@ -187,8 +187,10 @@ internal sealed partial class PlanWorkspaceHostedTests
             var text = Ui.DialogText("PlanResetConfirm");
             Assert.That(text, Does.Contain("破棄する未発行のタスク 2"));
             Assert.That(text, Does.Contain("入力した変更 2（新しく追加した 1 タスクを含む。これらは作られません）"));
-            Assert.That(text, Does.Contain("基準日は今日 " + dateText));
-            Assert.That(text, Does.Contain("元に戻す"));
+            Assert.That(text, Does.StartWith(workspace.Selected!.Title + " の未発行の変更をすべて破棄します。"));
+            // The 基準日 is already today, so the reset changes nothing worth a line; settings stay as they are.
+            Assert.That(text, Does.Not.Contain("基準日は").And.Not.Contain("稼働率"));
+            Assert.That(text, Does.Contain("「元に戻す」で取り消せます。"));
             Ui.DialogButton("PlanResetConfirm", "CloseButton");
         });
         await Ui.Idle();
@@ -225,7 +227,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await Ui.Idle();
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("2")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 2 タスク")));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
@@ -269,10 +271,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(bar.Severity, Is.EqualTo(InfoBarSeverity.Informational));
             Assert.That(bar.IsClosable, Is.True);
             Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            // #236 part B: a refresh reads and moves no date, so the bar says exactly that and reports the
-            // lateness it found instead of a 基準日 change and a changed-task count (docs/spec.md).
-            Assert.That(bar.Message, Does.StartWith("日程は変えていません。"));
-            Assert.That(bar.Message, Does.Not.Contain("日程が変わったタスク").And.Not.Contain("基準日を"));
+            // #236 part B: a refresh reads and moves no date. The status bar already counts the lateness, so the
+            // bar repeats neither counts nor a no-change sentence; it offers only the one useful filter.
+            Assert.That(bar.Message, Is.Empty);
             Assert.That(bar.Content, Is.Null);
             // The bar's lateness filter is an identity set over this sheet. Its id and label are read here,
             // on the UI thread; the rendered button is found and invoked below, waiting for it to realise.
@@ -320,7 +321,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
             Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            Assert.That(bar.Message, Does.StartWith("日程は変えていません。"));
+            Assert.That(bar.Message, Is.Empty);
             Assert.That(bar.Content, Is.Null, "A refresh with no added Issue shows no added-Issue filter.");
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -351,10 +352,13 @@ internal sealed partial class PlanWorkspaceHostedTests
             var links = workspace.Session.Document.Sync.IssueLinks;
             string Number(string id) => links[id].Caption[links[id].Caption.LastIndexOf('#')..];
             Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.EndWith(
-                $"。GitHub で追加された Issue 2: {Number("I4")} R01 PG-005 不具合修正、{Number("I5")} 顧客からの問い合わせ対応"));
+                $"GitHub で追加された Issue 2: {Number("I4")} R01 PG-005 不具合修正、{Number("I5")} 顧客からの問い合わせ対応"));
             var total = Ui.Find<FrameworkElement>("PlanCell1_Estimate");
             Assert.That(AutomationProperties.GetName(total), Does.Contain("16h（見積のないタスク 1 件を除く）"));
             Assert.That(ToolTipService.GetToolTip(total), Is.EqualTo("見積工数 · 16h（見積のないタスク 1 件を除く）"));
+            // The left-out count is its own caution tag beside the known sum, not a prefix of the number.
+            Assert.That(((PlanSummaryCell)total).Missing.Text, Is.EqualTo("未入力 1"));
+            Assert.That(((PlanSummaryCell)total).Text.Text, Is.EqualTo("16h"));
             Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator1")), Does.Contain("見積のないタスク 1"));
         });
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue245-added-issues"));
@@ -418,7 +422,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             // #236 part B: the status date a PMO chose is not "moved back" by a refresh, and the bar no
             // longer reports a 基準日 change at all — it reports that no date moved (docs/spec.md).
             Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            Assert.That(bar.Message, Does.StartWith("日程は変えていません。").And.Not.Contain("再計算"));
+            Assert.That(bar.Message, Is.Empty);
             // The read day still becomes the 基準日 of the read document.
             Assert.That(Ui.Find<CalendarDatePicker>("PlanStatusDate").Date!.Value.Date, Is.EqualTo(new DateTime(2026, 10, 6)));
         });
@@ -1023,7 +1027,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("子A → 子Aの変更")));
         await Ui.Run(() => {
             Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(1), "Only the edited task is unpublished.");
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1"));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 1 タスク"));
             var lines = Ui.Tree(Ui.Find<ListView>("PlanPublishLines")).OfType<TextBlock>().Select(t => t.Text).ToArray();
             Assert.That(lines.Count(t => t.Contains("子タスクの順序")), Is.Zero, "A GitHub-side child-order difference is not a plan change.");
         });
@@ -1170,7 +1174,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
         await Ui.Ready<PlanSheetCell>("PlanCell3_Title");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo((unpublishedBeforeCsv + 3).ToString()));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo($"未発行 {unpublishedBeforeCsv + 3} タスク"));
             Assert.That(Ui.Find<PlanSheetCell>("PlanCell3_Title").Text, Is.EqualTo("設計の追加"));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         });
@@ -1186,7 +1190,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(workspace.Session.Document.State.Rows[0].Title, Is.EqualTo("設計の変更"));
             Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(unpublishedBeforeCsv));
         });
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == unpublishedBeforeCsv.ToString());
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == $"未発行 {unpublishedBeforeCsv} タスク");
         await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(null); });
         await Ui.ClickCommand("PlanSheetCsv");
         await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
@@ -1370,9 +1374,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<Button>("PlanPublish").IsEnabled && !Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));
         await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanUndo"); });
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "1");
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 1 タスク");
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 1 タスク")));
     }
 
     [TestCase(false), TestCase(true), Category("OperationStates")]
@@ -1401,6 +1405,14 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(Ui.Find<Button>("PlanRedo").IsEnabled, Is.False);
                 Assert.That(AutomationProperties.GetName(button), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
                 Assert.That(Ui.Find<Button>("PlanBusyCancel").Visibility, Is.EqualTo(publish ? Visibility.Collapsed : Visibility.Visible));
+                // The panel names the operation and its steps; what 中止 keeps lives on the button itself.
+                var texts = Ui.Tree(panel).OfType<TextBlock>().Where(t => t.Visibility == Visibility.Visible).Select(t => t.Text).ToArray();
+                Assert.That(texts, Has.None.Contains("終わるまで計画は操作できません"));
+                if (publish) Assert.That(texts, Does.Contain("閉じても、次の発行で続きから再開します。"));
+                else {
+                    Assert.That(texts, Has.None.Contains("中止すると"));
+                    Assert.That(ToolTipService.GetToolTip(Ui.Find<Button>("PlanBusyCancel")), Is.EqualTo("中止すると、操作の前の状態に戻ります。"));
+                }
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic), Is.False);
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.True);
             });
@@ -2176,7 +2188,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P1");
         await Ui.Run(() => {
             Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1"));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 1 タスク"));
         });
         var restarted = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
         await restarted.Connect(new(FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));

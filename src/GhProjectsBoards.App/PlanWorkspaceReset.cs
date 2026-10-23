@@ -36,7 +36,7 @@ internal sealed partial class PlanWorkspaceView
         var culture = CultureInfo.GetCultureInfo("ja-JP");
         var changes = session.Changes(Today);
         var content = new StackPanel { Spacing = 12 };
-        content.Children.Add(Label($"{workspace.Selected?.Title} の未発行の変更をすべて破棄し、GitHub の今の内容を読み込み直します。"));
+        content.Children.Add(Label($"{workspace.Selected?.Title} の未発行の変更をすべて破棄します。"));
         if (changes.TaskCount == 0) content.Children.Add(Label("未発行の変更はありません。"));
         else {
             content.Children.Add(Label($"破棄する未発行のタスク {changes.TaskCount.ToString("N0", culture)}"));
@@ -44,9 +44,10 @@ internal sealed partial class PlanWorkspaceView
                 + (changes.NewTaskCount > 0 ? $"（新しく追加した {changes.NewTaskCount.ToString("N0", culture)} タスクを含む。これらは作られません）" : "")));
             if (changes.RecalculatedTaskCount > 0) content.Children.Add(Label($"再計算で変わった日程 {changes.RecalculatedTaskCount.ToString("N0", culture)}"));
         }
-        content.Children.Add(Label($"日程は GitHub の値をそのまま表示し、タスクを編集するまで動きません。基準日は今日 {Today.ToString("M/d (ddd)", culture)} になります。"));
-        content.Children.Add(Label("稼働率、上限工数、休日、列の設定はそのままです。"));
-        content.Children.Add(Label("戻したあとでも「元に戻す」で、破棄した変更を未発行の変更として戻せます。"));
+        // Only a change is worth a line: the settings stay and the dates are GitHub's, as the manual says.
+        if (session.Document.State.Settings.StatusDate != Today)
+            content.Children.Add(Label($"基準日は {Today.ToString("M/d (ddd)", culture)} になります。"));
+        content.Children.Add(Label("「元に戻す」で取り消せます。"));
         var dialog = Id(new ContentDialog {
             XamlRoot = XamlRoot, Title = "GitHub の状態に戻しますか？",
             Content = new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },

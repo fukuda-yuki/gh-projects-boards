@@ -62,8 +62,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Button retrySave;
     private readonly Button conflictAction;
     private readonly TextBlock title = Id(new TextBlock { FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "OpenProjectName");
-    private readonly Border unpublishedBadge = new() { CornerRadius = new(10), MinWidth = 20, Padding = new(6, 2, 6, 2), Background = PlanSheetView.Brush("SheetChangedMarkBrush") };
-    private readonly TextBlock unpublishedLabel = new() { Text = "未発行のタスク", VerticalAlignment = VerticalAlignment.Center };
+    // One form for every count, in a fixed width, so an edit that changes the count never moves the toolbar.
+    private readonly Border unpublishedBadge = new() { CornerRadius = new(10), Width = 128, Padding = new(6, 2, 6, 2), Background = PlanSheetView.Brush("SheetChangedMarkBrush") };
     private readonly TextBlock unpublished = Id(new TextBlock(), "PlanUnpublished");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanError");
     private readonly TextBox executable = Id(new TextBox { Header = "gh.exe", Text = ConnectionViewModel.FindGh(), MinWidth = 400 }, "PlanGhPath");
@@ -183,7 +183,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         unpublished.FontSize = 12;
         unpublishedBadge.Child = unpublished;
         var unpublishedGroup = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new(8, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
-        unpublishedGroup.Children.Add(unpublishedBadge); unpublishedGroup.Children.Add(unpublishedLabel);
+        unpublishedGroup.Children.Add(unpublishedBadge);
         commandButtons.Children.Add(unpublishedGroup);
         InitializeRefreshCommands();
         commandButtons.Children.Add(refreshButton);
@@ -341,11 +341,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
         ClearObsoletePublishResult();
         if (workspace.Session is not { } session) return;
         var count = sheet?.Session == session ? sheet.Unpublished.TaskCount : session.Changes(Today).TaskCount;
-        unpublished.Text = count > 0 ? count.ToString("N0", CultureInfo.GetCultureInfo("ja-JP")) : "未発行 0 タスク";
-        AutomationProperties.SetName(unpublished, count > 0 ? $"{unpublished.Text} 未発行のタスク" : unpublished.Text);
+        unpublished.Text = $"未発行 {count.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"))} タスク";
+        AutomationProperties.SetName(unpublished, unpublished.Text);
         unpublished.Foreground = PlanSheetView.Brush(count > 0 ? "UnpublishedBadgeTextBrush" : "TextFillColorSecondaryBrush");
         unpublishedBadge.Background = PlanSheetView.Brush(count > 0 ? "SheetChangedMarkBrush" : "ControlFillColorTransparentBrush");
-        unpublishedLabel.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
         var rows = session.Document.State.Rows;
         var parents = rows.Where(r => r.Parent is not null).Select(r => r.Parent).ToHashSet();
         var requirements = rows.Count(r => parents.Contains(r.Identity));
@@ -493,11 +492,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         }
         else
         {
-            // #236: a refresh reads; it moves no date, so the bar reports the lateness it found instead of a
-            // 基準日 change or a changed-task count.
+            // #236: a refresh reads and moves no date. The status bar already counts the lateness it found, so
+            // the bar only offers the one route worth taking now; with nothing late or added it is the title alone.
             refreshResult.Title = "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
             var counts = LatenessCounts();
-            refreshResult.Message = "日程は変えていません。" + (counts.Length > 0 ? " " + counts + "。" : " 遅れはありません。");
+            refreshResult.Message = "";
             if (counts.Length > 0 && sheet?.CauseTasks > 0)
                 refreshResult.ActionButton = Button("遅れの原因を表示", "PlanRefreshCauseFilter", () => {
                     Show("tasks"); sheet?.FilterTasks(sheet.CauseSet, "遅れの原因 " + sheet.CauseTasks.ToString("N0", culture), dimAncestors: true); return Task.CompletedTask;
@@ -512,7 +511,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 return number + session.Document.State.Rows.FirstOrDefault(r => r.Identity == id)?.Title;
             }
             var added = result.AddedTasks;
-            refreshResult.Message += (refreshResult.Message.EndsWith('。') ? "" : "。") + "GitHub で追加された Issue " + added.Length.ToString("N0", culture) + ": "
+            refreshResult.Message += (refreshResult.Message.Length == 0 || refreshResult.Message.EndsWith('。') ? "" : "。") + "GitHub で追加された Issue " + added.Length.ToString("N0", culture) + ": "
                 + string.Join("、", added.Take(3).Select(Name)) + (added.Length > 3 ? " ほか " + (added.Length - 3).ToString("N0", culture) + " 件" : "");
             var ids = added.ToHashSet();
             // Both filters sit on one line under the message instead of stacking an action button over content.
