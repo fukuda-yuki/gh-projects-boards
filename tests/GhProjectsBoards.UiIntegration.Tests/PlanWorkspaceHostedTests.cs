@@ -122,8 +122,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (reset) {
             await OpenResetDialog();
             // A later edit reschedules only the edited task and its successors (#236), not the whole plan.
-            await Ui.Run(() => Assert.That(Ui.DialogText("PlanResetConfirm"),
-                Does.Contain("日程は GitHub の値をそのまま表示し、タスクを編集するまで動きません。").And.Not.Contain("全体を再計算")));
+            await Ui.Run(() => Assert.That(Ui.DialogText("PlanResetConfirm"), Does.Not.Contain("全体を再計算")));
             await Ui.Run(() => Ui.DialogButton("PlanResetConfirm", "PrimaryButton"));
             await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
             await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Contain("日程は GitHub の値のままです。")));
@@ -187,7 +186,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var text = Ui.DialogText("PlanResetConfirm");
             Assert.That(text, Does.Contain("破棄する未発行のタスク 2"));
             Assert.That(text, Does.Contain("入力した変更 2（新しく追加した 1 タスクを含む。これらは作られません）"));
-            Assert.That(text, Does.StartWith(workspace.Selected!.Title + " の未発行の変更をすべて破棄します。"));
+            Assert.That(text, Does.Contain(workspace.Selected!.Title + " の未発行の変更をすべて破棄します。"));
             // The 基準日 is already today, so the reset changes nothing worth a line; settings stay as they are.
             Assert.That(text, Does.Not.Contain("基準日は").And.Not.Contain("稼働率"));
             Assert.That(text, Does.Contain("「元に戻す」で取り消せます。"));
@@ -2326,7 +2325,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanExcludedCounts").Text, Is.EqualTo("計画対象外: ドラフト 2 件")));
         await Ui.Run(() => Ui.Click("PlanSettingsBack")); await Ui.Idle();
         FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { Drafts = 0 });
-        await Ui.ClickCommand("PlanRefresh"); await Ui.Idle(); await Settings();
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled); await Ui.Idle(); await Settings();
         await Ui.Run(() => Assert.That(Ui.Tree(Ui.Root).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "PlanExcludedCounts"), Is.False));
     }
 

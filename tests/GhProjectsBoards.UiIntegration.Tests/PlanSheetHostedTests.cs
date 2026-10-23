@@ -51,7 +51,9 @@ internal sealed partial class PlanSheetHostedTests
         // end keeps the start calculated, which the date-origin cases require and the date cells need to exist.
         rows = rows.Select(row => row with { End = Today }).ToImmutableArray();
         session = await PlanSession.CreateAsync(new(root), new(new(new("github.com", 1), "P1"), new(rows, []),
-            new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo",
+            // The version runs to the end of June, as a real version does; the timeline spans the version, so
+            // the scroll cases need one longer than the viewport.
+            new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo", ProjectEnd = new(2027, 6, 30),
                 People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null)).ToImmutableArray() : [new("U1", "alice", 100, null)],
                 Columns = [new(PlanField.Start, "start", "Start date", "DATE"), new(PlanField.End, "end", "End date", "DATE"),
                     new(PlanField.Remaining, "remaining", "Remaining", "NUMBER")] })), Today);
@@ -289,7 +291,7 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Run(() => {
                 var cell = Ui.Find<FrameworkElement>($"PlanCell1_{field}");
                 Assert.That(cell, Is.Not.InstanceOf<TextBox>());
-                Assert.That(Ui.Tree(cell).OfType<TextBlock>().Single().Text, Is.EqualTo(held ? expected : ""));
+                Assert.That(string.Concat(Ui.Tree(cell).OfType<TextBlock>().Select(t => t.Text)), Is.EqualTo(held ? expected : ""));
                 Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(cell).GetName(), Does.Contain("要求事項の行では編集できません"));
             });
         }
@@ -639,7 +641,8 @@ internal sealed partial class PlanSheetHostedTests
             // The slip belongs to a lateness shape; a closed row has no forecast and no slip, so it only waits
             // for the reason line that carries its remote problem.
             var expectsSlip = state is "late" or "summary";
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0
+            // A requirement row has no reason of its own to state: its dates are its children's.
+            await Ui.Until(() => (state == "summary" || Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0)
                 && (!expectsSlip || Ui.Find<TextBlock>("PlanSheetSlip").ActualWidth > 0));
         }
         await Ui.Run(() => {
@@ -649,7 +652,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator)));
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
-            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.Not.Empty);
+            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, state == "summary" ? Is.Empty : Is.Not.Empty);
             if (state == "typed") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日指定 10/5 · 終了: 開始から 8h"));
             if (state == "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日を維持 · 終了: 開始から 8h"));
             Assert.That(Ui.Find<HyperlinkButton>("PlanSheetIssue").Content, Is.EqualTo("acme/repo#1"));
@@ -789,7 +792,7 @@ internal sealed partial class PlanSheetHostedTests
         }
         await MountPresentation(rows, baseline); await Select(1, PlanField.Title); await Ui.Idle();
         await Ui.Until(() => Ui.Find<HyperlinkButton>("PlanSheetIssue").ActualWidth > 0
-            && Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0);
+            && (state.StartsWith("summary") || Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0));
         await Ui.Run(() => {
             var slip = Ui.Find<TextBlock>("PlanSheetSlip"); var pill = (Border)VisualTreeHelper.GetParent(slip);
             Assert.That(slip.Text, Is.EqualTo(expected));
@@ -2431,7 +2434,8 @@ internal sealed partial class PlanSheetHostedTests
             var y = cell.TransformToVisual(sheet).TransformPoint(new()).Y + cell.ActualHeight / 2;
             var barY = bar.TransformToVisual(sheet).TransformPoint(new()).Y + bar.ActualHeight / 2;
             Assert.That(barY, Is.EqualTo(y).Within(1));
-            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ScrollableWidth, Is.GreaterThan(0));
+            // 月 can fit the whole version in a wide viewport; finer scales always scroll across it.
+            if (zoom != "月") Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ScrollableWidth, Is.GreaterThan(0));
             Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(headerY));
             if (zoom != "月") {
                 var shade = Ui.Find<Rectangle>("PlanNonWorking20261003");
