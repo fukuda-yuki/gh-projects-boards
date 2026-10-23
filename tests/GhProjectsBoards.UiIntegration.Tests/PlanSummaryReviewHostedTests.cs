@@ -85,6 +85,13 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Tree(timeline).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryMonthLabel_")), Is.GreaterThanOrEqualTo(6));
             var caption = Ui.Find<TextBlock>("SummaryFinishCaption");
             Assert.That(caption.Foreground, Is.EqualTo(Application.Current.Resources["TextFillColorSecondaryBrush"]));
+            // The card names the limit in a few words; the full basis is its tooltip, and the capacity formula
+            // is the 稼働可能 h header's tooltip instead of a line above the table.
+            Assert.That(caption.Text, Is.EqualTo("担当者の負荷は含まない"));
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<Border>("SummaryFinishCard")), Is.EqualTo("先行関係と見込み残存工数から計算（担当者の負荷は含まない）"));
+            Assert.That(Ui.Tree(summary).OfType<TextBlock>().Any(t => t.Text.StartsWith("稼働可能 =")), Is.False);
+            Assert.That(ToolTipService.GetToolTip(Ui.Tree(summary).OfType<TextBlock>().First(t => t.Text == "稼働可能 h")), Is.EqualTo(PlanSummaryView.CapacityFormula));
+            Assert.That(Ui.Find<TextBlock>("SummaryRemainingDays").Text.Split('\n')[^1], Does.Match(@"^[\d,]+ / [\d,]+ 稼働日が経過$"));
             foreach (var text in Ui.Tree(summary).OfType<TextBlock>()) Assert.That(text.Text, Does.Not.Match(@"\d+\.\d+%"));
             foreach (var text in Ui.Tree(table).OfType<TextBlock>().Where(t => t.Text.Contains(" / "))) {
                 Assert.That(text.TextWrapping, Is.EqualTo(TextWrapping.NoWrap));

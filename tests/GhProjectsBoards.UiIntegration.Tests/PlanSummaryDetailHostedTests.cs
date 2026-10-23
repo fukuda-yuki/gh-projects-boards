@@ -69,8 +69,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("SummaryTask_I3").Text, Is.EqualTo("見積超過: 見込工数 12h（見積工数 8h、差異 +4h）"));
             Assert.That(Ui.Find<TextBlock>("SummaryTask_I4").Text, Is.EqualTo("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません"));
             // An overdue task is not also 予定より遅れ (#236): that set holds the late tasks still before their end.
-            Assert.That(Ui.Find<TextBlock>("SummaryTask_I5").Text, Is.EqualTo("期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 16h）"));
-            Assert.That(Ui.Find<TextBlock>("SummaryTask_I6").Text, Is.EqualTo("予定より遅れ: 10/6 から +3 日（見込終了 10/9）"));
+            Assert.That(Ui.Find<TextBlock>("SummaryTask_I5").Text, Is.EqualTo("期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 16h）"));
+            Assert.That(Ui.Find<TextBlock>("SummaryTask_I6").Text, Is.EqualTo("予定より遅れ: 10/6 から +3日（見込終了 10/9）"));
             foreach (var id in Enumerable.Range(1, 6)) {
                 var state = Ui.Find<TextBlock>("SummaryTask_I" + id);
                 Assert.That(ToolTipService.GetToolTip(state), Is.EqualTo(state.Text));

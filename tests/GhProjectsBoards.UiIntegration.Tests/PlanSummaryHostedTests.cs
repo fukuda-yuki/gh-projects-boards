@@ -30,8 +30,11 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await SummaryPlan();
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("SummaryRequiredLoad").Text, Does.Contain("32h"));
-            Assert.That(Ui.Find<TextBlock>("SummaryProgress").Text, Does.Contain("36h"));
+            // The cards show the figures; the formulas behind them are the cards' tooltips.
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<Border>("SummaryRequiredLoadCard")) as string, Does.Contain("残 32h ÷ 稼働可能"));
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<Border>("SummaryProgressCard")) as string, Does.Contain("÷ 見込 36h"));
+            Assert.That(Ui.Find<TextBlock>("SummaryRequiredLoad").Text, Does.Not.Contain("÷"));
+            Assert.That(Ui.Find<TextBlock>("SummaryProgress").Text, Does.Not.Contain("÷"));
             Assert.That(AutomationProperties.GetName(Ui.Find<Grid>("SummaryPhaseRow_0")), Does.Contain("残 h 24").And.Contain("見込 h 28"));
             Assert.That(AutomationProperties.GetName(Ui.Find<Grid>("SummaryPhaseRow_2")), Does.Contain("残 h 32").And.Contain("見込 h 36"));
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryPhase_0")), Does.Contain("SA"));

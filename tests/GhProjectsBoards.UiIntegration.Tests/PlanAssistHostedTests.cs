@@ -311,7 +311,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         var runtime = await EnableAssist(); runtime.Remaining = 16; await AskAssist();
         if (onSummary) {
             await Ui.Run(() => Ui.Click("PlanShowSummary"));
-            await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryRequiredLoad" && t.Text.Contains("残 8h")));
+            await Ui.Until(() => Ui.Tree(view).OfType<Border>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryRequiredLoadCard" && ToolTipService.GetToolTip(t) is string tip && tip.Contains("残 8h")));
         }
         var session = workspace.Session!;
         var undo = session.UndoCount;
@@ -319,7 +319,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
             await Ui.Run(() => Ui.Click("AssistApply" + runtime.ProposalId));
             await Ui.Until(() => Ui.Find<InfoBar>("PlanSaveFailure").IsOpen);
-            if (onSummary) await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryRequiredLoad" && t.Text.Contains("残 16h")));
+            if (onSummary) await Ui.Until(() => Ui.Tree(view).OfType<Border>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryRequiredLoadCard" && ToolTipService.GetToolTip(t) is string tip && tip.Contains("残 16h")));
             await Ui.Run(() => {
                 Ui.Trace($"Accepted proposal screen: title={Ui.Find<TextBox>("PlanCell1_Title").Text}; apply={Ui.Find<Button>("AssistApply" + runtime.ProposalId).IsEnabled}; state={Ui.Find<TextBlock>("AssistProposalState" + runtime.ProposalId).Text}");
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Text, Is.EqualTo("提案したタイトル"));
