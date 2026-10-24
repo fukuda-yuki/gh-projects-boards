@@ -152,14 +152,14 @@ def export_inputs(manifest, evidence, through, offline=False):
         is_task = row['parent'] is not None
         assignee = 'person-'+row['person'] if offline and row['person'] else OWNER if row['person'] == 'U1' else ''
         lines.append('\t'.join([row['title'], row['phase'] or '', assignee, str(row['estimate']) if is_task else '',
-                                str(row['estimate']) if is_task else '', '0' if is_task else '', '', '',
-                                ', '.join(str(positions[p]) for p in row['predecessors']), row['start'] or '']))
+                                str(row['estimate']) if is_task else '', '0' if is_task else '', row['start'] or '', '',
+                                ', '.join(str(positions[p]) for p in row['predecessors'])]))
     evidence.mkdir(parents=True, exist_ok=True)
     if not offline:
         save(evidence / 'first-pass-order.json', dict(project=project['id'], repository=REPOSITORY,
              through=through, keys=[row['key'] for row in selected], issueIds=expected_order))
     (evidence/'first-pass.tsv').write_text('\n'.join(lines)+'\n', encoding='utf-8')
-    print(f"Prepared {len(lines)} rows for the ordinary sheet: title through 開始日指定. No GitHub writes.")
+    print(f"Prepared {len(lines)} rows for the ordinary sheet: title through 先行タスク. No GitHub writes.")
 
 
 def milestone_inventory():
@@ -292,7 +292,7 @@ def verify(manifest, evidence):
                     values[name] = next((value[k] for k in ('number', 'date', 'name') if k in value), None)
             task = row['parent'] is not None
             expected = {'工程': row['phase'], 'Estimate': row['estimate'], 'Remaining': row['estimate'],
-                        'Actual': 0 if task else None, '開始日指定': row['start'],
+                        'Actual': 0 if task else None, 'Start date': row['start'],
                         'predecessors': sorted(issues[p]['id'] for p in row['predecessors']),
                         'assignees': [OWNER] if row['person'] == 'U1' else [], 'state': 'OPEN'}
             for connection_name in ('blockedBy', 'assignees'):
