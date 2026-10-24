@@ -200,7 +200,7 @@ internal sealed class PlanSheetNavigationHostedTests
         // Shift+Ctrl+Home extends back to the first row and column from the same anchor.
         await PressEdge(VirtualKey.Home, control: true, extend: true);
         Assert.That(sheet.IsSelected("I1", PlanField.Title), Is.True);
-        Assert.That(sheet.IsSelected("I500", LastField), Is.True);
+        Assert.That(sheet.IsSelected("I500", PlanField.Title), Is.True);
         Assert.That(sheet.IsSelected("I1000", PlanField.Title), Is.False);
     }
 
@@ -412,7 +412,7 @@ internal sealed class PlanSheetNavigationHostedTests
         await Ui.Until(() => Ui.Find<TextBox>("PlanGoToInput").FocusState != FocusState.Unfocused);
         await Ui.Run(() => Assert.That(AutomationProperties.GetName(Ui.Find<TextBox>("PlanGoToInput")), Is.EqualTo("ジャンプ先のタスク名")));
         // Escape closes the input and returns focus to the selected cell.
-        await SheetNativeInput.Press(VirtualKey.Escape);
+        SheetNativeInput.Key(VirtualKey.Escape, true); SheetNativeInput.Key(VirtualKey.Escape, false);
         await Ui.Until(() => Ui.Popup<TextBox>("PlanGoToInput") is null);
         await Ui.Until(() => Focused("I500", PlanField.Title));
         // F5, a name and Enter move to that task's title cell.
@@ -420,20 +420,20 @@ internal sealed class PlanSheetNavigationHostedTests
         await Ui.Ready<TextBox>("PlanGoToInput");
         await Ui.Until(() => Ui.Find<TextBox>("PlanGoToInput").FocusState != FocusState.Unfocused);
         await Ui.Run(() => Ui.Find<TextBox>("PlanGoToInput").Text = "#750");
-        await SheetNativeInput.Press(VirtualKey.Enter);
+        SheetNativeInput.Key(VirtualKey.Enter, true); SheetNativeInput.Key(VirtualKey.Enter, false);
         await Ui.Until(() => Ui.Popup<TextBox>("PlanGoToInput") is null);
         await Ui.Until(() => sheet.IsSelectedRow("I750") && Focused("I750", PlanField.Title));
         // An unknown name keeps the input open with its reason and changes nothing.
         await SheetNativeInput.Press(VirtualKey.F5);
         await Ui.Ready<TextBox>("PlanGoToInput");
         await Ui.Run(() => Ui.Find<TextBox>("PlanGoToInput").Text = "#1001");
-        await SheetNativeInput.Press(VirtualKey.Enter);
+        SheetNativeInput.Key(VirtualKey.Enter, true); SheetNativeInput.Key(VirtualKey.Enter, false);
         await Ui.Until(() => Ui.Find<TextBlock>("PlanGoToError").Text.Length > 0);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanGoToError").Text, Does.Contain("この版にありません"));
             Assert.That(sheet.IsSelectedRow("I750"), Is.True);
         });
-        await SheetNativeInput.Press(VirtualKey.Escape);
+        SheetNativeInput.Key(VirtualKey.Escape, true); SheetNativeInput.Key(VirtualKey.Escape, false);
         await Ui.Until(() => Ui.Popup<TextBox>("PlanGoToInput") is null);
         await Ui.Until(() => Focused("I750", PlanField.Title));
         AssertPlanUnchanged(before);
