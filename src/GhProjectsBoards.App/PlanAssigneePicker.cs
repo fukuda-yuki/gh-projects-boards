@@ -84,6 +84,15 @@ internal sealed class PlanAssigneePicker
         _ => false
     };
 
+    // One choice body for the pointer and for the hosted cases: the pointer handler on a row and the keyboard's
+    // Enter both end here, so both commit through the same single cell operation.
+    internal bool Choose(int index)
+    {
+        if (index < 0 || index >= shown.Length) return false;
+        choose(shown[index]);
+        return true;
+    }
+
     private bool Move(int step)
     {
         if (shown.IsEmpty) return false;
@@ -95,8 +104,7 @@ internal sealed class PlanAssigneePicker
     private bool Accept()
     {
         if (highlight < 0 || highlight >= shown.Length) return false;
-        choose(shown[highlight]);
-        return true;
+        return Choose(highlight);
     }
 
     private bool Close()
@@ -118,8 +126,8 @@ internal sealed class PlanAssigneePicker
             var row = new Border { Child = label, Padding = new(8, 3, 8, 3) };
             AutomationProperties.SetAutomationId(row, "PlanAssigneeChoice" + rows.Count);
             AutomationProperties.SetName(row, candidate.Label);
-            var chosen = candidate;
-            row.Tapped += (_, args) => { args.Handled = true; choose(chosen); };
+            var index = rows.Count;
+            row.Tapped += (_, args) => { args.Handled = true; Choose(index); };
             rows.Add(row); choices.Children.Add(row);
         }
         empty.Visibility = shown.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
@@ -169,6 +177,10 @@ internal sealed partial class PlanSheetView
 
     internal bool AssigneePickerKey(PlanSheetCell cell, VirtualKey key)
         => assigneePicker is { IsOpen: true } picker && ReferenceEquals(picker.Cell, cell) && picker.Key(key);
+
+    // The pointer route: a candidate row's tap and the hosted cases both enter the one choice body here.
+    internal bool ChooseAssigneeCandidate(int index)
+        => assigneePicker is { IsOpen: true } picker && picker.Choose(index);
 
     // #225: Alt+↓ starts editing the selected 担当者 cell and opens its list; F2, double-click and typing reach
     // the same state from the cell.

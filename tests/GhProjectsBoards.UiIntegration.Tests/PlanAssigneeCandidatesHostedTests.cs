@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using NUnit.Framework;
 using Windows.System;
@@ -241,6 +242,56 @@ internal sealed class PlanAssigneeCandidatesHostedTests
         });
         await Ui.Until(() => Ui.Popup<Border>("PlanAssigneeCandidates") is { IsLoaded: true });
         await Ui.Run(() => Assert.That(Cell(2).Editing, Is.True, "Alt+↓ starts editing the selected 担当者 cell and opens its list."));
+    }
+
+    [Test]
+    public async Task PointerAndKeyboardChoicesBothEndInExactlyOneUndoStepAndKeepTheEditorFocused()
+    {
+        await SelectCell(4);
+        var undo = session.UndoCount;
+        var cell = await BeginAssigneeEdit(4);
+        await Ui.Run(() => cell.Text = "person-U5");
+        await Ui.Until(() => CandidateLabels().Length == 1, () => string.Join(",", CandidateLabels()));
+        await Ui.Run(() =>
+        {
+            // The list is not focusable: the editor keeps keyboard focus while it is open.
+            Assert.That(FocusManager.GetFocusedElement(cell.XamlRoot), Is.SameAs(cell));
+            // The pointer route runs the same choice body a candidate row's tap runs.
+            Assert.That(sheet.ChooseAssigneeCandidate(0), Is.True);
+        });
+        await Ui.Until(() => Row("I4").Assignees.SequenceEqual(new[] { "U5" }));
+        await Ui.Idle();
+        await Ui.Run(() =>
+        {
+            Assert.That(session.UndoCount, Is.EqualTo(undo + 1), "One pointer choice is one Undo step.");
+            Assert.That(Ui.Popup<Border>("PlanAssigneeCandidates"), Is.Null, "The list closes when the cell commits.");
+            Assert.That(FocusManager.GetFocusedElement(Cell(4).XamlRoot), Is.SameAs(Cell(4)), "The editor keeps focus.");
+        });
+        // Choosing the person the editor already shows ends the edit without another Undo step.
+        var beforeSame = session.UndoCount;
+        await BeginAssigneeEdit(4);
+        await Ui.Until(() => CandidateLabels().Length == 1, () => string.Join(",", CandidateLabels()));
+        await Ui.Run(() => Assert.That(sheet.ChooseAssigneeCandidate(0), Is.True));
+        await Ui.Idle();
+        await Ui.Run(() =>
+        {
+            Assert.That(session.UndoCount, Is.EqualTo(beforeSame), "An unchanged choice creates no Undo step.");
+            Assert.That(Cell(4).Editing, Is.False);
+            Assert.That(Row("I4").Assignees, Is.EqualTo(new[] { "U5" }));
+        });
+        // The keyboard route ends in the same single step.
+        var beforeKey = session.UndoCount;
+        var next = await BeginAssigneeEdit(5);
+        await Ui.Run(() => next.Text = "person-U6");
+        await Ui.Until(() => CandidateLabels().Length == 1, () => string.Join(",", CandidateLabels()));
+        await Ui.Run(() =>
+        {
+            Assert.That(sheet.AssigneePickerKey(next, VirtualKey.Down), Is.True);
+            Assert.That(sheet.AssigneePickerKey(next, VirtualKey.Enter), Is.True);
+        });
+        await Ui.Until(() => Row("I5").Assignees.SequenceEqual(new[] { "U6" }));
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(session.UndoCount, Is.EqualTo(beforeKey + 1), "One keyboard choice is one Undo step."));
     }
 
     private static async Task SelectCell(int number)

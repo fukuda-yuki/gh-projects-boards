@@ -884,13 +884,15 @@ internal sealed class PlanSheetCell : TextBox
         if (AssigneeNameDisplay is { } name) AutomationProperties.SetAutomationId(name, "");
         if (AssigneeCountDisplay is { } count) AutomationProperties.SetAutomationId(count, ""); }
     // #225: a chosen known person replaces the value being typed and commits as one Undo step; the list closes
-    // when the commit ends the edit. Choosing the value already in the cell ends the edit without an Undo step.
+    // when the commit ends the edit. Choosing the value the editor already shows ends the edit without an Undo
+    // step, like returning text to its original value. A chosen person whose login equals the typed text is a
+    // real change when the accepted value was another person, so it commits through the ordinary rule.
     internal void ApplyAssigneeChoice(string login)
     {
         if (row.Owner is not { } owner) return;
         var text = PlanAssigneeChoices.Compose(Text, login);
-        if (text == Text) { owner.CancelEdit(row.Identity, Field); EndEditing(); return; }
-        Text = text;
+        if (text != Text) Text = text;
+        if (!owner.Pending.ContainsKey((row.Identity, Field))) { EndEditing(); return; }
         _ = owner.CommitCell(row.Identity, Field, text);
     }
     // #225: Escape closed the candidate list first (handled before this); this is the second Escape and every
