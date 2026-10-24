@@ -323,14 +323,20 @@ internal sealed partial class PlanSheetView
         if (Fields.Length == 0 || !RowIndexes.TryGetValue(identity, out var index) || !Fields.Contains(field)) return;
         if (rowScroll is { } scroll)
         {
+            // A filter or fold change replaces the item set; the native extent must be arranged before the
+            // offset is clamped, or the jump is clamped into the old, shorter list and the row is never realized.
+            List.UpdateLayout();
             var top = index * RowHeight;
             var offset = Math.Clamp(top, 0, scroll.ScrollableHeight);
             if (top + RowHeight > offset + scroll.ViewportHeight)
                 offset = Math.Clamp(top + RowHeight - scroll.ViewportHeight, 0, scroll.ScrollableHeight);
             scroll.ChangeView(null, offset, null, true);
+            // Realize the rows at the new offset before the focus request, so the target container exists
+            // when it is asked to take focus; the request itself then needs no further retries.
+            List.UpdateLayout();
         }
         Select(identity, field, extend);
-        if (wholeRow) SelectWholeRow(identity, true);
+        if (wholeRow) SelectWholeRow(identity, true, focus: false);
         FocusCell(selected, selectedField, scrollIntoView: false);
         HoldingView = true;
     }
