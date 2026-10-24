@@ -2,7 +2,7 @@
 
 ## Production boundaries
 
-One UI-independent GhProjectsBoards.Core library and one GhProjectsBoards.App WinUI 3 application implement the [specification](spec.md). Core owns authentication orchestration, scoped identity, retrieval, validation, scheduling, local storage and publication. The app owns controls, presentation, window lifetime, file pickers, clipboard, shell document launching and UI Automation. No UI framework enters Core.
+One UI-independent GhProjectsBoards.Core library and one GhProjectsBoards.App WinUI 3 application implement the [specification](spec.md). The GhProjectsBoards.Report console reuses Core for scheduled progress snapshots ([progress report tool](#progress-report-tool-262)). Core owns authentication orchestration, scoped identity, retrieval, validation, scheduling, local storage and publication. The app owns controls, presentation, window lifetime, file pickers, clipboard, shell document launching and UI Automation. No UI framework enters Core.
 
 PlanManualHtml in Core converts the shipped Markdown text to escaped, self-contained HTML markup and resolves relative resources against the supplied manual directory. The UI reads the source, writes a per-user temporary HTML file and opens it through the existing OpenDocument process-launch boundary. Conversion/write failures retain the Markdown launch path. The capture script is development tooling over Start-Evaluation and Invoke-EvaluationUi, not a product execution mode.
 
@@ -45,6 +45,10 @@ Dependency geometry is limited to each prepared row's vertical bounds, with a st
 PlanSheetEditing translates visible rows/columns and text/clipboard into typed local operations using stable PlanRow identities. PlanSession remains the single state/history/save owner. Rendering and frame instrumentation use the same native controls as ordinary editing.
 
 The planning editor uses PlanPublisher, PlanSession and the current scheduling model exclusively. Only the new scoped checkpoint format is loaded. Calendar resources and Project retrieval remain independent of editing and publication.
+
+## Progress report tool (#262)
+
+GhProjectsBoards.Report is a net10.0 console with no Windows dependency, for scheduled GitHub Actions runs. It only parses arguments and writes files. ProgressSnapshotReader in Core connects through GhConnectionService on a read-only lease, resolves the Project URL with ProjectDiscovery, reads it with PlanSnapshot.ReadConsistentAsync and builds a PlanDocument from that read and an imported settings file. ProgressSnapshot takes that document's PlanOperations.Schedule, PlanLateness and PlanSummary result, so the snapshot and the app's summary are one calculation. ProgressReport renders the Markdown report and its SVG trend chart from snapshot files alone, without GitHub. The reusable workflow `.github/workflows/progress-report.yml` builds the tool from this repository and commits the snapshot and report into the calling data repository; see [progress snapshots and report](spec.md#progress-snapshots-and-report-262).
 
 ## Validation boundaries
 

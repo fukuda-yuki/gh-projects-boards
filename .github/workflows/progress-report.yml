@@ -1,0 +1,100 @@
+name: progress-report
+# Called from a private data repository on a schedule (#262). It reads one Project, commits that day's snapshot
+# under the data folder and rebuilds the Markdown report. It never writes Issues or Project fields. This public
+# repository holds no plan data; the snapshot and the report exist only in the calling repository.
+on:
+  workflow_call:
+    inputs:
+      project:
+        description: Project URL, for example https://github.com/users/<login>/projects/<n>
+        required: true
+        type: string
+      settings:
+        description: The settings file the app exported for this Project, relative to the calling repository root
+        required: true
+        type: string
+      data:
+        description: Folder for the snapshot files
+        default: data
+        type: string
+      report:
+        description: Path of the Markdown report; its chart goes to report/ beside it
+        default: REPORT.md
+        type: string
+      time-zone:
+        description: Time zone of the 基準日 and the close dates
+        default: Asia/Tokyo
+        type: string
+      tool-ref:
+        description: Ref of gh-projects-boards to build the tool from
+        default: main
+        type: string
+    secrets:
+      token:
+        description: A token that can read the Project and its Issues (GITHUB_TOKEN cannot read Projects)
+        required: true
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    concurrency:
+      group: progress-report-${{ github.repository }}-${{ inputs.project }}
+      cancel-in-progress: false
+    env:
+      PROJECT: ${{ inputs.project }}
+      SETTINGS: ${{ inputs.settings }}
+      DATA: ${{ inputs.data }}
+      REPORT: ${{ inputs.report }}
+      TIME_ZONE: ${{ inputs.time-zone }}
+    steps:
+      - name: Check out the data repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: data-repo
+      - name: Check out the report tool
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: fukuda-yuki/gh-projects-boards
+          ref: ${{ inputs.tool-ref }}
+          path: tool
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+      - name: Build the report tool
+        run: dotnet build tool/src/GhProjectsBoards.Report/GhProjectsBoards.Report.csproj --configuration Release
+      - name: Store the token for gh in this run only
+        # The tool uses gh's stored credentials and ignores token environment variables, as the app does.
+        # `gh auth login --with-token` would also demand read:org, which a Project-reading token does not need.
+        env:
+          PROJECT_TOKEN: ${{ secrets.token }}
+        run: |
+          umask 077
+          host=$(printf '%s' "$PROJECT" | sed -E 's#^https://([^/]+)/.*#\1#')
+          login=$(GH_TOKEN="$PROJECT_TOKEN" GH_ENTERPRISE_TOKEN="$PROJECT_TOKEN" gh api --hostname "$host" user --jq .login)
+          config="$RUNNER_TEMP/gh-config"
+          mkdir -p "$config"
+          printf '%s:\n    users:\n        %s:\n            oauth_token: %s\n    git_protocol: https\n    oauth_token: %s\n    user: %s\n' \
+            "$host" "$login" "$PROJECT_TOKEN" "$PROJECT_TOKEN" "$login" > "$config/hosts.yml"
+          echo "GH_CONFIG_DIR=$config" >> "$GITHUB_ENV"
+      - name: Read the Project and write the snapshot
+        run: dotnet tool/src/GhProjectsBoards.Report/bin/Release/net10.0/ghpb-report.dll snapshot --project "$PROJECT" --settings "data-repo/$SETTINGS" --data "data-repo/$DATA" --time-zone "$TIME_ZONE"
+      - name: Remove the stored token
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/gh-config"
+      - name: Render the report from every snapshot
+        run: dotnet tool/src/GhProjectsBoards.Report/bin/Release/net10.0/ghpb-report.dll report --data "data-repo/$DATA" --out "data-repo/$REPORT"
+      - name: Commit the snapshot and the report
+        working-directory: data-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$DATA" "$REPORT" "$(dirname "$REPORT")/report"
+          if git diff --cached --quiet; then echo "No change to commit."; exit 0; fi
+          git commit -m "Progress snapshot $(TZ="$TIME_ZONE" date +%F)"
+          git push

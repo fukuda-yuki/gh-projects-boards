@@ -600,3 +600,56 @@ While editing, the pane stays on the edited Issue: selecting other rows does not
 Body publishing uses the authenticated connection gate. Detail-read cancellation does not apply to it: once started, it runs to its readback so the outcome is known. Remote work started meanwhile waits for the gate. 最新の情報に更新, reset to GitHub and plan publication keep the draft and clear only read results; the edited Issue's cache entry is replaced after its own publish.
 
 Discarding: キャンセル, Escape, closing the pane with either toggle or Ctrl+I, opening アシスト (which closes 詳細), opening or switching a Project (including 接続…) and closing the app check the draft. With changed text a dialog (`PlanDetailDiscard`) titled **本文の変更を破棄しますか？** offers **破棄** and **編集に戻る** (default). 編集に戻る cancels the triggering action, keeps the pane open with the draft and focuses the editor. Unchanged text leaves edit mode silently. A running body publish finishes before the check. Switching to サマリー or settings hides the pane with its draft, which returns on 計画. Drafts are kept only in memory for the app session and never reach assist, plan storage or logs.
+
+## Progress snapshots and report (#262)
+
+A console tool records a Project's progress outside the app and renders a report the team opens on github.com. A scheduled GitHub Actions run calls it for each active Project. It only reads GitHub: it never writes Issues, Project fields or the app's local plan, and it keeps no local history. The data and the report live in a separate private data repository; this public repository holds the tool, the reusable workflow and synthetic test data only.
+
+### Inputs
+
+- **Project**: a Project URL (`https://github.com/users/<login>/projects/<n>` or `/orgs/<org>/projects/<n>`). The tool reads the whole Project with the app's bounded Project read; an incomplete read fails the run and writes nothing.
+- **Settings file**: the file the app's 設定を書き出す writes ([settings file](#settings-file)). It supplies the column mappings, calendar (company days off, imported holidays), people rates, Project start and end and the 工程-to-milestone mapping. Its `statusDate` is ignored, as on import. A mapping whose field the read does not contain fails the run, because the values would silently be empty.
+- **基準日**: today in the given time zone (default `Asia/Tokyo`), or an explicit `yyyy-MM-dd`. Close dates use the same time zone.
+- **Authentication**: gh's stored credentials, exactly as the app uses them; token environment variables are ignored. The workflow stores the token from an Actions secret in a temporary gh configuration for the run only.
+
+### Calculation
+
+The tool builds the plan document from the read and the settings, then uses the app's own scheduler, forecast, `PlanLateness` and `PlanSummary` with that 基準日. The plan is GitHub's published plan: the tool has no unpublished edits, so its numbers equal the app's summary for the same Project, settings and 基準日 when the app has nothing unpublished.
+
+- **見込終了** per task, the version's 完了見込 and each 工程's 完了見込 are the summary's.
+- **遅れ** is the union of 期限超過 and 予定より遅れ (owner decision on #260). Each late task keeps which case applies: its 終了日 has passed, its 開始日 has passed with no 実績, or its 見込終了 is later than its 終了日.
+- **遅れの原因** and **見積超過** are the summary's sets.
+- 工程 totals are the summary's 工程別 rows.
+
+### Snapshot file
+
+One indented UTF-8 JSON file per 基準日, `<data>/<yyyy-MM-dd>.json`. A second run on the same day replaces that day's file; the data repository's Git history keeps every run. Japanese text is written unescaped. Property order and task order are fixed (tasks in plan order), so a Git diff between two snapshots shows what changed.
+
+| Property | Content |
+| --- | --- |
+| `schema` | `ghpb-progress-snapshot/1`. A reader rejects any other value. |
+| `readAt` | UTC time of the read (ISO 8601). |
+| `statusDate`, `timeZone` | The 基準日 and the time zone that produced it and the close dates. |
+| `project` | `host`, `owner`, `number`, `title`, `url`. |
+| `period` | `start`, `end` from settings; either may be `null`. |
+| `forecastFinish`, `finishDifference` | The version's 完了見込 and its signed working-day difference from `period.end` (positive = late); `null` when unknown. |
+| `totals` | Effort of all tasks (below). |
+| `phases` | One entry per 工程 option in field order, then `null` 工程 when tasks have none: `phase`, `milestone` (mapped title or `null`), `target`, `start`, `forecastFinish`, `difference` (working days against `target`, positive = late), `effort`, and `late` and `overEstimate` counts. |
+| `lateness` | `late`, `cause`, `overEstimate`: Issue references in plan order. |
+| `requirements` | Rows with children: `issue`, `url`, `title`. |
+| `tasks` | Rows without children, in plan order (below). |
+
+An effort object (`totals` and each phase's `effort`) has `tasks`, `closed`, `estimate`, `actual`, `remaining`, `forecast` (hours), `variance` (forecast − estimate), `progress` (actual ÷ forecast, 0–1, four decimals) and `unknownEffort` (tasks whose 残 or 見込 is unknown). A sum with no known contributor is `null`.
+
+A task has `issue` (`owner/repo#n`, the reference used everywhere in the file), `url`, `title`, `parent` (the requirement's reference or `null`), `phase`, `milestone`, `assignees` (logins), `estimate`, `actual`, `remaining`, `start`, `end`, `forecastEnd`, `closed`, `closeDate`, `late`, `cause` and `overEstimate`. `late` is `null` or `{ "kind", "date", "days" }`: `finish` with the passed 終了日, `start` with the passed 開始日, or `forecast` with the 見込終了. `days` is the working days the 見込終了 is after the 終了日 for every kind, or `null` when it is not later or unknown. Unknown values are `null`. Node IDs, rates, Issue bodies and comments are not written.
+
+### Report
+
+`REPORT.md` is rebuilt from every snapshot in the data folder on each run, using the latest snapshot for the current state. It is Japanese and renders on github.com without scripts:
+
+1. Title (the Project title), the 基準日, the read time and a link to the Project.
+2. The verdict: 完了見込 against the 終了日 in working days.
+3. 工程別: 工程, 目標日, 完了見込, 差, 完了/タスク, 進捗, 遅れ, 見積超過.
+4. 工程の完了見込の推移 (milestone trend analysis): `report/phase-trend.svg`, one small panel per 工程 (nine 工程 are too many lines for one chart), each plotting its 完了見込 at each 基準日 with its 目標日 as a dashed level and the latest value labelled. A single snapshot shows one point per panel. The image has its own light or dark background.
+5. 遅れ as counts only, split by case: 「終了日を過ぎて未完了 N · 開始日を過ぎて未着手 N · 見込終了が遅れ N」. A slipping plan makes most tasks late, so the full set stays in the snapshot.
+6. 遅れの原因 and 見積超過 lists in full, each task linked to its Issue with its 担当者 and the reason in the app's tooltip wording: 「終了日 1/12 を過ぎて未完了 · 見込終了は +2日」, 「開始日 1/9 を過ぎて未着手」, 「見込終了 1/14 · +2日」 and 「見積 16h → 見込 24h」. 遅れの原因 is ordered by `days`, most first, then plan order; a cause without `days` comes last. 見積超過 is in plan order.
