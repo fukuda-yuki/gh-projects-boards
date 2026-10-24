@@ -108,12 +108,15 @@ internal static class RawRecord
                 cursor = info.GetProperty("endCursor").GetString() ?? throw new InvalidOperationException("ページの続きを取得できませんでした。");
                 if (!cursors.Add(cursor)) throw new InvalidOperationException("同じページが繰り返し返されました。");
             }
+            // GitHub's totalCount can include items the connection never returns (Project 3 reports 1,042 and lists
+            // 1,041 on every read), so only a count that moved during the read means the record may be incomplete.
+            // Both numbers go into the Project line.
             var distinct = items.Select(i => i.GetProperty("id").GetString()).Distinct(StringComparer.Ordinal).Count();
-            if (counts.Distinct().Count() == 1 && distinct == counts[0])
+            if (counts.Distinct().Count() == 1)
             {
                 var readAt = clock();
                 var date = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(readAt, timeZone).DateTime);
-                return Build(projectData.GetProperty("node"), items, readAt, date, timeZone.Id);
+                return Build(projectData.GetProperty("node"), items, readAt, date, timeZone.Id, counts[0]);
             }
             if (attempt == 3) throw new InvalidOperationException($"読み込み中にアイテム数が変わり続けました（{string.Join(" / ", counts.Distinct())} 件、取得 {distinct} 件）。");
         }
@@ -131,8 +134,9 @@ internal static class RawRecord
         }
     }
 
-    internal static RawSnapshot Build(JsonElement project, IEnumerable<JsonElement> items, DateTimeOffset readAt, DateOnly date, string timeZone)
+    internal static RawSnapshot Build(JsonElement project, IEnumerable<JsonElement> items, DateTimeOffset readAt, DateOnly date, string timeZone, int? totalCount = null)
     {
+        items = items.ToArray();
         var fields = project.GetProperty("fields");
         var fieldNodes = fields.GetProperty("nodes").EnumerateArray().Where(f => f.TryGetProperty("id", out _)).ToArray();
         if (fieldNodes.Length != fields.GetProperty("totalCount").GetInt32()) throw new InvalidOperationException("プロジェクトの列を全部読めませんでした。");
@@ -159,6 +163,8 @@ internal static class RawRecord
                 ["closed"] = project.GetProperty("closed").GetBoolean(),
             },
             ["fields"] = new JsonArray(definitions.Cast<JsonNode>().ToArray()),
+            ["itemsRead"] = items.Count(),
+            ["itemsTotalCount"] = totalCount,
         });
         var lines = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var item in items) lines[item.GetProperty("id").GetString()!] = Line(Item(item, valueFields));
