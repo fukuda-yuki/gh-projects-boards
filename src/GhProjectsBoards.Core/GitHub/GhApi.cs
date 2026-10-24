@@ -53,6 +53,18 @@ internal sealed class ApiResult(ApiOutcome outcome, FailureKind failure = Failur
     public override string ToString() => $"{Outcome}: {Failure}; HTTP {HttpStatus}; exit {ExitCode}";
 }
 
+// #246: a lost or timed-out connection is its own failure so the PMO is not sent to check an account
+// or permission that is fine. An answered change keeps its own message: a GitHub response that arrived
+// but whose outcome cannot be confirmed is not a lost connection.
+internal sealed class ConnectionLostException() : InvalidOperationException(MessageText)
+{
+    internal const string MessageText = "GitHub に接続できません。ネットワークを確認してください。";
+    // Only a response the app never received counts as a lost connection. A 5xx response is a GitHub
+    // answer; its unconfirmed outcome keeps the message that names that uncertainty.
+    internal static bool IsTransportLoss(FailureKind failure, int? httpStatus)
+        => failure == FailureKind.TimedOut || failure == FailureKind.Network && httpStatus is null;
+}
+
 internal sealed class ApiRequest
 {
     private ApiRequest(string method, string endpoint, string? payload, bool isMutation, bool isGraphQl)
