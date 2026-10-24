@@ -37,3 +37,9 @@ Ship .NET and Windows App SDK app-locally in a portable **Windows 11 x64 ZIP**. 
 GitHub CLI remains a separately installed/authenticated dependency, following the [Japanese guide](internal-distribution-ja.md). Bundling it would add another binary inventory, notice audit and update responsibility; this workflow does not claim a machine with no prerequisites. Windows system components, company execution policies, network access and Project permissions still apply. ARM64, installers, signing and automatic updates have no delivery path in this workflow.
 
 Self-contained distributions are larger and do not pick up machine-wide .NET fixes. The release owner must monitor .NET/Windows App SDK servicing, review the exact dependency inventory when upgrading, rebuild and distribute a new version for applicable security fixes. Retain original assets and hashes; rebuilding the same source is not a promise of identical bytes.
+
+## Upgrade notes
+
+Copy the notes added since the previous release into the draft before publishing it.
+
+- The Project fields 開始日指定 and 日程固定 are no longer used ([#268](https://github.com/fukuda-yuki/gh-projects-boards/issues/268)). The app neither reads nor writes them, so they can be deleted from the Project; a typed 開始日 is the plan start. Saved plans open with those two values dropped.
