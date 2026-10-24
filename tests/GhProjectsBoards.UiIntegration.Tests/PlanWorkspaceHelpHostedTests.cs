@@ -14,6 +14,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task HelpBeforeConnectionOpensShippedManual()
     {
         var launched = new ConcurrentQueue<string>();
+        await Ui.Ready<Button>("PlanHelp");
         await Ui.Run(() => {
             view.OpenDocument = path => launched.Enqueue(path);
             var help = Ui.Find<Button>("PlanHelp");

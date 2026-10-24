@@ -14,6 +14,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Fixtures/JapanHolidays.csv" />
     <EmbeddedResource Include="Fixtures/Phase9Snapshot2.json" />
+    <EmbeddedResource Include="Fixtures/LegacySchedulingFieldsPlan.json" />
     <EmbeddedResource Include="../../evaluation/version-plan.json" LogicalName="VersionPlan-2027.04.json" />
     <EmbeddedResource Include="../../evaluation/version-plan-12m.json" LogicalName="VersionPlan-2027.10.json" />
     <InternalsVisibleTo Include="GhProjectsBoards.UiIntegration.Tests" />

@@ -86,8 +86,6 @@ internal sealed class PlanProgressDateTests
             var zeroOpen = progress == "complete";
             var row = session!.Document.State.Rows.Single(r => r.Identity == "A");
             Assert.That(row.Start, Is.EqualTo(Start), "Progress keeps the start the plan already had.");
-            Assert.That(row.Fixed, Is.False);
-            Assert.That(row.StartNoEarlierThan, Is.Null);
             var schedule = session.Schedule(Status).ToDictionary(t => t.Input.Identity);
             // The plan end is the day Actual + Remaining is used up from the plan start, and a closed task
             // ends on its close date (#236); B has no dates of its own, so the 基準日 places it.
@@ -139,13 +137,13 @@ internal sealed class PlanProgressDateTests
     {
         var initial = Initial();
         var document = initial with { State = initial.State with {
-            Rows = initial.State.Rows.Select(r => r.Identity == "A" ? r with { Start = End, StartNoEarlierThan = End } : r).ToImmutableArray()
+            Rows = initial.State.Rows.Select(r => r.Identity == "A" ? r with { Start = End } : r).ToImmutableArray()
         } };
         var remote = Progress(initial, "closed");
         if (remoteDateChanged) remote = remote with { Rows = remote.Rows.Select(r => r.Identity == "A" ? r with { Start = End.AddDays(1), End = End.AddDays(2) } : r).ToImmutableArray() };
         var merged = PlanMerge.Merge(document, remote);
         var result = merged.State.Rows.Single(r => r.Identity == "A");
-        Assert.That((result.Start, result.StartNoEarlierThan), Is.EqualTo((End, End)));
+        Assert.That(result.Start, Is.EqualTo(End));
         Assert.That(result.End, Is.EqualTo(remoteDateChanged ? End.AddDays(2) : End));
         Assert.That(merged.Sync.Conflicts.Any(c => c.Identity == "A" && c.Field == PlanField.Start), Is.EqualTo(remoteDateChanged));
     }

@@ -19,8 +19,6 @@ internal static class PlanField
     public const string Predecessors = "Predecessors";
     public const string Parent = "Parent";
     public const string Order = "Order";
-    public const string StartNoEarlierThan = "StartNoEarlierThan";
-    public const string Fixed = "Fixed";
     public const string NewTask = "NewTask";
     public const string SubIssueOrder = "SubIssueOrder";
     public const string Labels = "Labels";
@@ -28,7 +26,7 @@ internal static class PlanField
     // #231: a task that is 中止 rather than 完了, and a task the PMO has taken out of this version.
     public const string Cancelled = "Cancelled";
     public const string Removed = "Removed";
-    public static readonly string[] All = [Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder, Labels, MilestoneTitle, Cancelled, Removed];
+    public static readonly string[] All = [Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, NewTask, SubIssueOrder, Labels, MilestoneTitle, Cancelled, Removed];
     public static bool IsDefined(string value) => All.Contains(value) || PlanSheetColumns.IsExtra(value);
 }
 
@@ -90,8 +88,6 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
     public decimal? Actual { get; init; }
     public DateOnly? Start { get; init; }
     public DateOnly? End { get; init; }
-    public DateOnly? StartNoEarlierThan { get; init; }
-    public bool Fixed { get; init; }
     public static PlanRow New(string title, string repository = "") => new("local:" + Guid.NewGuid().ToString("N"), title, repository);
 }
 internal sealed record PlanMilestone(string Title, DateOnly? DueDate, bool Closed, bool ConflictingDates);

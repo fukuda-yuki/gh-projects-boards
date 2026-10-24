@@ -55,14 +55,17 @@ internal static class EvaluationFixture
             MilestoneTitle = plan.Milestones.SingleOrDefault(m => m.Phase == r.Phase)?.Title,
             Phase = r.Phase, Parent = r.Parent is null ? null : identities[r.Parent], Estimate = r.Estimate, Remaining = r.Estimate,
             Actual = r.Parent is null ? null : 0, Assignees = r.Person is null ? [] : [r.Person],
-            Predecessors = r.Predecessors.Select(k => identities[k]).ToImmutableArray(), StartNoEarlierThan = r.Start
+            Predecessors = r.Predecessors.Select(k => identities[k]).ToImmutableArray()
         }).ToImmutableArray();
+        // A task starts no earlier than its version-plan start: until that day it holds that start as its plan
+        // start, and from then on the day it is laid out is its floor, until its work begins.
+        var planned = plan.Rows.ToDictionary(r => identities[r.Key], r => r.Start);
         // #236 makes a PMO change the thing that reschedules, so the simulation lays the whole plan out as one
         // such change instead of relying on a read to move dates.
         IReadOnlyList<ScheduledTask> Layout(ImmutableArray<PlanRow> source, DateOnly day)
         {
             var settings = Document(plan, source, day).State.Settings;
-            return PlanScheduler.Calculate(source.Select((r, i) => PlanOperations.TaskInput(r, i)).ToArray(),
+            return PlanScheduler.Calculate(source.Select((r, i) => PlanOperations.TaskInput(r.Start is null && planned[r.Identity] > day ? r with { Start = planned[r.Identity] } : r, i)).ToArray(),
                 new PlanSettings { StatusDate = day, ProjectStart = settings.ProjectStart,
                     Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
                     People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() },
@@ -131,7 +134,7 @@ internal static class EvaluationFixture
         var fake = Path.Combine(root, "fake-gh"); Directory.CreateDirectory(fake);
         FakePlanEditor.Save(fake, new(rows.Select(r => new PlanFakeIssue(r, "", true) { Phase = phases.GetValueOrDefault(r.Identity) }).ToImmutableArray(), rows.Length + 1) {
             Milestones = plan.Milestones.Select((m, i) => new PlanFakeMilestone("M" + i, "acme/repo", m.Title, m.Due)).ToImmutableArray(),
-            SubOrders = orders, AddedFields = [nameof(PlanField.StartNoEarlierThan), nameof(PlanField.Fixed)], Phases = [.. plan.Phases]
+            SubOrders = orders, Phases = [.. plan.Phases]
         });
         await File.WriteAllTextAsync(Path.Combine(fake, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, versionTitle = plan.Title }));
         var session = await PlanSession.CreateAsync(new(root), document, selected);

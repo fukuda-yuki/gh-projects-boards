@@ -58,7 +58,7 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task RowMenuOffersTheStateCommandsAndDisabledItemsExplainThemselves()
     {
-        var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+        var published = new PlanRow("I1", "Published", "acme/repo");
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await Ui.Run(() => sheet.ShowRowMenu("I1", PlanField.Title, sheet.Realized.Single(r => r.Identity == "I1")));
@@ -92,7 +92,7 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task AnUnpublishedRowCannotBeClosedAndSaysWhy()
     {
-        var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+        var published = new PlanRow("I1", "Published", "acme/repo");
         await MountPresentation([published], [published]);
         await Ui.Run(async () => { await session.Execute(new InsertPlanRows([PlanRow.New("Local")]), Today); sheet.Refresh(); });
         var local = session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:", StringComparison.Ordinal));
@@ -108,7 +108,7 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task CancellingARowTagsDimsAndStrikesItAndSaysSoOnTheSelectionLine()
     {
-        var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Estimate = 8 };
+        var published = new PlanRow("I1", "Published", "acme/repo") { Estimate = 8 };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await ChooseFromRowMenu("I1", "PlanRowCancel");
@@ -131,7 +131,7 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task APendingCompletionTagsTheRowAndExplainsTheReadOnlyFields()
     {
-        var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Estimate = 8, Remaining = 8 };
+        var published = new PlanRow("I1", "Published", "acme/repo") { Estimate = 8, Remaining = 8 };
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await ChooseFromRowMenu("I1", "PlanRowComplete");
@@ -150,7 +150,7 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task RemovingARowTagsItForThisVersionOnly()
     {
-        var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+        var published = new PlanRow("I1", "Published", "acme/repo");
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         await ChooseFromRowMenu("I1", "PlanRowRemove");
@@ -170,7 +170,7 @@ internal sealed partial class PlanSheetHostedTests
     {
         // #247 decision: 行を削除 also sits in the app-owned その他のオプション overflow, with the row menu's
         // name, shortcut, enabled state and refusal; the primary beside 行を挿入 stays.
-        var published = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+        var published = new PlanRow("I1", "Published", "acme/repo");
         await MountPresentation([published], [published]);
         await Select(1, PlanField.Title);
         const string refusal = "GitHub の Issue は削除できません。完了・中止・この版から外す を使ってください";
@@ -221,8 +221,8 @@ internal sealed partial class PlanSheetHostedTests
         // （未発行）; a past-tense outcome would claim a GitHub change that has not happened.
         var reopen = itemId == "PlanRowReopen";
         var row = reopen
-            ? new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Closed = true, CloseDate = Today }
-            : new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+            ? new PlanRow("I1", "Published", "acme/repo") { Closed = true, CloseDate = Today }
+            : new PlanRow("I1", "Published", "acme/repo");
         await MountPresentation([row], [row]);
         await Select(1, PlanField.Title);
         await ChooseFromRowMenu("I1", itemId);
@@ -239,8 +239,8 @@ internal sealed partial class PlanSheetHostedTests
     {
         // Read from GitHub, not commanded here: the tag names a command still to publish, so a finished task
         // shows only its done mark and a cancelled one stays dimmed and struck without a tag over its title.
-        var closed = new PlanRow("I1", "Closed", "acme/repo") { Fixed = true, Closed = true };
-        var cancelled = new PlanRow("I2", "Cancelled", "acme/repo") { Fixed = true, Closed = true, Cancelled = true };
+        var closed = new PlanRow("I1", "Closed", "acme/repo") { Closed = true };
+        var cancelled = new PlanRow("I2", "Cancelled", "acme/repo") { Closed = true, Cancelled = true };
         await MountPresentation([closed, cancelled], [closed, cancelled]);
         await Ui.Run(() => {
             var rows = sheet.Realized.Where(r => r.IsBound).ToDictionary(r => r.Identity);

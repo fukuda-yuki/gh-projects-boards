@@ -147,6 +147,46 @@ internal sealed class PlanDocumentTests
     }
     private static EditPlanCells Edit(string field, object? value, string id = "issue:1") => new(PlanOperationKind.Cell, [new(id, field, value)]);
 
+    [Test]
+    public async Task APlanSavedWithStartConstraintAndFixedDatesOpensWithOnlyThoseValuesDropped()
+    {
+        // #268: the fixture is a checkpoint the previous version saved, with 開始日指定 and 日程固定 mapped,
+        // shown as sheet columns, held by rows and history, and in a refresh conflict. Unpublished edits
+        // (title, estimate and the end they moved) and the Undo/Redo history must survive the upgrade.
+        var day = new DateOnly(2026, 10, 14);
+        var project = new ScopedId(new("github.com", 42), "PVT_legacy");
+        var store = new PlanStore(root);
+        Directory.CreateDirectory(store.Root);
+        using (var fixture = typeof(PlanDocumentTests).Assembly.GetManifestResourceStream("GhProjectsBoards.Tests.Fixtures.LegacySchedulingFieldsPlan.json")!)
+        using (var file = File.Create(store.FileFor(project))) await fixture.CopyToAsync(file);
+
+        var opened = await PlanSession.OpenAsync(store, project, day);
+        Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Loaded), opened.Error);
+        var session = opened.Session!; sessions.Add(session);
+        var document = session.Document;
+        Assert.Multiple(() =>
+        {
+            Assert.That(document.State.Rows.Select(r => (r.Identity, r.Title, r.Estimate, r.Start, r.End)), Is.EqualTo(new[] {
+                ("issue:1", "Task 1 edited", (decimal?)16, (DateOnly?)new DateOnly(2026, 10, 14), (DateOnly?)new DateOnly(2026, 10, 20)),
+                ("issue:2", "Task 2", 8, new DateOnly(2026, 10, 15), new DateOnly(2026, 10, 16)),
+                ("issue:3", "Task 3", 8, new DateOnly(2026, 10, 14), new DateOnly(2026, 10, 14)) }));
+            Assert.That(document.State.Settings.Columns.Select(c => c.Role), Is.EqualTo(new[] { PlanField.Estimate, PlanField.Start, PlanField.End }));
+            Assert.That(document.State.Settings.SheetColumns, Is.EqualTo(new PlanSheetColumnChoice[] { new(PlanField.Status, true, null) }));
+            Assert.That(document.State.Settings.People.Single().Name, Is.EqualTo("Alice"));
+            Assert.That(document.Sync.Conflicts, Is.Empty);
+            Assert.That(PlanOperations.Changes(document, day).Fields["issue:1"], Is.EquivalentTo(new[] { PlanField.Title, PlanField.Estimate, PlanField.End }));
+            Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo((4, 1)));
+        });
+
+        await session.Redo(day);
+        Assert.That(session.Document.State.Rows[1].Remaining, Is.EqualTo(4));
+        for (var i = 0; i < 5; i++) Assert.That((await session.Undo(day)).Succeeded, Is.True);
+        Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Task 1"));
+        Assert.That((await session.FlushAsync()).Succeeded, Is.True);
+        var saved = await File.ReadAllTextAsync(store.FileFor(project));
+        Assert.That(saved, Does.Not.Contain("startNoEarlierThan").And.Not.Contain("\"fixed\"").And.Not.Contain("\"StartNoEarlierThan\""));
+    }
+
     [TestCase(false), TestCase(true)]
     public async Task OutlineCommandPersistsOneExactUndoRedoStepAcrossReopening(bool arrange)
     {
@@ -249,16 +289,14 @@ internal sealed class PlanDocumentTests
         await session.Execute(Edit(field, field == PlanField.Estimate ? 12m : Today.AddDays(1)), Today);
         var row = session.Document.State.Rows[0];
         if (field == PlanField.Estimate) Assert.That(row.Remaining, Is.Null);
-        if (field == PlanField.Start) Assert.That(row.StartNoEarlierThan, Is.EqualTo(Today.AddDays(1)));
-        if (field == PlanField.End) Assert.That(row.Fixed, Is.True);
+        if (field == PlanField.Start) Assert.That(row.Start, Is.EqualTo(Today.AddDays(1)));
+        if (field == PlanField.End) Assert.That(row.End, Is.EqualTo(Today.AddDays(1)));
     }
 
     [Test]
-    public async Task PasteMovesBothFixedDatesBeforeValidatingTheFinalPair()
+    public async Task PasteMovesBothTypedDatesBeforeValidatingTheFinalPair()
     {
-        var initial = Initial();
-        initial = initial with { State = initial.State with { Rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Fixed = true }) } };
-        var session = await Create(initial);
+        var session = await Create();
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, [new("issue:1", PlanField.Start, Today.AddDays(1)), new("issue:1", PlanField.End, Today.AddDays(2))]), Today);
         Assert.That(session.Document.State.Rows[0].End, Is.EqualTo(Today.AddDays(2)));
         Assert.That(session.UndoCount, Is.EqualTo(1));
@@ -543,15 +581,17 @@ internal sealed class PlanDocumentTests
         Assert.That(Text(session.Document), Is.EqualTo(before)); Assert.That(session.UndoCount, Is.Zero);
     }
 
-    [TestCase(PlanField.Title), TestCase(PlanField.Estimate)]
+    [TestCase(PlanField.Title), TestCase(PlanField.Assignees)]
     public async Task UnrelatedEditPreservesInvalidRefreshedDatesAndTheirWarnings(string field)
     {
+        // A task without effort keeps its refreshed dates, here an inverted pair and an invalid 実績.
         var initial = Initial();
-        var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Fixed = true, Start = Today.AddDays(2), Estimate = -1 });
+        var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Estimate = null, Start = Today.AddDays(2), Actual = -1 });
         var session = await Create(initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } });
-        await session.Execute(Edit(field, field == PlanField.Title ? "Still editable" : 4m), Today);
+        await session.Execute(Edit(field, field == PlanField.Title ? "Still editable" : ImmutableArray<string>.Empty), Today);
         Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo(field == PlanField.Title ? "Still editable" : "Task 1"));
-        Assert.That(session.Document.State.Rows[0].Estimate, Is.EqualTo(field == PlanField.Title ? -1m : 4m));
+        Assert.That(session.Document.State.Rows[0].Assignees, field == PlanField.Title ? Is.EqualTo(new[] { "p1" }) : Is.Empty);
+        Assert.That((session.Document.State.Rows[0].Actual, session.Document.State.Rows[0].Start), Is.EqualTo((-1m, Today.AddDays(2))));
         Assert.That(session.Schedule(Today)[0].Warnings, Is.Not.Empty);
         await session.Undo(Today);
         Assert.That(Text(session.Document.State.Rows), Is.EqualTo(Text(rows)));
@@ -560,7 +600,7 @@ internal sealed class PlanDocumentTests
     private static IEnumerable<TestCaseData> SummaryEdits()
     {
         foreach (var field in new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start,
-            PlanField.End, PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status, PlanField.Assignees, PlanField.Predecessors })
+            PlanField.End, PlanField.Status, PlanField.Assignees, PlanField.Predecessors })
             foreach (var kind in new[] { PlanOperationKind.Cell, PlanOperationKind.Paste, PlanOperationKind.Fill, PlanOperationKind.CtrlD, PlanOperationKind.Clear })
                 yield return new(field, kind);
     }
@@ -577,8 +617,8 @@ internal sealed class PlanDocumentTests
         var review = Text(PlanPublishPlan.Build(session.Document, remote, Today, "test"));
         object? value = field switch {
             PlanField.Assignees => ImmutableArray.Create("p1"), PlanField.Predecessors => ImmutableArray.Create("issue:3"),
-            PlanField.Status => "Done", PlanField.Fixed => true,
-            PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan => Today, _ => 4m
+            PlanField.Status => "Done",
+            PlanField.Start or PlanField.End => Today, _ => 4m
         };
         PlanCommand command = kind switch {
             PlanOperationKind.Clear => new ClearPlanCells(["issue:3", "issue:1"], [field]),

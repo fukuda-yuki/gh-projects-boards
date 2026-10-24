@@ -1,0 +1,685 @@
+{
+  "version": 1,
+  "revision": 7,
+  "document": {
+    "project": {
+      "scope": {
+        "host": "github.com",
+        "viewerId": 42
+      },
+      "nodeId": "PVT_legacy"
+    },
+    "baseline": {
+      "rows": [
+        {
+          "identity": "issue:1",
+          "title": "Task 1",
+          "repository": "acme/work",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [
+            "p1"
+          ],
+          "predecessors": [],
+          "parent": null,
+          "estimate": 8,
+          "remaining": null,
+          "actual": null,
+          "start": "2026-10-14",
+          "end": "2026-10-14",
+          "startNoEarlierThan": "2026-10-21",
+          "fixed": false
+        },
+        {
+          "identity": "issue:2",
+          "title": "Task 2",
+          "repository": "acme/work",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [],
+          "predecessors": [],
+          "parent": null,
+          "estimate": 8,
+          "remaining": null,
+          "actual": null,
+          "start": "2026-10-15",
+          "end": "2026-10-16",
+          "startNoEarlierThan": null,
+          "fixed": true
+        },
+        {
+          "identity": "issue:3",
+          "title": "Task 3",
+          "repository": "acme/work",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [],
+          "predecessors": [
+            "issue:1"
+          ],
+          "parent": null,
+          "estimate": 8,
+          "remaining": null,
+          "actual": null,
+          "start": "2026-10-14",
+          "end": "2026-10-14",
+          "startNoEarlierThan": null,
+          "fixed": false
+        }
+      ],
+      "columns": [
+        {
+          "id": "F-est",
+          "name": "Estimate",
+          "dataType": "NUMBER",
+          "options": [],
+          "issueField": false
+        },
+        {
+          "id": "F-start",
+          "name": "Start date",
+          "dataType": "DATE",
+          "options": [],
+          "issueField": false
+        },
+        {
+          "id": "F-end",
+          "name": "Target date",
+          "dataType": "DATE",
+          "options": [],
+          "issueField": false
+        },
+        {
+          "id": "F-snet",
+          "name": "\u958B\u59CB\u65E5\u6307\u5B9A",
+          "dataType": "DATE",
+          "options": [],
+          "issueField": false
+        },
+        {
+          "id": "F-fixed",
+          "name": "\u65E5\u7A0B\u56FA\u5B9A",
+          "dataType": "SINGLE_SELECT",
+          "options": [
+            "\u56FA\u5B9A"
+          ],
+          "issueField": false
+        }
+      ],
+      "milestones": [],
+      "repositoryMilestones": [],
+      "repositoryLabels": []
+    },
+    "state": {
+      "rows": [
+        {
+          "identity": "issue:1",
+          "title": "Task 1 edited",
+          "repository": "acme/work",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [
+            "p1"
+          ],
+          "predecessors": [],
+          "parent": null,
+          "estimate": 16,
+          "remaining": null,
+          "actual": null,
+          "start": "2026-10-14",
+          "end": "2026-10-20",
+          "startNoEarlierThan": "2026-10-19",
+          "fixed": false
+        },
+        {
+          "identity": "issue:2",
+          "title": "Task 2",
+          "repository": "acme/work",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [],
+          "predecessors": [],
+          "parent": null,
+          "estimate": 8,
+          "remaining": null,
+          "actual": null,
+          "start": "2026-10-15",
+          "end": "2026-10-16",
+          "startNoEarlierThan": null,
+          "fixed": true
+        },
+        {
+          "identity": "issue:3",
+          "title": "Task 3",
+          "repository": "acme/work",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [],
+          "predecessors": [
+            "issue:1"
+          ],
+          "parent": null,
+          "estimate": 8,
+          "remaining": null,
+          "actual": null,
+          "start": "2026-10-14",
+          "end": "2026-10-14",
+          "startNoEarlierThan": null,
+          "fixed": true
+        }
+      ],
+      "settings": {
+        "sheetColumns": [
+          {
+            "key": "StartNoEarlierThan",
+            "visible": true,
+            "displayName": "\u6307\u5B9A",
+            "width": 110
+          },
+          {
+            "key": "Fixed",
+            "visible": true,
+            "displayName": null,
+            "width": 90
+          },
+          {
+            "key": "Status",
+            "visible": true,
+            "displayName": null,
+            "width": null
+          }
+        ],
+        "phaseMilestones": {},
+        "columns": [
+          {
+            "role": "Estimate",
+            "fieldId": "F-est",
+            "name": "Estimate",
+            "dataType": "NUMBER"
+          },
+          {
+            "role": "Start",
+            "fieldId": "F-start",
+            "name": "Start date",
+            "dataType": "DATE"
+          },
+          {
+            "role": "End",
+            "fieldId": "F-end",
+            "name": "Target date",
+            "dataType": "DATE"
+          },
+          {
+            "role": "StartNoEarlierThan",
+            "fieldId": "F-snet",
+            "name": "\u958B\u59CB\u65E5\u6307\u5B9A",
+            "dataType": "DATE"
+          },
+          {
+            "role": "Fixed",
+            "fieldId": "F-fixed",
+            "name": "\u65E5\u7A0B\u56FA\u5B9A",
+            "dataType": "SINGLE_SELECT"
+          }
+        ],
+        "companyDaysOff": [],
+        "importedHolidays": null,
+        "people": [
+          {
+            "identity": "p1",
+            "name": "Alice",
+            "rate": 100,
+            "allowance": null
+          }
+        ],
+        "projectStart": null,
+        "projectEnd": null,
+        "defaultRepository": "acme/work",
+        "statusDate": "2026-10-14",
+        "showOverdueMark": true,
+        "showLaterMark": true,
+        "showOverEstimateMark": true
+      },
+      "archivedIdentities": []
+    },
+    "sync": {
+      "unverified": [],
+      "failures": [],
+      "nativeOrders": {},
+      "localOrderChoices": {},
+      "creationStarts": [],
+      "notBefore": null,
+      "publish": null,
+      "peopleNames": {},
+      "issueLinks": {},
+      "cannotUpdate": [],
+      "inaccessibleCount": 0,
+      "draftCount": 0,
+      "pullRequestCount": 0,
+      "conflicts": [
+        {
+          "identity": "issue:1",
+          "field": "StartNoEarlierThan",
+          "baseline": "\u00222026-10-14\u0022",
+          "local": "\u00222026-10-19\u0022",
+          "remote": "\u00222026-10-21\u0022",
+          "deletedFieldName": null
+        }
+      ],
+      "unavailable": []
+    }
+  },
+  "undo": [
+    {
+      "kind": "Cell",
+      "rows": [
+        {
+          "identity": "issue:1",
+          "before": {
+            "identity": "issue:1",
+            "title": "Task 1",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [
+              "p1"
+            ],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 8,
+            "remaining": null,
+            "actual": null,
+            "start": "2026-10-14",
+            "end": "2026-10-14",
+            "startNoEarlierThan": "2026-10-21",
+            "fixed": false
+          },
+          "after": {
+            "identity": "issue:1",
+            "title": "Task 1 edited",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [
+              "p1"
+            ],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 8,
+            "remaining": null,
+            "actual": null,
+            "start": "2026-10-14",
+            "end": "2026-10-14",
+            "startNoEarlierThan": "2026-10-21",
+            "fixed": false
+          }
+        }
+      ],
+      "beforeOrder": null,
+      "afterOrder": null,
+      "beforeSettings": null,
+      "afterSettings": null,
+      "discardedRows": [],
+      "beforeUnavailable": null,
+      "afterUnavailable": null,
+      "beforeLocalOrderChoices": null,
+      "afterLocalOrderChoices": null,
+      "beforeConflicts": null,
+      "afterConflicts": null
+    },
+    {
+      "kind": "Cell",
+      "rows": [
+        {
+          "identity": "issue:3",
+          "before": {
+            "identity": "issue:3",
+            "title": "Task 3",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [],
+            "predecessors": [
+              "issue:1"
+            ],
+            "parent": null,
+            "estimate": 8,
+            "remaining": null,
+            "actual": null,
+            "start": "2026-10-14",
+            "end": "2026-10-14",
+            "startNoEarlierThan": null,
+            "fixed": false
+          },
+          "after": {
+            "identity": "issue:3",
+            "title": "Task 3",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [],
+            "predecessors": [
+              "issue:1"
+            ],
+            "parent": null,
+            "estimate": 8,
+            "remaining": null,
+            "actual": null,
+            "start": "2026-10-14",
+            "end": "2026-10-14",
+            "startNoEarlierThan": null,
+            "fixed": true
+          }
+        }
+      ],
+      "beforeOrder": null,
+      "afterOrder": null,
+      "beforeSettings": null,
+      "afterSettings": null,
+      "discardedRows": [],
+      "beforeUnavailable": null,
+      "afterUnavailable": null,
+      "beforeLocalOrderChoices": null,
+      "afterLocalOrderChoices": null,
+      "beforeConflicts": null,
+      "afterConflicts": null
+    },
+    {
+      "kind": "Cell",
+      "rows": [
+        {
+          "identity": "issue:1",
+          "before": {
+            "identity": "issue:1",
+            "title": "Task 1 edited",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [
+              "p1"
+            ],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 8,
+            "remaining": null,
+            "actual": null,
+            "start": "2026-10-14",
+            "end": "2026-10-14",
+            "startNoEarlierThan": "2026-10-21",
+            "fixed": false
+          },
+          "after": {
+            "identity": "issue:1",
+            "title": "Task 1 edited",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [
+              "p1"
+            ],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 16,
+            "remaining": null,
+            "actual": null,
+            "start": "2026-10-14",
+            "end": "2026-10-15",
+            "startNoEarlierThan": "2026-10-21",
+            "fixed": false
+          }
+        }
+      ],
+      "beforeOrder": null,
+      "afterOrder": null,
+      "beforeSettings": null,
+      "afterSettings": null,
+      "discardedRows": [],
+      "beforeUnavailable": null,
+      "afterUnavailable": null,
+      "beforeLocalOrderChoices": null,
+      "afterLocalOrderChoices": null,
+      "beforeConflicts": null,
+      "afterConflicts": null
+    },
+    {
+      "kind": "Cell",
+      "rows": [
+        {
+          "identity": "issue:1",
+          "before": {
+            "identity": "issue:1",
+            "title": "Task 1 edited",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [
+              "p1"
+            ],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 16,
+            "remaining": null,
+            "actual": null,
+            "start": "2026-10-14",
+            "end": "2026-10-15",
+            "startNoEarlierThan": "2026-10-21",
+            "fixed": false
+          },
+          "after": {
+            "identity": "issue:1",
+            "title": "Task 1 edited",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [
+              "p1"
+            ],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 16,
+            "remaining": null,
+            "actual": null,
+            "start": "2026-10-14",
+            "end": "2026-10-20",
+            "startNoEarlierThan": "2026-10-19",
+            "fixed": false
+          }
+        }
+      ],
+      "beforeOrder": null,
+      "afterOrder": null,
+      "beforeSettings": null,
+      "afterSettings": null,
+      "discardedRows": [],
+      "beforeUnavailable": null,
+      "afterUnavailable": null,
+      "beforeLocalOrderChoices": null,
+      "afterLocalOrderChoices": null,
+      "beforeConflicts": null,
+      "afterConflicts": null
+    }
+  ],
+  "redo": [
+    {
+      "kind": "Cell",
+      "rows": [
+        {
+          "identity": "issue:2",
+          "before": {
+            "identity": "issue:2",
+            "title": "Task 2",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 8,
+            "remaining": null,
+            "actual": null,
+            "start": "2026-10-15",
+            "end": "2026-10-16",
+            "startNoEarlierThan": null,
+            "fixed": true
+          },
+          "after": {
+            "identity": "issue:2",
+            "title": "Task 2",
+            "repository": "acme/work",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 8,
+            "remaining": 4,
+            "actual": null,
+            "start": "2026-10-15",
+            "end": "2026-10-16",
+            "startNoEarlierThan": null,
+            "fixed": true
+          }
+        }
+      ],
+      "beforeOrder": null,
+      "afterOrder": null,
+      "beforeSettings": null,
+      "afterSettings": null,
+      "discardedRows": [],
+      "beforeUnavailable": null,
+      "afterUnavailable": null,
+      "beforeLocalOrderChoices": null,
+      "afterLocalOrderChoices": null,
+      "beforeConflicts": null,
+      "afterConflicts": null
+    }
+  ]
+}

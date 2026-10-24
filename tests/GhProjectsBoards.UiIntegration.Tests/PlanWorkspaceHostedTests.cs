@@ -676,7 +676,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         var date = new DateOnly(2026, 10, 5);
         var state = FakePlanEditor.Load(root);
-        var row = state.Issues[0].Row with { Start = date, End = date.AddDays(2), Fixed = true };
+        var row = state.Issues[0].Row with { Start = date, End = date.AddDays(2) };
         // 遅れの原因 (#236 part B) is an overdue task or a task whose own remaining work pushes its forecast
         // past its planned end, so the overdue row and the later row each contribute one cause.
         FakePlanEditor.Save(root, state with { Issues = [
@@ -2074,13 +2074,13 @@ internal sealed partial class PlanWorkspaceHostedTests
         var state = FakePlanEditor.Load(root);
         FakePlanEditor.Save(root, state with {
             Issues = [state.Issues[0] with { Row = state.Issues[0].Row with { Assignees = ["U2"] } }],
-            AddedFields = ["StartNoEarlierThan"] });
+            ExtraFields = [new("X-points", "Story points", "NUMBER")] });
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         await Ui.Until(() => workspace.People.Any(p => p.Identity == "U2"));
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<NumberBox>().Any(n => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(n) == "PlanRateU2"), Is.True);
-            Assert.That(Ui.Find<ComboBox>("PlanMapStartNoEarlierThan").Items.Cast<PlanFieldChoice>().Any(c => c.Label == "開始日指定"), Is.True);
+            Assert.That(Ui.Find<ComboBox>("PlanMapEstimate").Items.Cast<PlanFieldChoice>().Any(c => c.Label == "Story points"), Is.True);
             Assert.That(Ui.Find<ScrollViewer>("PlanSettingsScroll").Visibility, Is.EqualTo(Visibility.Visible));
         });
     }
@@ -2202,23 +2202,6 @@ internal sealed partial class PlanWorkspaceHostedTests
         await restarted.Connect(new(FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
         Assert.That(restarted.Selected!.Id.NodeId, Is.EqualTo("P1"));
         Assert.That(restarted.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));
-    }
-    [Test]
-    public async Task ExplicitAddFieldButtonAddsAndMapsBothSchedulingFieldsWithoutImplicitWrites()
-    {
-        await Open();
-        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
-        await Settings();
-        await Ui.Ready<Button>("PlanAddFields");
-        await Ui.Run(() => Ui.Click("PlanAddFields"));
-        await Ui.Until(() => workspace.Session!.Document.State.Settings.Columns.Length == 7 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
-        await Ui.Idle();
-        await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
-            Assert.That(((PlanFieldChoice)Ui.Find<ComboBox>("PlanMapFixed").SelectedItem).Label, Is.EqualTo("日程固定"));
-            Assert.That(Ui.Tree(view).OfType<Button>().Any(b => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(b) == "PlanAddFields"), Is.False);
-        });
-        Assert.That(FakePlanEditor.Load(root).AddedFields.Length, Is.EqualTo(2));
     }
     [TestCase("rate", "2026-10-06")]
     [TestCase("company", "2026-10-06")]
@@ -2363,7 +2346,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             foreach (var (field, caption) in new[] {
                 (PlanField.Estimate, "見積工数"), (PlanField.Remaining, "見込み残存工数"),
                 (PlanField.Actual, "実績工数"), (PlanField.Start, "開始日"), (PlanField.End, "終了日"),
-                (PlanField.StartNoEarlierThan, "開始日指定"), (PlanField.Fixed, "日程固定"), (PlanField.Phase, "工程") }) {
+                (PlanField.Phase, "工程") }) {
                 var combo = Ui.Find<ComboBox>("PlanMap" + field);
                 Assert.That(combo.Header, Is.EqualTo(caption));
                 Assert.That(AutomationProperties.GetName(combo), Is.EqualTo(caption));

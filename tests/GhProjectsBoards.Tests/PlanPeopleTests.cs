@@ -159,23 +159,14 @@ internal sealed class PlanPeopleTests
         Assert.That(daily.Periods[0].Overloaded, Is.True);
         Assert.That(p.Overloaded, Is.False);
     }
-    [TestCase(false)]
-    [TestCase(true)]
-    public void FixedMissingDatesOrNoWorkingDaysRemainUnallocated(bool weekend)
-    {
-        var d = Document([Row("I1", 4) with { Fixed = true, Start = weekend ? Day.AddDays(5) : null, End = weekend ? Day.AddDays(6) : null }]);
-        var p = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Week, 1).People.Single(p => p.Identity == "U1");
-        Assert.That(p.Unallocated, Is.EqualTo(new[] { "I1" }));
-        Assert.That(p.Periods[0].Planned, Is.Null);
-        Assert.That(p.Missing, Does.Contain(weekend ? "期間内に稼働日なし" : "日程が未入力"));
-    }
     [Test]
-    public void FixedAndCompletedTasksUseKeptDatesWithoutCountingSummaryTwice()
+    public void OpenAndCompletedTasksLoadFromThePlanWithoutCountingSummaryTwice()
     {
-        var d = Document([Row("I0") with { Estimate = 999, Remaining = 999 }, Row("I1", 12) with { Parent = "I0", Fixed = true, Start = Day, End = Day.AddDays(1) }, Row("I2", 4) with { Closed = true, Start = Day, End = Day }]);
+        var d = Document([Row("I0") with { Estimate = 999, Remaining = 999 }, Row("I1", 12) with { Parent = "I0", Start = Day, End = Day.AddDays(1) }, Row("I2", 4) with { Closed = true, Start = Day, End = Day }]);
         var p = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Day, 2).People.Single(p => p.Identity == "U1");
         Assert.That(p.Remaining, Is.EqualTo(12));
-        Assert.That(p.Periods.Select(p => p.Planned), Is.EqualTo(new[] { 6m, 6m }));
+        // 12h at the 50% rate loads 4h on each of the first two days; the summary adds nothing.
+        Assert.That(p.Periods.Select(p => p.Planned), Is.EqualTo(new[] { 4m, 4m }));
         Assert.That(p.Periods[0].Tasks, Is.EqualTo(new[] { "I1" }));
     }
     [TestCase(PlanPeriodScale.Week, false)]

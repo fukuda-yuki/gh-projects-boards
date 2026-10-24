@@ -52,9 +52,9 @@ internal sealed class PlanOverviewHostedTests
 
     // #236: a stored date is a plan value and a read does not invent one, so the task rows the geometry
     // measures state the plan's own dates. One day of work from the stated day is the plan this fixture had
-    // laid out before a read stopped laying dates out; the 開始日指定 input stays as the original entry.
+    // laid out before a read stopped laying dates out.
     private static PlanRow TaskRow(string id, string title, string parent, DateOnly start) => new(id, title, "acme/repo") {
-        Parent = parent, Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"], StartNoEarlierThan = start,
+        Parent = parent, Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"],
         Start = start, End = start
     };
 
@@ -82,7 +82,7 @@ internal sealed class PlanOverviewHostedTests
     {
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var rows = session.Document.State.Rows.Select(r => earlierTask && r.Identity == "I3" ? r with {
-            Fixed = true, Start = Today.AddMonths(-3), End = Today.AddMonths(-3) } : r).ToImmutableArray();
+            Start = Today.AddMonths(-3), End = Today.AddMonths(-3) } : r).ToImmutableArray();
         session = await PlanSession.CreateAsync(new(Path.Combine(root, "initial")),
             new(session.Document.Project, new(rows, []), new(rows, session.Document.State.Settings)), Today);
         await Ui.Run(() => { sheetHost.Children.Clear(); sheet = new(session); sheetHost.Children.Add(sheet); });
@@ -102,7 +102,7 @@ internal sealed class PlanOverviewHostedTests
     [TestCase("日"), TestCase("週"), TestCase("月"), TestCase("全期間"), Category("GanttPhase3")]
     public async Task TwoTierTimescaleRetainsContextAcrossMonthAndYearWithoutOverlap(string scale)
     {
-        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I3", PlanField.Fixed, true),
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [
             new("I3", PlanField.Start, new DateOnly(2026, 9, 1)), new("I3", PlanField.End, new DateOnly(2026, 9, 1))]), Today);
         await Ui.Run(() => { sheet.Refresh(); Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = scale; });
         await Ui.Idle();
@@ -160,12 +160,12 @@ internal sealed class PlanOverviewHostedTests
             Estimate = 32, Actual = 16, Remaining = 16, Start = Today.AddDays(-5), Assignees = ["U1"] };
         var rows = ImmutableArray.Create(task,
             // #236: a stored date is a plan value and a read does not invent one, so the rows the geometry
-            // measures state the plan's own dates. I2 is fixed with both endpoints and I6 is a zero-work
+            // measures state the plan's own dates. I2 stores both endpoints and I6 is a zero-work
             // milestone on its date; without them those bars do not exist to measure. I2's end is the day its
             // remaining work reaches on this fixture's calendar (10/7 company day off, 10/8 imported holiday,
             // 10/12 bundled holiday), so its forecast ends on its plan end and the row stays out of the
             // 予定より遅れ set this case measures on rows 1 and 4.
-            task with { Identity = "I2", Title = "進捗未取得", Actual = null, Fixed = true, Start = Today.AddDays(3), End = new(2026, 10, 13) },
+            task with { Identity = "I2", Title = "進捗未取得", Actual = null, Start = Today.AddDays(3), End = new(2026, 10, 13) },
             task with { Identity = "I3", Title = "完了", Remaining = 0, End = Today.AddDays(3) },
             new PlanRow("I4", "集計", "acme/repo"), task with { Identity = "I5", Parent = "I4" },
             task with { Identity = "I6", Title = "承認", Estimate = 0, Actual = 0, Remaining = 0, Predecessors = ["I1"], Start = Today, End = Today });
@@ -343,7 +343,7 @@ internal sealed class PlanOverviewHostedTests
         var early = Today.AddMonths(-3);
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell,
             new[] { "I3", "I6" }.SelectMany(id => new PlanCellChange[] {
-                new(id, PlanField.Fixed, true), new(id, PlanField.Start, early), new(id, PlanField.End, early)
+                new(id, PlanField.Start, early), new(id, PlanField.End, early)
             }).ToImmutableArray()), Today);
         await Ui.Run(() => { sheet.Refresh(); Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = scale; });
         await Ui.Idle();
@@ -358,15 +358,15 @@ internal sealed class PlanOverviewHostedTests
             offset = Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset;
         });
 
-        // Estimate on another fixed task does not move any scheduled endpoint.
-        await SelectCell(6, PlanField.Estimate);
+        // A title edit on another task does not move any scheduled endpoint.
+        await SelectCell(6, PlanField.Title);
         await Ui.Run(() => {
-            var editor = Ui.Find<TextBox>("PlanCell6_Estimate");
+            var editor = Ui.Find<TextBox>("PlanCell6_Title");
             Assert.That(editor.Focus(FocusState.Programmatic), Is.True);
-            editor.Text = "16";
+            editor.Text = "承認（改）";
         });
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
-        await Ui.Until(() => Row("I6").Estimate == 16);
+        await Ui.Until(() => Row("I6").Title == "承認（改）");
         await Ui.Idle();
         await Ui.Run(() => {
             sheet.UpdateLayout();
@@ -440,7 +440,7 @@ internal sealed class PlanOverviewHostedTests
     [TestCase("週"), TestCase("月")]
     public async Task EditingAnEarlierStartKeepsAnotherVisibleBarAtTheSameDateCoordinate(string scale)
     {
-        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I3", PlanField.Fixed, true),
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [
             new("I3", PlanField.Start, Today), new("I3", PlanField.End, Today.AddDays(3))]), Today);
         await Ui.Run(() => sheet.Refresh());
         await SelectCell(5, PlanField.Title);
@@ -480,8 +480,8 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var last = Today.AddDays(days - 1);
         var rows = ImmutableArray.Create(
-            new PlanRow("I1", "First milestone", "acme/repo") { Fixed = true, Start = Today, End = Today, Estimate = 0, Remaining = 0, Actual = 0 },
-            new PlanRow("I2", "Last milestone", "acme/repo") { Fixed = true, Start = last, End = last, Estimate = 0, Remaining = 0, Actual = 0 },
+            new PlanRow("I1", "First milestone", "acme/repo") { Start = Today, End = Today, Estimate = 0, Remaining = 0, Actual = 0 },
+            new PlanRow("I2", "Last milestone", "acme/repo") { Start = last, End = last, Estimate = 0, Remaining = 0, Actual = 0 },
             new PlanRow("I3", "First endpoint", "acme/repo") { Start = Today },
             new PlanRow("I4", "Last endpoint", "acme/repo") { End = last });
         session = await PlanSession.CreateAsync(new(Path.Combine(root, "end-marks")),
@@ -523,7 +523,7 @@ internal sealed class PlanOverviewHostedTests
     public async Task WholePeriodIncludesStatusOutsideAllScheduledDates(int statusOffset)
     {
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, session.Document.State.Rows.Where(r => r.Parent is not null)
-            .SelectMany(r => new PlanCellChange[] { new(r.Identity, PlanField.Fixed, true), new(r.Identity, PlanField.Start, Today), new(r.Identity, PlanField.End, Today.AddDays(2)) }).ToImmutableArray()), Today);
+            .SelectMany(r => new PlanCellChange[] { new(r.Identity, PlanField.Start, Today), new(r.Identity, PlanField.End, Today.AddDays(2)) }).ToImmutableArray()), Today);
         await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = Today.AddDays(statusOffset) }), Today);
         await Ui.Run(() => { sheet.Refresh(); Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "全期間"; });
         await Ui.Idle();

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using GhProjectsBoards.Core.Projects;
@@ -23,7 +24,35 @@ internal static class PlanJson
             Converters = { new JsonStringEnumConverter(allowIntegerValues: false) } };
     }
     internal static string Text<T>(T value) => JsonSerializer.Serialize(value, Options);
-    internal static T Read<T>(byte[] bytes) => JsonSerializer.Deserialize<T>(bytes, Options) ?? throw new ArgumentException("保存内容が空です。");
+    internal static T Read<T>(byte[] bytes) => (WithoutRemovedFields(bytes) is { } upgraded ? upgraded.Deserialize<T>(Options) : JsonSerializer.Deserialize<T>(bytes, Options))
+        ?? throw new ArgumentException("保存内容が空です。");
+    // #268 removed the start-constraint and fixed-date fields. A plan or settings file the previous version saved still holds
+    // them as row values, column mappings, sheet columns, conflicts, failures and publish writes; dropping
+    // exactly those keeps every other stored value, including unpublished edits and the history.
+    private static readonly string[] RemovedFields = ["StartNoEarlierThan", "Fixed"];
+    private static JsonNode? WithoutRemovedFields(byte[] bytes)
+    {
+        var span = bytes.AsSpan();
+        if (span.IndexOf("\"startNoEarlierThan\""u8) < 0 && span.IndexOf("\"StartNoEarlierThan\""u8) < 0 && span.IndexOf("\"Fixed\""u8) < 0) return null;
+        var root = JsonNode.Parse(bytes);
+        Strip(root);
+        return root;
+        static void Strip(JsonNode? node)
+        {
+            if (node is JsonObject item)
+            {
+                item.Remove("startNoEarlierThan"); item.Remove("fixed");
+                foreach (var (_, child) in item.ToArray()) Strip(child);
+            }
+            else if (node is JsonArray list)
+            {
+                foreach (var child in list.ToArray())
+                    if (child is JsonObject entry && new[] { "role", "key", "field" }.Any(name => entry[name] is JsonValue value
+                        && value.TryGetValue(out string? text) && RemovedFields.Contains(text))) list.Remove(child);
+                    else Strip(child);
+            }
+        }
+    }
     internal static void Validate(PlanCheckpoint checkpoint, ScopedId project)
     {
         PlanOperations.Require(checkpoint.Version == 1 && checkpoint.Revision >= 0 && checkpoint.Document.Project == project &&

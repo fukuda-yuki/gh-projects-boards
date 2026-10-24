@@ -61,48 +61,6 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         }
         finally { gate.Release(); }
     }
-    public async Task<PlanPublishResult> AddSchedulingFieldsAsync(PlanSession session, DateOnly today, CancellationToken token = default)
-    {
-        await gate.WaitAsync(token).ConfigureAwait(false);
-        try
-        {
-            using var operation = session.BeginRemoteOperation();
-            if (session.Document.Sync.Publish is not null) throw new InvalidOperationException("未完了の発行を先に確認してください。");
-            RequireSave(await session.FlushAsync().ConfigureAwait(false));
-            using var lease = await service.BeginOperationAsync(context, token).ConfigureAwait(false);
-            var result = await new ProjectReader(service, lease).ReadAsync(context, session.Document.Project, token).ConfigureAwait(false);
-            if (result.Outcome != ProjectReadOutcome.Complete || result.Project is null) throw new InvalidOperationException("列を取得できません。");
-            var mappings = session.Document.State.Settings.Columns.ToList();
-            foreach (var (role, name, type) in new[] { (PlanField.StartNoEarlierThan, "開始日指定", "DATE"), (PlanField.Fixed, "日程固定", "SINGLE_SELECT") })
-            {
-                var matches = result.Project.Fields.Where(f => f.Name == name).ToArray();
-                if (matches.Length > 1 || matches.Any(f => f.DataType != type || f.Availability != ValueAvailability.Present || f.ValueOwner != FieldOwner.ProjectItem && f.IssueFieldId is null))
-                    throw new InvalidOperationException("同名の列の型または識別子を確認してください: " + name);
-                string id;
-                if (matches.Length == 1)
-                {
-                    if (role == PlanField.Fixed && matches[0].Options.Count(o => o.Name == "固定") != 1) throw new InvalidOperationException("固定の選択肢を確認してください。");
-                    id = matches[0].Id.NodeId;
-                }
-                else
-                {
-                    var input = new Dictionary<string, object?> { ["projectId"] = session.Document.Project.NodeId, ["name"] = name, ["dataType"] = type };
-                    if (type == "SINGLE_SELECT") input["singleSelectOptions"] = new[] { new { name = "固定", color = "GRAY", description = "" } };
-                    var response = await lease.SendAsync(ApiRequest.GraphQl("mutation PlanAddField($input:CreateProjectV2FieldInput!){createProjectV2Field(input:$input){projectV2Field{... on ProjectV2FieldCommon{id name dataType}}}}", new { input }), token).ConfigureAwait(false);
-                    if (!response.IsSuccess || response.Data is not { } body) throw new InvalidOperationException("列の追加結果を確認できません。最新の情報を取得してから再試行してください。");
-                    var field = body.GetProperty("data").GetProperty("createProjectV2Field").GetProperty("projectV2Field");
-                    if (field.GetProperty("name").GetString() != name || field.GetProperty("dataType").GetString() != type) throw new InvalidOperationException("追加した列が一致しません。");
-                    id = field.GetProperty("id").GetString()!;
-                }
-                mappings.RemoveAll(m => m.Role == role || m.FieldId == id);
-                mappings.Add(new(role, id, name, type));
-            }
-            RequireSave(await session.AcceptFieldSettings(session.Document.State.Settings with { Columns = mappings.ToImmutableArray() }, today).ConfigureAwait(false));
-            return new(true, null, null);
-        }
-        catch (Exception ex) when (Expected(ex)) { return new(false, ex.Message, null); }
-        finally { gate.Release(); }
-    }
     private async Task<PlanRemoteSnapshot> Read(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null)
     {
         var document = session.Document;

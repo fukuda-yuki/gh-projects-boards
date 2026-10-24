@@ -66,9 +66,8 @@ internal static class PlanVerification
                 return false;
             case "clearProjectV2ItemFieldValue": case "updateProjectV2ItemFieldValue":
                 var role = Field(write, settings);
-                if (write.Mutation.StartsWith("clear", StringComparison.Ordinal)) return PlanValues.Get(row, role) == (role == PlanField.Fixed ? "false" : "null");
+                if (write.Mutation.StartsWith("clear", StringComparison.Ordinal)) return PlanValues.Get(row, role) == "null";
                 var value = input["value"]!.AsObject().Single();
-                if (role == PlanField.Fixed) return row.Fixed;
                 if (role is PlanField.Status or PlanField.Phase || PlanSheetColumns.IsExtra(role) && value.Key == "singleSelectOptionId")
                 {
                     var definition = remote.Fields.SingleOrDefault(f => f.Id.NodeId == Text("fieldId") && (role != PlanField.Status || f.Name == "Status") && f.DataType == "SINGLE_SELECT");
@@ -80,14 +79,13 @@ internal static class PlanVerification
             case "setIssueFieldValue":
                 var issueRole = Field(write, settings);
                 var entry = input["issueFields"]!.AsArray().Single()!.AsObject();
-                if (entry["delete"]?.GetValue<bool>() == true) return PlanValues.Get(row, issueRole) == (issueRole == PlanField.Fixed ? "false" : "null");
+                if (entry["delete"]?.GetValue<bool>() == true) return PlanValues.Get(row, issueRole) == "null";
                 var fieldId = entry["fieldId"]!.GetValue<string>();
                 var written = entry.Single(p => p.Key != "fieldId");
                 if (written.Key == "singleSelectOptionId")
                 {
                     var name = remote.Fields.SingleOrDefault(f => f.IssueFieldId == fieldId)?.Options.SingleOrDefault(o => o.Id == written.Value?.GetValue<string>())?.Name;
-                    return name is not null && (issueRole == PlanField.Fixed ? row.Fixed && name == "固定"
-                        : (PlanSheetColumns.IsExtra(issueRole) ? PlanExtraEditing.Value(row, issueRole) as string : row.Phase) == name);
+                    return name is not null && (PlanSheetColumns.IsExtra(issueRole) ? PlanExtraEditing.Value(row, issueRole) as string : row.Phase) == name;
                 }
                 return JsonNode.DeepEquals(JsonNode.Parse(PlanValues.Get(row, issueRole)), written.Value);
             default: return false;

@@ -127,7 +127,7 @@ internal static class PlanPublishPlan
             }
             foreach (var field in PlanValues.Fields(before, row))
             {
-                if (PlanSheetColumns.IsMappedExtra(document, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryPublishExcluded(scheduled.IsSummary, field)
+                if (PlanSheetColumns.IsMappedExtra(document, field) || PlanOperations.IsSummaryPublishExcluded(scheduled.IsSummary, field)
                     || PlanOperations.IsUnmappedCalculation(scheduled, field, document.State.Settings)) continue;
                 var bv = PlanValues.Get(before, field); var av = PlanValues.Get(row, field);
                 if (bv == av) continue;
@@ -237,16 +237,14 @@ internal static class PlanPublishPlan
                         var mapping = document.State.Settings.Columns.SingleOrDefault(m => m.Role == field)
                             ?? throw new InvalidOperationException("列を割り当ててください: " + field);
                         var definition = remote.Fields.Single(f => f.Id.NodeId == mapping.FieldId);
-                        var clear = av == "null" || field == PlanField.Fixed && !row.Fixed;
+                        var clear = av == "null";
                         if (definition.IssueFieldId is not null)
                         {
                             AddIssueField(row, field, definition, clear ? null : field switch
                             {
                                 PlanField.Estimate => row.Estimate, PlanField.Remaining => row.Remaining, PlanField.Actual => row.Actual,
                                 PlanField.Start => row.Start!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), PlanField.End => row.End!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                                PlanField.StartNoEarlierThan => row.StartNoEarlierThan!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                                 PlanField.Phase => definition.Options.Single(o => o.Name == row.Phase).Id,
-                                PlanField.Fixed => definition.Options.Single(o => o.Name == "固定").Id,
                                 _ => throw new InvalidOperationException("未対応の列です。")
                             });
                             break;
@@ -256,9 +254,7 @@ internal static class PlanPublishPlan
                         {
                             PlanField.Estimate => new { number = row.Estimate }, PlanField.Remaining => new { number = row.Remaining }, PlanField.Actual => new { number = row.Actual },
                             PlanField.Start => new { date = row.Start!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) }, PlanField.End => new { date = row.End!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) },
-                            PlanField.StartNoEarlierThan => new { date = row.StartNoEarlierThan!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) },
-                            PlanField.Phase => new { singleSelectOptionId = definition.Options.Single(o => o.Name == row.Phase).Id },
-                            PlanField.Fixed => (object)new { singleSelectOptionId = definition.Options.Single(o => o.Name == "固定").Id },
+                            PlanField.Phase => (object)new { singleSelectOptionId = definition.Options.Single(o => o.Name == row.Phase).Id },
                             _ => throw new InvalidOperationException("未対応の列です。")
                         };
                         Add(row.Identity, PlanPublishStage.Fields, clear ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue",

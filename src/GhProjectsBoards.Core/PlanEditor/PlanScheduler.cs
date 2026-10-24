@@ -319,8 +319,6 @@ internal static class PlanScheduler
                 { earliest = candidate; reason = candidateReason; }
             }
             if (settings.ProjectStart is { } project) Consider(Point.Morning(project), "プロジェクト開始日");
-            if (task.StartNoEarlierThan is { } specified)
-                Consider(Point.Morning(specified), "開始日指定 " + specified.ToString("M/d", CultureInfo.InvariantCulture));
             // Reverse row order lets the smallest row ID win equal predecessor endpoints. A predecessor whose
             // end is a stored plan day lets its successor start on that day, so a read leaves the pair alone.
             foreach (var (before, result) in dependencies.AsEnumerable().Reverse())
@@ -335,13 +333,8 @@ internal static class PlanScheduler
                     start = task.KeptDates.Start is { } keptStart ? Point.Morning(keptStart) : null;
                 }
                 if (complete && end is null) warnings.Add("完了タスクの終了日なし");
-                if (!complete && task.Fixed)
-                {
-                    if (start is null || end is null) warnings.Add("日程固定の日付不足");
-                    WarnConflict(start);
-                }
                 return Create(task, start, end, task.KeptDates.Start != task.Start ? DateOrigin.Calculated : DateOrigin.Kept, complete ? DateOrigin.Calculated : DateOrigin.Kept,
-                    complete ? "完了" : task.Fixed ? "日程固定" : "工数なし", warnings) with { EndDayOnly = true };
+                    complete ? "完了" : "工数なし", warnings) with { EndDayOnly = true };
             }
             var work = task.EffectiveRemaining!.Value;
             var person = task.Assignees.Distinct(StringComparer.Ordinal).ToArray() is [var single] && people.TryGetValue(single, out var p) ? p : null;

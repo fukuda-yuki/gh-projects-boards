@@ -30,7 +30,6 @@
                     <SolidColorBrush x:Key="GanttLateBrush" Color="#C42B1C"/>
                     <SolidColorBrush x:Key="GanttLateTintBrush" Color="#FDE7E9"/>
                     <SolidColorBrush x:Key="IndicatorDoneBrush" Color="#0F7B0F"/>
-                    <SolidColorBrush x:Key="IndicatorTypedBrush" Color="#616161"/>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="HighContrast">
                     <SolidColorBrush x:Key="WorkspaceBackgroundBrush" Color="{ThemeResource SystemColorWindowColor}"/>
@@ -51,7 +50,6 @@
                     <SolidColorBrush x:Key="GanttLateBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
                     <SolidColorBrush x:Key="GanttLateTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
                     <SolidColorBrush x:Key="IndicatorDoneBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-                    <SolidColorBrush x:Key="IndicatorTypedBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <Style TargetType="ListView">

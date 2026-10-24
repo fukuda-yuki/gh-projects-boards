@@ -158,7 +158,7 @@ internal static class PlanMerge
             // Date adoption needs the merged progress state, regardless of enum declaration order.
             foreach (var field in PlanValues.Fields(b, l, r).OrderBy(field => field is PlanField.Start or PlanField.End))
             {
-                if (PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanSheetColumns.IsExtra(field) && !r.ExtraValues.ContainsKey(field)) continue;
+                if (PlanSheetColumns.IsExtra(field) && !r.ExtraValues.ContainsKey(field)) continue;
                 var bv = PlanValues.Get(b, field); var lv = PlanValues.Get(l, field); var rv = PlanValues.Get(r, field);
                 var prior = document.Sync.Conflicts.FirstOrDefault(c => c.Identity == r.Identity && c.Field == field);
                 if (prior is not null && lv != rv)

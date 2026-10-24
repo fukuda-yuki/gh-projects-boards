@@ -52,7 +52,7 @@ internal static class PlanSheetEditing
             case PlanField.Estimate: case PlanField.Remaining: case PlanField.Actual:
                 if (PlanInput.TryEffort(text, out var number) && number >= 0) return number;
                 throw new ArgumentException("工数は0以上の数値で入力してください。");
-            case PlanField.Start: case PlanField.End: case PlanField.StartNoEarlierThan:
+            case PlanField.Start: case PlanField.End:
                 var dateText = PlanDateInput.Normalize(text);
                 if (PlanDateInput.TryParse(dateText, out var day)) return day;
                 var status = document.State.Settings.StatusDate ?? today;
@@ -62,9 +62,6 @@ internal static class PlanSheetEditing
                     .OrderBy(candidate => Math.Abs(candidate.DayNumber - status.DayNumber)).ThenByDescending(candidate => candidate).ToArray();
                 if (candidates.Length > 0) return candidates[0];
                 throw new ArgumentException("日付は 2026-10-14、2026/10/14 または 10/14 の形で入力してください。");
-            case PlanField.Fixed:
-                return PlanInput.Fold(text).Trim() switch { "固定" or "true" or "1" => true, "解除" or "false" or "0" => false,
-                    _ => throw new ArgumentException("日程固定は「固定」または空欄にしてください。") };
             case PlanField.Predecessors:
                 return Split(PlanInput.Fold(text)).Select(value => Predecessor(document, value)).Distinct().ToImmutableArray();
             case PlanField.Assignees:

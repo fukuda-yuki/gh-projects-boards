@@ -208,10 +208,10 @@ internal sealed class PlanSummaryTests
     [Test]
     public void ForecastFinishPhaseAndMilestoneFollowTheForecastSchedule()
     {
-        // #236 decision 5: 完了見込 and 差 come from the forecast schedule. A fixed task keeps its plan end
+        // #236 decision 5: 完了見込 and 差 come from the forecast schedule. A task keeps its plan end
         // (10/7) while its 40h of remaining work is forecast from the 基準日 to 10/9, so the band and every
         // measure that shares the finish rule must report the forecast end.
-        var row = new PlanRow("I", "Fixed", "a/b") { Phase = "UI", MilestoneTitle = "UI 完了", Start = Day, End = Day.AddDays(2), Fixed = true, Estimate = 40, Remaining = 40 };
+        var row = new PlanRow("I", "Planned", "a/b") { Phase = "UI", MilestoneTitle = "UI 完了", Start = Day, End = Day.AddDays(2), Estimate = 40, Remaining = 40 };
         var document = Document(row);
         document = document with {
             Baseline = document.Baseline with { Milestones = [new("UI 完了", Day.AddDays(4), false, false)] },
@@ -261,7 +261,8 @@ internal sealed class PlanSummaryTests
     public void MonthlyUnknownWorkStaysUnallocatedAndExtendsThroughKnownLaterFinish()
     {
         var d = Document(new("I", "Unknown", "a/b") { Assignees = ["U1"] },
-            new("K", "Kept", "a/b") { Assignees = ["U1"], Remaining = 8, Fixed = true, Start = new(2026, 11, 2), End = new(2026, 11, 2) });
+            new("K", "Kept", "a/b") { Assignees = ["U1"], Remaining = 8, Start = new(2026, 11, 2), End = new(2026, 11, 2) },
+            new("K2", "Kept too", "a/b") { Assignees = ["U1"], Remaining = 8, Start = new(2026, 11, 2), End = new(2026, 11, 2) });
         var result = Calculate(d);
         Assert.That(result.ForecastFinish, Is.EqualTo(new DateOnly(2026, 11, 4)), "The undated task is left out; the kept task finishes at its forecast end.");
         Assert.That(result.Total.FinishExcluded, Is.EqualTo(1));
@@ -269,6 +270,7 @@ internal sealed class PlanSummaryTests
         var person = result.Months.People.Single(p => p.Identity == "U1");
         Assert.That(person.Unallocated, Does.Contain("I"));
         Assert.That(person.Periods.All(p => p.Planned is null && p.Percent is null && p.MaxDailyPercent is null), Is.True);
-        Assert.That(person.Periods[1].DailyOverloads.Single().Tasks, Is.EqualTo(new[] { "K" }));
+        // Two tasks on the same days overload the person even though the month's total stays unknown.
+        Assert.That(person.Periods[1].DailyOverloads.First().Tasks, Is.EqualTo(new[] { "K", "K2" }));
     }
 }

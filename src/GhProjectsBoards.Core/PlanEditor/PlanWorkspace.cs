@@ -6,8 +6,7 @@ internal static class PlanColumnMatching
     internal static readonly (string Role, string Name, string Type)[] Roles = [
         (PlanField.Estimate, "Estimate", "NUMBER"), (PlanField.Remaining, "Remaining", "NUMBER"),
         (PlanField.Actual, "Actual", "NUMBER"), (PlanField.Start, "Start date", "DATE"),
-        (PlanField.End, "Target date", "DATE"), (PlanField.StartNoEarlierThan, "開始日指定", "DATE"),
-        (PlanField.Fixed, "日程固定", "SINGLE_SELECT"), (PlanField.Phase, "工程", "SINGLE_SELECT")];
+        (PlanField.End, "Target date", "DATE"), (PlanField.Phase, "工程", "SINGLE_SELECT")];
     internal static ImmutableArray<PlanColumnMapping> Match(IEnumerable<PlanColumnDefinition> fields)
     {
         var source = fields.ToArray();

@@ -415,7 +415,6 @@ public sealed class PlanSheetRow : Grid
         var taskRow = owner.Rows.GetValueOrDefault(Identity);
         var done = taskRow?.Closed == true;
         var effort = owner.Schedule.GetValueOrDefault(Identity);
-        var typed = taskRow?.StartNoEarlierThan is not null || taskRow?.Fixed == true;
         var unpublished = owner.Unpublished.Fields.ContainsKey(Identity);
         var stateText = PlanSheetText.Indicator(taskRow, effort, late, remoteProblem, unpublished, owner.Marks);
         // Outlined marks only, never filled (#236 part B): red 期限超過, yellow 予定より遅れ and 見積超過.
@@ -424,12 +423,12 @@ public sealed class PlanSheetRow : Grid
             || owner.Marks.OverEstimate && effort?.IsOverEstimate == true;
         indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : overdueMark || yellowMark ? "\uE7BA"
             : owner.IsDimmed(Identity) ? "\uE711"
-            : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
+            : done ? "\uE73E" : unpublished ? "\u2022" : "";
         var indicatorFont = indicator.Glyph == "\u2022" ? TextFont : IconFont;
         if (!ReferenceEquals(indicatorFont, indicatorFontFamily)) { indicator.FontFamily = indicatorFont; indicatorFontFamily = indicatorFont; }
         indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || overdueMark ? "SystemFillColorCriticalBrush"
             : yellowMark || owner.IsCancelled(Identity) ? "SystemFillColorCautionBrush"
-            : done ? "IndicatorDoneBrush" : typed ? "IndicatorTypedBrush" : "SheetChangedMarkBrush");
+            : done ? "IndicatorDoneBrush" : "SheetChangedMarkBrush");
         indicator.Visibility = owner.IndicatorVisible ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetAutomationId(indicator, "PlanIndicator" + number);
         AutomationProperties.SetName(indicator, stateText); ToolTipService.SetToolTip(indicator, stateText);

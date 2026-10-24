@@ -47,10 +47,10 @@ internal static class PlanCsvExport
                         PlanMarkVisibility.From(document.State.Settings))),
                     "ForecastEnd" => Text(PlanSheetText.ForecastEnd(task, lateness.Tasks.GetValueOrDefault(row.Identity))),
                     PlanField.Estimate => Number(task.Estimate), PlanField.Remaining => Number(task.Remaining), PlanField.Actual => Number(task.Actual),
-                    PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value), PlanField.StartNoEarlierThan => Date(row.StartNoEarlierThan),
+                    PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value),
                     PlanField.Assignees => Text(string.Join(", ", row.Assignees.Select(Assignee))),
                     PlanField.Predecessors => Text(string.Join(", ", row.Predecessors.Select(p => ids.TryGetValue(p, out var id) ? id.ToString(CultureInfo.InvariantCulture) : "計画外"))),
-                    PlanField.Labels => Text(string.Join(", ", row.Labels)), PlanField.Fixed => Text(row.Fixed ? "固定" : ""),
+                    PlanField.Labels => Text(string.Join(", ", row.Labels)),
                     PlanField.Phase => Text(document.State.Settings.Columns.Any(c => c.Role == field) ? row.Phase ?? "" : ""),
                     _ => Text(PlanOperations.Value(row, field)?.ToString() ?? "")
                 };

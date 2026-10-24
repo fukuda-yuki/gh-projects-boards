@@ -77,6 +77,43 @@ internal sealed class PlanDateScheduleTests
         });
     }
 
+    private static PlanDocument Edited(PlanDocument document, string identity, string field, object? value)
+        => document with { State = PlanOperations.Apply(document, new EditPlanCells(PlanOperationKind.Cell, [new(identity, field, value)]), Monday).State };
+    private static ImmutableArray<PlanRow> TypedEndRows() => [
+        new("I1", "First", "acme/repo") { Start = D("2026-10-05"), End = D("2026-10-06"), Estimate = 16, Remaining = 16 },
+        new("I2", "Second", "acme/repo") { Start = D("2026-10-07"), End = D("2026-10-07"), Estimate = 8, Remaining = 8, Predecessors = ["I1"] }];
+
+    [Test]
+    public void ATypedEndStaysOnItsTaskWhileItsSuccessorReschedulesFromIt()
+    {
+        // #268: there is no 日程固定 flag. The typed end is the plan end of that edit; the successor follows it.
+        var typed = Edited(Document(TypedEndRows()), "I1", PlanField.End, D("2026-10-09"));
+        Assert.Multiple(() =>
+        {
+            Assert.That(Dates(typed, "I1"), Is.EqualTo((D("2026-10-05"), D("2026-10-09"))));
+            Assert.That(Dates(typed, "I2").Start, Is.GreaterThanOrEqualTo(D("2026-10-09")));
+            Assert.That(UnpublishedFields(typed, "I1"), Is.EqualTo(new[] { PlanField.End }));
+        });
+    }
+
+    [TestCase(PlanField.Remaining, 8, "2026-10-05")]
+    [TestCase(PlanField.Start, "2026-10-06", "2026-10-07")]
+    [TestCase(PlanField.End, null, "2026-10-06")]
+    public void ALaterEditOfTheTaskRecalculatesItsTypedEnd(string field, object? value, string end)
+    {
+        var typed = Edited(Document(TypedEndRows()), "I1", PlanField.End, D("2026-10-09"));
+        var input = value switch { int hours => (object)(decimal)hours, string date => D(date), _ => null };
+        Assert.That(Dates(Edited(typed, "I1", field, input), "I1").End, Is.EqualTo(D(end)));
+    }
+
+    [Test]
+    public void ATypedEndBeforeTheStartIsRejected()
+    {
+        var document = Document(TypedEndRows());
+        var error = Assert.Throws<ArgumentException>(() => Edited(document, "I1", PlanField.End, D("2026-10-02")));
+        Assert.That(error!.Message, Is.EqualTo("終了日は開始日以降にしてください。"));
+    }
+
     [TestCase(PlanField.Remaining)]
     [TestCase(PlanField.Actual)]
     public void APasteOfEffortReschedulesTheEditedTaskAndItsSuccessor(string field)

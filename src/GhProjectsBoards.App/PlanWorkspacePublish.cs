@@ -139,7 +139,7 @@ internal sealed partial class PlanWorkspaceView
                 if (stateChange && field is PlanField.Start or PlanField.End or PlanField.Remaining or PlanField.Cancelled) continue;
                 if (PlanSheetColumns.IsMappedExtra(document, field)) continue;
                 var conflict = conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
-                if (conflict is null && (PlanOperations.IsSummaryPublishExcluded(result.IsSummary, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings))) continue;
+                if (conflict is null && PlanOperations.IsSummaryPublishExcluded(result.IsSummary, field)) continue;
                 var oldValue = PlanValues.Get(before, field); var newValue = PlanValues.Get(current, field);
                 if (oldValue == newValue && conflict is null || isNew && field is PlanField.Title or PlanField.Repository) continue;
                 // A relationship that would name a row this publish does not create is held, not written.
@@ -308,7 +308,7 @@ internal sealed partial class PlanWorkspaceView
         var element = value.RootElement;
         string Identity(string id) => field == PlanField.Labels ? id : field == PlanField.Assignees ? document.Sync.PeopleNames.GetValueOrDefault(id,
             document.State.Settings.People.FirstOrDefault(p => p.Identity == id)?.Name ?? "担当者（未確認）") : Caption(document, id);
-        if (field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan && element.ValueKind == JsonValueKind.String && DateOnly.TryParseExact(element.GetString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day))
+        if (field is PlanField.Start or PlanField.End && element.ValueKind == JsonValueKind.String && DateOnly.TryParseExact(element.GetString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day))
             // The plan's own date form; the year appears only when it is not the 基準日's year.
             return (day.Year == (document.State.Settings.StatusDate ?? PlanClock.Today).Year ? "" : day.Year.ToString(System.Globalization.CultureInfo.InvariantCulture) + "/")
                 + day.ToString("M/d", System.Globalization.CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)day.DayOfWeek] + ")";
@@ -317,8 +317,8 @@ internal sealed partial class PlanWorkspaceView
             JsonValueKind.Array => element.GetArrayLength() == 0 ? "未入力" : string.Join("、", element.EnumerateArray().Select(e => Identity(e.GetString()!))),
             JsonValueKind.String => field == PlanField.Parent ? Identity(element.GetString()!) : element.GetString() is { Length: > 0 } text ? text : "未入力",
             // #231: the row-state fields read as the command's own words, never as a bare 完了.
-            JsonValueKind.True => field switch { PlanField.Fixed => "固定", PlanField.Cancelled => "中止にする", PlanField.Removed => "この版から外す", _ => "完了" },
-            JsonValueKind.False => field switch { PlanField.Fixed => "指定なし", PlanField.Cancelled => "中止にしない", PlanField.Removed => "この版に残す", _ => "未完了" },
+            JsonValueKind.True => field switch { PlanField.Cancelled => "中止にする", PlanField.Removed => "この版から外す", _ => "完了" },
+            JsonValueKind.False => field switch { PlanField.Cancelled => "中止にしない", PlanField.Removed => "この版に残す", _ => "未完了" },
             _ => element.ToString() };
     }
     private async Task Publish()

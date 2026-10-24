@@ -111,7 +111,7 @@ class FakeSandbox:
             self.issues.append(issue)
             values = [('工程', 'name', row['phase']), ('Estimate', 'number', row['estimate']),
                       ('Remaining', 'number', row['estimate']), ('Actual', 'number', 0 if row['parent'] else None),
-                      ('開始日指定', 'date', row['start'])]
+                      ('Start date', 'date', row['start'])]
             self.items.append(dict(id='item-'+row['key'], isArchived=False,
                 content=dict(id=row['key'], repository=dict(nameWithOwner=sandbox.REPOSITORY)),
                 fieldValues=self.connection([dict(field=dict(name=n), **{k:v}) for n,k,v in values if v is not None])))
@@ -238,9 +238,9 @@ class SetupTests(unittest.TestCase):
         with temporary_directory() as root, patch.object(sandbox, 'api', fake.api):
             sandbox.export_inputs(fake.manifest, Path(root), 40)
             lines = Path(root, 'first-pass.tsv').read_text(encoding='utf-8').splitlines()
-            self.assertEqual(lines[0].split('\t'), [fake.manifest['rows'][0]['title']]+['']*9)
+            self.assertEqual(lines[0].split('\t'), [fake.manifest['rows'][0]['title']]+['']*8)
             self.assertEqual(lines[1].split('\t'), [fake.manifest['rows'][1]['title'], 'SA', sandbox.OWNER,
-                '21', '21', '0', '', '', '', '2026-10-13'])
+                '21', '21', '0', '2026-10-13', '', ''])
             self.assertEqual(lines[2].split('\t')[8], '2')
 
 
@@ -259,7 +259,7 @@ class SetupTests(unittest.TestCase):
             self.assertEqual(report['checkedRows'], 1040)
             self.assertEqual(len(report['observed']), 1040)
             self.assertEqual({m['field'] for m in report['mismatches']},
-                             {'Remaining', 'Actual', 'assignees', 'state', '開始日指定'})
+                             {'Remaining', 'Actual', 'assignees', 'state', 'Start date'})
         self.assertEqual(fake.writes, [])
 
     def test_truncated_native_connection_refuses_verification(self):

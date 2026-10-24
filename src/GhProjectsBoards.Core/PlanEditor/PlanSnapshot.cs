@@ -177,12 +177,10 @@ internal static class PlanSnapshot
                 {
                     PlanField.Estimate or PlanField.Remaining or PlanField.Actual => scalar is null ? "null" :
                         decimal.Parse(scalar, NumberStyles.Number, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture),
-                    PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan => scalar is null ? "null" :
+                    PlanField.Start or PlanField.End => scalar is null ? "null" :
                         PlanJson.Text(DateOnly.ParseExact(scalar, "yyyy-MM-dd", CultureInfo.InvariantCulture)),
                     PlanField.Phase => value?.Availability != ValueAvailability.Present ? "null" : PlanJson.Text(
                         field.Options.SingleOrDefault(o => o.Id == value.OptionId)?.Name ?? throw new InvalidOperationException("工程の選択肢を確認してください。")),
-                    PlanField.Fixed => value?.OptionId is null ? "false" : field.Options.Single(o => o.Id == value.OptionId).Name == "固定" ? "true" :
-                        throw new InvalidOperationException("日程固定の選択肢を確認してください。"),
                     _ => throw new InvalidOperationException("未対応の列割り当てです。")
                 };
                 row = PlanValues.Set(row, mapping.Role, json);

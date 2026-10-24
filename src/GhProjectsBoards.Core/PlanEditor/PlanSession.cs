@@ -84,14 +84,11 @@ internal sealed class PlanSession
         }
         return new(PlanLoadStatus.Loaded, session, null);
     }
-    public Task<PlanSaveResult> Execute(PlanCommand command, DateOnly today) => ExecuteCore(command, today, false);
-    internal Task<PlanSaveResult> AcceptFieldSettings(ProjectPlanSettings settings, DateOnly today) => ExecuteCore(new ReplacePlanSettings(settings), today, true);
-    private Task<PlanSaveResult> ExecuteCore(PlanCommand command, DateOnly today, bool fromRemote)
+    public Task<PlanSaveResult> Execute(PlanCommand command, DateOnly today)
     {
         lock (gate)
         {
-            if (!fromRemote) RequireEditable(command);
-            else PlanOperations.Require(remoteOperation && checkpoint.Document.Sync.Publish is null, "列設定を変更できません。");
+            RequireEditable(command);
             var document = checkpoint.Document;
             var (state, kind) = PlanOperations.Apply(document, command, today);
             if (command is MovePlanSubtrees or ArrangePlanOutline && state.Rows.SequenceEqual(document.State.Rows)) return CurrentSave();

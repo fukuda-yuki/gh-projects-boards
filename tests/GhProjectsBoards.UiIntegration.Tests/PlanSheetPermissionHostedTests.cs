@@ -18,8 +18,8 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task ARowWithoutUpdatePermissionDisablesTheStateCommandsWithTheReason()
     {
-        var first = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
-        var second = new PlanRow("I2", "Other", "acme/repo") { Fixed = true };
+        var first = new PlanRow("I1", "Published", "acme/repo");
+        var second = new PlanRow("I2", "Other", "acme/repo");
         await MountPresentation([first, second], [first, second]);
         await MarkWithoutPermission("I1");
         await Select(1, PlanField.Title);
@@ -39,8 +39,8 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task AMixedPermissionSelectionStaysEnabledAndNamesTheSkippedRow()
     {
-        var first = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
-        var second = new PlanRow("I2", "Other", "acme/repo") { Fixed = true };
+        var first = new PlanRow("I1", "Published", "acme/repo");
+        var second = new PlanRow("I2", "Other", "acme/repo");
         await MountPresentation([first, second], [first, second]);
         await MarkWithoutPermission("I1");
         await Ui.Run(() => { sheet.Select("I1", PlanField.Title, false); sheet.Select("I2", PlanField.Title, true); });

@@ -76,9 +76,9 @@ internal sealed partial class PlanSheetView : Grid
         new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 224), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
         new(PlanField.Estimate, "見積 h", 72), new(PlanField.Remaining, "残 h", 72), new(PlanField.Actual, "実績 h", 56),
         new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ForecastEnd", "見込終了", 108), new(PlanField.Predecessors, "先行", 64),
-        new(PlanField.StartNoEarlierThan, "開始日指定", 100), new(PlanField.Fixed, "日程固定", 80), new(PlanField.Status, "ステータス", 100)];
+        new(PlanField.Status, "ステータス", 100)];
     internal bool IndicatorVisible { get; private set; } = true;
-    internal readonly HashSet<string?> Hidden = [PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status];
+    internal readonly HashSet<string?> Hidden = [PlanField.Status];
     internal Column[] VisibleColumns { get; private set; } = Columns.Take(12).ToArray();
     internal double RowHeight { get; private set; } = 28;
     private double? dividerWidth;
@@ -602,7 +602,7 @@ internal sealed partial class PlanSheetView : Grid
                 if (Session.Document.State.Settings.DefaultRepository is not { Length: > 0 } repository)
                     throw new ArgumentException("設定で新規 Issue の作成先を選んでください。");
                 var row = PlanRow.New("", repository);
-                // Use the same typed edit semantics (End -> Fixed) for a new row.
+                // Use the same typed edit semantics (a typed end stays) for a new row.
                 var temporary = Session.Document with { State = Session.Document.State with { Rows = Session.Document.State.Rows.Add(row) } };
                 var edited = PlanOperations.Apply(temporary, new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, field, value)]), Today).State.Rows[^1];
                 command = new InsertPlanRows([edited]) { NewPeople = resolved };
@@ -801,14 +801,13 @@ internal sealed partial class PlanSheetView : Grid
     }
     internal static string DateText(DateOnly? day, bool full = false) => day is { } value
         ? value.ToString(full ? "yyyy-MM-dd" : "M/d", CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)value.DayOfWeek] + ")" : "";
-    internal bool IsDateField(string field) => field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan
+    internal bool IsDateField(string field) => field is PlanField.Start or PlanField.End
         || PlanSheetColumns.IsExtra(field) && Session.Document.Baseline.Columns.SingleOrDefault(c => "Project:" + c.Id == field)?.DataType == "DATE";
     internal DateOnly? CellDate(string identity, string field) => PlanSheetColumns.IsExtra(field) && IsDateField(field)
         ? Rows.TryGetValue(identity,out var row) && PlanExtraEditing.Value(row,field) is string text && DateOnly.TryParseExact(text,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out var day) ? day : null : field switch {
         PlanField.Start => Schedule.GetValueOrDefault(identity)?.Start.Value,
         PlanField.End => Schedule.GetValueOrDefault(identity)?.End.Value,
-        "ForecastEnd" => ForecastEndOf(identity),
-        PlanField.StartNoEarlierThan => Rows.GetValueOrDefault(identity)?.StartNoEarlierThan, _ => null };
+        "ForecastEnd" => ForecastEndOf(identity), _ => null };
     // 見込終了 is a calculated read-only column: the date is secondary text and a later forecast adds a red
     // working-day slip (#236 decision 5).
     internal string ForecastAccessibleValue(string identity) => ForecastEndOf(identity) is { } day
@@ -840,8 +839,6 @@ internal sealed partial class PlanSheetView : Grid
             PlanField.Estimate => computed.Estimate is { } estimate ? estimate.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Remaining => computed.Remaining is { } remaining ? remaining.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Actual => computed.Actual is { } actual ? actual.ToString(CultureInfo.CurrentCulture) + "h" : "",
-            PlanField.StartNoEarlierThan => Date(row.StartNoEarlierThan),
-            PlanField.Fixed => row.Fixed ? "固定" : "",
             PlanField.Phase => Session.Document.State.Settings.Columns.Any(c => c.Role == field) ? row.Phase ?? "" : "",
             PlanField.Predecessors => string.Join(", ", row.Predecessors.Select(p => PlanIds.TryGetValue(p, out var id) ? id.ToString() : "計画外")),
             PlanField.Assignees => row.Assignees.Length == 0 ? "" : AssigneeName(row.Assignees[0])

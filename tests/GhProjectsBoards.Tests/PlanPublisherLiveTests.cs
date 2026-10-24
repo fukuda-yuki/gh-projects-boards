@@ -193,7 +193,7 @@ internal static class PlanPublisherLive
                 var read = await Read();
                 if (read.Items.Count != initial.Items.Count + budget.SeedIssues + (run - 1) * budget.IssuesPerRun) throw new InvalidOperationException("Fixture membership changed unexpectedly.");
                 var remote = PlanSnapshot.From(new(ProjectReadOutcome.Complete, read, []), settings);
-                var session = await PlanSession.CreateAsync(new(Path.Combine(root, "run-" + run)), new(project, remote.Baseline, new(PreserveBaselineDates(remote.Baseline.Rows, baselineIds), settings)), settings.StatusDate!.Value);
+                var session = await PlanSession.CreateAsync(new(Path.Combine(root, "run-" + run)), new(project, remote.Baseline, new(remote.Baseline.Rows, settings)), settings.StatusDate!.Value);
                 await session.SaveSync(session.Document.Sync with { CreationStarts = creationStarts });
                 var publisher = new PlanPublisher(service, context);
                 await session.Execute(new InsertPlanRows(Enumerable.Range(0, budget.IssuesPerRun).Select(i => PlanRow.New(manifest.Marker + "-run-" + run.ToString(CultureInfo.InvariantCulture) + "-" + i.ToString(CultureInfo.InvariantCulture), RepositoryName)).ToImmutableArray()), settings.StatusDate.Value);
@@ -341,8 +341,6 @@ internal static class PlanPublisherLive
         await File.AppendAllTextAsync(Path.Combine(root, "failure.txt"), reason + Environment.NewLine);
         throw new InvalidOperationException(reason);
     }
-    internal static ImmutableArray<PlanRow> PreserveBaselineDates(ImmutableArray<PlanRow> rows, IReadOnlySet<string> baselineIds)
-        => rows.Select(r => baselineIds.Contains(r.Identity) ? r with { Fixed = true } : r).ToImmutableArray();
     internal static ProjectPlanSettings CreateSettings(IReadOnlyList<ProjectFieldDefinition> fields, DateOnly today)
     {
         var required = new[] { (PlanField.Estimate, "Estimate", "NUMBER"), (PlanField.Remaining, "Remaining", "NUMBER"),

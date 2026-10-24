@@ -12,7 +12,7 @@ internal sealed record PlanFakeMilestone(string Id, string Repository, string Ti
 // #253: a repository's assignable people for the on-demand resolver. A fixture declares them, so it can
 // stand for a 1,000-user repository that the resolver searches like GitHub does.
 internal sealed record PlanFakeUser(string Id, string Login);
-internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanColumnDefinition> ExtraFields { get; init; } = []; public ImmutableArray<PlanRepositoryOption> Labels { get; init; } = []; public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public ImmutableArray<PlanFakeUser> AssignableUsers { get; init; } = []; public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanColumnDefinition> ExtraFields { get; init; } = []; public ImmutableArray<PlanRepositoryOption> Labels { get; init; } = []; public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public ImmutableArray<PlanFakeUser> AssignableUsers { get; init; } = []; public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -102,15 +102,15 @@ internal static class FakePlanEditor
         string ItemIdFor(string owner, string id) => workspace && owner == "P2" ? "P2:" + id : id;
         string ItemId(string id) => ItemIdFor(projectId, id);
         static string ItemIdentity(string id) => id[(id.LastIndexOf(':') + 1)..][2..];
-        var fieldRoles = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start, PlanField.End, PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status };
-        string Type(string role) => role is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "NUMBER" : role is PlanField.Fixed or PlanField.Status ? "SINGLE_SELECT" : "DATE";
-        object Field(string role) => new { __typename = role is PlanField.Fixed or PlanField.Status ? "ProjectV2SingleSelectField" : "ProjectV2Field", id = "F-" + role, name = workspace && role == PlanField.Start ? "Start date" : workspace && role == PlanField.End ? "Target date" : state.AddedFields.Contains(role.ToString()) ? role == PlanField.Fixed ? "日程固定" : "開始日指定" : role.ToString(), dataType = Type(role), isIssueField = false, project = new { id = projectId }, options = role == PlanField.Status ? new[] { new { id = "progress", name = "In progress" }, new { id = "done", name = "Done" }, new { id = "backlog", name = "Backlog" } } : new[] { new { id = "fixed", name = "固定" } } };
+        var fieldRoles = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start, PlanField.End, PlanField.Status };
+        string Type(string role) => role is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "NUMBER" : role is PlanField.Status ? "SINGLE_SELECT" : "DATE";
+        object Field(string role) => new { __typename = role is PlanField.Status ? "ProjectV2SingleSelectField" : "ProjectV2Field", id = "F-" + role, name = workspace && role == PlanField.Start ? "Start date" : workspace && role == PlanField.End ? "Target date" : role.ToString(), dataType = Type(role), isIssueField = false, project = new { id = projectId }, options = new[] { new { id = "progress", name = "In progress" }, new { id = "done", name = "Done" }, new { id = "backlog", name = "Backlog" } }.Where(_ => role == PlanField.Status).ToArray() };
         object Value(PlanRow row, string role)
         {
             var scalar = JsonNode.Parse(PlanValues.Get(row, role));
-            var value = new JsonObject { ["__typename"] = role is PlanField.Fixed or PlanField.Status ? "ProjectV2ItemFieldSingleSelectValue" : Type(role) == "NUMBER" ? "ProjectV2ItemFieldNumberValue" : "ProjectV2ItemFieldDateValue",
+            var value = new JsonObject { ["__typename"] = role is PlanField.Status ? "ProjectV2ItemFieldSingleSelectValue" : Type(role) == "NUMBER" ? "ProjectV2ItemFieldNumberValue" : "ProjectV2ItemFieldDateValue",
                 ["id"] = row.Identity + "-" + role, ["field"] = JsonSerializer.SerializeToNode(new { id = "F-" + role, project = new { id = projectId } }) };
-            value[role is PlanField.Fixed or PlanField.Status ? "optionId" : Type(role) == "NUMBER" ? "number" : "date"] = role == PlanField.Fixed ? JsonValue.Create("fixed") : role == PlanField.Status ? JsonValue.Create(row.Status == "Done" ? "done" : row.Status == "Backlog" ? "backlog" : "progress") : scalar;
+            value[role is PlanField.Status ? "optionId" : Type(role) == "NUMBER" ? "number" : "date"] = role == PlanField.Status ? JsonValue.Create(row.Status == "Done" ? "done" : row.Status == "Backlog" ? "backlog" : "progress") : scalar;
             return value;
         }
         object Children(string identity, int offset = 0)
@@ -213,14 +213,6 @@ internal static class FakePlanEditor
             : new { __typename = f.DataType == "SINGLE_SELECT" ? "ProjectV2SingleSelectField" : f.DataType == "ITERATION" ? "ProjectV2IterationField" : "ProjectV2Field", id = f.Id, name = f.Name, dataType = f.DataType, isIssueField = false, project = new { id = projectId },
                 options = f.Options.Select(o => new { id = "extra-" + o, name = o }).ToArray(), issueField = (object?)null };
         object? node = null;
-        if (query.Contains("PlanAddField"))
-        {
-            var input = variables.GetProperty("input"); var name = input.GetProperty("name").GetString()!;
-            var role = name == "開始日指定" ? PlanField.StartNoEarlierThan : PlanField.Fixed;
-            if (name == "日程固定" && (input.GetProperty("dataType").GetString() != "SINGLE_SELECT" || input.GetProperty("singleSelectOptions")[0].GetProperty("name").GetString() != "固定")) throw new InvalidOperationException("Invalid field options.");
-            Save(root, state with { AddedFields = state.AddedFields.Add(role.ToString()), MutationBatches = state.MutationBatches + 1 });
-            Write(new { data = new { createProjectV2Field = new { projectV2Field = new { id = "F-" + role, name, dataType = Type(role) } } } }); return 0;
-        }
         if (query.Contains("PlanCsvRepository"))
         {
             if (fault == "csv-network") { Console.Write("HTTP/2 502 Failed\n\n{}"); return 1; }
@@ -386,7 +378,7 @@ internal static class FakePlanEditor
                         var fieldId = input.GetProperty("fieldId").GetString()!;
                         var extra = state.ExtraFields.SingleOrDefault(f => f.Id == fieldId);
                         var role = extra is null ? fieldId[2..] : "Project:" + fieldId;
-                        var json = mutation.StartsWith("clear") ? role == PlanField.Fixed ? "false" : "null" : role == PlanField.Fixed ? "true" : input.GetProperty("value").EnumerateObject().Single().Value.GetRawText();
+                        var json = mutation.StartsWith("clear") ? "null" : input.GetProperty("value").EnumerateObject().Single().Value.GetRawText();
                         if (extra?.DataType == "SINGLE_SELECT" && !mutation.StartsWith("clear")) json = JsonSerializer.Serialize(input.GetProperty("value").GetProperty("singleSelectOptionId").GetString()![6..]);
                         if (role == PlanField.Status && !mutation.StartsWith("clear"))
                             json = JsonSerializer.Serialize(input.GetProperty("value").GetProperty("singleSelectOptionId").GetString() switch {

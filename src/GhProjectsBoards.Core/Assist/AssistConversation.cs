@@ -104,7 +104,7 @@ internal sealed class AssistConversation : IAsyncDisposable
             Define((string[] identities) => tools.GetTasks(identities), "get_tasks", "安定した Identity を1〜20件指定して詳細、日程の理由、関連タスクを読む。"),
             Define(() => tools.SummarizePlan(), "summarize_plan", "基準日のサマリー、工程・担当者別進捗と負荷、上限超過、マイルストーン。"),
             Define((string query, int offset, int limit) => tools.ReadManual(query, offset, limit), "read_manual", "マニュアル Markdown の一致する節。Offset は0始まり、Limit は1〜10。"),
-            Define((AssistEdit[] changes) => tools.ProposeChanges(changes), "propose_changes", "既存タスクの変更を提案するだけ。Identity, Field, Value。Field: Assignees/Estimate/Actual/Remaining/Phase/StartNoEarlierThan/Fixed/Start/End/Predecessors/Title。Value は数値、真偽値、文字列、識別子配列、またはnull。日付は yyyy-MM-dd。適用はPMOが行う。")
+            Define((AssistEdit[] changes) => tools.ProposeChanges(changes), "propose_changes", "既存タスクの変更を提案するだけ。Identity, Field, Value。Field: Assignees/Estimate/Actual/Remaining/Phase/Start/End/Predecessors/Title。Value は数値、文字列、識別子配列、またはnull。日付は yyyy-MM-dd。適用はPMOが行う。")
         ];
     }
     private async Task<AssistFailure?> Start(CancellationToken cancellation)

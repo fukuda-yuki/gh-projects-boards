@@ -85,15 +85,15 @@ internal sealed class PlanCsvExportTests
     public void ValuesIncludeCalculatedRemainingSummaryRollupsIsoDatesAndSheetLists()
     {
         var document = Columns(Document(new("I1", "要求事項", "acme/repo"), new PlanRow("I2", "設計", "acme/repo") {
-            Parent = "I1", Estimate = 16, Actual = 2.5m, Start = Today, End = Today.AddDays(1), Fixed = true,
+            Parent = "I1", Estimate = 16, Actual = 2.5m, Start = Today, End = Today.AddDays(1),
             Assignees = ["U1", "U2"], Labels = ["設計", "確認"], Predecessors = ["outside"] }),
-            "Title", "Estimate", "Remaining", "Actual", "Start", "End", "Assignees", "Labels", "Predecessors", "Fixed");
+            "Title", "Estimate", "Remaining", "Actual", "Start", "End", "Assignees", "Labels", "Predecessors");
         document = document with { State = document.State with { Settings = document.State.Settings with { People = [new("U1", "Alice", 100, null)] } },
             Sync = new() { PeopleNames = ImmutableDictionary<string, string>.Empty.Add("U2", "Bob") } };
         using var culture = new CultureScope("fr-FR");
         var rows = Read(PlanCsvExport.Create(document, Today));
         Assert.That(rows[1].Skip(2).Take(5), Is.EqualTo(new[] { "16", "13.5", "2.5", "2026-10-13", "2026-10-14" }));
-        Assert.That(rows[2].Skip(2).Take(9), Is.EqualTo(new[] { "16", "13.5", "2.5", "2026-10-13", "2026-10-14", "Alice, Bob", "設計, 確認", "計画外", "固定" }));
+        Assert.That(rows[2].Skip(2).Take(8), Is.EqualTo(new[] { "16", "13.5", "2.5", "2026-10-13", "2026-10-14", "Alice, Bob", "設計, 確認", "計画外" }));
     }
 
     [TestCase(ValueAvailability.Empty, "null", "")]
@@ -139,13 +139,12 @@ internal sealed class PlanCsvExportTests
 
     [TestCase("ordinary", "")]
     [TestCase("closed", "完了")]
-    [TestCase("fixed", "日程固定")]
     [TestCase("changed", "未発行の変更あり")]
     [TestCase("unverified", "GitHub で未確認 — 最新の情報に更新で確認")]
     [TestCase("failed", "発行失敗: GitHubへの反映を確認できません")]
     public void IndicatorExportsReadableStateWords(string state, string expected)
     {
-        var row = new PlanRow("I1", "設計", "acme/repo") { Closed = state == "closed", Fixed = state == "fixed" };
+        var row = new PlanRow("I1", "設計", "acme/repo") { Closed = state == "closed" };
         var document = Columns(Document(row), "Indicator", "Title");
         document = document with {
             State = document.State with { Rows = [state == "changed" ? row with { Title = "変更" } : row] },

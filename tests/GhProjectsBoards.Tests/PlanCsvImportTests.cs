@@ -8,7 +8,7 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanCsvImportTests
 {
-    internal const string Header = "キー,タイトル,見積,担当者,先行タスク,親,開始日指定,リポジトリ\n";
+    internal const string Header = "キー,タイトル,見積,担当者,先行タスク,親,開始日,リポジトリ\n";
     internal static readonly DateOnly Today = new(2026, 10, 5);
     internal static readonly PlanCsvRepository[] Catalog = [new("acme/repo", new Dictionary<string, string> { ["alice"] = "U1" })];
     internal static PlanDocument Empty() => new(new(new("github.com", 42), "P1"), new([], []),
@@ -28,6 +28,18 @@ internal sealed class PlanCsvImportTests
         Assert.That(PlanScheduler.Calculate([PlanOperations.TaskInput(row)], new(), Today).Single().Remaining, Is.EqualTo(8));
     }
 
+    [Test]
+    public void ImportedStartIsThePlanStartOfTheNewTask()
+    {
+        // #268: the CSV 開始日 is the new task's plan start, which is the floor of its schedule.
+        var preview = PlanCsvImport.Prepare(Empty(), Read("a,A,8,alice,,,2026-10-14,"), Catalog, Today);
+        Assert.That(preview.Errors, Is.Empty);
+        var row = preview.Command!.Rows.Single();
+        Assert.That(row.Start, Is.EqualTo(new DateOnly(2026, 10, 14)));
+        var scheduled = PlanScheduler.Calculate([PlanOperations.TaskInput(row)], new() { StatusDate = Today }, Today).Single();
+        Assert.That((scheduled.Start.Value, scheduled.End.Value), Is.EqualTo((new DateOnly(2026, 10, 14), new DateOnly(2026, 10, 14))));
+    }
+
     [TestCase("UTF8"), TestCase("BOM"), TestCase("SJIS")]
     public void ExcelEncodingsPreserveQuotedTitlesAndPhysicalLineNumbers(string encoding)
     {
@@ -45,7 +57,7 @@ internal sealed class PlanCsvImportTests
     [TestCase("a,,8,,,,,", 2, "タイトル")]
     [TestCase("a,A,-1,,,,,", 2, "見積")]
     [TestCase("a,A,one,,,,,", 2, "見積")]
-    [TestCase("a,A,8,,,,2026-02-30,", 2, "開始日指定")]
+    [TestCase("a,A,8,,,,2026-02-30,", 2, "開始日")]
     [TestCase("a,A,8,,missing,,,", 2, "参照")]
     [TestCase("a,A,8,,,missing,,", 2, "参照")]
     [TestCase("a,A,8,,,,,unknown/repo", 2, "リポジトリ")]
