@@ -5,6 +5,7 @@ using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using NUnit.Framework;
 
@@ -100,6 +101,24 @@ internal sealed class PlanStartDateNoticeHostedTests
 
     private static string NoticeText() => Ui.Find<TextBlock>("PlanStartNotice").Text;
     private static HyperlinkButton NoticeAction() => Ui.Find<HyperlinkButton>("PlanStartNoticeAction");
+    // The selection route the sheet's own cells and the test policy's UI-automation cases use.
+    private static ISelectionItemProvider Provider(string id)
+        => (ISelectionItemProvider)FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>(id)).GetPattern(PatternInterface.SelectionItem);
+    private static async Task Select(int row, string field)
+    {
+        await Ui.Ready<FrameworkElement>($"PlanCell{row}_{field}");
+        await Ui.Run(() => Provider($"PlanCell{row}_{field}").Select());
+        await Ui.Until(() => Provider($"PlanCell{row}_{field}").IsSelected);
+    }
+    private static async Task Invoke(string id)
+    {
+        await Ui.Until(() => Ui.Find<Control>(id) is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(() =>
+        {
+            var control = Ui.Find<Control>(id);
+            ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(control).GetPattern(PatternInterface.Invoke)).Invoke();
+        });
+    }
 
     [Test]
     public async Task TypingAStartEarlierThanThePredecessorEndsShowsTheNoticeAndTheResultingDate()
@@ -131,7 +150,7 @@ internal sealed class PlanStartDateNoticeHostedTests
     public async Task TheNoticeActionRemovesTheLinkAndTheTypedStartHolds()
     {
         await TypeStartAndLeave("1/12");
-        await Ui.Run(() => Ui.Click("PlanStartNoticeAction"));
+        await Invoke("PlanStartNoticeAction");
         await Ui.Idle();
         await Ui.Until(() => Ui.Find<Control>("PlanCell2_Start").FocusState != FocusState.Unfocused);
 
@@ -179,17 +198,20 @@ internal sealed class PlanStartDateNoticeHostedTests
     public async Task PasteAndUndoNeverRaiseTheNotice()
     {
         // A pasted start loses to the predecessor without a notice: a range operation is not a typed commit.
-        await Ui.Ready<TextBox>("PlanCell2_Start");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell2_Start").Focus(FocusState.Programmatic), Is.True));
-        await Ui.Idle();
+        await Select(2, PlanField.Start);
         clipboard = new("1/12", null);
-        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.V));
+        await Ui.ClickCommand("PlanSheetPaste");
         await Ui.Idle();
         await Ui.Run(() =>
         {
-            Assert.That(session.UndoCount, Is.EqualTo(1));
-            Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I45").Start, Is.EqualTo(new DateOnly(2026, 1, 12)));
-            Assert.That(NoticeText(), Is.Empty, "Paste never raises the notice.");
+            var error = Ui.Find<TextBlock>("PlanSheetError").Text;
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.Empty, "The paste must be accepted.");
+                Assert.That(session.UndoCount, Is.EqualTo(1), "error=" + error);
+                Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I45").Start, Is.EqualTo(new DateOnly(2026, 1, 12)));
+                Assert.That(NoticeText(), Is.Empty, "Paste never raises the notice.");
+            });
         });
 
         // A typed commit raises it, and Undo neither keeps a stale notice nor raises a new one.
