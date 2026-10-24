@@ -93,13 +93,14 @@ internal sealed class PlanCsvImportTests
         var document = Empty() with { Baseline = new([old, parent], []), State = Empty().State with { Rows = [old, parent] },
             Sync = new() { IssueLinks = ImmutableDictionary<string, PlanIssueLink>.Empty.Add("I1", new("acme/repo#7", "https://github.com/acme/repo/issues/7"))
                 .Add("I2", new("acme/repo#8", "https://github.com/acme/repo/issues/8")) } };
-        var preview = PlanCsvImport.Prepare(document, Read("a,A,8,alice,#7,,,\nb,B,4,alice,a,8,,\nc,C,4,,acme/repo#7,,,"), Catalog, Today);
+        var preview = PlanCsvImport.Prepare(document, Read("a,A,8,alice,#7,,,\nb,B,4,alice,a,8,,\nc,C,4,,acme/repo#7,,,\nd,D,4,,REPO#8,,,"), Catalog, Today);
         Assert.That(preview.Errors, Is.Empty);
         var rows = preview.Command!.Rows;
         Assert.That(rows[0].Predecessors, Is.EqualTo(new[] { "I1" }));
         Assert.That(rows[1].Predecessors, Is.EqualTo(new[] { rows[0].Identity }));
         Assert.That(rows[1].Parent, Is.EqualTo("I2"));
         Assert.That(rows[2].Predecessors, Is.EqualTo(new[] { "I1" }));
+        Assert.That(rows[3].Predecessors, Is.EqualTo(new[] { "I2" }), "repo#N names the repository as the sheet does (#263).");
     }
 
     [Test]

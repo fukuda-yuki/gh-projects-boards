@@ -14,7 +14,7 @@ internal static class PlanCsvExport
         var schedule = PlanOperations.Schedule(document, today);
         var scheduled = schedule.ToDictionary(t => t.Input.Identity);
         var changes = PlanOperations.Changes(document, today, schedule);
-        var ids = document.State.Rows.Select((row, i) => (row.Identity, Number: i + 1)).ToDictionary(p => p.Identity, p => p.Number);
+        var taskNames = PlanTaskNames.Of(document);
         var people = document.State.Settings.People.ToDictionary(p => p.Identity, p => p.Name);
         var published = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
         var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
@@ -31,7 +31,7 @@ internal static class PlanCsvExport
                 ? issue.ToString(CultureInfo.InvariantCulture) : "";
             var marker = !changes.Fields.TryGetValue(row.Identity, out var fields) ? "" : fields.Contains(PlanField.NewTask) ? "新規"
                 : string.Join(", ", fields.Select(f => names.GetValueOrDefault(f) ?? PlanSheetColumns.ReviewName(f)));
-            WriteRow([ids[row.Identity].ToString(CultureInfo.InvariantCulture), .. visible.Select(c => Cell(c.Key)),
+            WriteRow([Text(taskNames[row.Identity]), .. visible.Select(c => Cell(c.Key)),
                 Text(Requirement(row)), Text(row.Repository), number, Text(link?.Url ?? ""), Text(marker)]);
 
             string Cell(string field)
@@ -42,14 +42,14 @@ internal static class PlanCsvExport
                     return PlanExtraEditing.Value(row, field) is decimal numeric ? Number(numeric) : Text(PlanExtraEditing.Value(row, field)?.ToString() ?? "");
                 }
                 return field switch {
-                    "Indicator" => Text(PlanSheetText.Indicator(row, task, lateness.Tasks.GetValueOrDefault(row.Identity),
+                    "Indicator" => Text(PlanSheetText.Indicator(taskNames, row, task, lateness.Tasks.GetValueOrDefault(row.Identity),
                         PlanSheetText.RemoteProblem(document.Sync, row.Identity), changes.Fields.ContainsKey(row.Identity),
                         PlanMarkVisibility.From(document.State.Settings))),
                     "ForecastEnd" => Text(PlanSheetText.ForecastEnd(task, lateness.Tasks.GetValueOrDefault(row.Identity))),
                     PlanField.Estimate => Number(task.Estimate), PlanField.Remaining => Number(task.Remaining), PlanField.Actual => Number(task.Actual),
                     PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value),
                     PlanField.Assignees => Text(string.Join(", ", row.Assignees.Select(Assignee))),
-                    PlanField.Predecessors => Text(string.Join(", ", row.Predecessors.Select(p => ids.TryGetValue(p, out var id) ? id.ToString(CultureInfo.InvariantCulture) : "計画外"))),
+                    PlanField.Predecessors => Text(taskNames.List(row.Predecessors)),
                     PlanField.Labels => Text(string.Join(", ", row.Labels)),
                     PlanField.Phase => Text(document.State.Settings.Columns.Any(c => c.Role == field) ? row.Phase ?? "" : ""),
                     _ => Text(PlanOperations.Value(row, field)?.ToString() ?? "")

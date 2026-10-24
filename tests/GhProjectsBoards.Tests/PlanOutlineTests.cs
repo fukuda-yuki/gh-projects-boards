@@ -139,15 +139,25 @@ internal sealed class PlanOutlineTests
         Assert.That(patch.BeforeOrder, Is.Null); Assert.That(patch.Rows, Is.Empty);
     }
     [Test]
-    public void DisplayedRowAndPredecessorIdsFollowTheMovedOrder()
+    public void MovingARowRenamesNoPublishedTaskAndItsNumberStillNamesIt()
     {
         var document = Document("p,a,c,b,q");
-        document = document with { State = document.State with { Rows = document.State.Rows.SetItem(4, document.State.Rows[4] with { Predecessors = ["b"] }) } };
+        document = document with { State = document.State with { Rows = document.State.Rows.SetItem(4, document.State.Rows[4] with { Predecessors = ["b"] }) },
+            Sync = document.Sync with { IssueLinks = new[] { ("a", 11), ("b", 12), ("c", 13) }.ToImmutableDictionary(l => l.Item1,
+                l => new PlanIssueLink($"acme/repo#{l.Item2}", $"https://github.com/acme/repo/issues/{l.Item2}")) } };
+        var before = document.State.Rows.ToDictionary(r => r.Identity, r => PlanTaskNames.Of(document)[r.Identity]);
         var result = PlanOperations.Apply(document, new MovePlanSubtrees(["b"], "a"), PlanCsvImportTests.Today);
         document = document with { State = result.State };
-        Assert.That(PlanOperations.Schedule(document, PlanCsvImportTests.Today).Single(t => t.Input.Identity == "b").Input.RowId, Is.EqualTo(2));
-        Assert.That(PlanSheetEditing.Parse(document, PlanField.Predecessors, "2", PlanCsvImportTests.Today), Is.EqualTo(new[] { "b" }));
-        Assert.That(result.State.Rows.Single(r => r.Identity == "q").Predecessors, Is.EqualTo(new[] { "b" }));
+        var names = PlanTaskNames.Of(document);
+        Assert.Multiple(() => {
+            Assert.That(PlanOperations.Schedule(document, PlanCsvImportTests.Today).Single(t => t.Input.Identity == "b").Input.RowId, Is.EqualTo(2), "The row moved.");
+            Assert.That(new[] { "a", "b", "c" }.Select(id => names[id]), Is.EqualTo(new[] { before["a"], before["b"], before["c"] }));
+            Assert.That(names["b"], Is.EqualTo("#12"));
+            Assert.That(PlanSheetEditing.Parse(document, PlanField.Predecessors, "12", PlanCsvImportTests.Today), Is.EqualTo(new[] { "b" }));
+            Assert.That(() => PlanSheetEditing.Parse(document, PlanField.Predecessors, "2", PlanCsvImportTests.Today),
+                Throws.ArgumentException.With.Message.EqualTo("#2 はこの版にありません。"), "A row position is never a task reference.");
+            Assert.That(result.State.Rows.Single(r => r.Identity == "q").Predecessors, Is.EqualTo(new[] { "b" }));
+        });
     }
     [Test]
     public void OutdentMultipleRootsKeepsTheirOrderAndRemainingSiblingParent()
