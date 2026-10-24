@@ -578,9 +578,9 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(chart.ViewportWidth, Is.GreaterThanOrEqualTo(320), "The sheet may not take the Gantt's minimum.");
             }
             if (width == 1920) {
-                // Eleven columns since #236 part B added 見込終了: the sheet takes its 949 px of columns
-                // plus the 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation) - 949 = 909.
-                Assert.That(chart.ViewportWidth, Is.EqualTo(909).Within(2), "Eleven-column budget, allowing pixel rounding.");
+                // Since 見積 h and 残 h widened to 96 px to fit a requirement's 未入力 tag, the sheet takes its
+                // 1029 px of columns plus the 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation) - 1029 = 829.
+                Assert.That(chart.ViewportWidth, Is.EqualTo(829).Within(2), "Default-column budget, allowing pixel rounding.");
                 Assert.That(fullRows, Is.EqualTo(29).Within(2));
             }
         });
