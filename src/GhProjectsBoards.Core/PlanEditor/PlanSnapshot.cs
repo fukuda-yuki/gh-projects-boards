@@ -117,11 +117,17 @@ internal static class PlanSnapshot
     private static ProjectReadModel RequireComplete(ProjectReadResult result, string message)
     {
         if (result.Outcome != ProjectReadOutcome.Complete || result.Project is not { FieldsComplete: true, ItemsComplete: true, MilestonesComplete: true } p)
+        {
+            // #246: a read that never reached GitHub is a connection problem, not a read defect.
+            if (IsConnectionLost(result)) throw new ConnectionLostException();
             throw new InvalidOperationException(message + ReadDiagnostic(result));
+        }
         var statusField = p.Fields.SingleOrDefault(f => f.Name == "Status" && f.DataType == "SINGLE_SELECT" && f.ValueOwner == FieldOwner.ProjectItem);
         if (statusField is not null && statusField.Availability != ValueAvailability.Present) throw new InvalidOperationException("Status を読み取れません。");
         return p;
     }
+    internal static bool IsConnectionLost(ProjectReadResult result)
+        => result.Problems.Any(p => ConnectionLostException.IsTransportLoss(p.Failure, p.HttpStatus));
     // The fields whose values the app reads. A field it cannot read is never offered as a column or a mapping.
     private static ImmutableArray<PlanColumnDefinition> Columns(ProjectReadModel p)
         => p.Fields.Where(f => f.Availability == ValueAvailability.Present).Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType)

@@ -216,6 +216,77 @@ internal sealed class GhConnectionTests
         Assert.That(runner.Commands.Any(command => command.Arguments.Contains("PATCH")), Is.False);
     }
 
+    // #246: a recheck that cannot reach GitHub is a connection problem; the PMO must not be sent to
+    // check an account or permission that is fine.
+    [TestCase("network")]
+    [TestCase("timeout")]
+    public async Task LostOrTimedOutConnectionDuringTheRecheckSaysGitHubCannotBeReached(string kind)
+    {
+        var broken = false;
+        var baseline = ConnectedRunner();
+        var runner = new ScriptedRunner(command => !broken ? baseline.RunAsync(command).GetAwaiter().GetResult()
+            : kind == "timeout" ? new GhProcessResult(ProcessCompletion.TimedOut)
+            : command.Arguments[0] == "api" && command.Arguments[1] == "user" ? new GhProcessResult(ProcessCompletion.Exited, true, 1, "")
+            : baseline.RunAsync(command).GetAwaiter().GetResult());
+        var service = new GhConnectionService("gh.exe", "github.com", runner);
+        var context = (await service.ConnectAsync()).Context!;
+        broken = true;
+
+        var error = Assert.CatchAsync<InvalidOperationException>(async () => {
+            using var lease = await service.BeginOperationAsync(context, CancellationToken.None);
+        });
+
+        Assert.That(error!.Message, Is.EqualTo("GitHub に接続できません。ネットワークを確認してください。"));
+        Assert.That(error.Message, Does.Not.Contain("認証またはアクセス権"));
+    }
+
+    // #246: each authentication or permission failure keeps the authentication message.
+    [TestCase("not-logged-in")]
+    [TestCase("expired")]
+    [TestCase("permission-denied")]
+    public async Task AuthenticationFailuresDuringTheRecheckKeepTheAuthenticationMessage(string kind)
+    {
+        var broken = false;
+        var baseline = ConnectedRunner();
+        var runner = new ScriptedRunner(command => !broken ? baseline.RunAsync(command).GetAwaiter().GetResult() : kind switch
+        {
+            "not-logged-in" when command.Arguments[0] == "auth" => new GhProcessResult(ProcessCompletion.Exited, true, 0, "[]"),
+            "expired" when command.Arguments[0] == "auth" => Auth(state: "error"),
+            "permission-denied" when command.Arguments[0] == "api" && command.Arguments[1] == "user" => ScriptedRunner.Http("{}", 403, 1),
+            _ => baseline.RunAsync(command).GetAwaiter().GetResult()
+        });
+        var service = new GhConnectionService("gh.exe", "github.com", runner);
+        var context = (await service.ConnectAsync()).Context!;
+        broken = true;
+
+        var error = Assert.CatchAsync<InvalidOperationException>(async () => {
+            using var lease = await service.BeginOperationAsync(context, CancellationToken.None);
+        });
+
+        Assert.That(error!.Message, Is.EqualTo("発行に必要な認証またはアクセス権を確認できません。"));
+    }
+
+    [TestCase("plaintext")]
+    [TestCase("unknown-store")]
+    [TestCase("missing-scope")]
+    public async Task UnusableCredentialStorageOrMissingScopesKeepTheAuthenticationMessage(string kind)
+    {
+        var baseline = ConnectedRunner();
+        var runner = new ScriptedRunner(command => command.Arguments[0] == "auth"
+            ? Auth(source: kind switch { "plaintext" => @"C:\test-config\hosts.yml", "unknown-store" => "some-token", _ => "keyring" },
+                scopes: kind == "missing-scope" ? "repo, read:org" : "repo, project, read:org")
+            : baseline.RunAsync(command).GetAwaiter().GetResult());
+        var service = new GhConnectionService("gh.exe", "github.com", runner);
+        var context = (await service.ConnectAsync()).Context!;
+
+        var error = Assert.CatchAsync<InvalidOperationException>(async () => {
+            using var lease = await service.BeginOperationAsync(context, CancellationToken.None);
+        });
+
+        Assert.That(error!.Message, Is.EqualTo("発行に必要な認証またはアクセス権を確認できません。"));
+        using var readOnly = await service.BeginOperationAsync(context, CancellationToken.None, mutation: false);
+    }
+
     internal static GhProcessResult Auth(string state = "success", string source = "keyring", string? scopes = "repo, project, read:org",
         string host = "github.com", string login = "sample-user")
         => new(ProcessCompletion.Exited, true, 0,

@@ -60,7 +60,9 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) when (Expected(ex)) {
             var saved = reset ? null : await RetainInterruptedAttempt(session).ConfigureAwait(false);
-            return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null);
+            var message = ex is ConnectionLostException ? ex.Message
+                : (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message;
+            return new(false, message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null);
         }
         finally { gate.Release(); }
     }
@@ -453,12 +455,18 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     if (notBefore != session.Document.Sync.NotBefore)
                         RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = notBefore }).ConfigureAwait(false));
                     // Check the whole window before any split retry can dispatch another request.
+                    var lost = responses.Any(response => ConnectionLostException.IsTransportLoss(response.Failure, response.HttpStatus));
                     for (var i = 0; i < groups.Count; i++)
                     {
                         var recovery = Recovery(groups[i], responses[i]);
                         if (!recovery.Gateway && results[i].Any(w => w.State == PlanWriteState.Dispatched &&
                             !(recovery.Resource && w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
+                        {
+                            // #246: a response that never arrived is a lost connection; an answered 5xx
+                            // keeps the unconfirmed-response message.
+                            if (lost) throw new ConnectionLostException();
                             throw new InvalidOperationException("GitHubの応答を確認できないため発行を中断しました。最新の情報に更新で確認してから再発行してください。");
+                        }
                     }
                     if (notBefore is { } until && until - DateTimeOffset.UtcNow is var wait && wait > TimeSpan.Zero)
                         await Task.Delay(wait, token).ConfigureAwait(false);
@@ -563,8 +571,27 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         catch (Exception ex) when (Expected(ex))
         {
             var saved = await RetainInterruptedAttempt(session).ConfigureAwait(false);
-            return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), review);
+            var message = ex is ConnectionLostException
+                ? InterruptedByConnection(session.Document.Sync.Publish)
+                : (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message;
+            return new(false, message + (saved is { Succeeded: false } ? " " + saved.Error : ""), review);
         }
         finally { gate.Release(); }
+    }
+    // #246: a lost connection is one message with the progress GitHub confirmed. A task counts only when
+    // every write this attempt sent for it was acknowledged; a dispatched write whose response was lost
+    // may or may not have been applied, so an unknown count is left out instead of guessed.
+    private static string InterruptedByConnection(PlanPublishProgress? progress)
+    {
+        var written = 0; var total = 0;
+        if (progress is not null)
+        {
+            var tasks = progress.Writes.GroupBy(w => w.Identity).ToArray();
+            total = tasks.Length;
+            written = tasks.Count(writes => writes.All(w => w.State == PlanWriteState.Succeeded));
+        }
+        var confirmed = written > 0 ? $"（{written} / {total} タスクを発行済み）" : "";
+        return "GitHub に接続できなくなったため、発行を中断しました" + confirmed
+            + "。接続が戻ったら「最新の情報に更新」で確認してから、もう一度発行してください。";
     }
 }

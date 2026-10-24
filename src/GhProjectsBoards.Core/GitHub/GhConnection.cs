@@ -53,9 +53,19 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
             await WaitForOperationBudget(token).ConfigureAwait(false);
             var check = await RecheckCoreAsync(context, token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
-            if (!check.IsConnected || mutation && (check.Authentication?.Store != CredentialStore.Keyring ||
+            if (!check.IsConnected)
+            {
+                // #246: a lost or timed-out connection says so; the authentication message is reserved for
+                // the failures it names, so the PMO does not check an account or permission that is fine.
+                if (check.Result.Failure is FailureKind.Network or FailureKind.TimedOut) throw new ConnectionLostException();
+                if (check.Result.Failure is not (FailureKind.NotLoggedIn or FailureKind.AuthenticationExpired
+                    or FailureKind.PermissionDenied or FailureKind.PlaintextCredentials or FailureKind.UnknownCredentialStore))
+                    throw new InvalidOperationException(ConnectionViewModel.FailureText(check.Result.Failure));
+            }
+            if (mutation && (check.Authentication?.Store != CredentialStore.Keyring ||
                 check.Authentication.HasScope("project") != true || check.Authentication.HasScope("repo") != true))
                 throw new InvalidOperationException("発行に必要な認証またはアクセス権を確認できません。");
+            if (!check.IsConnected) throw new InvalidOperationException("発行に必要な認証またはアクセス権を確認できません。");
             return new OperationLease(this, context, mutation);
         }
         catch { gate.Release(); throw; }

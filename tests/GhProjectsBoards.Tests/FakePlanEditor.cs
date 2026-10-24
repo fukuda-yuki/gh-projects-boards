@@ -59,6 +59,9 @@ internal static class FakePlanEditor
         // item read must reach both the complete item walk and the scoped publication read.
         var itemRead = query.Contains("ProjectItems") || query.Contains("PlanPublishItemDetails") || query.Contains("ProjectItemDetails");
         if ((fault == "readfailure" || fault is "after-and-read" or "before-and-read" && state.MutationBatches > 0) && itemRead) { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
+        // #246: the transport itself fails. gh exits without an HTTP response, which the transport
+        // classifies as a lost connection, not as a GitHub response the app could not confirm.
+        if (fault == "readnetwork" && itemRead) return 1;
         if (query.Contains("ProjectFields")) { state = state with { ReadAttempts = state.ReadAttempts + 1 }; Save(root, state); }
         // #201: a scoped publication read is a read attempt as well. Its single request replaces the
         // ProjectFields request that used to count the attempt before the item read.
