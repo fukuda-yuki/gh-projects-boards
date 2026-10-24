@@ -1,0 +1,14 @@
+[
+  {
+    "label": "7-after-idle",
+    "value": "SS",
+    "done": true,
+    "metrics": "{\"utc\":\"2026-10-24T18:58:17.5632587+00:00\",\"elapsedSeconds\":21.4640307,\"Succeeded\":true,\"Error\":null,\"mutationBatchSizes\":[1],\"creationWaitSeconds\":0}"
+  },
+  {
+    "label": "restore-after-idle",
+    "value": "SA",
+    "done": true,
+    "metrics": "{\"utc\":\"2026-10-24T18:58:50.129179+00:00\",\"elapsedSeconds\":22.5528275,\"Succeeded\":true,\"Error\":null,\"mutationBatchSizes\":[1],\"creationWaitSeconds\":0}"
+  }
+]

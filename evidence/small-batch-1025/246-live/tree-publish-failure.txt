@@ -1,0 +1,56 @@
+# root: GitHub Projects [ControlType.Window] win=-2400,-1430,2400x1350
+Window 'GitHub Projects' @0,0 2400x1350
+Pane 'Non Client Input Sink Window' @9,0 2425x40
+Pane 'AppWindow Custom Title Bar' @2220,0 171x40
+Button 'Minimize' #Minimize @2220,0 57x40
+Button 'Maximize' #Maximize @2277,0 57x40
+Button 'Close' #Close @2334,0 57x40
+Pane '' @9,1 2382x1340
+Pane '' @9,1 2382x1340
+TitleBar '' @9,1 2382x40
+Text '計画エディタ' #PART_SubtitleText @65,11 74x20
+Button 'プロジェクトを選択' #PlanProjectPicker @159,1 322x40
+Text '第2027.04版' #OpenProjectName @170,9 98x24
+Text 'fukuda-yuki · プロジェクト 3' @278,9 167x24
+Button '詳細' #PlanDetail (disabled) @1937,1 83x40
+Text '詳細' @1973,9 35x24
+Button 'アシスト' #PlanAssist @2020,1 101x40
+Text 'アシスト' @2056,9 53x24
+Button 'ヘルプ（F1）' #PlanHelp @2121,1 47x40
+Button '設定' #PlanShowSettings @2168,1 47x40
+List '' #PART_ItemsView @24,41 146x38
+Pane '' #PART_ScrollPresenter @24,41 146x38
+ListItem '計画' #PlanShowTasks @24,41 65x38
+Text '計画' #PART_TextVisual @39,47 35x24
+ListItem 'サマリー' #PlanShowSummary @89,41 81x38
+Text 'サマリー' #PART_TextVisual @104,47 51x24
+Text '基準日' @1259,52 53x24
+Button '基準日' #PlanStatusDate val='2026/10/25 (日)' @1322,44 213x40
+Text '2026/10/25 (日)' #DateText @1322,51 137x26
+Button '元に戻す' #PlanUndo @1556,44 125x40
+Text '元に戻す' @1602,52 63x24
+Button 'やり直し' #PlanRedo (disabled) @1691,44 119x40
+Text 'やり直し' @1737,52 57x24
+Text '未発行 1 タスク' #PlanUnpublished @1849,55 145x20
+SplitButton '最新の情報に更新' #PlanRefresh @2021,44 235x40
+Text '最新の情報に更新' @2065,52 133x23
+Button '発行…' #PlanPublish @2266,44 110x40
+Text '発行…' @2312,52 48x24
+StatusBar '' #PlanPublishFailure @35,102 2330x62
+Text 'エラー アイコン' #StandardIcon @56,123 20x20
+Text '発行できませんでした' #Title @94,121 147x24
+Text 'GitHub に接続できなくなったため、発行を中断しました。接続が戻ったら「最新の情報に更新」で確認してから、もう一度発行してください。' #Message @256,121 937x24
+Button '再試行' #PlanRetryPublish @1213,113 83x40
+Button '発行する' #PlanPublishConfirm @35,164 93x40
+Button '閉じる' #PlanPublishClose @138,164 74x40
+Text '第2027.04版（fukuda-yuki / プロジェクト 3）に 1 タスクを発行します' #PlanPublishSummary @35,214 2330x24
+List '' #PlanPublishLines @35,248 2330x1042
+ListItem '#1140 R01 SA-001 現行業務の調査
+工程  SA → SS' @35,248 2328x61
+Text '#1140 R01 SA-001 現行業務の調査' @35,253 300x24
+Text 'fukuda-yuki/codex-sandbox#1140' @35,280 300x24
+Text '工程  SA → SS' @355,253 2008x24
+Text '要求事項 40 · タスク 1,000' #PlanStatusCounts @34,1314 166x20
+Button '期限超過 92' #PlanStatusOverdueFilter @215,1306 123x35
+Button '予定より遅れ 815' #PlanStatusLaterFilter @343,1306 156x35
+Button '遅れの原因 92' #PlanStatusCauseFilter @504,1306 136x35

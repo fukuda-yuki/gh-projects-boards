@@ -1,0 +1,570 @@
+# root: GitHub Projects [ControlType.Window] win=-2400,-1430,2400x1350
+Window 'GitHub Projects' @0,0 2400x1350
+Pane 'Non Client Input Sink Window' @9,0 2425x40
+Pane 'AppWindow Custom Title Bar' @2220,0 171x40
+Button 'Minimize' #Minimize @2220,0 57x40
+Button 'Maximize' #Maximize @2277,0 57x40
+Button 'Close' #Close @2334,0 57x40
+Pane '' @9,1 2382x1340
+Pane '' @9,1 2382x1340
+TitleBar '' @9,1 2382x40
+Text '計画エディタ' #PART_SubtitleText @65,11 74x20
+Button 'プロジェクトを選択' #PlanProjectPicker @159,1 322x40
+Text '第2027.04版' #OpenProjectName @170,9 98x24
+Text 'fukuda-yuki · プロジェクト 3' @278,9 167x24
+Button '詳細' #PlanDetail @1937,1 83x40
+Text '詳細' @1973,9 35x24
+Button 'アシスト' #PlanAssist @2020,1 101x40
+Text 'アシスト' @2056,9 53x24
+Button 'ヘルプ（F1）' #PlanHelp @2121,1 47x40
+Button '設定' #PlanShowSettings @2168,1 47x40
+List '' #PART_ItemsView @24,41 146x38
+Pane '' #PART_ScrollPresenter @24,41 146x38
+ListItem '計画' #PlanShowTasks @24,41 65x38
+Text '計画' #PART_TextVisual @39,47 35x24
+ListItem 'サマリー' #PlanShowSummary @89,41 81x38
+Text 'サマリー' #PART_TextVisual @104,47 51x24
+Text '基準日' @1259,52 53x24
+Button '基準日' #PlanStatusDate val='2026/10/25 (日)' @1322,44 213x40
+Text '2026/10/25 (日)' #DateText @1322,51 137x26
+Button '元に戻す' #PlanUndo @1556,44 125x40
+Text '元に戻す' @1602,52 63x24
+Button 'やり直し' #PlanRedo (disabled) @1691,44 119x40
+Text 'やり直し' @1737,52 57x24
+Text '未発行 1 タスク' #PlanUnpublished @1849,55 145x20
+SplitButton '最新の情報に更新' #PlanRefresh @2021,44 235x40
+Text '最新の情報に更新' @2065,52 133x23
+Button '発行…' #PlanPublish @2266,44 110x40
+Text '発行…' @2312,52 48x24
+StatusBar '' #PlanRefreshFailure @35,102 2330x62
+Text 'エラー アイコン' #StandardIcon @56,123 20x20
+Text '最新の情報に更新できませんでした' #Title @94,121 246x24
+Text 'GitHub に接続できません。ネットワークを確認してください。' #Message @355,121 400x24
+Button '再試行' #PlanRetryRefresh @775,113 83x40
+StatusBar '' #PlanPublishFailure @35,164 2330x62
+Text 'エラー アイコン' #StandardIcon @56,185 20x20
+Text '発行できませんでした' #Title @94,183 147x24
+Text 'GitHub に接続できなくなったため、発行を中断しました。接続が戻ったら「最新の情報に更新」で確認してから、もう一度発行してください。' #Message @256,183 937x24
+Button '再試行' #PlanRetryPublish @1213,175 83x40
+Text '表示単位' @1967,244 70x24
+ComboBox 'ガントの表示単位' #PlanGanttZoom @2040,231 110x50
+Edit 'タイトルで絞り込み' #PlanSheetFilter @2152,236 213x40
+Button '行を挿入' #PlanSheetInsert @40,226 117x60
+Button '行を削除' #PlanSheetDelete (disabled) @157,226 117x60
+Button 'インデント' #PlanSheetIndent @274,226 113x60
+Button 'アウトデント' #PlanSheetOutdent @387,226 125x60
+Button '先行タスクを追加…' #PlanSheetPredecessorAdd @512,226 177x60
+Button 'タスクをリンク' #PlanSheetLinkTasks (disabled) @690,226 140x60
+Button 'リンクを解除' #PlanSheetUnlinkTasks @830,226 136x60
+Button 'すべて折りたたむ' #PlanSheetCollapseAll @971,226 154x60
+Button 'すべて展開' #PlanSheetExpandAll @1126,226 123x60
+Button '選択タスクの日程へ移動' #PlanSheetGoToDate @1249,226 209x60
+Button 'その他のオプション' #PlanSheetMore @1466,226 60x60
+Text '#1141 R01 SA-002 要求事項の整理' #PlanSheetSelection @45,297 49x24
+Text 'R01 SA-002 要求事項の整理' @109,297 215x24
+Text '開始: #1140 の終了後 · 終了: 開始から 14h' #PlanStartReason @339,297 316x24
+Group '終了日 10/19 を過ぎて未完了 · +9日' @680,296 249x26
+Text '終了日 10/19 を過ぎて未完了 · +9日' #PlanSheetSlip @690,299 229x21
+Hyperlink '先行 #1140 へ移動' #PlanSelectionPredecessorLink @954,296 298x26
+Button '詳細' #PlanSheetDetail @1990,292 83x35
+Text '詳細' @2026,297 34x24
+Hyperlink 'fukuda-yuki/codex-sandbox#1141' #PlanSheetIssue @2088,296 267x26
+Text 'ID' #PlanHeaderId @35,392 95x27
+Text '状態' #PlanHeaderIndicator @130,397 35x22
+Text 'タスク名' #PlanHeaderTitle @165,392 250x27
+Text '工程' #PlanHeaderPhase @415,392 60x27
+Text '担当者' #PlanHeaderAssignees @475,392 100x27
+Text '見積工数' #PlanHeaderEstimate @575,392 90x27
+Text '見込み残存工数' #PlanHeaderRemaining @665,392 90x27
+Text '実績工数' #PlanHeaderActual @755,392 70x27
+Text '開始日' #PlanHeaderStart @825,392 115x27
+Text '終了日' #PlanHeaderEnd @940,392 115x27
+Text '見込終了' #PlanHeaderForecastEnd @1055,392 135x27
+Text '先行' #PlanHeaderPredecessors @1190,392 80x27
+Thumb 'ID の幅' #PlanHeaderGripId @125,360 10x59
+Thumb '' @125,360 10x59
+Thumb 'タスク名 の幅' #PlanHeaderGripTitle @410,360 10x59
+Thumb '' @410,360 10x59
+Thumb '工程 の幅' #PlanHeaderGripPhase @470,360 10x59
+Thumb '' @470,360 10x59
+Thumb '担当者 の幅' #PlanHeaderGripAssignees @570,360 10x59
+Thumb '' @570,360 10x59
+Thumb '見積 h の幅' #PlanHeaderGripEstimate @660,360 10x59
+Thumb '' @660,360 10x59
+Thumb '残 h の幅' #PlanHeaderGripRemaining @750,360 10x59
+Thumb '' @750,360 10x59
+Thumb '実績 h の幅' #PlanHeaderGripActual @820,360 10x59
+Thumb '' @820,360 10x59
+Thumb '開始日 の幅' #PlanHeaderGripStart @935,360 10x59
+Thumb '' @935,360 10x59
+Thumb '終了日 の幅' #PlanHeaderGripEnd @1050,360 10x59
+Thumb '' @1050,360 10x59
+Thumb '見込終了 の幅' #PlanHeaderGripForecastEnd @1185,360 10x59
+Thumb '' @1185,360 10x59
+Thumb '先行 の幅' #PlanHeaderGripPredecessors @1265,360 10x59
+Thumb '' @1265,360 10x59
+Text '2026年10月' #PlanTimelineUpper739889 @1281,335 72x19
+Text '11月' #PlanTimelineUpper739920 @1541,335 25x19
+Text '12月' #PlanTimelineUpper739950 @1841,335 26x19
+Text '2027年1月' #PlanTimelineUpper739981 @2151,335 64x19
+Text '10/5' #PlanTimelineLabel739893 @1281,365 28x19
+Text '10/12' #PlanTimelineLabel739900 @1341,365 36x19
+Text '10/19' #PlanTimelineLabel739907 @1411,365 36x19
+Text '10/26' #PlanTimelineLabel739914 @1481,365 36x19
+Text '11/2' #PlanTimelineLabel739921 @1551,365 28x19
+Text '11/9' #PlanTimelineLabel739928 @1621,365 28x19
+Text '11/16' #PlanTimelineLabel739935 @1691,365 35x19
+Text '11/23' #PlanTimelineLabel739942 @1761,365 35x19
+Text '11/30' #PlanTimelineLabel739949 @1831,365 35x19
+Text '12/7' #PlanTimelineLabel739956 @1901,365 28x19
+Text '12/14' #PlanTimelineLabel739963 @1971,365 35x19
+Text '12/21' #PlanTimelineLabel739970 @2041,365 35x19
+Text '12/28' #PlanTimelineLabel739977 @2111,365 36x19
+Text '1/4' #PlanTimelineLabel739984 @2181,365 21x19
+Text '1/11' #PlanTimelineLabel739991 @2251,365 28x19
+Button 'SA 完了 目標日 10/30 (金) · 完了見込 11/12 (木) · +8日' #PlanMilestone_0 @1505,392 25x27
+Text '+8日 SA 完了' #PlanMilestoneLabel_0 @1533,395 81x19
+Button 'UI 完了 目標日 12/4 (金) · 完了見込 12/15 (火) · +7日' #PlanMilestone_1 @1855,392 25x27
+Text '+7日' #PlanMilestoneLabel_1 @1883,395 30x19
+Button 'SS 完了 目標日 12/11 (金) · 完了見込 12/24 (木) · +9日' #PlanMilestone_2 @1925,392 25x27
+Text '+9日 SS 完了' #PlanMilestoneLabel_2 @1953,395 80x19
+Button 'PS 完了 目標日 1/8 (金) · 完了見込 1/20 (水) · +7日' #PlanMilestone_3 @2205,392 25x27
+Text '+7日 PS 完了' #PlanMilestoneLabel_3 @2233,395 81x19
+Group '基準日 10/25' #PlanStatusDateLabel @1419,334 98x22
+Text '基準日 10/25' @1428,335 81x20
+List '' #PlanTasks @35,420 2330x847
+ListItem 'I_kwDOUVKgA88AAAABVmq9zg' @35,420 2328x34
+Button '#1139 行を選択・移動' #PlanRowHandle1 @35,424 65x26
+Text '#1139' #PlanRowId1 @49,424 51x26
+Group '配下に期限超過 3、予定より遅れ 16' #PlanIndicator1 @130,428 35x17
+Edit '#1139 タスク名' #PlanCell1_Title val='R01 受注データの外部連携' @165,420 250x33
+Button '折りたたむ: R01 受注データの外部連携' #PlanFold1 @165,421 25x32
+Text '#1139 工程  · 要求事項の行では編集できません' #PlanCell1_Phase @420,426 50x21
+Text '#1139 担当者  · 要求事項の行では編集できません' #PlanCell1_Assignees @480,426 90x21
+Text '#1139 見積工数 447h · 子タスクから集計（編集不可）' #PlanCell1_Estimate @580,426 80x21
+Text '#1139 見込み残存工数 447h · 子タスクから集計（編集不可）' #PlanCell1_Remaining @670,426 80x21
+Text '#1139 実績工数 0h · 子タスクから集計（編集不可）' #PlanCell1_Actual @760,426 60x21
+Text '#1139 開始日 2026-10-13 (火) · 子タスクから集計（編集不可）' #PlanCell1_Start @830,426 105x21
+Text '#1139 終了日 2027-04-22 (木) · 子タスクから集計（編集不可）' #PlanCell1_End @945,426 105x21
+Text '#1139 見込終了 2027-04-22 (木) · 要求事項の行では編集できません' #PlanCell1_ForecastEnd @1060,426 125x21
+Text '#1139 先行  · 要求事項の行では編集できません' #PlanCell1_Predecessors @1195,426 70x21
+Group '#1139 2026-10-13 – 2027-04-22 集計 完了 0%' #PlanBar1 @1348,433 991x12
+ListItem 'I_kwDOUVKgA88AAAABVmq-CQ' @35,454 2328x35
+Button '#1140 行を選択・移動' #PlanRowHandle2 @35,459 69x26
+Text '#1140' #PlanRowId2 @49,459 55x26
+Group '期限超過: 終了日 10/15 を過ぎて未完了（見込み残存工数 21h）、見込終了は +9日、未発行の変更あり' #PlanIndicator2 @130,463 35x17
+Edit '#1140 タスク名' #PlanCell2_Title val='R01 SA-001 現行業務の調査' @165,454 250x33
+Edit '#1140 工程' #PlanCell2_Phase val='SS' @415,454 60x33
+Edit '#1140 担当者' #PlanCell2_Assignees val='fukuda-yuki' @475,454 100x33
+Edit '#1140 見積工数' #PlanCell2_Estimate val='21h' @575,454 90x33
+Edit '#1140 見込み残存工数' #PlanCell2_Remaining val='21h' @665,454 90x33
+Edit '#1140 実績工数' #PlanCell2_Actual val='0h' @755,454 70x33
+Edit '#1140 開始日 2026-10-13 (火)' #PlanCell2_Start val='10/13 (火)' @825,454 115x33
+Edit '#1140 終了日 2026-10-15 (木)' #PlanCell2_End val='10/15 (木)' @940,454 115x33
+Edit '#1140 見込終了 2026-10-28 (水) +9日（稼働日）' #PlanCell2_ForecastEnd val='10/28 (水) +9日' @1055,454 135x33
+Edit '#1140 先行' #PlanCell2_Predecessors @1190,454 80x33
+Group '#1140 2026-10-13 – 2026-10-15 完了 0% 期限超過 +9日' #PlanBar2 @1348,463 30x17
+Text '+9日' #PlanLateLabel2 @1385,462 31x18
+ListItem 'I_kwDOUVKgA88AAAABVmq-PA' @35,489 2328x35
+Button '#1141 行を選択・移動' #PlanRowHandle3 @35,494 69x26
+Text '#1141' #PlanRowId3 @49,494 55x26
+Group '期限超過: 終了日 10/19 を過ぎて未完了（見込み残存工数 14h）、見込終了は +9日' #PlanIndicator3 @130,498 35x17
+Edit '#1141 タスク名' #PlanCell3_Title val='R01 SA-002 要求事項の整理' @165,489 250x33
+Edit '#1141 工程' #PlanCell3_Phase val='SA' @417,492 54x29
+Button '選択範囲へコピー' #PlanFillHandle3_Phase @462,512 10x10
+Edit '#1141 担当者' #PlanCell3_Assignees val='fukuda-yuki' @475,489 100x33
+Edit '#1141 見積工数' #PlanCell3_Estimate val='14h' @575,489 90x33
+Edit '#1141 見込み残存工数' #PlanCell3_Remaining val='14h' @665,489 90x33
+Edit '#1141 実績工数' #PlanCell3_Actual val='0h' @755,489 70x33
+Edit '#1141 開始日 2026-10-15 (木)' #PlanCell3_Start val='10/15 (木)' @825,489 115x33
+Edit '#1141 終了日 2026-10-19 (月)' #PlanCell3_End val='10/19 (月)' @940,489 115x33
+Edit '#1141 見込終了 2026-10-30 (金) +9日（稼働日）' #PlanCell3_ForecastEnd val='10/30 (金) +9日' @1055,489 135x33
+Edit '#1141 先行' #PlanCell3_Predecessors val='#1140' @1190,489 80x33
+Group '#1141 2026-10-15 – 2026-10-19 完了 0% 期限超過 +9日' #PlanBar3 @1368,498 50x17
+Text '+9日' #PlanLateLabel3 @1425,497 31x18
+ListItem 'I_kwDOUVKgA88AAAABVmq-Zg' @35,525 2328x35
+Button '#1142 行を選択・移動' #PlanRowHandle4 @35,530 69x26
+Text '#1142' #PlanRowId4 @49,530 55x26
+Group '期限超過: 終了日 10/20 を過ぎて未完了（見込み残存工数 7h）、見込終了は +9日' #PlanIndicator4 @130,533 35x17
+Edit '#1142 タスク名' #PlanCell4_Title val='R01 SA-003 要求仕様書のレビュー' @165,525 250x33
+Edit '#1142 工程' #PlanCell4_Phase val='SA' @415,525 60x33
+Edit '#1142 担当者' #PlanCell4_Assignees val='fukuda-yuki' @475,525 100x33
+Edit '#1142 見積工数' #PlanCell4_Estimate val='7h' @575,525 90x33
+Edit '#1142 見込み残存工数' #PlanCell4_Remaining val='7h' @665,525 90x33
+Edit '#1142 実績工数' #PlanCell4_Actual val='0h' @755,525 70x33
+Edit '#1142 開始日 2026-10-19 (月)' #PlanCell4_Start val='10/19 (月)' @825,525 115x33
+Edit '#1142 終了日 2026-10-20 (火)' #PlanCell4_End val='10/20 (火)' @940,525 115x33
+Edit '#1142 見込終了 2026-11-02 (月) +9日（稼働日）' #PlanCell4_ForecastEnd val='11/2 (月) +9日' @1055,525 135x33
+Edit '#1142 先行' #PlanCell4_Predecessors val='#1141' @1190,525 80x33
+Group '#1142 2026-10-19 – 2026-10-20 完了 0% 期限超過 +9日' #PlanBar4 @1408,533 20x17
+Text '+9日' #PlanLateLabel4 @1435,532 31x18
+ListItem 'I_kwDOUVKgA88AAAABVmq-lQ' @35,560 2328x35
+Button '#1143 行を選択・移動' #PlanRowHandle5 @35,565 69x26
+Text '#1143' #PlanRowId5 @49,565 55x26
+Group '予定より遅れ: +9日（先行 #1662 の遅れによる）' #PlanIndicator5 @130,568 35x17
+Edit '#1143 タスク名' #PlanCell5_Title val='R01 UI-001 画面・帳票の設計' @165,560 250x33
+Edit '#1143 工程' #PlanCell5_Phase val='UI' @415,560 60x33
+Edit '#1143 担当者' #PlanCell5_Assignees val='fukuda-yuki' @475,560 100x33
+Edit '#1143 見積工数' #PlanCell5_Estimate val='29h' @575,560 90x33
+Edit '#1143 見込み残存工数' #PlanCell5_Remaining val='29h' @665,560 90x33
+Edit '#1143 実績工数' #PlanCell5_Actual val='0h' @755,560 70x33
+Edit '#1143 開始日 2026-10-28 (水)' #PlanCell5_Start val='10/28 (水)' @825,560 115x33
+Edit '#1143 終了日 2026-11-02 (月)' #PlanCell5_End val='11/2 (月)' @940,560 115x33
+Edit '#1143 見込終了 2026-11-16 (月) +9日（稼働日）' #PlanCell5_ForecastEnd val='11/16 (月) +9日' @1055,560 135x33
+Edit '#1143 先行' #PlanCell5_Predecessors val='#1662' @1190,560 80x33
+Group '#1143 2026-10-28 – 2026-11-02 完了 0% 予定より遅れ +9日' #PlanBar5 @1498,568 60x17
+ListItem 'I_kwDOUVKgA88AAAABVmq-tQ' @35,595 2328x35
+Button '#1144 行を選択・移動' #PlanRowHandle6 @35,600 69x26
+Text '#1144' #PlanRowId6 @49,600 55x26
+Group '予定より遅れ: +9日（先行 #1143 の遅れによる）' #PlanIndicator6 @130,603 35x17
+Edit '#1144 タスク名' #PlanCell6_Title val='R01 UI-002 外部インタフェースの設計' @165,595 250x33
+Edit '#1144 工程' #PlanCell6_Phase val='UI' @415,595 60x33
+Edit '#1144 担当者' #PlanCell6_Assignees val='fukuda-yuki' @475,595 100x33
+Edit '#1144 見積工数' #PlanCell6_Estimate val='14h' @575,595 90x33
+Edit '#1144 見込み残存工数' #PlanCell6_Remaining val='14h' @665,595 90x33
+Edit '#1144 実績工数' #PlanCell6_Actual val='0h' @755,595 70x33
+Edit '#1144 開始日 2026-11-02 (月)' #PlanCell6_Start val='11/2 (月)' @825,595 115x33
+Edit '#1144 終了日 2026-11-05 (木)' #PlanCell6_End val='11/5 (木)' @940,595 115x33
+Edit '#1144 見込終了 2026-11-18 (水) +9日（稼働日）' #PlanCell6_ForecastEnd val='11/18 (水) +9日' @1055,595 135x33
+Edit '#1144 先行' #PlanCell6_Predecessors val='#1143' @1190,595 80x33
+Group '#1144 2026-11-02 – 2026-11-05 完了 0% 予定より遅れ +9日' #PlanBar6 @1548,603 40x17
+ListItem 'I_kwDOUVKgA88AAAABVmq--g' @35,630 2328x35
+Button '#1145 行を選択・移動' #PlanRowHandle7 @35,635 69x26
+Text '#1145' #PlanRowId7 @49,635 55x26
+Group '予定より遅れ: +9日（先行 #1144 の遅れによる）' #PlanIndicator7 @130,638 35x17
+Edit '#1145 タスク名' #PlanCell7_Title val='R01 UI-003 外部設計書のレビュー' @165,630 250x33
+Edit '#1145 工程' #PlanCell7_Phase val='UI' @415,630 60x33
+Edit '#1145 担当者' #PlanCell7_Assignees val='fukuda-yuki' @475,630 100x33
+Edit '#1145 見積工数' #PlanCell7_Estimate val='7h' @575,630 90x33
+Edit '#1145 見込み残存工数' #PlanCell7_Remaining val='7h' @665,630 90x33
+Edit '#1145 実績工数' #PlanCell7_Actual val='0h' @755,630 70x33
+Edit '#1145 開始日 2026-11-05 (木)' #PlanCell7_Start val='11/5 (木)' @825,630 115x33
+Edit '#1145 終了日 2026-11-06 (金)' #PlanCell7_End val='11/6 (金)' @940,630 115x33
+Edit '#1145 見込終了 2026-11-19 (木) +9日（稼働日）' #PlanCell7_ForecastEnd val='11/19 (木) +9日' @1055,630 135x33
+Edit '#1145 先行' #PlanCell7_Predecessors val='#1144' @1190,630 80x33
+Group '#1145 2026-11-05 – 2026-11-06 完了 0% 予定より遅れ +9日' #PlanBar7 @1578,638 20x17
+ListItem 'I_kwDOUVKgA88AAAABVmq_Kg' @35,665 2328x35
+Button '#1146 行を選択・移動' #PlanRowHandle8 @35,670 69x26
+Text '#1146' #PlanRowId8 @49,670 55x26
+Group '予定より遅れ: +9日（先行 #1145 の遅れによる）' #PlanIndicator8 @130,673 35x17
+Edit '#1146 タスク名' #PlanCell8_Title val='R01 SS-001 方式の検討' @165,665 250x33
+Edit '#1146 工程' #PlanCell8_Phase val='SS' @415,665 60x33
+Edit '#1146 担当者' #PlanCell8_Assignees val='fukuda-yuki' @475,665 100x33
+Edit '#1146 見積工数' #PlanCell8_Estimate val='21h' @575,665 90x33
+Edit '#1146 見込み残存工数' #PlanCell8_Remaining val='21h' @665,665 90x33
+Edit '#1146 実績工数' #PlanCell8_Actual val='0h' @755,665 70x33
+Edit '#1146 開始日 2026-11-06 (金)' #PlanCell8_Start val='11/6 (金)' @825,665 115x33
+Edit '#1146 終了日 2026-11-11 (水)' #PlanCell8_End val='11/11 (水)' @940,665 115x33
+Edit '#1146 見込終了 2026-11-25 (水) +9日（稼働日）' #PlanCell8_ForecastEnd val='11/25 (水) +9日' @1055,665 135x33
+Edit '#1146 先行' #PlanCell8_Predecessors val='#1145' @1190,665 80x33
+Group '#1146 2026-11-06 – 2026-11-11 完了 0% 予定より遅れ +9日' #PlanBar8 @1588,673 60x17
+ListItem 'I_kwDOUVKgA88AAAABVmq_ag' @35,700 2328x35
+Button '#1147 行を選択・移動' #PlanRowHandle9 @35,705 69x26
+Text '#1147' #PlanRowId9 @49,705 55x26
+Group '予定より遅れ: +9日（先行 #1146 の遅れによる）' #PlanIndicator9 @130,708 35x17
+Edit '#1147 タスク名' #PlanCell9_Title val='R01 SS-002 基本設計書の作成' @165,700 250x33
+Edit '#1147 工程' #PlanCell9_Phase val='SS' @415,700 60x33
+Edit '#1147 担当者' #PlanCell9_Assignees val='fukuda-yuki' @475,700 100x33
+Edit '#1147 見積工数' #PlanCell9_Estimate val='21h' @575,700 90x33
+Edit '#1147 見込み残存工数' #PlanCell9_Remaining val='21h' @665,700 90x33
+Edit '#1147 実績工数' #PlanCell9_Actual val='0h' @755,700 70x33
+Edit '#1147 開始日 2026-11-11 (水)' #PlanCell9_Start val='11/11 (水)' @825,700 115x33
+Edit '#1147 終了日 2026-11-13 (金)' #PlanCell9_End val='11/13 (金)' @940,700 115x33
+Edit '#1147 見込終了 2026-11-27 (金) +9日（稼働日）' #PlanCell9_ForecastEnd val='11/27 (金) +9日' @1055,700 135x33
+Edit '#1147 先行' #PlanCell9_Predecessors val='#1146' @1190,700 80x33
+Group '#1147 2026-11-11 – 2026-11-13 完了 0% 予定より遅れ +9日' #PlanBar9 @1638,708 30x17
+ListItem 'I_kwDOUVKgA88AAAABVmq_qA' @35,735 2328x35
+Button '#1148 行を選択・移動' #PlanRowHandle10 @35,740 77x26
+Text '#1148' #PlanRowId10 @57,740 55x26
+Group '予定より遅れ: +9日（先行 #1147 の遅れによる）' #PlanIndicator10 @130,744 35x17
+Edit '#1148 タスク名' #PlanCell10_Title val='R01 SS-003 基本設計書のレビュー' @165,735 250x34
+Edit '#1148 工程' #PlanCell10_Phase val='SS' @415,735 60x34
+Edit '#1148 担当者' #PlanCell10_Assignees val='fukuda-yuki' @475,735 100x34
+Edit '#1148 見積工数' #PlanCell10_Estimate val='7h' @575,735 90x34
+Edit '#1148 見込み残存工数' #PlanCell10_Remaining val='7h' @665,735 90x34
+Edit '#1148 実績工数' #PlanCell10_Actual val='0h' @755,735 70x34
+Edit '#1148 開始日 2026-11-13 (金)' #PlanCell10_Start val='11/13 (金)' @825,735 115x34
+Edit '#1148 終了日 2026-11-16 (月)' #PlanCell10_End val='11/16 (月)' @940,735 115x34
+Edit '#1148 見込終了 2026-11-30 (月) +9日（稼働日）' #PlanCell10_ForecastEnd val='11/30 (月) +9日' @1055,735 135x34
+Edit '#1148 先行' #PlanCell10_Predecessors val='#1147' @1190,735 80x34
+Group '#1148 2026-11-13 – 2026-11-16 完了 0% 予定より遅れ +9日' #PlanBar10 @1658,743 40x17
+ListItem 'I_kwDOUVKgA88AAAABVmrHdQ' @35,770 2328x35
+Button '#1149 行を選択・移動' #PlanRowHandle11 @35,775 77x26
+Text '#1149' #PlanRowId11 @57,775 55x26
+Group '予定より遅れ: +9日（先行 #1668 の遅れによる）' #PlanIndicator11 @130,779 35x17
+Edit '#1149 タスク名' #PlanCell11_Title val='R01 PS-001 詳細設計 処理' @165,770 250x34
+Edit '#1149 工程' #PlanCell11_Phase val='PS' @415,770 60x34
+Edit '#1149 担当者' #PlanCell11_Assignees val='fukuda-yuki' @475,770 100x34
+Edit '#1149 見積工数' #PlanCell11_Estimate val='29h' @575,770 90x34
+Edit '#1149 見込み残存工数' #PlanCell11_Remaining val='29h' @665,770 90x34
+Edit '#1149 実績工数' #PlanCell11_Actual val='0h' @755,770 70x34
+Edit '#1149 開始日 2026-12-07 (月)' #PlanCell11_Start val='12/7 (月)' @825,770 115x34
+Edit '#1149 終了日 2026-12-11 (金)' #PlanCell11_End val='12/11 (金)' @940,770 115x34
+Edit '#1149 見込終了 2026-12-24 (木) +9日（稼働日）' #PlanCell11_ForecastEnd val='12/24 (木) +9日' @1055,770 135x34
+Edit '#1149 先行' #PlanCell11_Predecessors val='#1668' @1190,770 80x34
+Group '#1149 2026-12-07 – 2026-12-11 完了 0% 予定より遅れ +9日' #PlanBar11 @1898,778 50x17
+ListItem 'I_kwDOUVKgA88AAAABVmrHsQ' @35,805 2328x35
+Button '#1150 行を選択・移動' #PlanRowHandle12 @35,810 77x26
+Text '#1150' #PlanRowId12 @57,810 55x26
+Group '予定より遅れ: +9日（先行 #1149 の遅れによる）' #PlanIndicator12 @130,814 35x17
+Edit '#1150 タスク名' #PlanCell12_Title val='R01 PS-002 詳細設計 データ' @165,805 250x34
+Edit '#1150 工程' #PlanCell12_Phase val='PS' @415,805 60x34
+Edit '#1150 担当者' #PlanCell12_Assignees val='fukuda-yuki' @475,805 100x34
+Edit '#1150 見積工数' #PlanCell12_Estimate val='21h' @575,805 90x34
+Edit '#1150 見込み残存工数' #PlanCell12_Remaining val='21h' @665,805 90x34
+Edit '#1150 実績工数' #PlanCell12_Actual val='0h' @755,805 70x34
+Edit '#1150 開始日 2026-12-11 (金)' #PlanCell12_Start val='12/11 (金)' @825,805 115x34
+Edit '#1150 終了日 2026-12-15 (火)' #PlanCell12_End val='12/15 (火)' @940,805 115x34
+Edit '#1150 見込終了 2026-12-28 (月) +9日（稼働日）' #PlanCell12_ForecastEnd val='12/28 (月) +9日' @1055,805 135x34
+Edit '#1150 先行' #PlanCell12_Predecessors val='#1149' @1190,805 80x34
+Group '#1150 2026-12-11 – 2026-12-15 完了 0% 予定より遅れ +9日' #PlanBar12 @1938,813 50x17
+ListItem 'I_kwDOUVKgA88AAAABVmrH6Q' @35,840 2328x35
+Button '#1151 行を選択・移動' #PlanRowHandle13 @35,845 77x26
+Text '#1151' #PlanRowId13 @57,845 55x26
+Group '予定より遅れ: +9日（先行 #1150 の遅れによる）' #PlanIndicator13 @130,849 35x17
+Edit '#1151 タスク名' #PlanCell13_Title val='R01 PS-003 詳細設計書のレビュー' @165,840 250x34
+Edit '#1151 工程' #PlanCell13_Phase val='PS' @415,840 60x34
+Edit '#1151 担当者' #PlanCell13_Assignees val='fukuda-yuki' @475,840 100x34
+Edit '#1151 見積工数' #PlanCell13_Estimate val='7h' @575,840 90x34
+Edit '#1151 見込み残存工数' #PlanCell13_Remaining val='7h' @665,840 90x34
+Edit '#1151 実績工数' #PlanCell13_Actual val='0h' @755,840 70x34
+Edit '#1151 開始日 2026-12-15 (火)' #PlanCell13_Start val='12/15 (火)' @825,840 115x34
+Edit '#1151 終了日 2026-12-16 (水)' #PlanCell13_End val='12/16 (水)' @940,840 115x34
+Edit '#1151 見込終了 2026-12-29 (火) +9日（稼働日）' #PlanCell13_ForecastEnd val='12/29 (火) +9日' @1055,840 135x34
+Edit '#1151 先行' #PlanCell13_Predecessors val='#1150' @1190,840 80x34
+Group '#1151 2026-12-15 – 2026-12-16 完了 0% 予定より遅れ +9日' #PlanBar13 @1978,848 20x17
+ListItem 'I_kwDOUVKgA88AAAABVmrIKw' @35,875 2328x35
+Button '#1152 行を選択・移動' #PlanRowHandle14 @35,880 77x26
+Text '#1152' #PlanRowId14 @57,880 55x26
+Group '予定より遅れ: +9日（先行 #1671 の遅れによる）' #PlanIndicator14 @130,884 35x17
+Edit '#1152 タスク名' #PlanCell14_Title val='R01 PG-001 製造 画面' @165,875 250x34
+Edit '#1152 工程' #PlanCell14_Phase val='PG' @415,875 60x34
+Edit '#1152 担当者' #PlanCell14_Assignees val='fukuda-yuki' @475,875 100x34
+Edit '#1152 見積工数' #PlanCell14_Estimate val='36h' @575,875 90x34
+Edit '#1152 見込み残存工数' #PlanCell14_Remaining val='36h' @665,875 90x34
+Edit '#1152 実績工数' #PlanCell14_Actual val='0h' @755,875 70x34
+Edit '#1152 開始日 2026-12-28 (月)' #PlanCell14_Start val='12/28 (月)' @825,875 115x34
+Edit '#1152 終了日 2027-01-05 (火)' #PlanCell14_End val='1/5 (火)' @940,875 115x34
+Edit '#1152 見込終了 2027-01-19 (火) +9日（稼働日）' #PlanCell14_ForecastEnd val='1/19 (火) +9日' @1055,875 135x34
+Edit '#1152 先行' #PlanCell14_Predecessors val='#1671' @1190,875 80x34
+Group '#1152 2026-12-28 – 2027-01-05 完了 0% 予定より遅れ +9日' #PlanBar14 @2108,883 90x17
+ListItem 'I_kwDOUVKgA88AAAABVmrIZQ' @35,910 2328x35
+Button '#1153 行を選択・移動' #PlanRowHandle15 @35,915 77x26
+Text '#1153' #PlanRowId15 @57,915 55x26
+Group '予定より遅れ: +9日（先行 #1152 の遅れによる）' #PlanIndicator15 @130,919 35x17
+Edit '#1153 タスク名' #PlanCell15_Title val='R01 PG-002 製造 バッチ' @165,910 250x34
+Edit '#1153 工程' #PlanCell15_Phase val='PG' @415,910 60x34
+Edit '#1153 担当者' #PlanCell15_Assignees val='fukuda-yuki' @475,910 100x34
+Edit '#1153 見積工数' #PlanCell15_Estimate val='29h' @575,910 90x34
+Edit '#1153 見込み残存工数' #PlanCell15_Remaining val='29h' @665,910 90x34
+Edit '#1153 実績工数' #PlanCell15_Actual val='0h' @755,910 70x34
+Edit '#1153 開始日 2027-01-05 (火)' #PlanCell15_Start val='1/5 (火)' @825,910 115x34
+Edit '#1153 終了日 2027-01-08 (金)' #PlanCell15_End val='1/8 (金)' @940,910 115x34
+Edit '#1153 見込終了 2027-01-22 (金) +9日（稼働日）' #PlanCell15_ForecastEnd val='1/22 (金) +9日' @1055,910 135x34
+Edit '#1153 先行' #PlanCell15_Predecessors val='#1152' @1190,910 80x34
+Group '#1153 2027-01-05 – 2027-01-08 完了 0% 予定より遅れ +9日' #PlanBar15 @2188,918 40x17
+ListItem 'I_kwDOUVKgA88AAAABVmrIpA' @35,945 2328x35
+Button '#1154 行を選択・移動' #PlanRowHandle16 @35,950 77x26
+Text '#1154' #PlanRowId16 @57,950 55x26
+Group '予定より遅れ: +9日（先行 #1153 の遅れによる）' #PlanIndicator16 @130,954 35x17
+Edit '#1154 タスク名' #PlanCell16_Title val='R01 PG-003 製造 共通部品' @165,945 250x34
+Edit '#1154 工程' #PlanCell16_Phase val='PG' @415,945 60x34
+Edit '#1154 担当者' #PlanCell16_Assignees val='fukuda-yuki' @475,945 100x34
+Edit '#1154 見積工数' #PlanCell16_Estimate val='21h' @575,945 90x34
+Edit '#1154 見込み残存工数' #PlanCell16_Remaining val='21h' @665,945 90x34
+Edit '#1154 実績工数' #PlanCell16_Actual val='0h' @755,945 70x34
+Edit '#1154 開始日 2027-01-08 (金)' #PlanCell16_Start val='1/8 (金)' @825,945 115x34
+Edit '#1154 終了日 2027-01-14 (木)' #PlanCell16_End val='1/14 (木)' @940,945 115x34
+Edit '#1154 見込終了 2027-01-27 (水) +9日（稼働日）' #PlanCell16_ForecastEnd val='1/27 (水) +9日' @1055,945 135x34
+Edit '#1154 先行' #PlanCell16_Predecessors val='#1153' @1190,945 80x34
+Group '#1154 2027-01-08 – 2027-01-14 完了 0% 予定より遅れ +9日' #PlanBar16 @2218,953 70x17
+ListItem 'I_kwDOUVKgA88AAAABVmrI2A' @35,980 2328x35
+Button '#1155 行を選択・移動' #PlanRowHandle17 @35,985 77x26
+Text '#1155' #PlanRowId17 @57,985 55x26
+Group '予定より遅れ: +9日（先行 #1154 の遅れによる）' #PlanIndicator17 @130,989 35x17
+Edit '#1155 タスク名' #PlanCell17_Title val='R01 PG-004 コードレビュー' @165,980 250x34
+Edit '#1155 工程' #PlanCell17_Phase val='PG' @415,980 60x34
+Edit '#1155 担当者' #PlanCell17_Assignees val='fukuda-yuki' @475,980 100x34
+Edit '#1155 見積工数' #PlanCell17_Estimate val='7h' @575,980 90x34
+Edit '#1155 見込み残存工数' #PlanCell17_Remaining val='7h' @665,980 90x34
+Edit '#1155 実績工数' #PlanCell17_Actual val='0h' @755,980 70x34
+Edit '#1155 開始日 2027-01-14 (木)' #PlanCell17_Start val='1/14 (木)' @825,980 115x34
+Edit '#1155 終了日 2027-01-15 (金)' #PlanCell17_End val='1/15 (金)' @940,980 115x34
+Edit '#1155 見込終了 2027-01-28 (木) +9日（稼働日）' #PlanCell17_ForecastEnd val='1/28 (木) +9日' @1055,980 135x34
+Edit '#1155 先行' #PlanCell17_Predecessors val='#1154' @1190,980 80x34
+Group '#1155 2027-01-14 – 2027-01-15 完了 0% 予定より遅れ +9日' #PlanBar17 @2278,988 20x17
+ListItem 'I_kwDOUVKgA88AAAABVmrJ9A' @35,1015 2328x35
+Button '#1156 行を選択・移動' #PlanRowHandle18 @35,1020 77x26
+Text '#1156' #PlanRowId18 @57,1020 55x26
+Group '予定より遅れ: +9日（先行 #1675 の遅れによる）' #PlanIndicator18 @130,1024 35x17
+Edit '#1156 タスク名' #PlanCell18_Title val='R01 PT-001 単体テスト仕様書の作成' @165,1015 250x34
+Edit '#1156 工程' #PlanCell18_Phase val='PT' @415,1015 60x34
+Edit '#1156 担当者' #PlanCell18_Assignees val='fukuda-yuki' @475,1015 100x34
+Edit '#1156 見積工数' #PlanCell18_Estimate val='21h' @575,1015 90x34
+Edit '#1156 見込み残存工数' #PlanCell18_Remaining val='21h' @665,1015 90x34
+Edit '#1156 実績工数' #PlanCell18_Actual val='0h' @755,1015 70x34
+Edit '#1156 開始日 2027-02-03 (水)' #PlanCell18_Start val='2/3 (水)' @825,1015 115x34
+Edit '#1156 終了日 2027-02-05 (金)' #PlanCell18_End val='2/5 (金)' @940,1015 115x34
+Edit '#1156 見込終了 2027-02-19 (金) +9日（稼働日）' #PlanCell18_ForecastEnd val='2/19 (金) +9日' @1055,1015 135x34
+Edit '#1156 先行' #PlanCell18_Predecessors val='#1675' @1190,1015 80x34
+Group '#1156 2027-02-03 – 2027-02-05 完了 0% 予定より遅れ +9日' #PlanBar18 
+ListItem 'I_kwDOUVKgA88AAAABVmrKIg' @35,1050 2328x35
+Button '#1157 行を選択・移動' #PlanRowHandle19 @35,1055 77x26
+Text '#1157' #PlanRowId19 @57,1055 55x26
+Group '予定より遅れ: +9日（先行 #1156 の遅れによる）' #PlanIndicator19 @130,1059 35x17
+Edit '#1157 タスク名' #PlanCell19_Title val='R01 PT-002 単体テストの実施' @165,1050 250x34
+Edit '#1157 工程' #PlanCell19_Phase val='PT' @415,1050 60x34
+Edit '#1157 担当者' #PlanCell19_Assignees val='fukuda-yuki' @475,1050 100x34
+Edit '#1157 見積工数' #PlanCell19_Estimate val='29h' @575,1050 90x34
+Edit '#1157 見込み残存工数' #PlanCell19_Remaining val='29h' @665,1050 90x34
+Edit '#1157 実績工数' #PlanCell19_Actual val='0h' @755,1050 70x34
+Edit '#1157 開始日 2027-02-05 (金)' #PlanCell19_Start val='2/5 (金)' @825,1050 115x34
+Edit '#1157 終了日 2027-02-12 (金)' #PlanCell19_End val='2/12 (金)' @940,1050 115x34
+Edit '#1157 見込終了 2027-02-26 (金) +9日（稼働日）' #PlanCell19_ForecastEnd val='2/26 (金) +9日' @1055,1050 135x34
+Edit '#1157 先行' #PlanCell19_Predecessors val='#1156' @1190,1050 80x34
+Group '#1157 2027-02-05 – 2027-02-12 完了 0% 予定より遅れ +9日' #PlanBar19 
+ListItem 'I_kwDOUVKgA88AAAABVmrKYA' @35,1085 2328x35
+Button '#1158 行を選択・移動' #PlanRowHandle20 @35,1090 77x26
+Text '#1158' #PlanRowId20 @57,1090 55x26
+Group '予定より遅れ: +9日（先行 #1157 の遅れによる）' #PlanIndicator20 @130,1094 35x17
+Edit '#1158 タスク名' #PlanCell20_Title val='R01 PT-003 単体テスト結果のレビュー' @165,1085 250x34
+Edit '#1158 工程' #PlanCell20_Phase val='PT' @415,1085 60x34
+Edit '#1158 担当者' #PlanCell20_Assignees val='fukuda-yuki' @475,1085 100x34
+Edit '#1158 見積工数' #PlanCell20_Estimate val='7h' @575,1085 90x34
+Edit '#1158 見込み残存工数' #PlanCell20_Remaining val='7h' @665,1085 90x34
+Edit '#1158 実績工数' #PlanCell20_Actual val='0h' @755,1085 70x34
+Edit '#1158 開始日 2027-02-12 (金)' #PlanCell20_Start val='2/12 (金)' @825,1085 115x34
+Edit '#1158 終了日 2027-02-15 (月)' #PlanCell20_End val='2/15 (月)' @940,1085 115x34
+Edit '#1158 見込終了 2027-03-01 (月) +9日（稼働日）' #PlanCell20_ForecastEnd val='3/1 (月) +9日' @1055,1085 135x34
+Edit '#1158 先行' #PlanCell20_Predecessors val='#1157' @1190,1085 80x34
+Group '#1158 2027-02-12 – 2027-02-15 完了 0% 予定より遅れ +9日' #PlanBar20 
+ListItem 'I_kwDOUVKgA88AAAABVmrOUg' @35,1120 2328x35
+Button '#1159 行を選択・移動' #PlanRowHandle21 @35,1125 77x26
+Text '#1159' #PlanRowId21 @57,1125 55x26
+Edit '#1159 タスク名' #PlanCell21_Title val='R01 IT-001 結合テスト仕様書の作成' @165,1120 250x34
+Edit '#1159 工程' #PlanCell21_Phase val='IT' @415,1120 60x34
+Edit '#1159 担当者' #PlanCell21_Assignees val='fukuda-yuki' @475,1120 100x34
+Edit '#1159 見積工数' #PlanCell21_Estimate val='21h' @575,1120 90x34
+Edit '#1159 見込み残存工数' #PlanCell21_Remaining val='21h' @665,1120 90x34
+Edit '#1159 実績工数' #PlanCell21_Actual val='0h' @755,1120 70x34
+Edit '#1159 開始日 2027-03-15 (月)' #PlanCell21_Start val='3/15 (月)' @825,1120 115x34
+Edit '#1159 終了日 2027-03-17 (水)' #PlanCell21_End val='3/17 (水)' @940,1120 115x34
+Edit '#1159 見込終了 2027-03-17 (水)' #PlanCell21_ForecastEnd val='3/17 (水)' @1055,1120 135x34
+Edit '#1159 先行' #PlanCell21_Predecessors val='#1678' @1190,1120 80x34
+Group '#1159 2027-03-15 – 2027-03-17 完了 0%' #PlanBar21 
+ListItem 'I_kwDOUVKgA88AAAABVmrOig' @35,1155 2328x35
+Button '#1160 行を選択・移動' #PlanRowHandle22 @35,1160 77x26
+Text '#1160' #PlanRowId22 @57,1160 55x26
+Edit '#1160 タスク名' #PlanCell22_Title val='R01 IT-002 結合テストの実施' @165,1155 250x34
+Edit '#1160 工程' #PlanCell22_Phase val='IT' @415,1155 60x34
+Edit '#1160 担当者' #PlanCell22_Assignees val='fukuda-yuki' @475,1155 100x34
+Edit '#1160 見積工数' #PlanCell22_Estimate val='29h' @575,1155 90x34
+Edit '#1160 見込み残存工数' #PlanCell22_Remaining val='29h' @665,1155 90x34
+Edit '#1160 実績工数' #PlanCell22_Actual val='0h' @755,1155 70x34
+Edit '#1160 開始日 2027-03-17 (水)' #PlanCell22_Start val='3/17 (水)' @825,1155 115x34
+Edit '#1160 終了日 2027-03-24 (水)' #PlanCell22_End val='3/24 (水)' @940,1155 115x34
+Edit '#1160 見込終了 2027-03-24 (水)' #PlanCell22_ForecastEnd val='3/24 (水)' @1055,1155 135x34
+Edit '#1160 先行' #PlanCell22_Predecessors val='#1159' @1190,1155 80x34
+Group '#1160 2027-03-17 – 2027-03-24 完了 0%' #PlanBar22 
+ListItem 'I_kwDOUVKgA88AAAABVmrOww' @35,1190 2328x35
+Button '#1161 行を選択・移動' #PlanRowHandle23 @35,1195 77x26
+Text '#1161' #PlanRowId23 @57,1195 55x26
+Edit '#1161 タスク名' #PlanCell23_Title val='R01 IT-003 結合テスト結果のレビュー' @165,1190 250x34
+Edit '#1161 工程' #PlanCell23_Phase val='IT' @415,1190 60x34
+Edit '#1161 担当者' #PlanCell23_Assignees val='fukuda-yuki' @475,1190 100x34
+Edit '#1161 見積工数' #PlanCell23_Estimate val='7h' @575,1190 90x34
+Edit '#1161 見込み残存工数' #PlanCell23_Remaining val='7h' @665,1190 90x34
+Edit '#1161 実績工数' #PlanCell23_Actual val='0h' @755,1190 70x34
+Edit '#1161 開始日 2027-03-24 (水)' #PlanCell23_Start val='3/24 (水)' @825,1190 115x34
+Edit '#1161 終了日 2027-03-25 (木)' #PlanCell23_End val='3/25 (木)' @940,1190 115x34
+Edit '#1161 見込終了 2027-03-25 (木)' #PlanCell23_ForecastEnd val='3/25 (木)' @1055,1190 135x34
+Edit '#1161 先行' #PlanCell23_Predecessors val='#1160' @1190,1190 80x34
+Group '#1161 2027-03-24 – 2027-03-25 完了 0%' #PlanBar23 
+ListItem 'I_kwDOUVKgA88AAAABVmrO7g' @35,1225 2328x35
+Button '#1162 行を選択・移動' #PlanRowHandle24 @35,1230 77x26
+Text '#1162' #PlanRowId24 @57,1230 55x26
+Edit '#1162 タスク名' #PlanCell24_Title val='R01 ST-001 総合テストの実施' @165,1225 250x34
+Edit '#1162 工程' #PlanCell24_Phase val='ST' @415,1225 60x34
+Edit '#1162 担当者' #PlanCell24_Assignees val='fukuda-yuki' @475,1225 100x34
+Edit '#1162 見積工数' #PlanCell24_Estimate val='21h' @575,1225 90x34
+Edit '#1162 見込み残存工数' #PlanCell24_Remaining val='21h' @665,1225 90x34
+Edit '#1162 実績工数' #PlanCell24_Actual val='0h' @755,1225 70x34
+Edit '#1162 開始日 2027-04-08 (木)' #PlanCell24_Start val='4/8 (木)' @825,1225 115x34
+Edit '#1162 終了日 2027-04-12 (月)' #PlanCell24_End val='4/12 (月)' @940,1225 115x34
+Edit '#1162 見込終了 2027-04-12 (月)' #PlanCell24_ForecastEnd val='4/12 (月)' @1055,1225 135x34
+Edit '#1162 先行' #PlanCell24_Predecessors val='#1681' @1190,1225 80x34
+Group '#1162 2027-04-08 – 2027-04-12 完了 0%' #PlanBar24 
+ListItem 'I_kwDOUVKgA88AAAABVmrPIA' @35,1260 2328x7
+Button '#1163 行を選択・移動' #PlanRowHandle25 @35,1265 77x2
+Text '#1163' #PlanRowId25 @57,1265 55x2
+Edit '#1163 タスク名' #PlanCell25_Title val='R01 ST-002 総合テスト結果のレビュー' @165,1260 250x7
+Edit '#1163 工程' #PlanCell25_Phase val='ST' @415,1260 60x7
+Edit '#1163 担当者' #PlanCell25_Assignees val='fukuda-yuki' @475,1260 100x7
+Edit '#1163 見積工数' #PlanCell25_Estimate val='7h' @575,1260 90x7
+Edit '#1163 見込み残存工数' #PlanCell25_Remaining val='7h' @665,1260 90x7
+Edit '#1163 実績工数' #PlanCell25_Actual val='0h' @755,1260 70x7
+Edit '#1163 開始日 2027-04-12 (月)' #PlanCell25_Start val='4/12 (月)' @825,1260 115x7
+Edit '#1163 終了日 2027-04-13 (火)' #PlanCell25_End val='4/13 (火)' @940,1260 115x7
+Edit '#1163 見込終了 2027-04-13 (火)' #PlanCell25_ForecastEnd val='4/13 (火)' @1055,1260 135x7
+Edit '#1163 先行' #PlanCell25_Predecessors val='#1162' @1190,1260 80x7
+Group '#1163 2027-04-12 – 2027-04-13 完了 0%' #PlanBar25 
+ListItem 'I_kwDOUVKgA88AAAABVmrPVw' 
+Button '#1164 行を選択・移動' #PlanRowHandle26 
+Text '#1164' #PlanRowId26 
+Edit '#1164 タスク名' #PlanCell26_Title val='R01 OT-001 運用テストの実施' 
+Edit '#1164 工程' #PlanCell26_Phase val='OT' 
+Edit '#1164 担当者' #PlanCell26_Assignees val='fukuda-yuki' 
+Edit '#1164 見積工数' #PlanCell26_Estimate val='14h' 
+Edit '#1164 見込み残存工数' #PlanCell26_Remaining val='14h' 
+Edit '#1164 実績工数' #PlanCell26_Actual val='0h' 
+Edit '#1164 開始日 2027-04-21 (水)' #PlanCell26_Start val='4/21 (水)' 
+Edit '#1164 終了日 2027-04-22 (木)' #PlanCell26_End val='4/22 (木)' 
+Edit '#1164 見込終了 2027-04-22 (木)' #PlanCell26_ForecastEnd val='4/22 (木)' 
+Edit '#1164 先行' #PlanCell26_Predecessors val='#1683' 
+Group '#1164 2027-04-21 – 2027-04-22 完了 0%' #PlanBar26 
+ListItem 'I_kwDOUVKgA88AAAABVmrPhg' 
+Button '#1165 行を選択・移動' #PlanRowHandle27 
+Text '#1165' #PlanRowId27 
+Group '配下に期限超過 3、予定より遅れ 19' #PlanIndicator27 
+Edit '#1165 タスク名' #PlanCell27_Title val='R02 出荷データの外部連携' 
+Button '折りたたむ: R02 出荷データの外部連携' #PlanFold27 
+Text '#1165 工程  · 要求事項の行では編集できません' #PlanCell27_Phase 
+Text '#1165 担当者  · 要求事項の行では編集できません' #PlanCell27_Assignees 
+Text '#1165 見積工数 490h · 子タスクから集計（編集不可）' #PlanCell27_Estimate 
+Text '#1165 見込み残存工数 490h · 子タスクから集計（編集不可）' #PlanCell27_Remaining 
+Text '#1165 実績工数 0h · 子タスクから集計（編集不可）' #PlanCell27_Actual 
+Text '#1165 開始日 2026-10-13 (火) · 子タスクから集計（編集不可）' #PlanCell27_Start 
+Text '#1165 終了日 2027-04-22 (木) · 子タスクから集計（編集不可）' #PlanCell27_End 
+Text '#1165 見込終了 2027-04-22 (木) · 要求事項の行では編集できません' #PlanCell27_ForecastEnd 
+Text '#1165 先行  · 要求事項の行では編集できません' #PlanCell27_Predecessors 
+Group '#1165 2026-10-13 – 2027-04-22 集計 完了 0%' #PlanBar27 
+ListItem 'I_kwDOUVKgA88AAAABVmrPtA' 
+Button '#1166 行を選択・移動' #PlanRowHandle28 
+Text '#1166' #PlanRowId28 
+Group '期限超過: 終了日 10/15 を過ぎて未完了（見込み残存工数 23h）、見込終了は +9日' #PlanIndicator28 
+Edit '#1166 タスク名' #PlanCell28_Title val='R02 SA-001 現行業務の調査' 
+Edit '#1166 工程' #PlanCell28_Phase val='SA' 
+Edit '#1166 担当者' #PlanCell28_Assignees 
+Edit '#1166 見積工数' #PlanCell28_Estimate val='23h' 
+Edit '#1166 見込み残存工数' #PlanCell28_Remaining val='23h' 
+Edit '#1166 実績工数' #PlanCell28_Actual val='0h' 
+Edit '#1166 開始日 2026-10-13 (火)' #PlanCell28_Start val='10/13 (火)' 
+Edit '#1166 終了日 2026-10-15 (木)' #PlanCell28_End val='10/15 (木)' 
+Edit '#1166 見込終了 2026-10-28 (水) +9日（稼働日）' #PlanCell28_ForecastEnd val='10/28 (水) +9日' 
+Edit '#1166 先行' #PlanCell28_Predecessors 
+Group '#1166 2026-10-13 – 2026-10-15 完了 0% 期限超過 +9日' #PlanBar28 
+Text '+9日' #PlanLateLabel28 
+Pane '' #PlanSheetHorizontal @35,1267 1243x23
+ScrollBar '水平' #HorizontalScrollBar 
+Pane '' #PlanGanttHorizontal @1278,1267 1063x23
+ScrollBar '水平' #HorizontalScrollBar 
+Thumb 'シートとガントの幅' #PlanSheetDivider @1274,332 8x958
+Thumb '' @1274,332 8x958
+Text '要求事項 40 · タスク 1,000' #PlanStatusCounts @34,1314 166x20
+Button '期限超過 92' #PlanStatusOverdueFilter @215,1306 123x35
+Button '予定より遅れ 815' #PlanStatusLaterFilter @343,1306 156x35
+Button '遅れの原因 92' #PlanStatusCauseFilter @504,1306 136x35
+Text '実績工数' @1749,1314 60x20
+Text '見込み残存工数' @1862,1314 104x20
+Text '計画の終了日から見込終了までの遅れ' @2018,1314 235x20
+Text '非稼働日' @2306,1314 60x20

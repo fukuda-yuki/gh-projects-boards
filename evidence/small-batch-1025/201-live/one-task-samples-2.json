@@ -1,0 +1,26 @@
+[
+  {
+    "label": "4",
+    "value": "SS",
+    "done": true,
+    "metrics": "{\"utc\":\"2026-10-24T18:55:41.9132186+00:00\",\"elapsedSeconds\":14.5954682,\"Succeeded\":true,\"Error\":null,\"mutationBatchSizes\":[1],\"creationWaitSeconds\":0}"
+  },
+  {
+    "label": "5",
+    "value": "PS",
+    "done": true,
+    "metrics": "{\"utc\":\"2026-10-24T18:56:02.7600834+00:00\",\"elapsedSeconds\":15.9378476,\"Succeeded\":true,\"Error\":null,\"mutationBatchSizes\":[1],\"creationWaitSeconds\":0}"
+  },
+  {
+    "label": "6",
+    "value": "SS",
+    "done": true,
+    "metrics": "{\"utc\":\"2026-10-24T18:56:25.3618467+00:00\",\"elapsedSeconds\":17.8120343,\"Succeeded\":true,\"Error\":null,\"mutationBatchSizes\":[1],\"creationWaitSeconds\":0}"
+  },
+  {
+    "label": "restore-final",
+    "value": "SA",
+    "done": true,
+    "metrics": "{\"utc\":\"2026-10-24T18:56:49.3991152+00:00\",\"elapsedSeconds\":19.5970186,\"Succeeded\":true,\"Error\":null,\"mutationBatchSizes\":[1],\"creationWaitSeconds\":0}"
+  }
+]

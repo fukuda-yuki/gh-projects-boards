@@ -1,0 +1,84 @@
+{
+  "feature": "#228",
+  "commit": "a55d454e92daedfe285ba40fbab682901d4c3aa5",
+  "startedUtc": "2026-10-24T18:32:13.3143892+00:00",
+  "steps": [
+    "start the ordinary app with the offline evaluation data root at the owner size (2400x1350 physical = 1920x1080 effective)",
+    "connect and open the evaluation Project (40 requirements, 1,000 tasks)",
+    "park the selection near row 900: Ctrl+End then five PageUp",
+    "measure the old way: step the selection back to row 1 with PageUp",
+    "park again near row 900 (Ctrl+End, five PageUp), then press Ctrl+Home once",
+    "press Ctrl+End once: the last visible task row, not the empty new-task row",
+    "F5 ジャンプ: enter #524 and press Enter",
+    "F5 with an unknown name: a short reason stays in the input and the selection does not change",
+    "confirm no plan edit, Undo entry or unpublished change was produced"
+  ],
+  "checks": {
+    "the plan starts with zero unpublished tasks and an empty Undo history": {
+      "ok": true,
+      "detail": "未発行=0 undo=disabled"
+    },
+    "the sheet owns a selected cell before the key measurement": {
+      "ok": true,
+      "detail": "selection='#2 R01 SA-001 現行業務の調査'"
+    },
+    "the selection is parked on a far task row before the measurement": {
+      "ok": true,
+      "detail": "selection='#905 R35 IT-001 結合テスト仕様書の作成'"
+    },
+    "the old way reaches row 1 only after many page steps": {
+      "ok": true,
+      "detail": "pageUps=34 fromRow=905 selection='#1 R01 受注データの外部連携'"
+    },
+    "one Ctrl+Home moves the selection to the first visible row": {
+      "ok": true,
+      "detail": "selection='#1 R01 受注データの外部連携' parked='905'"
+    },
+    "the target cell keeps focus and the first row is realized": {
+      "ok": true,
+      "detail": "row1 realized=True"
+    },
+    "one Ctrl+End selects the last task row (ID 1040), not the new-task row": {
+      "ok": true,
+      "detail": "selection='#1040 R40 OT-001 運用テストの実施' newTaskVisible=True"
+    },
+    "F5 opens ジャンプ with keyboard focus in its input": {
+      "ok": true,
+      "detail": "no go-to input"
+    },
+    "Go To #524 selects that task row and its タスク名 cell": {
+      "ok": true,
+      "detail": "selection='#524 R21 SA-003 要求仕様書のレビュー'"
+    },
+    "an unknown name reports a reason and keeps the previous selection": {
+      "ok": true,
+      "detail": "feedback='#99999 はこの版にありません。' selection='#524 R21 SA-003 要求仕様書のレビュー'"
+    },
+    "the keys and Go To left no unpublished change and no Undo entry": {
+      "ok": true,
+      "detail": "未発行=0 undo=disabled"
+    }
+  },
+  "measurements": {
+    "before": {
+      "fromRow": 905,
+      "pageUpSteps": 34,
+      "reachedRow1": true,
+      "selection": "#1 R01 受注データの外部連携"
+    },
+    "afterCtrlHome": {
+      "fromRow": 905,
+      "chords": 1,
+      "selection": "#1 R01 受注データの外部連携"
+    },
+    "goTo": {
+      "actions": 3,
+      "target": "#524",
+      "selection": "#524 R21 SA-003 要求仕様書のレビュー"
+    }
+  },
+  "unverified": [
+    "Physical mouse wheel: the automation host cannot deliver wheel notches to the WinUI window reliably, so the before count uses PageUp steps (the #256 page move, already present before this change); the Issue audit counted about 30 wheel notches / a scrollbar drag for the same distance."
+  ],
+  "finishedUtc": "2026-10-24T18:33:27.7974082+00:00"
+}

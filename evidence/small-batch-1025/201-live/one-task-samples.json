@@ -1,0 +1,26 @@
+[
+  {
+    "label": "2",
+    "value": "PS",
+    "done": true,
+    "wallSeconds": 9.48,
+    "reviewSummary": "第2027.04版（fukuda-yuki / プロジェクト 3）に 1 タスクを発行します",
+    "metrics": "{\"utc\":\"2026-10-24T18:52:15.5800429+00:00\",\"elapsedSeconds\":9.1619385,\"Succeeded\":true,\"Error\":null,\"mutationBatchSizes\":[1],\"creationWaitSeconds\":0}"
+  },
+  {
+    "label": "3",
+    "value": "SS",
+    "done": true,
+    "wallSeconds": 11.25,
+    "reviewSummary": "第2027.04版（fukuda-yuki / プロジェクト 3）に 1 タスクを発行します",
+    "metrics": "{\"utc\":\"2026-10-24T18:52:31.1468342+00:00\",\"elapsedSeconds\":10.4472621,\"Succeeded\":true,\"Error\":null,\"mutationBatchSizes\":[1],\"creationWaitSeconds\":0}"
+  },
+  {
+    "label": "restore",
+    "value": "SA",
+    "done": true,
+    "wallSeconds": 12.65,
+    "reviewSummary": "第2027.04版（fukuda-yuki / プロジェクト 3）に 1 タスクを発行します",
+    "metrics": "{\"utc\":\"2026-10-24T18:52:49.047431+00:00\",\"elapsedSeconds\":12.320019,\"Succeeded\":true,\"Error\":null,\"mutationBatchSizes\":[1],\"creationWaitSeconds\":0}"
+  }
+]

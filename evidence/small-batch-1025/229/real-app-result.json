@@ -1,0 +1,88 @@
+{
+  "feature": "#229",
+  "commit": "a55d454e92daedfe285ba40fbab682901d4c3aa5",
+  "startedUtc": "2026-10-24T18:34:00.2844404+00:00",
+  "steps": [
+    "start ordinary app with isolated evaluation data root at the owner size (2400x1350 physical / 1920x1080 effective)",
+    "connect and open the evaluation Project (offline fake gh)",
+    "select the 開始日 cell of task 23 (one pointer action in the ordinary app)",
+    "type 11/1 into 開始日 and commit with Enter (typed-start commit)",
+    "the PMO chooses 「#N とのリンクを解除」: one ordinary cell operation",
+    "Undo once restores the link (one Undo step)",
+    "Undo a second time restores the original typed start edit"
+  ],
+  "checks": {
+    "target": {
+      "predecessor3": "#22",
+      "task3": "3/24 (水)"
+    },
+    "target task 23 is an unstarted task row with a predecessor and an editable start": {
+      "ok": true,
+      "detail": "start='3/24 (水)' predecessor='#22'"
+    },
+    "notice": {
+      "dismiss": "開始日の通知を閉じる",
+      "text": "開始日 11/1 は #22 の終了後のため 3/24 (水) になりました",
+      "action": "#22 とのリンクを解除"
+    },
+    "the notice appears at the commit and names the winning predecessor and the resulting date": {
+      "ok": true,
+      "detail": "notice='開始日 11/1 は #22 の終了後のため 3/24 (水) になりました'"
+    },
+    "the notice never names a row position": {
+      "ok": true,
+      "detail": "notice='開始日 11/1 は #22 の終了後のため 3/24 (水) になりました'"
+    },
+    "the unlink command names the same predecessor": {
+      "ok": true,
+      "detail": "action='#22 とのリンクを解除'"
+    },
+    "the close control is present and named": {
+      "ok": true,
+      "detail": "dismiss='開始日の通知を閉じる'"
+    },
+    "unlinked": {
+      "start": "11/1 (日)",
+      "predecessor": ""
+    },
+    "after unlinking, the typed start holds in the cell": {
+      "ok": true,
+      "detail": "start='11/1 (日)'"
+    },
+    "after unlinking, the predecessor is removed": {
+      "ok": true,
+      "detail": "predecessor=''"
+    },
+    "undoLink": {
+      "start": "3/24 (水)",
+      "predecessor": "#22"
+    },
+    "one Undo restores the removed link": {
+      "ok": true,
+      "detail": "predecessor='#22'"
+    },
+    "restored": {
+      "start": "3/24 (水)",
+      "predecessor": "#22"
+    },
+    "the second Undo returns the original start value": {
+      "ok": true,
+      "detail": "start='3/24 (水)' original='3/24 (水)'"
+    },
+    "the original predecessor link is present again": {
+      "ok": true,
+      "detail": "predecessor='#22' original='#22'"
+    },
+    "the plan is back to zero unpublished tasks (no plan edit was published)": {
+      "ok": true,
+      "detail": "未発行=0"
+    },
+    "Undo history is empty again after both undos": {
+      "ok": true,
+      "detail": "undo=disabled"
+    }
+  },
+  "shots": [],
+  "unverified": [],
+  "finishedUtc": "2026-10-24T18:34:19.4513644+00:00"
+}

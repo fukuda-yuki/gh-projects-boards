@@ -1,0 +1,86 @@
+{
+  "feature": "#225",
+  "commit": "a55d454e92daedfe285ba40fbab682901d4c3aa5",
+  "startedUtc": "2026-10-24T18:42:19.8554076+00:00",
+  "steps": [
+    "start the ordinary app with the offline evaluation data root (20 people) at the owner size",
+    "connect and open the evaluation Project",
+    "select the 担当者 cell of task 8 (one pointer action) and type \"per\": the candidate list opens while typing",
+    "press Down twice and Enter: the highlighted person commits the cell as one Undo step",
+    "apply that person to four tasks: select four 担当者 cells and press Ctrl+D",
+    "Undo once takes the four-task change back, leaving the single choice",
+    "add a second person after 「;」: F2, type the separator and take the first candidate",
+    "Escape closes the list first and a second Escape cancels the edit without changing the cell",
+    "Undo the remaining choice so the plan returns to its original state"
+  ],
+  "checks": {
+    "the plan starts with a known assignee and zero unpublished tasks": {
+      "ok": true,
+      "detail": "assignee='person-U1' 未発行=0 undo=disabled"
+    },
+    "typing opens the candidate list with the known people filtered from the document only": {
+      "ok": true,
+      "detail": "count=20 first=person-U1,person-U10,person-U11"
+    },
+    "the list shows the people matching the typed filter": {
+      "ok": true,
+      "detail": "names=person-U1,person-U10,person-U11,person-U12,person-U13,person-U14,person-U15,person-U16,person-U17,person-U18,person-U19,person-U2,person-U20,person-U3,person-U4,person-U5,person-U6,person-U7,person-U8,person-U9"
+    },
+    "the overlay inserts no line and moves no sheet row": {
+      "ok": true,
+      "detail": "before=576/611,646,681 open=576/611,646,681"
+    },
+    "one choice commits the selected login": {
+      "ok": true,
+      "detail": "assignee='person-U10'"
+    },
+    "the choice is one unpublished task and the list closes": {
+      "ok": true,
+      "detail": "未発行=1 popupOpen=False"
+    },
+    "one Ctrl+D puts the same person on four tasks as one operation": {
+      "ok": true,
+      "detail": "assignees=person-U10,person-U10,person-U10,person-U10 未発行=4"
+    },
+    "one Undo restores the three other assignees and keeps the single choice": {
+      "ok": true,
+      "detail": "assignees=person-U10,person-U1,person-U1,person-U1 未発行=1"
+    },
+    "a second person is added after the separator as one Undo step": {
+      "ok": true,
+      "detail": "display='person-U10 +1' 未発行=1"
+    },
+    "one Undo returns to the single chosen person": {
+      "ok": true,
+      "detail": "assignee='person-U10'"
+    },
+    "the first Escape closes the list, the second cancels the edit and the value is unchanged": {
+      "ok": true,
+      "detail": "open=True->False value='person-U10'/'person-U10'"
+    },
+    "the plan is back to the original assignee with zero unpublished tasks and no Undo history": {
+      "ok": true,
+      "detail": "assignee='person-U1' 未発行=0 undo=disabled"
+    }
+  },
+  "measurements": {
+    "candidateList": {
+      "count": 20,
+      "first": [
+        "person-U1",
+        "person-U10",
+        "person-U11"
+      ],
+      "height": 287
+    },
+    "onePersonOnFourTasks": {
+      "before": "5 actions: select the cell, type the full login from memory (~11 keys; a typo is rejected after Enter), Enter, select four cells, Ctrl+D",
+      "after": "5 actions: select the 担当者 cell, type the 3-character filter, choose from the list (down/down/Enter), select four cells, Ctrl+D; the person is recognised from the list, no login recall and no rejection loop"
+    }
+  },
+  "unverified": [
+    "Physical Japanese IME composition while filtering is not exercised; the composition gate is covered by the hosted UI cases.",
+    "Native pointer tap on a candidate row is not exercised; keyboard choice and the shared choose path are exercised here."
+  ],
+  "finishedUtc": "2026-10-24T18:43:03.3663497+00:00"
+}
