@@ -398,6 +398,14 @@ internal sealed class PlanSheetNavigationHostedTests
         await SheetNativeInput.Press(VirtualKey.Home, VirtualKey.Shift);
         await Ui.Until(() => sheet.IsSelected("I1", PlanField.Title));
         await AssertFocused("I1", PlanField.Title);
+        // Ctrl+← on a parent row's title keeps its fold meaning; Shift+Ctrl+→ extends instead.
+        await SelectCell("I997", PlanField.Title);
+        await SheetNativeInput.Press(VirtualKey.Left, VirtualKey.Control);
+        await Ui.Until(() => sheet.IsFolded("I997"));
+        await Ui.Run(() => Assert.That(sheet.IsSelectedRow("I997"), Is.True));
+        await SheetNativeInput.Press(VirtualKey.Right, VirtualKey.Control, VirtualKey.Shift);
+        await Ui.Until(() => sheet.IsSelected("I997", LastField));
+        await Ui.Run(() => Assert.That(sheet.IsFolded("I997"), Is.True, "Shift+Ctrl+→ extends the selection instead of folding."));
         AssertPlanUnchanged(before);
     }
 
@@ -407,7 +415,9 @@ internal sealed class PlanSheetNavigationHostedTests
         var before = CapturePlan();
         await SelectCell("I500", PlanField.Title);
         await SheetNativeInput.ActivateWindow();
-        await SheetNativeInput.Press(VirtualKey.F5);
+        // The F5 handler opens ジャンプ before the key-up is routed, so the key-up lands in the popup:
+        // send the chord without waiting for a sheet-root key-up.
+        SheetNativeInput.Key(VirtualKey.F5, true); SheetNativeInput.Key(VirtualKey.F5, false);
         await Ui.Ready<TextBox>("PlanGoToInput");
         await Ui.Until(() => Ui.Find<TextBox>("PlanGoToInput").FocusState != FocusState.Unfocused);
         await Ui.Run(() => Assert.That(AutomationProperties.GetName(Ui.Find<TextBox>("PlanGoToInput")), Is.EqualTo("ジャンプ先のタスク名")));
@@ -416,7 +426,7 @@ internal sealed class PlanSheetNavigationHostedTests
         await Ui.Until(() => Ui.Popup<TextBox>("PlanGoToInput") is null);
         await Ui.Until(() => Focused("I500", PlanField.Title));
         // F5, a name and Enter move to that task's title cell.
-        await SheetNativeInput.Press(VirtualKey.F5);
+        SheetNativeInput.Key(VirtualKey.F5, true); SheetNativeInput.Key(VirtualKey.F5, false);
         await Ui.Ready<TextBox>("PlanGoToInput");
         await Ui.Until(() => Ui.Find<TextBox>("PlanGoToInput").FocusState != FocusState.Unfocused);
         await Ui.Run(() => Ui.Find<TextBox>("PlanGoToInput").Text = "#750");
@@ -424,7 +434,7 @@ internal sealed class PlanSheetNavigationHostedTests
         await Ui.Until(() => Ui.Popup<TextBox>("PlanGoToInput") is null);
         await Ui.Until(() => sheet.IsSelectedRow("I750") && Focused("I750", PlanField.Title));
         // An unknown name keeps the input open with its reason and changes nothing.
-        await SheetNativeInput.Press(VirtualKey.F5);
+        SheetNativeInput.Key(VirtualKey.F5, true); SheetNativeInput.Key(VirtualKey.F5, false);
         await Ui.Ready<TextBox>("PlanGoToInput");
         await Ui.Run(() => Ui.Find<TextBox>("PlanGoToInput").Text = "#1001");
         SheetNativeInput.Key(VirtualKey.Enter, true); SheetNativeInput.Key(VirtualKey.Enter, false);
