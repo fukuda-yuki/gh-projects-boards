@@ -89,15 +89,7 @@ internal static class PlanPeople
                     task.Start.Value is null || task.End.Value is null ? "日程が未入力" : null;
                 if (reason is null && task.PlannedHours is { } daily) allocations[task.Input.Identity] = daily;
                 else if (reason is null && task.Remaining == 0) allocations[task.Input.Identity] = new Dictionary<DateOnly, decimal>();
-                else if (reason is null) {
-                    var days = Days(task.Start.Value!.Value, task.End.Value!.Value).Where(Working).ToArray();
-                    if (days.Length == 0) reason = "期間内に稼働日なし";
-                    else {
-                        var values = days.ToDictionary(d => d, _ => task.Remaining!.Value / days.Length);
-                        values[days[^1]] += task.Remaining!.Value - values.Values.Sum();
-                        allocations[task.Input.Identity] = values;
-                    }
-                }
+                else reason ??= "日程が未入力";
                 if (reason is not null) { missing.Add(reason); unallocated.Add(task.Input.Identity); }
             }
             var dailyLoads = person is null ? [] : allocations

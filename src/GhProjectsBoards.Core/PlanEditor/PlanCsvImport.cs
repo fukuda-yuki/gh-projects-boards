@@ -15,7 +15,7 @@ internal sealed record PlanCsvPreview(ImmutableArray<PlanCsvError> Errors, Inser
 
 internal static class PlanCsvImport
 {
-    private static readonly string[] Headers = ["キー", "タイトル", "見積", "担当者", "先行タスク", "親", "開始日指定", "リポジトリ"];
+    private static readonly string[] Headers = ["キー", "タイトル", "見積", "担当者", "先行タスク", "親", "開始日", "リポジトリ"];
     public static PlanCsvFile Read(byte[] bytes)
     {
         var hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
@@ -51,7 +51,7 @@ internal static class PlanCsvImport
                 var values = parser.ReadFields()!;
                 if (values.Length != headers.Length) { errors.Add(new(line, "列数が見出しと一致しません。")); continue; }
                 string Get(string header) { var index = Array.IndexOf(headers, header); return index < 0 ? "" : values[index].Trim(); }
-                rows.Add(new(line, Get("キー"), Get("タイトル"), Get("見積"), Get("担当者"), Get("先行タスク"), Get("親"), Get("開始日指定"), Get("リポジトリ")));
+                rows.Add(new(line, Get("キー"), Get("タイトル"), Get("見積"), Get("担当者"), Get("先行タスク"), Get("親"), Get("開始日"), Get("リポジトリ")));
                 if (rows.Count > 10_000) { errors.Add(new(line, "タスクは10,000行以内にしてください。")); break; }
             }
         }
@@ -95,7 +95,7 @@ internal static class PlanCsvImport
             DateOnly? start = null;
             if (source.Start.Length > 0)
             {
-                if (!DateOnly.TryParseExact(source.Start, ["yyyy-MM-dd", "yyyy/M/d", "yyyy/MM/dd", "yyyy/M/dd", "yyyy/MM/d"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)) Error("開始日指定はyyyy-MM-ddまたはyyyy/M/dにしてください。");
+                if (!DateOnly.TryParseExact(source.Start, ["yyyy-MM-dd", "yyyy/M/d", "yyyy/MM/dd", "yyyy/M/dd", "yyyy/MM/d"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)) Error("開始日はyyyy-MM-ddまたはyyyy/M/dにしてください。");
                 else start = date;
             }
             var assignees = ImmutableArray.CreateBuilder<string>();
@@ -120,7 +120,7 @@ internal static class PlanCsvImport
             var predecessors = Split(source.Predecessors).Select(Resolve).Where(id => id is not null).Cast<string>().Distinct().ToImmutableArray();
             var parent = Resolve(source.Parent);
             if (keys.TryGetValue(source.Key, out var identity)) additions.Add(new(identity, source.Title, catalog?.Name ?? repository)
-            { Estimate = estimate, StartNoEarlierThan = start, Assignees = assignees.Distinct().ToImmutableArray(),
+            { Estimate = estimate, Start = start, Assignees = assignees.Distinct().ToImmutableArray(),
                 Parent = parent, Predecessors = predecessors, CsvSourceHash = file.Hash });
         }
         if (errors.Count > 0) return Invalid();

@@ -17,7 +17,7 @@ internal sealed record AssistProposal(string Id, long Revision, IReadOnlyList<As
     public DateOnly StatusDate { get; init; }
     public const string StaleMessage = "計画が変わったため、この提案は適用できません。もう一度依頼してください。";
     internal static readonly string[] EditableFields = [PlanField.Assignees, PlanField.Estimate, PlanField.Actual, PlanField.Remaining,
-        PlanField.Phase, PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Start, PlanField.End, PlanField.Predecessors, PlanField.Title];
+        PlanField.Phase, PlanField.Start, PlanField.End, PlanField.Predecessors, PlanField.Title];
     public static AssistProposalResult Create(PlanDocument document, long revision, DateOnly today, IReadOnlyList<AssistEdit> edits)
     {
         try {
@@ -55,8 +55,7 @@ internal sealed record AssistProposal(string Id, long Revision, IReadOnlyList<As
         if (value.ValueKind == JsonValueKind.Null) return null;
         switch (edit.Field) {
             case PlanField.Estimate: case PlanField.Actual: case PlanField.Remaining: return value.GetDecimal();
-            case PlanField.Fixed: return value.GetBoolean();
-            case PlanField.Start: case PlanField.End: case PlanField.StartNoEarlierThan:
+            case PlanField.Start: case PlanField.End:
                 return DateOnly.ParseExact(value.GetString()!, "yyyy-MM-dd", CultureInfo.InvariantCulture);
             case PlanField.Assignees: case PlanField.Predecessors:
                 var ids = value.EnumerateArray().Select(v => v.GetString() ?? throw new ArgumentException("空の識別子は指定できません。")).ToImmutableArray();
@@ -79,8 +78,8 @@ internal sealed record AssistProposal(string Id, long Revision, IReadOnlyList<As
         PlanField.Predecessors => string.Join(", ", row.Predecessors.Select(id => document.State.Rows.FirstOrDefault(r => r.Identity == id) is { } predecessor
             ? (document.State.Rows.IndexOf(predecessor) + 1).ToString(CultureInfo.InvariantCulture) : "計画外")),
         PlanField.Estimate => Number(row.Estimate), PlanField.Actual => Number(row.Actual), PlanField.Remaining => Number(row.Remaining),
-        PlanField.Start => Date(row.Start), PlanField.End => Date(row.End), PlanField.StartNoEarlierThan => Date(row.StartNoEarlierThan),
-        PlanField.Fixed => row.Fixed ? "固定" : "", PlanField.Phase => row.Phase ?? "", PlanField.Title => row.Title,
+        PlanField.Start => Date(row.Start), PlanField.End => Date(row.End),
+        PlanField.Phase => row.Phase ?? "", PlanField.Title => row.Title,
         _ => throw new ArgumentException("アシストではこの項目を変更できません。")
     };
 }

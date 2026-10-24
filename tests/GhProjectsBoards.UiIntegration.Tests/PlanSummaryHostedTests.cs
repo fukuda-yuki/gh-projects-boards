@@ -59,13 +59,14 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task SummaryFinishFollowsTheForecastSchedule()
     {
         readDay = new(2026, 10, 5);
-        // A fixed task keeps its retained plan end 10/7, but 40h of remaining work from the 基準日 forecasts
-        // its finish on 10/9: 完了見込 and 差 must follow the forecast schedule, not the plan end (#236 M2).
-        var row = new PlanRow("I1", "Fixed late", "acme/repo") { Estimate = 40, Remaining = 40, Start = readDay, End = readDay.AddDays(2), Fixed = true };
-        FakePlanEditor.Save(root, new([new(row, "", true)], 2) { AddedFields = [nameof(PlanField.Fixed)] });
-        await Open("Fixed late");
+        // A typed end keeps the plan end 10/7, but 40h of remaining work from the 基準日 forecasts its finish
+        // on 10/9: 完了見込 and 差 must follow the forecast schedule, not the plan end (#236 M2).
+        var row = new PlanRow("I1", "Late task", "acme/repo") { Estimate = 40, Remaining = 40, Start = readDay, End = readDay.AddDays(2) };
+        FakePlanEditor.Save(root, new([new(row, "", true)], 2));
+        await Open("Late task");
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             ProjectStart = readDay, ProjectEnd = new(2026, 10, 30), StatusDate = readDay }), readDay);
+        await workspace.Session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.End, readDay.AddDays(2))]), readDay);
         await Ui.Run(() => Ui.Click("PlanShowSummary"));
         await Ui.Ready<TextBlock>("SummaryFinish");
         await Ui.Run(() => {
@@ -81,9 +82,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         readDay = new(2026, 10, 5);
         // An inserted row with no title, effort or dates is ordinary mid-edit state; the summary leaves it out
         // and counts it instead of turning 完了見込 into 「—」 or the 担当者なし line into 「残 —（…）h」.
-        var row = new PlanRow("I1", "Fixed late", "acme/repo") { Estimate = 40, Remaining = 40, Start = readDay, End = readDay.AddDays(2), Fixed = true };
-        FakePlanEditor.Save(root, new([new(row, "", true)], 2) { AddedFields = [nameof(PlanField.Fixed)] });
-        await Open("Fixed late");
+        var row = new PlanRow("I1", "Late task", "acme/repo") { Estimate = 40, Remaining = 40, Start = readDay, End = readDay.AddDays(2) };
+        FakePlanEditor.Save(root, new([new(row, "", true)], 2));
+        await Open("Late task");
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             ProjectStart = readDay, ProjectEnd = new(2026, 10, 30), StatusDate = readDay }), readDay);
         await workspace.Session.Execute(new InsertPlanRows([PlanRow.New("", "acme/repo")]), readDay);

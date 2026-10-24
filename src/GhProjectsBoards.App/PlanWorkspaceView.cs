@@ -846,13 +846,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 };
                 settings.Children.Add(combo);
             }
-            if (!session.Document.Baseline.Columns.Any(c => c.Name == "開始日指定" && c.DataType == "DATE") ||
-                !session.Document.Baseline.Columns.Any(c => c.Name == "日程固定" && c.DataType == "SINGLE_SELECT"))
-                settings.Children.Add(Button("「開始日指定」「日程固定」を GitHub に作成", "PlanAddFields", async () => {
-                var result = await new PlanPublisher(workspace.Service!, workspace.Context!).AddSchedulingFieldsAsync(session, Today, OperationToken);
-                if (!result.Succeeded) throw new InvalidOperationException(result.Error);
-                await workspace.Refresh(OperationToken); RenderTasks(); RenderSettings();
-            }));
             settings.Children.Add(SettingsHeading("表示"));
             // #236 part B: each lateness mark can be hidden. The sets, the counts and the filters stay.
             settings.Children.Add(MarkSwitch("期限超過の印", "PlanShowOverdueMark", value.ShowOverdueMark,

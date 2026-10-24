@@ -66,20 +66,20 @@ internal sealed class PlanEditorSchedulingTests
 
     [TestCase("2026-10-01", null, "2026-10-05", "基準日")]
     [TestCase("2026-10-06", null, "2026-10-06", "プロジェクト開始日")]
-    [TestCase("2026-10-06", "2026-10-07", "2026-10-07", "開始日指定 10/7")]
-    [TestCase("2026-10-05", "2026-10-05", "2026-10-05", "開始日指定 10/5")]
-    public void LatestDayConstraintSetsStartAndDeterministicReason(string project, string? specified, string start, string reason)
+    [TestCase("2026-10-06", "2026-10-07", "2026-10-07", "開始日を維持")]
+    [TestCase("2026-10-05", "2026-10-05", "2026-10-05", "プロジェクト開始日")]
+    public void LatestDayConstraintSetsStartAndDeterministicReason(string project, string? planned, string start, string reason)
     {
-        var result = Run(Task() with { StartNoEarlierThan = specified is null ? null : D(specified) }, Settings with { ProjectStart = D(project) });
+        var result = Run(Task() with { Start = planned is null ? null : D(planned) }, Settings with { ProjectStart = D(project) });
         Dates(result, start, start);
         Assert.That(result.StartReason, Is.EqualTo(reason));
     }
 
     [TestCase("2026-10-05", "2026-10-06", "1 の終了後")]
-    [TestCase("2026-10-07", "2026-10-07", "開始日指定 10/7")]
-    public void SpecifiedStartCompetesWithPredecessor(string specified, string expected, string reason)
+    [TestCase("2026-10-07", "2026-10-07", "開始日を維持")]
+    public void PlanStartCompetesWithPredecessor(string planned, string expected, string reason)
     {
-        var result = Calculate([Task(), Task(2) with { Predecessors = ["issue:1"], StartNoEarlierThan = D(specified) }], Settings)[1];
+        var result = Calculate([Task(), Task(2) with { Predecessors = ["issue:1"], Start = D(planned) }], Settings)[1];
         Dates(result, expected, expected);
         Assert.That(result.StartReason, Is.EqualTo(reason));
     }
@@ -138,52 +138,40 @@ internal sealed class PlanEditorSchedulingTests
     }
 
     [Test]
-    public void TypedDatesSetConstraintsAndKeepGitHubBaseline()
+    public void TypedDatesAreThePlanDatesAndKeepGitHubBaseline()
     {
         var task = Task() with { GitHubStart = Monday, GitHubEnd = Monday };
         var start = PlanEdits.Start(task, Monday.AddDays(1));
-        Assert.That(start.StartNoEarlierThan, Is.EqualTo(Monday.AddDays(1)));
+        Assert.That(start.Start, Is.EqualTo(Monday.AddDays(1)));
         var end = PlanEdits.End(start, Monday.AddDays(2));
-        Assert.That(end.Fixed, Is.True);
+        Assert.That(end.End, Is.EqualTo(Monday.AddDays(2)));
         var result = Run(end);
         Dates(result, "2026-10-06", "2026-10-07");
-        Assert.That(result.StartReason, Is.EqualTo("日程固定"));
+        Assert.That(result.StartReason, Is.EqualTo("開始日を維持"));
         Assert.That(result.Start.DiffersFromGitHub && result.End.DiffersFromGitHub, Is.True);
-        Assert.That(PlanEdits.Start(end, null).StartNoEarlierThan, Is.Null);
-        Assert.That(PlanEdits.End(end, null).Fixed, Is.True);
+        Assert.That(PlanEdits.Start(end, null).Start, Is.Null);
+        Assert.That(PlanEdits.End(end, null).End, Is.Null);
         Assert.That(end.GitHubEnd, Is.EqualTo(Monday));
     }
 
-    [TestCase(false, "2026-10-06", false)]
-    [TestCase(true, "2026-10-06", false)]
-    [TestCase(false, "2026-10-05", true)]
-    [TestCase(true, "2026-10-05", true)]
-    public void KeptStartWarnsOnlyBeforePredecessorEndDayWithoutMovingDates(bool fixedDates, string start, bool warning)
+    [TestCase("2026-10-06", false)]
+    [TestCase("2026-10-05", true)]
+    public void KeptStartWarnsOnlyBeforePredecessorEndDayWithoutMovingDates(string start, bool warning)
     {
         var predecessor = Task() with { Closed = true, Start = Monday, CloseDate = Monday.AddDays(1) };
         var successor = Task(2) with
         {
-            Fixed = fixedDates, Actual = fixedDates ? 0 : 4, Remaining = 4,
+            Actual = 4, Remaining = 4,
             Start = D(start), End = Monday.AddDays(2), Predecessors = [predecessor.Identity]
         };
         var results = Calculate([predecessor, successor], Settings with { StatusDate = Monday.AddDays(2) });
         Dates(results[0], "2026-10-05", "2026-10-06");
-        // A 日程固定 successor keeps its typed pair. An automatic in-progress one keeps its own start too
-        // (rule 6), and the plan end it already stores survives the calculation (#236).
+        // An in-progress successor keeps its own start (rule 5), and the plan end it already stores
+        // survives the calculation (#236).
         Dates(results[1], start, "2026-10-07");
         Assert.That(results[1].Start.Origin, Is.EqualTo(DateOrigin.Kept));
-        Assert.That(results[1].End.Origin, Is.EqualTo(fixedDates ? DateOrigin.Kept : DateOrigin.Calculated));
+        Assert.That(results[1].End.Origin, Is.EqualTo(DateOrigin.Calculated));
         Assert.That(results[1].Warnings.Contains("先行タスクより前に開始"), Is.EqualTo(warning));
-    }
-
-    [TestCase(false)]
-    [TestCase(true)]
-    public void FixedDatesWarnAboutConflictOrMissingDatesWithoutMoving(bool missing)
-    {
-        var results = Calculate([Task(work: 16), Task(2) with { Fixed = true, Start = Monday, End = missing ? null : Monday, Predecessors = ["issue:1"] }], Settings);
-        Dates(results[1], "2026-10-05", missing ? null : "2026-10-05");
-        Assert.That(results[1].Warnings, Does.Contain("先行タスクより前に開始"));
-        Assert.That(results[1].Warnings.Contains("日程固定の日付不足"), Is.EqualTo(missing));
     }
 
     [TestCase(0, false)]
@@ -322,7 +310,7 @@ internal sealed class PlanEditorSchedulingTests
     {
         var result = Calculate([Task(work: 40), Task(2, 4) with
         {
-            Actual = 2, Start = Monday.AddDays(-3), StartNoEarlierThan = Monday.AddDays(10), Predecessors = ["issue:1"]
+            Actual = 2, Start = Monday.AddDays(-3), Predecessors = ["issue:1"]
         }], Settings with { ProjectStart = Monday.AddDays(2) })[1];
         Dates(result, "2026-10-02", "2026-10-02");
         Assert.That(result.Warnings, Does.Contain("先行タスクより前に開始"));
@@ -331,15 +319,15 @@ internal sealed class PlanEditorSchedulingTests
     [Test]
     public void MissingProgressStartUsesAllEarliestConstraints()
     {
-        var result = Run(Task() with { Actual = 2, Remaining = 4, StartNoEarlierThan = Monday.AddDays(2) });
+        var result = Run(Task() with { Actual = 2, Remaining = 4 }, Settings with { ProjectStart = Monday.AddDays(2) });
         Dates(result, "2026-10-07", "2026-10-07");
-        Assert.That(result.StartReason, Is.EqualTo("開始日指定 10/7"));
+        Assert.That(result.StartReason, Is.EqualTo("プロジェクト開始日"));
     }
 
     [Test]
-    public void ClosedIssueWinsOverFixedAndZeroPlannedWork()
+    public void ClosedIssueWinsOverZeroPlannedWork()
     {
-        var result = Run(PlanEdits.Estimate(Task(work: null) with { Fixed = true, Closed = true }, 0));
+        var result = Run(PlanEdits.Estimate(Task(work: null) with { Closed = true }, 0));
         Dates(result, null, null);
         Assert.That(result.StartReason, Is.EqualTo("完了"));
         Assert.That(result.Warnings, Does.Contain("完了タスクの終了日なし"));
@@ -357,7 +345,7 @@ internal sealed class PlanEditorSchedulingTests
     [Test]
     public void EqualPredecessorsUseSmallestRowIdBeforeOtherEqualConstraints()
     {
-        var rows = new[] { Task(20, 0), Task(10, 0), Task(30) with { Predecessors = ["issue:20", "issue:10", "issue:10"], StartNoEarlierThan = Monday } };
+        var rows = new[] { Task(20, 0), Task(10, 0), Task(30) with { Predecessors = ["issue:20", "issue:10", "issue:10"], Start = Monday } };
         var result = Calculate(rows, Settings with { ProjectStart = Monday })[2];
         Assert.That(result.StartReason, Is.EqualTo("10 の終了後"));
         Dates(result, "2026-10-05", "2026-10-05");
@@ -366,7 +354,7 @@ internal sealed class PlanEditorSchedulingTests
     [Test]
     public void SummaryRetainsInputsAndLastChildRemovalRestoresLeafMeaning()
     {
-        var parent = Task() with { Fixed = true, Start = Monday.AddDays(2), End = Monday.AddDays(3), Remaining = 16 };
+        var parent = Task() with { Start = Monday.AddDays(2), End = Monday.AddDays(3), Remaining = 16 };
         var summary = Calculate([parent, Task(2, 4) with { Parent = parent.Identity }], Settings)[0];
         Dates(summary, "2026-10-05", "2026-10-05");
         Assert.That(summary.Input, Is.EqualTo(parent));
@@ -374,9 +362,9 @@ internal sealed class PlanEditorSchedulingTests
     }
 
     [Test]
-    public void InheritedPredecessorsWarnFixedDescendantsWithoutMovingThem()
+    public void InheritedPredecessorsWarnInProgressDescendantsWithoutMovingThem()
     {
-        var result = Calculate([Task(work: 16), Task(2) with { Predecessors = ["issue:1"] }, Task(3) with { Parent = "issue:2", Fixed = true, Start = Monday, End = Monday }], Settings);
+        var result = Calculate([Task(work: 16), Task(2) with { Predecessors = ["issue:1"] }, Task(3) with { Parent = "issue:2", Actual = 2, Remaining = 4, Start = Monday, End = Monday }], Settings);
         Dates(result[2], "2026-10-05", "2026-10-05");
         Assert.That(result[2].Warnings, Does.Contain("先行タスクより前に開始"));
     }
@@ -441,7 +429,7 @@ internal sealed class PlanEditorSchedulingTests
     [TestCase("Estimate", "工数が負の値")]
     [TestCase("Remaining", "工数が負の値")]
     [TestCase("Actual", "工数が負の値")]
-    [TestCase("Fixed dates", "開始日が終了日より後")]
+    [TestCase("Inverted dates", "開始日が終了日より後")]
     [TestCase("Overflow", "日程が日付の範囲外")]
     public void BadRefreshedRowKeepsGitHubDatesAndCannotMoveSuccessors(string defect, string warning)
     {
@@ -451,7 +439,7 @@ internal sealed class PlanEditorSchedulingTests
             "Estimate" => input with { Estimate = -1 },
             "Remaining" => input with { Remaining = -1 },
             "Actual" => input with { Actual = -1 },
-            "Fixed dates" => input with { Fixed = true, Start = Monday.AddDays(1) },
+            "Inverted dates" => input with { Estimate = null, Start = Monday.AddDays(1) },
             _ => input with { Estimate = decimal.MaxValue }
         };
         var result = Calculate([input, Task(2) with { Predecessors = [input.Identity] }, Task(3)], Settings);
@@ -469,7 +457,7 @@ internal sealed class PlanEditorSchedulingTests
     [Test]
     public void InvertedGitHubDatesStayVisibleAsReceivedWithoutDependencyEndpoints()
     {
-        var bad = Task() with { Fixed = true, Start = Monday.AddDays(3), End = Monday, GitHubStart = Monday.AddDays(3), GitHubEnd = Monday };
+        var bad = Task(work: null) with { Start = Monday.AddDays(3), End = Monday, GitHubStart = Monday.AddDays(3), GitHubEnd = Monday };
         var result = Calculate([bad, Task(2) with { Predecessors = [bad.Identity] }], Settings);
         Dates(result[0], "2026-10-08", "2026-10-05");
         Assert.That(result[0].Warnings, Does.Contain("開始日が終了日より後"));
@@ -534,11 +522,10 @@ internal sealed class PlanEditorSchedulingTests
     [TestCase(true), TestCase(false)]
     public void InvertedTypedDatePairIsRefusedWithoutChangingInput(bool start)
     {
-        var original = Task() with { Start = Monday, End = Monday.AddDays(1), Fixed = start };
+        var original = Task(work: null) with { Start = Monday, End = Monday.AddDays(1) };
         Assert.Throws<ArgumentException>(() => { _ = start ? PlanEdits.Start(original, Monday.AddDays(2)) : PlanEdits.End(original, Monday.AddDays(-1)); });
         Assert.That(original.Start, Is.EqualTo(Monday));
         Assert.That(original.End, Is.EqualTo(Monday.AddDays(1)));
-        Assert.That(original.Fixed, Is.EqualTo(start));
     }
 
     [Test]
@@ -604,7 +591,7 @@ internal sealed class PlanEditorSchedulingTests
         var edited = PlanEdits.Start(input, Monday.AddDays(1));
         var result = Run(edited);
         Dates(result, "2026-10-06", "2026-10-06");
-        Assert.That(result.StartReason, Is.EqualTo("開始日指定 10/6"));
+        Assert.That(result.StartReason, Is.EqualTo("開始日を維持"));
         Assert.That(result.End.Origin, Is.EqualTo(DateOrigin.Calculated));
         Assert.That(result.Warnings, Is.Empty);
     }

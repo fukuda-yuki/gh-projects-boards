@@ -11,7 +11,7 @@ internal static class PlanOperations
         Parent = r.Parent, Predecessors = r.Predecessors.ToArray(), Assignees = r.Assignees.ToArray(),
         Estimate = r.Estimate, Remaining = r.Remaining, Actual = r.Actual, Closed = r.Closed, CloseDate = r.CloseDate,
         Cancelled = r.Cancelled, Removed = r.Removed,
-        Start = r.Start, End = r.End, StartNoEarlierThan = r.StartNoEarlierThan, Fixed = r.Fixed
+        Start = r.Start, End = r.End
     };
     internal static bool NeedsProgressDate(PlanRow before, PlanRow current, string field)
     {
@@ -30,8 +30,6 @@ internal static class PlanOperations
         return document.State.Rows.Select(r => !summaries.Contains(r.Identity) ? r : r with {
             Assignees = baseline.GetValueOrDefault(r.Identity)?.Assignees ?? [],
             Predecessors = baseline.GetValueOrDefault(r.Identity)?.Predecessors ?? [],
-            StartNoEarlierThan = baseline.GetValueOrDefault(r.Identity)?.StartNoEarlierThan,
-            Fixed = baseline.GetValueOrDefault(r.Identity)?.Fixed ?? false,
             Status = baseline.GetValueOrDefault(r.Identity)?.Status,
             ExtraValues = baseline.GetValueOrDefault(r.Identity)?.ExtraValues ?? ImmutableDictionary<string, PlanExtraValue>.Empty,
             Labels = baseline.GetValueOrDefault(r.Identity)?.Labels ?? [],
@@ -89,7 +87,7 @@ internal static class PlanOperations
         foreach (var c in s.Columns)
         {
             var type = c.Role switch { PlanField.Estimate or PlanField.Remaining or PlanField.Actual => "NUMBER",
-                PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan => "DATE", PlanField.Fixed or PlanField.Phase => "SINGLE_SELECT", _ => null };
+                PlanField.Start or PlanField.End => "DATE", PlanField.Phase => "SINGLE_SELECT", _ => null };
             Require(type is not null && c.DataType == type && !string.IsNullOrWhiteSpace(c.FieldId) && !string.IsNullOrWhiteSpace(c.Name), "列の役割、識別子または型が不正です。");
         }
         if (s.ImportedHolidays is { } h)
@@ -144,6 +142,7 @@ internal static class PlanOperations
         var byId = rows.ToDictionary(r => r.Identity);
         // What a PMO edit reschedules (#236): the edited task, its transitive successors and the roll-ups.
         var rescheduled = new HashSet<string>(StringComparer.Ordinal);
+        var typedEnds = new HashSet<string>(StringComparer.Ordinal);
         var rescheduleAll = false;
         PlanOperationKind kind;
         // The row the PMO selected and the sibling it would land under. Both are named by a refusal.
@@ -185,6 +184,7 @@ internal static class PlanOperations
                         throw new ArgumentException(reason);
                     if (PlanSheetColumns.IsExtra(c.Field) && PlanExtraEditing.ReadOnlyReason(d, byId[c.Identity], c.Field) is { } unavailable) throw new ArgumentException(unavailable);
                     if (ScheduleFields.Contains(c.Field)) rescheduled.Add(c.Identity);
+                    if (c.Field == PlanField.End && c.Value is not null) typedEnds.Add(c.Identity);
                     var value = c.Field is PlanField.Phase or PlanField.MilestoneTitle ? PlanSheetEditing.Parse(d, c.Field, String(c.Value) ?? "", today, c.Identity)
                         : c.Field == PlanField.Labels ? PlanSheetEditing.Parse(d, c.Field, string.Join(",", Ids(c.Value)), today, c.Identity) : c.Value;
                     byId[c.Identity] = PlanSheetColumns.IsExtra(c.Field)
@@ -203,8 +203,9 @@ internal static class PlanOperations
                     byId[group.Key] = edited;
                     var task = TaskInput(byId[group.Key]);
                     var previous = TaskInput(priorRow);
-                    var validatePair = group.Any(c => c.Field is PlanField.Start or PlanField.End or PlanField.Fixed) || !previous.KeepsDates && task.KeepsDates;
-                    Require(!validatePair || !task.KeepsDates || !(task.KeptDates.Start > task.KeptDates.End), "終了日は開始日以降にしてください。");
+                    var validatePair = (group.Any(c => c.Field is PlanField.Start or PlanField.End) || !previous.KeepsDates) && task.KeepsDates
+                        || typedEnds.Contains(group.Key);
+                    Require(!validatePair || !(task.KeptDates.Start > task.KeptDates.End), "終了日は開始日以降にしてください。");
                 }
                 rows = rows.Select(r => byId[r.Identity]).ToList();
                 break;
@@ -224,6 +225,7 @@ internal static class PlanOperations
                 Require(index >= 0, "挿入先がありません。");
                 var additions = insert.Rows.Select(r => r with { Repository = r.Repository.Length == 0 ? state.Settings.DefaultRepository ?? "" : r.Repository }).ToArray();
                 rescheduled.UnionWith(additions.Select(r => r.Identity));
+                typedEnds.UnionWith(additions.Where(r => r.End is not null).Select(r => r.Identity));
                 Require(additions.All(r => IsLocal(r.Identity) && !(r.Estimate < 0 || r.Remaining < 0 || r.Actual < 0) && (!TaskInput(r).KeepsDates || !(TaskInput(r).KeptDates.Start > TaskInput(r).KeptDates.End))), "新規行の識別子、工数または日付が不正です。");
                 if (kind == PlanOperationKind.CsvImport) rows = new PlanOutline(state.Rows).Import([.. additions]).ToList();
                 else {
@@ -327,7 +329,7 @@ internal static class PlanOperations
         {
             // Reschedule runs the scheduler, which raises a cycle itself, so an indent that creates one must
             // be translated here and not only in ValidateDocument (#241).
-            state = Reschedule(d, state, rescheduled, rescheduleAll, today);
+            state = Reschedule(d, state, rescheduled, typedEnds, rescheduleAll, today);
             ValidateDocument(d with { State = state }, today);
         }
         catch (PlanCycleException cycle) when (indentRefusal is not null)
@@ -342,12 +344,14 @@ internal static class PlanOperations
     // reaches the edited task, its transitive successors and the summary roll-ups (#236).
     private static readonly HashSet<string> ScheduleFields = new(StringComparer.Ordinal)
         { PlanField.Start, PlanField.End, PlanField.Estimate, PlanField.Remaining, PlanField.Actual,
-          PlanField.Predecessors, PlanField.Fixed, PlanField.StartNoEarlierThan, PlanField.Parent };
+          PlanField.Predecessors, PlanField.Parent };
     private static bool ScheduleSettings(ProjectPlanSettings before, ProjectPlanSettings after)
         => before.ProjectStart != after.ProjectStart || before.ProjectEnd != after.ProjectEnd
             || !before.CompanyDaysOff.SequenceEqual(after.CompanyDaysOff) || before.ImportedHolidays != after.ImportedHolidays
             || !before.People.SequenceEqual(after.People);
-    private static PlanState Reschedule(PlanDocument d, PlanState state, IReadOnlyCollection<string> edited, bool all, DateOnly today)
+    // A typed end stays on its task for the edit that typed it while its successors follow it (#268): the
+    // task is left out of the tasks the scheduler lays out again, so its stored end is the plan end.
+    private static PlanState Reschedule(PlanDocument d, PlanState state, IReadOnlyCollection<string> edited, IReadOnlySet<string> typedEnds, bool all, DateOnly today)
     {
         var affected = Affected(state, edited, all);
         if (affected.Count == 0) return state;
@@ -355,14 +359,14 @@ internal static class PlanOperations
         var scheduled = PlanScheduler.Calculate(state.Rows.Select((r, i) => TaskInput(r, i)).ToArray(),
             new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
                 Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
-                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today, affected);
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today, affected.Except(typedEnds));
         var byId = scheduled.ToDictionary(t => t.Input.Identity);
-        // Only the end is written: the plan start stays the live value of the row's own start, 開始日指定
-        // and predecessor finishes, so a typed start keeps its edit form and its classification. A task the
+        // Only the end is written: the plan start stays the live value of the row's own start and
+        // predecessor finishes, so a typed start keeps its edit form and its classification. A task the
         // scheduler laid no work out for keeps its own dates, so an explicit clear is never resurrected.
         return state with { Rows = state.Rows.Select(r => byId.TryGetValue(r.Identity, out var task) && affected.Contains(r.Identity) && LaidOut(task)
             ? r with { End = task.End.Value } : r).ToImmutableArray() };
-        static bool LaidOut(ScheduledTask task) => !task.Input.IsComplete && !task.Input.Fixed
+        static bool LaidOut(ScheduledTask task) => !task.Input.IsComplete
             && (task.Input.EffectiveRemaining is > 0 || task.Input.Actual is > 0);
     }
     // The edited rows, every row that depends on them through a predecessor link or a roll-up, and the
@@ -453,7 +457,7 @@ internal static class PlanOperations
         PlanField.Cancelled => r.Cancelled, PlanField.Removed => r.Removed,
         PlanField.Assignees => r.Assignees, PlanField.Predecessors => r.Predecessors, PlanField.Parent => r.Parent,
         PlanField.Estimate => r.Estimate, PlanField.Remaining => r.Remaining, PlanField.Actual => r.Actual,
-        PlanField.Start => r.Start, PlanField.End => r.End, PlanField.StartNoEarlierThan => r.StartNoEarlierThan, PlanField.Fixed => r.Fixed,
+        PlanField.Start => r.Start, PlanField.End => r.End,
         _ => throw new ArgumentException("セルとして編集できない項目です。")
     };
     private static T? Optional<T>(object? value) where T : struct => value is null ? null : value is T typed ? typed : throw new ArgumentException("セルの値の型が不正です。");
@@ -468,8 +472,8 @@ internal static class PlanOperations
             case PlanField.Remaining: return r with { Remaining = PlanEdits.Remaining(task, Optional<decimal>(value)).Remaining };
             case PlanField.Actual: return r with { Actual = PlanEdits.Actual(task, Optional<decimal>(value)).Actual };
             // Validate the final pair after the entire paste, not between its endpoint cells.
-            case PlanField.Start: task = PlanEdits.Start(task with { End = null }, Optional<DateOnly>(value)); return r with { Start = task.Start, StartNoEarlierThan = task.StartNoEarlierThan };
-            case PlanField.End: task = PlanEdits.End(task with { Start = null }, Optional<DateOnly>(value)); return r with { End = task.End, Fixed = task.Fixed };
+            case PlanField.Start: task = PlanEdits.Start(task with { End = null }, Optional<DateOnly>(value)); return r with { Start = task.Start };
+            case PlanField.End: task = PlanEdits.End(task with { Start = null }, Optional<DateOnly>(value)); return r with { End = task.End };
             case PlanField.Labels: return r with { Labels = Ids(value) };
             case PlanField.MilestoneTitle: return r with { MilestoneTitle = String(value) };
             case PlanField.Title: return r with { Title = String(value) ?? "" };
@@ -479,8 +483,6 @@ internal static class PlanOperations
             case PlanField.Parent: return r with { Parent = String(value) };
             case PlanField.Assignees: return r with { Assignees = Ids(value) };
             case PlanField.Predecessors: return r with { Predecessors = Ids(value) };
-            case PlanField.StartNoEarlierThan: return r with { StartNoEarlierThan = Optional<DateOnly>(value) };
-            case PlanField.Fixed: return r with { Fixed = Optional<bool>(value) ?? false };
             default: throw new ArgumentException("この項目は編集できません。");
         }
     }
@@ -528,7 +530,7 @@ internal static class PlanOperations
         ? "子タスクから集計（編集不可）" : "要求事項の行では編集できません";
     internal static bool IsSummaryPublishExcluded(bool summary, string field) => summary && field is
         PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Assignees or PlanField.Predecessors
-        or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status or PlanField.Phase or PlanField.Labels or PlanField.MilestoneTitle || summary && PlanSheetColumns.IsExtra(field);
+        or PlanField.Status or PlanField.Phase or PlanField.Labels or PlanField.MilestoneTitle || summary && PlanSheetColumns.IsExtra(field);
     internal static string? ReadOnlyReason(PlanRow row, bool summary, string field)
     {
         if (field == PlanField.Repository) return "この列は読み取り専用です。";
@@ -539,8 +541,6 @@ internal static class PlanOperations
         return row.Closed && field is PlanField.Remaining or PlanField.End
             ? "完了したタスクは Issue のクローズで確定します（編集不可）" : null;
     }
-    internal static bool IsLocalConstraint(string field, ProjectPlanSettings settings)
-        => field is (PlanField.StartNoEarlierThan or PlanField.Fixed) && !settings.Columns.Any(c => c.Role == field);
     // An Issue cannot be deleted from the plan: #231 owns 完了・中止・この版から外す, and a delete that
     // reaches a published row is refused whole (named by the row it first reaches).
     internal static string PublishedRowRefusal(int position)
@@ -619,9 +619,7 @@ internal static class PlanOperations
     }
     internal static bool IsRecalculatedField(ScheduledTask task, string field) => field switch
     {
-        PlanField.Start => task.IsSummary || !(task.Start.Origin == DateOrigin.Kept && task.Start.Value == task.Input.Start
-            || task.Input.StartNoEarlierThan is { } constraint && task.Start.Value == constraint
-                && task.StartReason == "開始日指定 " + constraint.ToString("M/d", CultureInfo.InvariantCulture)),
+        PlanField.Start => task.IsSummary || !(task.Start.Origin == DateOrigin.Kept && task.Start.Value == task.Input.Start),
         PlanField.End => task.IsSummary || task.End.Origin != DateOrigin.Kept || task.End.Value != task.Input.End,
         PlanField.Remaining => task.IsSummary || task.Input.Closed,
         PlanField.Estimate or PlanField.Actual => task.IsSummary,
@@ -679,8 +677,8 @@ internal static class PlanOperations
             // remaining work follow the close day the read reports, not the provisional local day (#231).
             var pendingState = r.Closed != old.Closed;
             foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Phase, PlanField.MilestoneTitle, PlanField.Closed, PlanField.Cancelled, PlanField.Removed, PlanField.Parent,
-                PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.StartNoEarlierThan, PlanField.Fixed })
-                if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryPublishExcluded(calculated.IsSummary, field) && !IsUnmappedCalculation(calculated, field, d.State.Settings)
+                PlanField.Estimate, PlanField.Remaining, PlanField.Actual })
+                if (!IsSummaryPublishExcluded(calculated.IsSummary, field) && !IsUnmappedCalculation(calculated, field, d.State.Settings)
                     && !(pendingState && field == PlanField.Remaining) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
             if (!calculated.IsSummary)
                 foreach (var extra in r.ExtraValues.Keys.Union(old.ExtraValues.Keys))

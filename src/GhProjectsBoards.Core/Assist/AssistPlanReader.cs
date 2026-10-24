@@ -25,7 +25,7 @@ internal sealed record AssistTaskDetails(AssistTaskReference Task, AssistTaskRef
     string? Phase, bool Closed, IReadOnlyList<AssistPerson> Assignees,
     decimal? Estimate, decimal? Actual, decimal? Remaining, decimal? Forecast,
     PlanDate Start, PlanDate End, string StartReason, string? EndReason,
-    DateOnly? StartNoEarlierThan, bool Fixed, IReadOnlyList<AssistPublishedDifference> PublishedDifferences,
+    IReadOnlyList<AssistPublishedDifference> PublishedDifferences,
     IReadOnlyList<AssistTaskReference> Predecessors, IReadOnlyList<AssistTaskReference> Successors,
     IReadOnlyList<string> Warnings, PlanTaskLateness Lateness, bool Unpublished)
 {
@@ -122,7 +122,7 @@ internal sealed class AssistPlanReader
             return new AssistTaskDetails(Reference(id), row.Parent is { } parent && references.TryGetValue(parent, out var requirement) ? requirement : null, task.IsSummary,
                 row.Phase, row.Closed, row.Assignees.Select(Person).ToArray(), task.Estimate, task.Actual, task.Remaining, task.Forecast,
                 task.Start, task.End, task.StartReason, PlanLateness.EndReason(task),
-                row.StartNoEarlierThan, row.Fixed, differences, row.Predecessors.Where(references.ContainsKey).Select(Reference).ToArray(),
+                differences, row.Predecessors.Where(references.ContainsKey).Select(Reference).ToArray(),
                 rows.Values.Where(r => r.Predecessors.Contains(id)).Select(r => Reference(r.Identity)).ToArray(),
                 task.Warnings, lateness.Tasks[id], unpublished.Fields.ContainsKey(id)) { MissingEstimates = task.MissingEstimates, MissingRemaining = task.MissingRemaining };
         }).ToArray();

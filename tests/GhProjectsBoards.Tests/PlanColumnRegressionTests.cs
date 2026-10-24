@@ -9,7 +9,7 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanColumnRegressionTests
 {
     [TestCase("Assignees", "[]"), TestCase("Predecessors", "[]"), TestCase("Labels", "[]")]
-    [TestCase("StartNoEarlierThan", "null"), TestCase("Status", "null"), TestCase("MilestoneTitle", "null"), TestCase("Fixed", "false")]
+    [TestCase("Status", "null"), TestCase("MilestoneTitle", "null")]
     public void EmptySummaryValuesAgreeWithTypedCopy(string field, string expected)
     {
         var parent = new PlanRow("I1", "Requirement", "acme/repo");

@@ -249,16 +249,14 @@ internal sealed class PlanDocumentTests
         await session.Execute(Edit(field, field == PlanField.Estimate ? 12m : Today.AddDays(1)), Today);
         var row = session.Document.State.Rows[0];
         if (field == PlanField.Estimate) Assert.That(row.Remaining, Is.Null);
-        if (field == PlanField.Start) Assert.That(row.StartNoEarlierThan, Is.EqualTo(Today.AddDays(1)));
-        if (field == PlanField.End) Assert.That(row.Fixed, Is.True);
+        if (field == PlanField.Start) Assert.That(row.Start, Is.EqualTo(Today.AddDays(1)));
+        if (field == PlanField.End) Assert.That(row.End, Is.EqualTo(Today.AddDays(1)));
     }
 
     [Test]
-    public async Task PasteMovesBothFixedDatesBeforeValidatingTheFinalPair()
+    public async Task PasteMovesBothTypedDatesBeforeValidatingTheFinalPair()
     {
-        var initial = Initial();
-        initial = initial with { State = initial.State with { Rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Fixed = true }) } };
-        var session = await Create(initial);
+        var session = await Create();
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, [new("issue:1", PlanField.Start, Today.AddDays(1)), new("issue:1", PlanField.End, Today.AddDays(2))]), Today);
         Assert.That(session.Document.State.Rows[0].End, Is.EqualTo(Today.AddDays(2)));
         Assert.That(session.UndoCount, Is.EqualTo(1));
@@ -543,15 +541,17 @@ internal sealed class PlanDocumentTests
         Assert.That(Text(session.Document), Is.EqualTo(before)); Assert.That(session.UndoCount, Is.Zero);
     }
 
-    [TestCase(PlanField.Title), TestCase(PlanField.Estimate)]
+    [TestCase(PlanField.Title), TestCase(PlanField.Assignees)]
     public async Task UnrelatedEditPreservesInvalidRefreshedDatesAndTheirWarnings(string field)
     {
+        // A task without effort keeps its refreshed dates, here an inverted pair and an invalid 実績.
         var initial = Initial();
-        var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Fixed = true, Start = Today.AddDays(2), Estimate = -1 });
+        var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Estimate = null, Start = Today.AddDays(2), Actual = -1 });
         var session = await Create(initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } });
-        await session.Execute(Edit(field, field == PlanField.Title ? "Still editable" : 4m), Today);
+        await session.Execute(Edit(field, field == PlanField.Title ? "Still editable" : ImmutableArray<string>.Empty), Today);
         Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo(field == PlanField.Title ? "Still editable" : "Task 1"));
-        Assert.That(session.Document.State.Rows[0].Estimate, Is.EqualTo(field == PlanField.Title ? -1m : 4m));
+        Assert.That(session.Document.State.Rows[0].Assignees, field == PlanField.Title ? Is.EqualTo(new[] { "p1" }) : Is.Empty);
+        Assert.That((session.Document.State.Rows[0].Actual, session.Document.State.Rows[0].Start), Is.EqualTo((-1m, Today.AddDays(2))));
         Assert.That(session.Schedule(Today)[0].Warnings, Is.Not.Empty);
         await session.Undo(Today);
         Assert.That(Text(session.Document.State.Rows), Is.EqualTo(Text(rows)));
@@ -560,7 +560,7 @@ internal sealed class PlanDocumentTests
     private static IEnumerable<TestCaseData> SummaryEdits()
     {
         foreach (var field in new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start,
-            PlanField.End, PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status, PlanField.Assignees, PlanField.Predecessors })
+            PlanField.End, PlanField.Status, PlanField.Assignees, PlanField.Predecessors })
             foreach (var kind in new[] { PlanOperationKind.Cell, PlanOperationKind.Paste, PlanOperationKind.Fill, PlanOperationKind.CtrlD, PlanOperationKind.Clear })
                 yield return new(field, kind);
     }
@@ -577,8 +577,8 @@ internal sealed class PlanDocumentTests
         var review = Text(PlanPublishPlan.Build(session.Document, remote, Today, "test"));
         object? value = field switch {
             PlanField.Assignees => ImmutableArray.Create("p1"), PlanField.Predecessors => ImmutableArray.Create("issue:3"),
-            PlanField.Status => "Done", PlanField.Fixed => true,
-            PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan => Today, _ => 4m
+            PlanField.Status => "Done",
+            PlanField.Start or PlanField.End => Today, _ => 4m
         };
         PlanCommand command = kind switch {
             PlanOperationKind.Clear => new ClearPlanCells(["issue:3", "issue:1"], [field]),

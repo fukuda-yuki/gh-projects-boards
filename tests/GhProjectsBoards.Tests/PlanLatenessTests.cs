@@ -62,7 +62,7 @@ internal sealed class PlanLatenessTests
     [Test]
     public void AnUnstartedPlanStartBeforeTheStatusDateIsStartOverdue()
     {
-        var document = Document(Row() with { Start = D("2026-10-01"), End = D("2026-10-20"), Fixed = true });
+        var document = Document(Row() with { Start = D("2026-10-01"), End = D("2026-10-20") });
 
         var late = Late(document);
 
@@ -71,7 +71,7 @@ internal sealed class PlanLatenessTests
             Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Overdue));
             Assert.That(late.OverdueKind, Is.EqualTo(PlanOverdueKind.Start));
             Assert.That(late.MissedDate, Is.EqualTo(D("2026-10-01")));
-            Assert.That(Indicator(document), Is.EqualTo("期限超過: 開始日 10/1 を過ぎて未着手、日程固定"));
+            Assert.That(Indicator(document), Is.EqualTo("期限超過: 開始日 10/1 を過ぎて未着手"));
         });
     }
 
@@ -173,15 +173,15 @@ internal sealed class PlanLatenessTests
     }
 
     [Test]
-    public void AFixedTaskIsLateWhenItsForecastEndPassesItsPlanEnd()
+    public void ATaskIsLateWhenItsForecastEndPassesItsStoredPlanEnd()
     {
-        var document = Document(Row() with { Start = D("2026-10-02"), End = D("2026-10-03"), Fixed = true, Estimate = 24, Remaining = 24 });
+        var document = Document(Row() with { Start = D("2026-10-02"), End = D("2026-10-03"), Estimate = 24, Remaining = 24 });
 
         var late = Late(document, today: D("2026-10-02"));
 
         Assert.Multiple(() =>
         {
-            Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Later), "A 日程固定 task gets a forecast and can be 予定より遅れ.");
+            Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Later), "A task whose plan end stays gets a forecast and can be 予定より遅れ.");
             Assert.That(late.Cause, Is.EqualTo(PlanLateCause.OwnRemaining));
         });
     }
@@ -279,15 +279,12 @@ internal sealed class PlanLatenessTests
     [TestCase("started", "終了: 開始から 17h")]
     [TestCase("remaining", "終了: 開始から 7.5h")]
     [TestCase("estimate", "終了: 開始から 40h")]
-    [TestCase("fixed", "終了: 指定")]
-    [TestCase("typed", "終了: 指定")]
     [TestCase("no-work-end", "終了: 指定")]
     [TestCase("no-end", null)]
     [TestCase("complete", null)]
     [TestCase("remaining-complete", null)]
     [TestCase("summary", null)]
     [TestCase("milestone", null)]
-    [TestCase("fixed-milestone", null)]
     [TestCase("invalid", null)]
     [TestCase("invalid-kept", null)]
     public void EndReasonDescribesScheduledWorkOrKeptEnd(string scenario, string? expected)
@@ -298,16 +295,13 @@ internal sealed class PlanLatenessTests
         {
             "started" => task with { Actual = 1, Remaining = 16.00m },
             "remaining" => task with { Remaining = 7.50m },
-            "fixed" => task with { Fixed = true },
-            "typed" => PlanEdits.End(task, date),
             "no-work-end" => task with { Estimate = null },
             "no-end" => task with { Estimate = null, End = null },
             "complete" => task with { Closed = true },
             "remaining-complete" => task with { Remaining = 0 },
             "milestone" => task with { Estimate = 0 },
-            "fixed-milestone" => task with { Estimate = 0, Fixed = true },
             "invalid" => task with { Remaining = -1 },
-            "invalid-kept" => task with { Fixed = true, Start = date.AddDays(1) },
+            "invalid-kept" => task with { Estimate = null, Start = date.AddDays(1) },
             _ => task
         };
         PlanTask[] tasks = scenario == "summary" ? [task, new("child", 2) { Parent = "task", Estimate = 8 }] : [task];
@@ -373,7 +367,6 @@ internal sealed class PlanLatenessTests
         var scheduled = PlanOperations.Schedule(updated, Status).Single(row => row.Input.Identity == "task");
         Assert.That(scheduled.Start.Value, Is.EqualTo(Status.AddDays(predecessorDelayed ? 3 : 2)));
         Assert.That(scheduled.Input.Start, Is.EqualTo(Status.AddDays(2)), "The typed start stays the row's own start.");
-        Assert.That(scheduled.Input.StartNoEarlierThan, Is.EqualTo(scheduled.Input.Start));
 
         var result = PlanOperations.Changes(updated, Status);
 
@@ -381,16 +374,16 @@ internal sealed class PlanLatenessTests
     }
 
     [Test]
-    public void PredecessorWinsTieWithTypedStartConstraint_StartKeepsTheTypedValue()
+    public void PredecessorWinsTieWithTypedStart_StartKeepsTheTypedValue()
     {
         var specified = Status.AddDays(2);
         var document = Document(
-            Row("before") with { Estimate = 0, Start = specified, End = specified, StartNoEarlierThan = specified },
-            Row() with { Estimate = 8, Start = specified, End = specified, StartNoEarlierThan = specified, Predecessors = ["before"] });
+            Row("before") with { Estimate = 0, Start = specified, End = specified },
+            Row() with { Estimate = 8, Start = specified, End = specified, Predecessors = ["before"] });
         document = document with { Baseline = document.Baseline with { Rows = document.Baseline.Rows
             .Select(row => row.Identity == "task" ? row with { Start = Status.AddDays(1), End = Status.AddDays(1) } : row).ToImmutableArray() } };
         var scheduled = PlanOperations.Schedule(document, Status).Single(row => row.Input.Identity == "task");
-        Assert.That(scheduled.Start.Value, Is.EqualTo(scheduled.Input.StartNoEarlierThan));
+        Assert.That(scheduled.Start.Value, Is.EqualTo(specified));
         Assert.That(scheduled.StartReason, Is.EqualTo("1 の終了後"), "The predecessor names the reason on a tie.");
 
         var result = PlanOperations.Changes(document, Status);

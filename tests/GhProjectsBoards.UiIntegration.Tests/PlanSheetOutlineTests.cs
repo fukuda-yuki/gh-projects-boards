@@ -55,7 +55,7 @@ internal sealed partial class PlanSheetHostedTests
             new("A", "First", "acme/repo") { Parent = "P" },
             new("C", "Folded child", "acme/repo") { Parent = "A" },
             new("B", "Second", "acme/repo") { Parent = "P" }, new("Q", "Other", "acme/repo")];
-        rows = rows.Select(r => r with { Start = Today, End = Today, Fixed = true }).ToImmutableArray();
+        rows = rows.Select(r => r with { Start = Today, End = Today }).ToImmutableArray();
         await MountPresentation(rows, rows);
         await Ui.Run(() => sheet.SetFold("A", true));
         await Ui.Until(() => sheet.RowIds.SequenceEqual(new[] { "P", "A", "B", "Q", "" }));

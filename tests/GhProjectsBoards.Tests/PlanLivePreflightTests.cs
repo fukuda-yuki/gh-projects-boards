@@ -197,8 +197,7 @@ internal sealed class PlanLivePreflightTests
             new PlanRow("original", "Original", settings.DefaultRepository!) { Estimate = 16, Remaining = 3, Actual = 7, Start = day.AddDays(7), End = day.AddDays(8) } };
         var owned = Enumerable.Range(0, 100).Select(i => new PlanRow("owned-" + i, "Owned", settings.DefaultRepository!)).ToArray();
         var baseline = new PlanBaseline(originals.Concat(owned).ToImmutableArray(), []);
-        var pinned = PlanPublisherLive.PreserveBaselineDates(baseline.Rows, originals.Select(r => r.Identity).ToHashSet());
-        var rows = pinned.Select(r => r.Identity.StartsWith("owned-", StringComparison.Ordinal) ? r with { Estimate = 11, Remaining = 12, Actual = 13 } : r).ToImmutableArray();
+        var rows = baseline.Rows.Select(r => r.Identity.StartsWith("owned-", StringComparison.Ordinal) ? r with { Estimate = 11, Remaining = 12, Actual = 13 } : r).ToImmutableArray();
         var document = new PlanDocument(project, baseline, new(rows, settings));
         var review = PlanPublishPlan.Build(document, new(baseline, ImmutableDictionary<string, string>.Empty, fields, 0, 0), day, Guid.NewGuid().ToString("N"));
         Assert.That(review.Changes.All(c => c.Identity.StartsWith("owned-", StringComparison.Ordinal)), Is.True);
@@ -209,7 +208,6 @@ internal sealed class PlanLivePreflightTests
         var expectedBatches = (review.Writes.Length + fieldAliasLimit - 1) / fieldAliasLimit;
         Assert.That(PlanPublishPlan.Batches(review.Writes).Count(), Is.EqualTo(expectedBatches),
             $"{review.Writes.Length} field writes require ceiling(write count / {fieldAliasLimit}) requests under docs/spec.md's ten-alias contract.");
-        Assert.That(baseline.Rows[1].Fixed, Is.False);
     }
     [Test, Category("Integration")]
     public async Task LiveCliFailureWritesAnArtifactAndExitsNormallyWithoutGitHub()

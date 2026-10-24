@@ -22,7 +22,7 @@ internal sealed class PlanRowStateTests
     // gives it effort, dates or a predecessor. So a fixture that needs scheduled dates lays them out the way
     // such an edit does, exactly as the plan-people and evaluation fixtures do.
     // It stamps only the end, because that is what the edit path writes: Reschedule writes the end and leaves
-    // the start as the live value of the row's own start, 開始日指定 and predecessor finishes, so a typed start
+    // the start as the live value of the row's own start and predecessor finishes, so a typed start
     // keeps its edit form and its classification.
     private static PlanDocument Laid(PlanDocument document)
     {

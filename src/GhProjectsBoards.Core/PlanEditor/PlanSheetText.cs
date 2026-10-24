@@ -15,7 +15,6 @@ internal static class PlanSheetText
         var shown = marks ?? PlanMarkVisibility.All;
         var states = new List<string>();
         var done = taskRow?.Closed == true;
-        var typed = taskRow?.StartNoEarlierThan is not null || taskRow?.Fixed == true;
         if (remoteProblem.Length > 0) states.Add(remoteProblem);
         if (shown.Overdue && late?.MissedDate is { } missed) {
             // The indicator tooltip names the day as M/d; the weekday belongs to the sheet's date cells
@@ -45,7 +44,6 @@ internal static class PlanSheetText
         // #231: the row's own pending state, named by the command that produced it.
         if (taskRow?.Cancelled == true) states.Add("中止");
         if (taskRow?.Removed == true) states.Add("この版から外す（未発行）");
-        if (typed) states.Add(taskRow?.Fixed == true ? "日程固定" : "開始日を指定");
         if (unpublished) states.Add("未発行の変更あり");
         return string.Join("、", states);
 

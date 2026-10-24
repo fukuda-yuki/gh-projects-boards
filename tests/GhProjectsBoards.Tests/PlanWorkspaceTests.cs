@@ -118,7 +118,6 @@ internal sealed class PlanWorkspaceTests
             Assert.That(restarted.Session.UndoCount, Is.EqualTo(undo + 1));
             var remote = FakePlanEditor.Load(root);
             Assert.That(remote.MutationBatches, Is.Zero);
-            Assert.That(remote.AddedFields, Is.Empty);
         }
         finally { Directory.Delete(root, true); }
     }
@@ -609,10 +608,10 @@ internal sealed class PlanWorkspaceTests
             new("a", "Actual", "NUMBER"), new("s", "Start date", "DATE"),
             new("t", "Target date", "DATE"), new("n", "開始日指定", "DATE"),
             new("f", "日程固定", "SINGLE_SELECT"), new("wrong", "Remaining", "TEXT")]);
-        Assert.That(result.Length, Is.EqualTo(7));
+        // #268: 開始日指定 and 日程固定 are no planning roles, so a Project that still has them maps neither.
+        Assert.That(result.Select(c => c.Role), Is.EquivalentTo(new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start, PlanField.End }));
         Assert.That(result.Single(c => c.Role == PlanField.Start).Name, Is.EqualTo("Start date"));
         Assert.That(PlanColumnMatching.Match([new("one", "Estimate", "NUMBER"), new("two", "Estimate", "NUMBER")]), Is.Empty);
-        Assert.That(PlanColumnMatching.Match([new("wrong", "日程固定", "TEXT")]), Is.Empty);
     }
     [Test]
     public async Task RefreshRetainsReadableNamesForNewAssigneesWithoutChangingExistingRates()

@@ -17,12 +17,10 @@ internal sealed record PlanTask(string Identity, int RowId)
     public decimal? Actual { get; init; }
     public bool Closed { get; init; }
     public DateOnly? CloseDate { get; init; }
-    public bool Fixed { get; init; }
     public DateOnly? Start { get; init; }
     public DateOnly? End { get; init; }
     public DateOnly? GitHubStart { get; init; }
     public DateOnly? GitHubEnd { get; init; }
-    public DateOnly? StartNoEarlierThan { get; init; }
     public bool IsComplete => Closed;
     // #231: 中止 (closed as not planned) and この版から外す (pending removal) leave the schedule, the
     // totals and the load, and stop constraining their successors.
@@ -32,7 +30,7 @@ internal sealed record PlanTask(string Identity, int RowId)
     public decimal? EffectiveRemaining => Closed ? 0 : Remaining ?? (Estimate is >= 0 && Actual is null or >= 0 ? Math.Max(Estimate.Value - (Actual ?? 0), 0) : null);
     public (DateOnly? Start, DateOnly? End) KeptDates => Closed && CloseDate is { } close
         ? (Start > close ? close : Start, close) : (Start, End);
-    public bool KeepsDates => IsComplete || Fixed || Estimate is null && Remaining is null;
+    public bool KeepsDates => IsComplete || Estimate is null && Remaining is null;
 }
 internal sealed record PlanPerson(string Identity, decimal Rate = 100m);
 internal sealed record PlanCalendar

@@ -190,7 +190,7 @@ internal sealed partial class PlanSheetView
         // the 配下 lateness summary instead.
         var reasons = new List<string>();
         if (task is { IsSummary: false })
-            reasons.Add(task.StartReason is "完了" or "日程固定" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason);
+            reasons.Add(task.StartReason is "完了" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason);
         if (task is not null && PlanLateness.EndReason(task) is { } endReason) reasons.Add(endReason);
         if (task?.Warnings.Count > 0) reasons.Add(string.Join(" / ", task.Warnings));
         var remoteProblem = RemoteProblem(selected);
@@ -482,7 +482,7 @@ internal sealed partial class PlanSheetView
                     var field = columns[target.Column + c]; var source = copied.Fields[sc];
                     string Kind(string f) => PlanSheetColumns.IsExtra(f) ? PlanExtraEditing.Definition(Session.Document,f).DataType.ToLowerInvariant()
                         : f == PlanField.Title ? "text" : f is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "number"
-                        : f is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan ? "date" : f.ToString();
+                        : f is PlanField.Start or PlanField.End ? "date" : f.ToString();
                     if (!PlanField.IsDefined(source) || Kind(source) != Kind(field)) throw new ArgumentException("コピー元と対象の列の型が一致しません。");
                     if (matrix[sr][sc].Length == 0) continue;
                     var identity = visible[target.Row + r];

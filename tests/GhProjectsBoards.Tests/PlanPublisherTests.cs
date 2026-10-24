@@ -801,7 +801,6 @@ internal sealed partial class PlanPublisherTests
             Assert.That(actual.Status, Is.EqualTo(scheduled[expected.Identity].IsSummary
                 ? document.Baseline.Rows.Single(r => r.Identity == expected.Identity).Status : "Backlog"));
             Assert.That((actual.Start, actual.End), Is.EqualTo((scheduled[expected.Identity].Start.Value, scheduled[expected.Identity].End.Value)));
-            Assert.That((actual.StartNoEarlierThan, actual.Fixed), Is.EqualTo((expected.StartNoEarlierThan, expected.Fixed)));
             if (!scheduled[expected.Identity].IsSummary)
                 Assert.That((actual.Estimate, actual.Remaining, actual.Actual), Is.EqualTo((expected.Estimate, expected.Remaining, expected.Actual)));
         }
@@ -822,7 +821,7 @@ internal sealed partial class PlanPublisherTests
         var rows = new List<PlanRow> { parent, child, next };
         for (var i = 3; i < (reopen ? 24 : 12); i++)
                 rows.Add(PlanRow.New("Task " + (i + 100), "acme/repo") with { Parent = parent.Identity, Predecessors = [rows[^1].Identity],
-                    Estimate = 16, Remaining = 8, Actual = 2, Assignees = ["U1"], StartNoEarlierThan = Today.AddDays(2) });
+                    Estimate = 16, Remaining = 8, Actual = 2, Assignees = ["U1"], Start = Today.AddDays(2) });
         await session.Execute(new InsertPlanRows(rows.ToImmutableArray(), Kind: PlanOperationKind.CsvImport), Today);
         var dates = session.Schedule(Today).ToDictionary(r => r.Input.Identity, r => (r.Start.Value, r.End.Value));
         if (reopen)
@@ -865,8 +864,8 @@ internal sealed partial class PlanPublisherTests
             Assert.That(observed.Predecessors, Is.EquivalentTo(row.Predecessors.Select(RemoteId)));
             Assert.That((observed.Start, observed.End), Is.EqualTo(dates[row.Identity]));
             if (row == parent) continue;
-            Assert.That((observed.Estimate, observed.Remaining, observed.Actual, observed.StartNoEarlierThan),
-                Is.EqualTo((row.Estimate, row.Remaining, row.Actual, row.StartNoEarlierThan)));
+            Assert.That((observed.Estimate, observed.Remaining, observed.Actual),
+                Is.EqualTo((row.Estimate, row.Remaining, row.Actual)));
         }
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
         if (reopen) Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("createIssue"));
@@ -1319,8 +1318,8 @@ internal sealed partial class PlanPublisherTests
     private static readonly ProjectPlanSettings Settings = new()
     {
         DefaultRepository = "acme/repo", StatusDate = Today,
-        Columns = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start, PlanField.End, PlanField.StartNoEarlierThan, PlanField.Fixed }
-            .Select(f => new PlanColumnMapping(f, "F-" + f, f.ToString(), f is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "NUMBER" : f == PlanField.Fixed ? "SINGLE_SELECT" : "DATE")).ToImmutableArray()
+        Columns = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start, PlanField.End }
+            .Select(f => new PlanColumnMapping(f, "F-" + f, f.ToString(), f is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "NUMBER" : "DATE")).ToImmutableArray()
     };
     [SetUp] public void Setup() { root = Path.Combine(Path.GetTempPath(), "ghpb-phase4-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root); }
     [TearDown] public async Task Cleanup()
@@ -1959,23 +1958,20 @@ internal sealed partial class PlanPublisherTests
         Assert.That((await PlanSession.OpenAsync(new(root), Project, Today)).Status, Is.EqualTo(PlanLoadStatus.Loaded));
     }
     [Test]
-    public async Task OptionalUnmappedSchedulingConstraintsStayLocalWhileDatesPublish()
+    public async Task TypedDatesPublishOnlyThroughStartAndEndWhenTheProjectStillHasTheRemovedFields()
     {
-        await Start(1, settings: Settings with { Columns = Settings.Columns.Where(c => c.Role is not (PlanField.StartNoEarlierThan or PlanField.Fixed)).ToImmutableArray() });
+        // #268: a Project that still has 開始日指定 and 日程固定 keeps them as ordinary fields the plan never writes.
+        await Start(1, fixture: s => s with { ExtraFields = [new("X-snet", "開始日指定", "DATE"), new("X-fixed", "日程固定", "SINGLE_SELECT") { Options = ["固定"] }] });
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Estimate, 8m)]), Today);
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Start, Today.AddDays(2))]), Today);
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.End, Today.AddDays(3))]), Today);
         var result = await publisher.PublishAsync(session, Today);
         Assert.That(result.Succeeded, Is.True, result.Error);
         Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
-        var opened = await PlanSession.OpenAsync(new(root), Project, Today);
-        Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Loaded)); session = opened.Session!;
-        Assert.That(session.Document.State.Rows[0].Fixed, Is.True);
-        Assert.That(session.Document.State.Rows[0].StartNoEarlierThan, Is.EqualTo(Today.AddDays(2)));
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
         var remote = FakePlanEditor.Load(root).Issues[0].Row;
-        Assert.That(remote.Start, Is.EqualTo(Today.AddDays(2))); Assert.That(remote.End, Is.EqualTo(Today.AddDays(3)));
-        Assert.That(remote.StartNoEarlierThan, Is.Null); Assert.That(remote.Fixed, Is.False);
+        Assert.That((remote.Start, remote.End), Is.EqualTo((Today.AddDays(2), Today.AddDays(3))));
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("X-snet").And.Not.Contain("X-fixed"));
     }
     [TestCase("In progress")]
     [TestCase("Done")]
@@ -2209,18 +2205,6 @@ internal sealed partial class PlanPublisherTests
         Assert.That(issues.Select(i => i.Row.Identity), Is.EqualTo(new[] { "I1", "I3", "I2" }));
         Assert.That(issues.Single(i => i.Row.Identity == "I3").Row.Predecessors, Is.EqualTo(new[] { "I2" }));
         Assert.That(issues.Single(i => i.Row.Identity == "I2").Row.Assignees, Is.EqualTo(new[] { "U1" }));
-    }
-    [Test]
-    public async Task ExplicitFieldSetupAddsTypedFieldsAndRepeatingItDoesNotDuplicateThem()
-    {
-        await Start(1);
-        Assert.That(FakePlanEditor.Load(root).AddedFields, Is.Empty);
-        Assert.That((await publisher.AddSchedulingFieldsAsync(session, Today)).Succeeded, Is.True);
-        Assert.That(FakePlanEditor.Load(root).AddedFields.Length, Is.EqualTo(2));
-        Assert.That(session.Document.State.Settings.Columns.Single(m => m.Role == PlanField.StartNoEarlierThan).Name, Is.EqualTo("開始日指定"));
-        Assert.That(session.Document.State.Settings.Columns.Single(m => m.Role == PlanField.Fixed).Name, Is.EqualTo("日程固定"));
-        Assert.That((await publisher.AddSchedulingFieldsAsync(session, Today)).Succeeded, Is.True);
-        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(2));
     }
     [Test]
     public async Task ChoosingGitHubDuringResumeRemovesOnlyTheConflictingPendingWrite()

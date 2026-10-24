@@ -174,14 +174,14 @@ internal sealed class AssistRulesTests
         AssistEdit Change(string field, object? value) => new("B", field, JsonSerializer.SerializeToElement(value));
         var result = AssistProposal.Create(d, 3, Today, [Change(PlanField.Assignees, new[] { "p1" }), Change(PlanField.Phase, "PS"),
             Change(PlanField.Estimate, 40m), Change(PlanField.Actual, 8m), Change(PlanField.Remaining, 32m),
-            Change(PlanField.Start, "2026-10-26"), Change(PlanField.End, "2026-10-30"), Change(PlanField.Fixed, true),
+            Change(PlanField.Start, "2026-10-26"), Change(PlanField.End, "2026-10-30"),
             Change(PlanField.Predecessors, new[] { "A" }), Change(PlanField.Title, "再計画")]);
         Assert.That(result.Errors, Is.Empty);
         var after = PlanOperations.Apply(d, result.Proposal!.Command, Today).State.Rows.Single(r => r.Identity == "B");
         Assert.Multiple(() => {
             Assert.That(after.Assignees, Is.EqualTo(new[] { "p1" })); Assert.That(after.Phase, Is.EqualTo("PS"));
             Assert.That(after.Estimate, Is.EqualTo(40)); Assert.That(after.Actual, Is.EqualTo(8)); Assert.That(after.Remaining, Is.EqualTo(32));
-            Assert.That(after.StartNoEarlierThan, Is.EqualTo(new DateOnly(2026, 10, 26))); Assert.That(after.Fixed, Is.True);
+            Assert.That(after.Start, Is.EqualTo(new DateOnly(2026, 10, 26)));
             Assert.That(after.End, Is.EqualTo(new DateOnly(2026, 10, 30))); Assert.That(after.Predecessors, Is.EqualTo(new[] { "A" }));
             Assert.That(after.Title, Is.EqualTo("再計画"));
         });

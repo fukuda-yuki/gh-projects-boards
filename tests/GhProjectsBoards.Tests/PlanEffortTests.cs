@@ -41,15 +41,12 @@ internal sealed class PlanEffortTests
         }
         Assert.That(d.State.Rows[0].Remaining, Is.EqualTo(-5), "Keep the retrieved input intact.");
     }
-    [TestCase(false, false)]
-    [TestCase(true, false)]
-    [TestCase(false, true)]
-    public void EarlyClosureCapsStartAndPublishesCalculatedPair(bool fixedDates, bool specified)
+    [Test]
+    public void EarlyClosureCapsStartAndPublishesCalculatedPair()
     {
         var close = new DateOnly(2026, 10, 9);
         var row = new PlanRow("I1", "Work", "acme/repo") { Closed = true, CloseDate = close,
-            Remaining = 0, Start = new(2026, 10, 12), End = new(2026, 10, 16), Fixed = fixedDates,
-            StartNoEarlierThan = specified ? new(2026, 10, 12) : null };
+            Remaining = 0, Start = new(2026, 10, 12), End = new(2026, 10, 16) };
         var d = Document(row);
         d = d with { State = d.State with { Settings = d.State.Settings with { Columns = d.State.Settings.Columns.Add(new(PlanField.Start, "S", "Start", "DATE")) } } };
         var scheduled = PlanOperations.Schedule(d, Day).Single();
@@ -71,7 +68,7 @@ internal sealed class PlanEffortTests
     [TestCase(true)]
     public void InvertedKeptPairWithoutCloseDateIsStillInvalid(bool closed)
     {
-        var result = PlanScheduler.Calculate([new("I1", 1) { Closed = closed, Fixed = true, Start = Day.AddDays(2), End = Day }], new(), Day).Single();
+        var result = PlanScheduler.Calculate([new("I1", 1) { Closed = closed, Start = Day.AddDays(2), End = Day }], new(), Day).Single();
         Assert.That(result.StartReason, Is.EqualTo("入力エラー"));
     }
     [Test]
@@ -171,7 +168,7 @@ internal sealed class PlanEffortTests
     public void CommittingCalculatedRemainingStoresPublishableInputThatSurvivesActualEdit()
     {
         var row = new PlanRow("I1", "Work", "acme/repo") { Estimate = 40, Actual = 8,
-            Start = Day, End = Day, Fixed = true };
+            Start = Day, End = Day };
         var d = Document(row);
         d = d with { State = d.State with { Settings = d.State.Settings with {
             Columns = d.State.Settings.Columns.Add(new(PlanField.Actual, "A", "Actual", "NUMBER")) } } };
@@ -185,7 +182,8 @@ internal sealed class PlanEffortTests
         Assert.That(d.State.Rows[0].Remaining, Is.EqualTo(32));
         Assert.That(PlanOperations.Schedule(d, Day).Single().Remaining, Is.EqualTo(32));
         var review = PlanPublishPlan.Build(d, Remote(d), Day, Guid.NewGuid().ToString("N"));
-        Assert.That(review.Changes.Select(c => c.Field), Is.EquivalentTo(new[] { PlanField.Remaining, PlanField.Actual }));
+        // The Remaining edit reschedules the task, so its plan end moves with the work.
+        Assert.That(review.Changes.Select(c => c.Field), Is.EquivalentTo(new[] { PlanField.Remaining, PlanField.Actual, PlanField.End }));
         var remaining = review.Writes.Single(w => { using var json = JsonDocument.Parse(w.Input); return json.RootElement.GetProperty("fieldId").GetString() == "R"; });
         using var input = JsonDocument.Parse(remaining.Input);
         Assert.That(input.RootElement.GetProperty("value").GetProperty("number").GetDecimal(), Is.EqualTo(32));
@@ -228,7 +226,7 @@ internal sealed class PlanEffortTests
     [Test]
     public void ExplicitUnmappedDateStillRequiresAColumnToPublish()
     {
-        var row = new PlanRow("I1", "Work", "acme/repo") { Fixed = true, Start = Day, End = Day };
+        var row = new PlanRow("I1", "Work", "acme/repo") { Start = Day, End = Day };
         var d = Document(row);
         d = d with { State = d.State with { Settings = d.State.Settings with { Columns = [] },
             Rows = [row with { Start = Day.AddDays(1), End = Day.AddDays(1) }] } };

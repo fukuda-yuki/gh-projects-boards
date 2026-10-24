@@ -29,9 +29,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I2",
@@ -58,9 +56,7 @@
         "remaining": 3,
         "actual": 7,
         "start": "2026-10-13",
-        "end": "2026-10-13",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-13"
       },
       {
         "identity": "I3",
@@ -87,9 +83,7 @@
         "remaining": 2,
         "actual": 4,
         "start": "2026-10-14",
-        "end": "2026-10-14",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-14"
       },
       {
         "identity": "I4",
@@ -114,9 +108,7 @@
         "remaining": 0,
         "actual": 5,
         "start": "2026-10-05",
-        "end": "2026-10-06",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-06"
       },
       {
         "identity": "I5",
@@ -141,9 +133,7 @@
         "remaining": 3,
         "actual": null,
         "start": "2026-10-07",
-        "end": "2026-10-07",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-07"
       },
       {
         "identity": "I8",
@@ -166,9 +156,7 @@
         "remaining": 8,
         "actual": null,
         "start": "2026-10-15",
-        "end": "2026-10-15",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-15"
       },
       {
         "identity": "I7",
@@ -193,9 +181,7 @@
         "remaining": 16,
         "actual": null,
         "start": "2026-10-13",
-        "end": "2026-10-14",
-        "startNoEarlierThan": "2026-10-13",
-        "fixed": false
+        "end": "2026-10-14"
       },
       {
         "identity": "I6",
@@ -218,9 +204,7 @@
         "remaining": null,
         "actual": null,
         "start": "2026-10-13",
-        "end": "2026-10-16",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-16"
       },
       {
         "identity": "I12",
@@ -243,9 +227,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I13",
@@ -268,9 +250,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I9",
@@ -295,9 +275,7 @@
         "remaining": 8,
         "actual": null,
         "start": "2026-10-15",
-        "end": "2026-10-15",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-15"
       },
       {
         "identity": "I11",
@@ -322,9 +300,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I14",
@@ -347,9 +323,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I10",
@@ -374,9 +348,7 @@
         "remaining": 8,
         "actual": null,
         "start": "2026-10-16",
-        "end": "2026-10-16",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-16"
       },
       {
         "identity": "I15",
@@ -399,9 +371,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I16",
@@ -424,9 +394,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I18",
@@ -449,9 +417,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I20",
@@ -474,9 +440,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I17",
@@ -499,9 +463,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I19",
@@ -524,9 +486,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I21",
@@ -549,9 +509,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I22",
@@ -574,9 +532,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I24",
@@ -599,9 +555,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I23",
@@ -624,9 +578,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I25",
@@ -649,9 +601,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I28",
@@ -674,9 +624,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I27",
@@ -699,9 +647,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I29",
@@ -724,9 +670,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I26",
@@ -749,9 +693,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       }
     ],
     "columns": [
@@ -937,9 +879,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I2",
@@ -966,9 +906,7 @@
         "remaining": 3,
         "actual": 7,
         "start": "2026-10-13",
-        "end": "2026-10-13",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-13"
       },
       {
         "identity": "I3",
@@ -995,9 +933,7 @@
         "remaining": 2,
         "actual": 4,
         "start": "2026-10-14",
-        "end": "2026-10-14",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-14"
       },
       {
         "identity": "I4",
@@ -1022,9 +958,7 @@
         "remaining": 0,
         "actual": 5,
         "start": "2026-10-05",
-        "end": "2026-10-06",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-06"
       },
       {
         "identity": "I5",
@@ -1049,9 +983,7 @@
         "remaining": 3,
         "actual": null,
         "start": "2026-10-07",
-        "end": "2026-10-07",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-07"
       },
       {
         "identity": "I6",
@@ -1074,9 +1006,7 @@
         "remaining": null,
         "actual": null,
         "start": "2026-10-13",
-        "end": "2026-10-16",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-16"
       },
       {
         "identity": "I7",
@@ -1101,9 +1031,7 @@
         "remaining": 16,
         "actual": null,
         "start": "2026-10-13",
-        "end": "2026-10-14",
-        "startNoEarlierThan": "2026-10-13",
-        "fixed": false
+        "end": "2026-10-14"
       },
       {
         "identity": "I8",
@@ -1128,9 +1056,7 @@
         "remaining": 8,
         "actual": null,
         "start": "2026-10-15",
-        "end": "2026-10-15",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-15"
       },
       {
         "identity": "I9",
@@ -1157,9 +1083,7 @@
         "remaining": 8,
         "actual": null,
         "start": "2026-10-15",
-        "end": "2026-10-15",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-15"
       },
       {
         "identity": "I10",
@@ -1186,9 +1110,7 @@
         "remaining": 8,
         "actual": null,
         "start": "2026-10-16",
-        "end": "2026-10-16",
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": "2026-10-16"
       },
       {
         "identity": "I11",
@@ -1215,9 +1137,7 @@
         "remaining": 0,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I12",
@@ -1240,9 +1160,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I13",
@@ -1269,9 +1187,7 @@
         "remaining": 16,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": "2026-10-19",
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I14",
@@ -1296,9 +1212,7 @@
         "remaining": 8,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I15",
@@ -1325,9 +1239,7 @@
         "remaining": 8,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I16",
@@ -1354,9 +1266,7 @@
         "remaining": 8,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I17",
@@ -1383,9 +1293,7 @@
         "remaining": 0,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I18",
@@ -1408,9 +1316,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I19",
@@ -1437,9 +1343,7 @@
         "remaining": 16,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": "2026-10-26",
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I20",
@@ -1464,9 +1368,7 @@
         "remaining": 8,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I21",
@@ -1493,9 +1395,7 @@
         "remaining": 8,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I22",
@@ -1522,9 +1422,7 @@
         "remaining": 8,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I23",
@@ -1551,9 +1449,7 @@
         "remaining": 0,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I24",
@@ -1576,9 +1472,7 @@
         "remaining": null,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I25",
@@ -1605,9 +1499,7 @@
         "remaining": 16,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": "2026-11-02",
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I26",
@@ -1632,9 +1524,7 @@
         "remaining": 8,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I27",
@@ -1661,9 +1551,7 @@
         "remaining": 8,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I28",
@@ -1690,9 +1578,7 @@
         "remaining": 8,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       },
       {
         "identity": "I29",
@@ -1719,9 +1605,7 @@
         "remaining": 0,
         "actual": null,
         "start": null,
-        "end": null,
-        "startNoEarlierThan": null,
-        "fixed": false
+        "end": null
       }
     ],
     "settings": {
@@ -1757,18 +1641,6 @@
           "fieldId": "F-End",
           "name": "Target date",
           "dataType": "DATE"
-        },
-        {
-          "role": "StartNoEarlierThan",
-          "fieldId": "F-StartNoEarlierThan",
-          "name": "\u958B\u59CB\u65E5\u6307\u5B9A",
-          "dataType": "DATE"
-        },
-        {
-          "role": "Fixed",
-          "fieldId": "F-Fixed",
-          "name": "\u65E5\u7A0B\u56FA\u5B9A",
-          "dataType": "SINGLE_SELECT"
         }
       ],
       "companyDaysOff": [],
@@ -1873,12 +1745,6 @@
         "value": null
       },
       {
-        "identity": "I13",
-        "field": "StartNoEarlierThan",
-        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded.",
-        "value": null
-      },
-      {
         "identity": "I14",
         "field": "Status",
         "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded.",
@@ -2071,12 +1937,6 @@
         "value": null
       },
       {
-        "identity": "I19",
-        "field": "StartNoEarlierThan",
-        "reason": "VerificationMismatch",
-        "value": null
-      },
-      {
         "identity": "I20",
         "field": "Status",
         "reason": "VerificationMismatch",
@@ -2265,12 +2125,6 @@
       {
         "identity": "I25",
         "field": "End",
-        "reason": "VerificationMismatch",
-        "value": null
-      },
-      {
-        "identity": "I25",
-        "field": "StartNoEarlierThan",
         "reason": "VerificationMismatch",
         "value": null
       },

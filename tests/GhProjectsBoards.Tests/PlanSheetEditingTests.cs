@@ -26,7 +26,7 @@ internal sealed class PlanSheetEditingTests
     public void DateInputUsesExplicitFormsAndNearestStatusYear(string input, string status, string expected)
     {
         var document = Document with { State = Document.State with { Settings = Document.State.Settings with { StatusDate = DateOnly.Parse(status) } } };
-        foreach (var field in new[] { PlanField.Start, PlanField.End, PlanField.StartNoEarlierThan })
+        foreach (var field in new[] { PlanField.Start, PlanField.End })
             Assert.That(PlanSheetEditing.Parse(document, field, input, Day), Is.EqualTo(DateOnly.Parse(expected)));
     }
     [TestCase("2/30"), TestCase("garbage"), TestCase("10-14"), TestCase("2026/2/30")]

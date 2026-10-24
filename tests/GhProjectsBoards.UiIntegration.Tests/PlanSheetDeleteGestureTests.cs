@@ -16,8 +16,8 @@ internal sealed partial class PlanSheetHostedTests
     {
         // #236/#241: the plan must stay acyclic. I2 is blocked by I1 and I1 is free, so the range delete still
         // has a predecessor to clear without asking any operation to reschedule a pre-existing cycle.
-        var first = new PlanRow("I1", "Published", "acme/repo") { Fixed = true, Assignees = ["U1"] };
-        var second = new PlanRow("I2", "Other", "acme/repo") { Fixed = true, Assignees = ["U1"], Predecessors = ["I1"] };
+        var first = new PlanRow("I1", "Published", "acme/repo") { Assignees = ["U1"] };
+        var second = new PlanRow("I2", "Other", "acme/repo") { Assignees = ["U1"], Predecessors = ["I1"] };
         await MountPresentation([first, second], [first, second], [new("U1", "alice", 100, null)]);
         await Select(2, PlanField.Title);
         // A rectangle that happens to span every column is still a cell range.
@@ -72,8 +72,8 @@ internal sealed partial class PlanSheetHostedTests
     public async Task DeletingARowLeavesTheSelectionWhereTheRowWas()
     {
         // As in Excel, the PMO goes on from the row after the deleted one instead of the top of the plan (#247).
-        var first = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
-        var second = new PlanRow("I2", "Other", "acme/repo") { Fixed = true };
+        var first = new PlanRow("I1", "Published", "acme/repo");
+        var second = new PlanRow("I2", "Other", "acme/repo");
         await MountPresentation([first, second], [first, second]);
         var mistaken = PlanRow.New("誤って挿入");
         await Ui.Run(async () => { await session.Execute(new InsertPlanRows([mistaken], Before: "I2"), Today); sheet.Refresh(); });
@@ -89,7 +89,7 @@ internal sealed partial class PlanSheetHostedTests
     public async Task ShiftSpaceTakesTheWholeRowAndDeleteRemovesIt()
     {
         // Only a row that was never published can be deleted (#247), so the deleted row is a local one.
-        var first = new PlanRow("I1", "Published", "acme/repo") { Fixed = true };
+        var first = new PlanRow("I1", "Published", "acme/repo");
         await MountPresentation([first], [first]);
         var local = PlanRow.New("誤って挿入");
         await Ui.Run(async () => { await session.Execute(new InsertPlanRows([local]), Today); sheet.Refresh(); });

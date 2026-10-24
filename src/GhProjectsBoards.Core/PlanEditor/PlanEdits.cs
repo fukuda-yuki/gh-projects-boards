@@ -18,9 +18,9 @@ internal static class PlanEdits
         return task with { Actual = value };
     }
     public static PlanTask Start(PlanTask task, DateOnly? value)
-        => ValidateDates(task with { Start = value, StartNoEarlierThan = value });
+        => ValidateDates(task with { Start = value });
     public static PlanTask End(PlanTask task, DateOnly? value)
-        => ValidateDates(task with { End = value, Fixed = task.Fixed || value.HasValue });
+        => ValidateDates(task with { End = value });
 
     private static void ValidateEffort(decimal? value)
     {

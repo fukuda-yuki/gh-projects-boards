@@ -396,7 +396,7 @@ internal sealed class PlanSummaryView : UserControl
             if (task.IsOverEstimate) states.Add(task.Forecast is null ? "見積超過: 見込工数・差異が数値の範囲外です" : $"見積超過: 見込工数 {task.Forecast:0.############################}h（見積工数 {task.Estimate:0.############################}h、差異 {task.Variance:+0.############################;-0.############################;0}h）");
             if (task.IsZeroRemainingOpen) states.Add("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません");
             if (task.Input.Closed) states.Add("完了");
-            if (unallocated?.Contains(row.Identity) == true) states.Add("未配分: " + (task.Remaining is null ? "見込み残存工数が未入力" : task.StartReason == "入力エラー" || task.Remaining < 0 ? "入力エラー" : task.Start.Value is null || task.End.Value is null ? "日程が未入力" : "期間内に稼働日なし"));
+            if (unallocated?.Contains(row.Identity) == true) states.Add("未配分: " + (task.Remaining is null ? "見込み残存工数が未入力" : task.StartReason == "入力エラー" || task.Remaining < 0 ? "入力エラー" : "日程が未入力"));
             var item = Row(widths);
             string[] values = [rowIds[row.Identity].ToString(Japanese), row.Title, Number(task.Estimate), Number(task.Actual), Number(task.Remaining), Date(task.Start.Value), Date(task.End.Value), string.Join("、", states)];
             for (var i = 0; i < values.Length; i++) Cell(item, TableText(values[i], i == 7 ? "SummaryTask_" + row.Identity : i == 0 ? "SummaryTaskId_" + row.Identity : $"SummaryTaskValue_{row.Identity}_{i}", i is >= 2 and <= 6), i);
