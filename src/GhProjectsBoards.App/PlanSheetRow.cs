@@ -741,6 +741,11 @@ internal sealed class PlanSheetCell : TextBox
     // opens the row menu (#231).
     internal bool Editing { get => editing; private set { editing = value; ContextFlyout = value ? textMenu : null; } }
     private bool editing;
+    // #225: Escape closes the 担当者 candidate list for the rest of this edit; typing after that does not
+    // reopen it until the edit starts again.
+    internal bool AssigneeListDismissed { get; private set; }
+    internal void DismissAssigneeList() => AssigneeListDismissed = true;
+    internal void AllowAssigneeList() => AssigneeListDismissed = false;
     private readonly Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase? textMenu;
     internal TextBlock? TitleDisplay { get; }
     // 見込終了 needs two colours in one cell: the derived date in secondary text and its working-day slip
@@ -803,10 +808,13 @@ internal sealed class PlanSheetCell : TextBox
         TextChanging += (_, _) => {
             // WinUI may deliver a programmatic text notification after Refresh returns.
             if (refreshing || Text == shownText || row.Owner is not { } owner || IsReadOnly) return;
-            if (!Editing) editingFrom = EditOriginal();
+            if (!Editing) { editingFrom = EditOriginal(); AssigneeListDismissed = false; }
             Editing = true; owner.SetInput(row.Identity, Field, Text, editingFrom);
             shownText = Text;
             RefreshDisplay();
+            // #225: the first typed change opens the 担当者 candidate list, later ones filter it. An IME
+            // composition filters only after it is confirmed (TextCompositionEnded).
+            if (Field == PlanField.Assignees && !Composing) owner.AssigneeEdited(this);
         };
         LosingFocus += (_, args) => {
             // LostFocus can arrive after a pane action has moved focus again. Decide from this
@@ -827,6 +835,8 @@ internal sealed class PlanSheetCell : TextBox
         TextCompositionStarted += (_, _) => { if (!Editing) editingFrom = EditOriginal(); Composing = true; Editing = true; RefreshDisplay(); };
         TextCompositionEnded += (_, _) => {
             Composing = false; endedThisTurn = true;
+            // #225: the confirmed conversion is the first text the candidate list may filter on.
+            if (Field == PlanField.Assignees && row.Owner is { } owner) owner.AssigneeEdited(this);
             DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => endedThisTurn = false);
         };
         DoubleTapped += (_, args) => { if (!IsReadOnly) { BeginEditing(); args.Handled = true; } };
@@ -843,6 +853,7 @@ internal sealed class PlanSheetCell : TextBox
     }
     internal void BeginEditing() {
         if (IsReadOnly) return;
+        AssigneeListDismissed = false;
         if (!Editing) {
             editingFrom = EditOriginal();
             // TextChanging can synchronously reenter presentation while Text is assigned.
@@ -855,19 +866,42 @@ internal sealed class PlanSheetCell : TextBox
                 owner.SetInput(row.Identity, Field, editText, editingFrom);
         }
         SelectAll();
+        // #225: F2, a double-click and Alt+↓ open the 担当者 candidate list with the edit.
+        if (Field == PlanField.Assignees) row.Owner?.AssigneeEdited(this);
     }
     internal void EndEditing()
     {
         if (Composing) return;
         Editing = false;
+        if (Field == PlanField.Assignees) row.Owner?.CloseAssigneeCandidates(this);
         if (row.Owner is { } owner)
             Refresh(owner.Pending.GetValueOrDefault((row.Identity, Field))?.Text ?? owner.Display(row.Identity, Field));
     }
     internal void Rebind() { Editing = false; Composing = false; endedThisTurn = false;
+        if (Field == PlanField.Assignees) { AssigneeListDismissed = false; row.Owner?.CloseAssigneeCandidates(this); }
         if (TitleDisplay is { } display) AutomationProperties.SetAutomationId(display, "");
         if (ForecastDisplay is { } forecast) AutomationProperties.SetAutomationId(forecast, "");
         if (AssigneeNameDisplay is { } name) AutomationProperties.SetAutomationId(name, "");
         if (AssigneeCountDisplay is { } count) AutomationProperties.SetAutomationId(count, ""); }
+    // #225: a chosen known person replaces the value being typed and commits as one Undo step; the list closes
+    // when the commit ends the edit. Choosing the value the editor already shows ends the edit without an Undo
+    // step, like returning text to its original value. A chosen person whose login equals the typed text is a
+    // real change when the accepted value was another person, so it commits through the ordinary rule.
+    internal void ApplyAssigneeChoice(string login)
+    {
+        if (row.Owner is not { } owner) return;
+        var text = PlanAssigneeChoices.Compose(Text, login);
+        if (text != Text) Text = text;
+        if (!owner.Pending.ContainsKey((row.Identity, Field))) { EndEditing(); return; }
+        _ = owner.CommitCell(row.Identity, Field, text);
+    }
+    // #225: Escape closed the candidate list first (handled before this); this is the second Escape and every
+    // other edit-cancel path. Native key handling and the hosted cases both enter here.
+    internal void CancelOrClose()
+    {
+        if (row.Owner is not { } owner) { EndEditing(); return; }
+        owner.CancelDrag(); owner.CancelEdit(row.Identity, Field); EndEditing();
+    }
     internal void Refresh(string text)
     {
         shownText = text;
@@ -920,12 +954,15 @@ internal sealed class PlanSheetCell : TextBox
     {
         if (row.Owner is not { } owner) { base.OnPreviewKeyDown(args); return; }
         if (Composing || endedThisTurn) { base.OnPreviewKeyDown(args); return; }
+        // #225: while the 担当者 candidate list is open, ↑/↓ move its highlight and Enter takes it. A key the
+        // list does not use falls through so the cell keeps its ordinary editing behavior.
+        if (Field == PlanField.Assignees && owner.AssigneePickerKey(this, args.Key)) { args.Handled = true; return; }
         var control = PlanSheetView.Down(VirtualKey.Control); var shift = PlanSheetView.Down(VirtualKey.Shift);
         if (owner.HandleOutlineShortcut(args.Key)) { args.Handled = true; }
         else if (!Editing && owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
         else if (args.Key == VirtualKey.Escape)
         {
-            args.Handled = true; owner.CancelDrag(); owner.CancelEdit(row.Identity, Field); EndEditing();
+            args.Handled = true; CancelOrClose();
         }
         else if (args.Key is VirtualKey.Enter or VirtualKey.Tab)
         {
@@ -948,6 +985,11 @@ internal sealed class PlanSheetCell : TextBox
         else if (!Editing && control && !PlanSheetView.Down(VirtualKey.Menu) && args.Key == VirtualKey.F2)
         { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
         else if (!control && args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
+        else if (!Editing && !IsReadOnly && Field == PlanField.Assignees && args.Key == VirtualKey.Down && PlanSheetView.Down(VirtualKey.Menu))
+        {
+            // #225: Alt+↓ opens the 担当者 candidate list from a selected cell without a pointer.
+            args.Handled = true; owner.OpenAssigneeListFromSelection();
+        }
         else if (!Editing && (args.Key == VirtualKey.F10 && shift || (int)args.Key == 93))
         {
             // The row menu from inside a cell, leaving its own right-click menu to the clipboard (#231).

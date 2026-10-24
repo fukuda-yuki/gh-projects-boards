@@ -358,7 +358,7 @@ internal sealed partial class PlanSheetView : Grid
         };
         InitializeInteraction();
         Unloaded += (_, _) => { disposed = true; pendingWheelOffset = null; CancelPendingFilter();
-            inputProblem.Close(); predecessorFlyout?.Hide(); pendingMenuAction = null; commandMenu.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
+            inputProblem.Close(); predecessorFlyout?.Hide(); assigneePicker?.Hide(); pendingMenuAction = null; commandMenu.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
             // The first culture-aware comparison loads collation data (about 90 ms measured);
             // pay it while idle instead of on the first typed filter character.
@@ -642,6 +642,10 @@ internal sealed partial class PlanSheetView : Grid
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             Problems[(identity, field)] = ex.Message; RefreshRealized(); metrics.End(pendingFrame, "rejected");
+            // #225: a refused 担当者 login keeps the message and the candidate list stays open with the closest
+            // people, so correcting the value needs no second step. The in-flight lookup sentence no longer
+            // applies once the lookup has ended.
+            if (field == PlanField.Assignees) { error.Text = ""; ShowClosestAssigneeCandidates(identity, field, text); }
             throw new InputRejectedException(ex.Message, ex);
         }
     }
