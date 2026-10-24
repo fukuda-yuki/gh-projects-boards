@@ -101,6 +101,16 @@ internal sealed class PlanTaskNamesTests
     }
 
     [Test]
+    public void ACycleInGitHubsOwnLinksIsNamedByIssueWhereverThePlanIsValidated()
+    {
+        // Open, refresh, reset and another window's edits all validate the whole plan; a cycle that GitHub's
+        // blocked-by links form must reach the PMO by task name there too, not by row position.
+        var document = Document(Row("I17"), Row("I18", "I19"), Row("I19", "I18"));
+        Assert.That(() => PlanOperations.ValidateDocument(document, Today), Throws.TypeOf<PlanCycleException>().With.Message
+            .EqualTo("循環参照: #18, #19").And.Message.Not.Contain("行目"));
+    }
+
+    [Test]
     public void TheChooserOffersTheSameRequirementsPrecedingPhaseFirstAndNoRequirementRow()
     {
         PlanRow Task(string id, string parent, string phase) => Row(id) with { Parent = parent, Phase = phase };

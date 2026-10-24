@@ -116,7 +116,9 @@ internal static class PlanOperations
         Require(d.Baseline.Rows.All(r => !r.Identity.StartsWith("local:", StringComparison.Ordinal) && currentIds.Contains(r.Identity)), "基準行を削除またはローカル行に変更できません。");
         var baselineIds = d.Baseline.Rows.Select(r => r.Identity).ToHashSet();
         Require(d.State.Rows.All(r => baselineIds.Contains(r.Identity) || IsLocal(r.Identity)), "新規行にはローカル識別子が必要です。");
-        _ = Schedule(d, today);
+        // Open, refresh, reset and reload reach the scheduler only here; their cycle is named here (#263).
+        try { _ = Schedule(d, today); }
+        catch (PlanCycleException cycle) { throw Named(d, cycle); }
     }
     private static void ValidateRows(ImmutableArray<PlanRow> rows)
     {
