@@ -932,11 +932,18 @@ internal sealed class PlanSheetCell : TextBox
             args.Handled = true;
             CommitAndNavigate(owner, row.Identity, Text, args.Key == VirtualKey.Tab, shift);
         }
-        else if (!Editing && control && Field == PlanField.Title && owner.SummaryIds.Contains(row.Identity) && args.Key is VirtualKey.Left or VirtualKey.Right)
+        else if (!Editing && control && (args.Key is VirtualKey.Left or VirtualKey.Right) && Field == PlanField.Title
+            && owner.SummaryIds.Contains(row.Identity) && !shift)
         {
             args.Handled = true;
             var identity = row.Identity; var collapse = args.Key == VirtualKey.Left;
             _ = owner.Run(() => owner.SetFold(identity, collapse), "Fold requirement");
+        }
+        else if (!Editing && control && args.Key is VirtualKey.Left or VirtualKey.Right)
+        {
+            // #228: Ctrl+←/→ is MS Project's first/last field. A parent row's title cell keeps its fold
+            // meaning, so Shift+Ctrl+←/→ is what extends the selection there.
+            args.Handled = true; owner.HandleEdgeKey(args.Key, true, shift);
         }
         else if (!Editing && control && !PlanSheetView.Down(VirtualKey.Menu) && args.Key == VirtualKey.F2)
         { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
@@ -1032,6 +1039,10 @@ internal sealed class PlanSummaryCell : ContentControl
         if (owner.HandleOutlineShortcut(args.Key)) { args.Handled = true; return; }
         if (PlanSheetView.Down(VirtualKey.Menu)) { base.OnPreviewKeyDown(args); return; }
         if (owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
+        else if (control && args.Key is VirtualKey.Left or VirtualKey.Right) {
+            // #228: Ctrl+←/→ is MS Project's first/last field, the same as on a task cell.
+            args.Handled = true; owner.HandleEdgeKey(args.Key, true, shift);
+        }
         else if (control && args.Key == VirtualKey.F2) { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
         else if (!control && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right) {
             args.Handled = true; owner.MoveSelection(args.Key, shift);

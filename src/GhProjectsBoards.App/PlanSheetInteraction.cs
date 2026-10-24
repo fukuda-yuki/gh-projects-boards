@@ -9,6 +9,7 @@ using DispatcherQueueController = Microsoft.UI.Dispatching.DispatcherQueueContro
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
@@ -263,6 +264,155 @@ internal sealed partial class PlanSheetView
         if (args.OriginalSource is PlanSheetCell { Editing: true } or PlanSheetCell { Composing: true }) return;
         args.Handled = true;
         MovePage(args.Key == VirtualKey.PageDown, Down(VirtualKey.Shift));
+    }
+    // #228: the grid edge chords move the selection to the visible first/last row or field column, and F5
+    // opens ジャンプ. Both live here so a page move and an edge move share one placement rule.
+    private void EdgeKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key is not (VirtualKey.Home or VirtualKey.End or VirtualKey.Up or VirtualKey.Down or VirtualKey.F5)) return;
+        // A plain arrow stays with the cell handler, which also keeps a whole-row selection whole.
+        if (args.Key is VirtualKey.Up or VirtualKey.Down && !Down(VirtualKey.Control)) return;
+        if (Down(VirtualKey.Menu)) return;
+        // An open editor and the IME keep their own keys; the caret's Home/End stay in the text box.
+        if (args.OriginalSource is PlanSheetCell { Editing: true } or PlanSheetCell { Composing: true }) return;
+        if (args.Key == VirtualKey.F5) { args.Handled = true; _ = Run(OpenGoTo, "Go To"); return; }
+        args.Handled = HandleEdgeKey(args.Key, Down(VirtualKey.Control), Down(VirtualKey.Shift));
+    }
+    internal bool HandleEdgeKey(VirtualKey key, bool control, bool extend)
+    {
+        if (Fields.Length == 0 || RowIds.Count == 0) return false;
+        var row = Math.Max(0, RowIndexes.GetValueOrDefault(selected, 0));
+        var column = Math.Max(0, Array.IndexOf(Fields, selectedField));
+        var last = LastVisibleTaskIndex();
+        switch (key)
+        {
+            case VirtualKey.Home when control: row = 0; column = 0; break;
+            case VirtualKey.End when control: row = last; column = Fields.Length - 1; break;
+            case VirtualKey.Home: column = 0; break;
+            case VirtualKey.End: column = Fields.Length - 1; break;
+            case VirtualKey.Up when control: row = 0; break;
+            case VirtualKey.Down when control: row = last; break;
+            case VirtualKey.Left when control: column = 0; break;
+            case VirtualKey.Right when control: column = Fields.Length - 1; break;
+            default: return false;
+        }
+        // Shift+Ctrl+↑/↓ keep a whole-row selection whole, as Shift+PageUp/PageDown already do; every
+        // other edge chord narrows to field cells.
+        var wholeRow = wholeRowSelection && extend && control && key is VirtualKey.Up or VirtualKey.Down;
+        var target = RowIds[row];
+        if (row != RowIndexes.GetValueOrDefault(selected, row)) JumpTo(target, Fields[column], extend, wholeRow);
+        else
+        {
+            Select(target, Fields[column], extend);
+            if (wholeRow) SelectWholeRow(target, true);
+            else FocusSelected();
+        }
+        return true;
+    }
+    // The empty new-task row is not a task, so Ctrl+End and Ctrl+↓ stop on the last real task.
+    private int LastVisibleTaskIndex()
+    {
+        for (var index = RowIds.Count - 1; index >= 0; index--)
+            if (Rows.ContainsKey(RowIds[index])) return index;
+        return 0;
+    }
+    // Place the row and focus its cell without a second bring-into-view: a far jump can otherwise be
+    // snapped back by a row container that is still being rebound from its previous identity (#256).
+    private void JumpTo(string identity, string field, bool extend, bool wholeRow = false)
+    {
+        if (Fields.Length == 0 || !RowIndexes.TryGetValue(identity, out var index) || !Fields.Contains(field)) return;
+        if (rowScroll is { } scroll)
+        {
+            var top = index * RowHeight;
+            var offset = Math.Clamp(top, 0, scroll.ScrollableHeight);
+            if (top + RowHeight > offset + scroll.ViewportHeight)
+                offset = Math.Clamp(top + RowHeight - scroll.ViewportHeight, 0, scroll.ScrollableHeight);
+            scroll.ChangeView(null, offset, null, true);
+        }
+        Select(identity, field, extend);
+        if (wholeRow) SelectWholeRow(identity, true);
+        FocusCell(selected, selectedField, scrollIntoView: false);
+        HoldingView = true;
+    }
+    private Flyout? goToFlyout;
+    internal async Task OpenGoTo()
+    {
+        await CommitPending();
+        if (disposed) return;
+        goToFlyout?.Hide();
+        var input = Id(new TextBox { PlaceholderText = "#524・repo#524・新2" }, "PlanGoToInput");
+        AutomationProperties.SetName(input, "ジャンプ先のタスク名");
+        var feedback = Id(new TextBlock { TextWrapping = TextWrapping.Wrap,
+            Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanGoToError");
+        AutomationProperties.SetLiveSetting(feedback, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        var confirm = Id(new Button { Content = "移動", Style = (Style)Application.Current.Resources["AccentButtonStyle"] }, "PlanGoToConfirm");
+        var cancel = Id(new Button { Content = "キャンセル" }, "PlanGoToCancel");
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        actions.Children.Add(confirm); actions.Children.Add(cancel);
+        var content = new StackPanel { Width = Math.Min(360, Math.Max(240, ActualWidth - 80)), Spacing = 8 };
+        content.Children.Add(Id(new TextBlock { Text = "ジャンプ", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "PlanGoToLabel"));
+        content.Children.Add(input); content.Children.Add(feedback); content.Children.Add(actions);
+        var flyout = goToFlyout = new Flyout {
+            AreOpenCloseAnimationsEnabled = false,
+            Content = content, Placement = FlyoutPlacementMode.Bottom,
+            FlyoutPresenterStyle = new Style(typeof(FlyoutPresenter)) { BasedOn = (Style)Application.Current.Resources["PlanFlyoutPresenterStyle"], Setters = {
+                new Setter(FrameworkElement.MaxWidthProperty, Math.Max(0, XamlRoot.Size.Width - 32))
+            } }
+        };
+        var navigating = false;
+        void Submit()
+        {
+            try
+            {
+                var identity = TaskNames.Resolve(PlanInput.Fold(input.Text).Trim(), "タスク名");
+                if (!Rows.ContainsKey(identity)) throw new ArgumentException($"{input.Text.Trim()} はこの版にありません。");
+                navigating = true;
+                flyout.Hide();
+                RevealTask(identity);
+                JumpTo(identity, PlanField.Title, false);
+                error.Text = "";
+            }
+            catch (ArgumentException ex)
+            {
+                feedback.Text = ex.Message;
+                AutomationProperties.SetName(feedback, ex.Message);
+                input.Focus(FocusState.Keyboard);
+            }
+        }
+        confirm.Click += (_, _) => Submit();
+        input.KeyDown += (_, args) => { if (args.Key == VirtualKey.Enter) { args.Handled = true; Submit(); } };
+        cancel.Click += (_, _) => flyout.Hide();
+        content.KeyDown += (_, args) => { if (args.Key == VirtualKey.Escape) { args.Handled = true; flyout.Hide(); } };
+        flyout.Opened += (_, _) => input.Focus(FocusState.Keyboard);
+        flyout.Closed += (_, _) => {
+            if (ReferenceEquals(goToFlyout, flyout)) goToFlyout = null;
+            // Cancelling returns focus to the cell the PMO was on; an accepted name already moved it.
+            if (!navigating && !disposed) FocusSelected();
+        };
+        flyout.ShowAt(commandBar);
+    }
+    // Go To names the task the PMO asked for, so a target the title filter or folding hides is revealed
+    // rather than refused: the accepted filter is cleared and the folded ancestors are expanded.
+    private void RevealTask(string identity)
+    {
+        if (!RowIds.Contains(identity) && (acceptedFilter.Length > 0 || filterPredicate is not null))
+        {
+            CancelPendingFilter();
+            acceptedFilter = ""; filterPredicate = null; filterContext = [];
+            rendering = true;
+            try { filter.Text = ""; } finally { rendering = false; }
+            Refresh();
+        }
+        if (RowIds.Contains(identity)) return;
+        var revealed = false;
+        var visited = new HashSet<string>();
+        for (var parent = Rows.GetValueOrDefault(identity)?.Parent; parent is not null && visited.Add(parent);)
+        {
+            if (!Rows.TryGetValue(parent, out var row)) break;
+            if (folded.Remove(parent)) revealed = true;
+            parent = row.Parent;
+        }
+        if (revealed) Refresh();
     }
     internal event Action? CommandRowFocusRequested;
     private (string Identity, string Field)? filterReturnCell;
@@ -595,6 +745,8 @@ internal sealed partial class PlanSheetView
     private readonly DispatcherTimer dragScroll = new() { Interval = TimeSpan.FromMilliseconds(40) };
     private void InitializeInteraction()
     {
+        // #228: the grid edge chords and F5 are handled once for the whole list, before a cell's own keys.
+        List.PreviewKeyDown += EdgeKeyDown;
         // The selection line's impact links (#236 part B): filter to the delayed successors, or move to the
         // predecessor that caused the delay.
         successorLink.Click += (_, _) => {

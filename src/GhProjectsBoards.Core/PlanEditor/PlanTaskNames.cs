@@ -62,7 +62,9 @@ internal sealed partial class PlanTaskNames
     }
 
     // One entry of 先行 after #239 folding: N or #N, repo#N or owner/repo#N, or 新N. Nothing is linked by guess.
-    internal string Resolve(string entry)
+    internal string Resolve(string entry) => Resolve(entry, "先行タスク");
+    // ジャンプ resolves the same grammar and reports it as タスク名 (#228).
+    internal string Resolve(string entry, string subject)
     {
         if (LocalName().Match(entry) is { Success: true } localName)
         {
@@ -71,7 +73,7 @@ internal sealed partial class PlanTaskNames
         }
         if (Reference().Match(entry) is not { Success: true } reference
             || !int.TryParse(reference.Groups["number"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var number) || number <= 0)
-            throw new ArgumentException("先行タスクは #524、repo#524 または 新2 の形で指定してください: " + entry);
+            throw new ArgumentException($"{subject}は #524、repo#524 または 新2 の形で指定してください: " + entry);
         var owner = reference.Groups["owner"].Value; var repository = reference.Groups["repo"].Value;
         var carrying = issues.Where(i => i.Number == number
             && (repository.Length == 0 || string.Equals(i.Repository, repository, StringComparison.OrdinalIgnoreCase))
