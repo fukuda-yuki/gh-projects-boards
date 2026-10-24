@@ -632,8 +632,8 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Ready<TextBlock>("PlanRowId5");
         await Ui.Run(() => {
             Assert.That(VisibleRows(), Is.EqualTo(new[] { "I2", "I5", "" }), "Ancestor context must not become a bulk-edit target.");
-            Assert.That(Ui.Find<TextBlock>("PlanRowId2").Text, Does.StartWith("2"));
-            Assert.That(Ui.Find<TextBlock>("PlanRowId5").Text, Does.StartWith("5"));
+            Assert.That(Ui.Find<TextBlock>("PlanRowId2").Text, Is.EqualTo("#102"));
+            Assert.That(Ui.Find<TextBlock>("PlanRowId5").Text, Is.EqualTo("#105"));
         });
         var selectionTrace = new List<string>();
         RoutedEventHandler focusChanged = (_, _) => TraceSelection("GotFocus");
@@ -656,7 +656,7 @@ internal sealed class PlanOverviewHostedTests
                 foreach (var number in new[] { 2, 5 }) {
                     var peer = FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>($"PlanCell{number}_Assignees"));
                     Assert.That(((ISelectionItemProvider)peer.GetPattern(PatternInterface.SelectionItem)).IsSelected, Is.True,
-                        $"ID {number} must belong to the visible bulk-edit selection before paste.");
+                        $"Row {number} must belong to the visible bulk-edit selection before paste.");
                 }
             });
             clipboard = new("bob", null);
@@ -697,7 +697,7 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Run(() => {
             Assert.That(VisibleRows(), Is.EqualTo(new[] { "I1", "I4", "" }));
             var peer = FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("PlanCell4_Assignees"));
-            Assert.That(peer.GetName(), Does.Contain("ID 4").And.Contain("担当者"));
+            Assert.That(peer.GetName(), Does.Contain("#104").And.Contain("担当者"));
             Assert.That(((ISelectionItemProvider)peer.GetPattern(PatternInterface.SelectionItem)).IsSelected, Is.True);
             Assert.That(Ui.Find<TextBox>("PlanSheetFilter").FocusState, Is.Not.EqualTo(FocusState.Unfocused),
                 "Changing the filter must keep typing focus in the filter.");
@@ -834,12 +834,16 @@ internal sealed class PlanOverviewHostedTests
         await SelectCell(2, PlanField.Predecessors);
         await Ui.ClickCommand("PlanSheetPredecessorAdd");
         await Ui.Until(() => Ui.Popup<TextBox>("PlanPredecessorSearch")?.IsLoaded == true);
+        // #263: the requirement R01 受注 (#101) is never offered; its task 承認 matches through it.
+        await SearchPredecessors("受注", 1);
+        await Ui.Run(() => Assert.That(string.Join(" ", Ui.Tree(Ui.Popup<ListView>("PlanPredecessorCandidates")!).OfType<TextBlock>().Select(b => b.Text)),
+            Does.StartWith("#103 承認")));
         await SearchPredecessors("承認", 2);
-        await SearchPredecessors("#106", 1);
+        await SearchPredecessors("＃１０６", 1);
         await Ui.Run(() => {
             var list = Ui.Popup<ListView>("PlanPredecessorCandidates")!;
             var text = string.Join(" ", Ui.Tree(list).OfType<TextBlock>().Select(block => block.Text));
-            Assert.That(text, Does.Contain("R02").And.Contain("承認").And.Contain("acme/repo#106"));
+            Assert.That(text, Does.StartWith("#106 承認").And.Contain(" · 終了 ").And.Not.Contain("acme/repo").And.Not.Contain("ID"), "One line: task name, title, assignee, plan end.");
             list.SelectedItem = list.Items[0];
             Ui.Click(Ui.Popup<Button>("PlanPredecessorConfirm")!);
         });

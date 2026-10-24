@@ -378,7 +378,7 @@ internal sealed class PlanSummaryView : UserControl
         table.Children.Add(header);
         var calendar = new PlanCalendar { CompanyDaysOff = document!.State.Settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset() };
         var lateness = PlanLateness.Classify(schedule.Values.ToArray(), calendar, day);
-        var rowIds = document!.State.Rows.Select((row, index) => (row.Identity, Id: index + 1)).ToDictionary(r => r.Identity, r => r.Id);
+        var names = PlanTaskNames.Of(document!);
         var selectedRows = document.State.Rows.Where(r => ids.Contains(r.Identity)).ToArray();
         foreach (var row in selectedRows.Take(200)) {
             var task = schedule[row.Identity]; var states = new List<string>();
@@ -398,7 +398,7 @@ internal sealed class PlanSummaryView : UserControl
             if (task.Input.Closed) states.Add("完了");
             if (unallocated?.Contains(row.Identity) == true) states.Add("未配分: " + (task.Remaining is null ? "見込み残存工数が未入力" : task.StartReason == "入力エラー" || task.Remaining < 0 ? "入力エラー" : "日程が未入力"));
             var item = Row(widths);
-            string[] values = [rowIds[row.Identity].ToString(Japanese), row.Title, Number(task.Estimate), Number(task.Actual), Number(task.Remaining), Date(task.Start.Value), Date(task.End.Value), string.Join("、", states)];
+            string[] values = [names[row.Identity], row.Title, Number(task.Estimate), Number(task.Actual), Number(task.Remaining), Date(task.Start.Value), Date(task.End.Value), string.Join("、", states)];
             for (var i = 0; i < values.Length; i++) Cell(item, TableText(values[i], i == 7 ? "SummaryTask_" + row.Identity : i == 0 ? "SummaryTaskId_" + row.Identity : $"SummaryTaskValue_{row.Identity}_{i}", i is >= 2 and <= 6), i);
             AutomationProperties.SetName(item, string.Join(" · ", values)); list.Children.Add(item);
         }

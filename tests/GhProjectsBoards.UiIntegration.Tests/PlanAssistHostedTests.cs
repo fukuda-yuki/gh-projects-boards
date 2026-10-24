@@ -226,8 +226,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             var links = Ui.Tree(view).OfType<HyperlinkButton>().Where(b => AutomationProperties.GetAutomationId(b).StartsWith("AssistTask")).ToArray();
             Assert.That(links.Length, Is.EqualTo(5));
-            Assert.That(AutomationProperties.GetName(links[0]), Does.StartWith("1 "));
-            Assert.That(AutomationProperties.GetName(links[1]), Does.StartWith("12 "));
+            Assert.That(AutomationProperties.GetName(links[0]), Does.StartWith("#1 "));
+            Assert.That(AutomationProperties.GetName(links[1]), Does.StartWith("#12 "));
             var all = Ui.Tree(view).OfType<Button>().Single(b => AutomationProperties.GetAutomationId(b).StartsWith("AssistAllReferences"));
             Assert.That(all.Content, Is.EqualTo("参照した 12 件を計画で表示"));
             Ui.Click(AutomationProperties.GetAutomationId(all));

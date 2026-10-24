@@ -46,8 +46,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             return top >= 0 && top + command.ActualHeight <= viewport.ActualHeight;
         });
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("SummaryTaskId_I1").Text, Is.EqualTo("1"));
-            Assert.That(Ui.Find<TextBlock>("SummaryTaskId_I2").Text, Is.EqualTo("2"));
+            Assert.That(Ui.Find<TextBlock>("SummaryTaskId_I1").Text, Is.EqualTo("#1"));
+            Assert.That(Ui.Find<TextBlock>("SummaryTaskId_I2").Text, Is.EqualTo("#2"));
             Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = 2;
             Assert.That(AutomationProperties.GetItemStatus(Ui.Find<Button>("SummaryCell_U1_0")), Is.EqualTo("選択中"));
         });

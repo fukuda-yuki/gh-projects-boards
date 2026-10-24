@@ -134,7 +134,7 @@ internal sealed partial class PlanSheetView
     {
         selection.MaxWidth = double.PositiveInfinity;
         ToolTipService.SetToolTip(selection, null);
-        selection.Text = PlanIds.TryGetValue(selected, out var number) ? $"ID {number}" : "";
+        selection.Text = TaskNames.Contains(selected) ? TaskNames[selected] : "";
         selectedTitle.Text = Rows.GetValueOrDefault(selected)?.Title ?? "";
         ToolTipService.SetToolTip(selectedTitle, selectedTitle.Text);
         AutomationProperties.SetName(selection, selection.Text + " " + selectedTitle.Text);
@@ -168,9 +168,10 @@ internal sealed partial class PlanSheetView
                 }
             }
             if (late.CausePredecessorRowId is { } cause) {
-                predecessorLink.Content = $"先行 {cause} の遅れによる · {cause} へ移動";
+                var name = TaskNames.AtPosition(cause);
+                predecessorLink.Content = $"先行 {name} の遅れによる · {name} へ移動";
                 predecessorLink.Visibility = Visibility.Visible;
-                AutomationProperties.SetName(predecessorLink, $"先行 {cause} へ移動");
+                AutomationProperties.SetName(predecessorLink, $"先行 {name} へ移動");
             }
         }
         slipPill.Background = late?.Level == PlanLatenessLevel.Overdue ? Brush("GanttLateTintBrush") : null;
@@ -190,7 +191,7 @@ internal sealed partial class PlanSheetView
         // the 配下 lateness summary instead.
         var reasons = new List<string>();
         if (task is { IsSummary: false })
-            reasons.Add(task.StartReason is "完了" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason);
+            reasons.Add(task.StartReason is "完了" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + TaskNames.StartReason(task.StartReason));
         if (task is not null && PlanLateness.EndReason(task) is { } endReason) reasons.Add(endReason);
         if (task?.Warnings.Count > 0) reasons.Add(string.Join(" / ", task.Warnings));
         var remoteProblem = RemoteProblem(selected);

@@ -483,7 +483,7 @@ internal sealed partial class PlanPublishReviewHostedTests
             list.ScrollIntoView(list.Items[1039], ScrollIntoViewAlignment.Leading);
         });
         await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1039) is ListViewItem { IsLoaded: true } item &&
-            Ui.Tree(item).OfType<TextBlock>().Any(t => t.Text == "1040 要求タスク 1040"));
+            Ui.Tree(item).OfType<TextBlock>().Any(t => t.Text == "#1040 要求タスク 1040"));
         await Ui.Run(async () => {
             var list = Ui.Find<ListView>("PlanPublishLines");
             var last = (ListViewItem)list.ContainerFromIndex(1039);

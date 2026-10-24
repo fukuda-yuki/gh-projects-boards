@@ -21,7 +21,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             var input = Ui.Find<TextBox>("PlanColumnWidthTitle");
             Assert.That(input.Header, Is.Null);
-            Assert.That(input.PlaceholderText, Is.EqualTo("224"));
+            Assert.That(input.PlaceholderText, Is.EqualTo("200"));
             Assert.That(AutomationProperties.GetName(input), Is.EqualTo("タスク名 の幅"));
             Assert.That(Ui.Tree(view).OfType<TextBox>().Any(t => AutomationProperties.GetAutomationId(t) == "PlanColumnWidthIndicator"), Is.False);
             var list = Ui.Find<ListView>("PlanColumnList"); var down = Ui.Find<Button>("PlanColumnDownTitle");
@@ -38,7 +38,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width is null);
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Ready<TextBlock>("PlanHeaderTitle");
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width == 224);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width == 200);
         await OpenColumnSettingsThroughOverflow();
         // The page stays loaded while hidden; wait until the reopened settings can take focus.
         await Ui.Until(() => Ui.Find<TextBox>("PlanColumnWidthTitle").Focus(FocusState.Programmatic));
@@ -50,7 +50,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(session.UndoCount, Is.EqualTo(beforeReset + 1));
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Ready<TextBlock>("PlanHeaderTitle");
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width == 224);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width == 200);
         await Ui.Run(() => Ui.Click("PlanUndo"));
         await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width == 320);
     }
@@ -217,7 +217,7 @@ internal sealed partial class PlanWorkspaceHostedTests
 internal sealed partial class PlanSheetHostedTests
 {
     // A header TextBlock reports its text extent as ActualWidth; RenderSize is the arranged column width.
-    [TestCase("Title", 320d, 224d), TestCase("Id", 100d, 52d)]
+    [TestCase("Title", 320d, 200d), TestCase("Id", 100d, 76d)]
     public async Task HeaderRangeValueResizesAlignedRowsAndUndoRestoresWidth(string key, double width, double original)
     {
         await Ui.Ready<FrameworkElement>("PlanHeaderGrip" + key);
@@ -258,7 +258,7 @@ internal sealed partial class PlanSheetHostedTests
             Ui.Find<FrameworkElement>("PlanHeaderGripTitle")).GetPattern(PatternInterface.RangeValue)).SetValue(320));
         await Ui.Run(async () => await sheet.Run(() => Task.CompletedTask));
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Width, Is.EqualTo(224));
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Width, Is.EqualTo(200));
             Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text, Is.EqualTo("invalid"));
         });
         Assert.That(session.UndoCount, Is.EqualTo(undo));
@@ -275,7 +275,7 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Run(() => ((IRangeValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
                 Ui.Find<FrameworkElement>("PlanHeaderGripTitle")).GetPattern(PatternInterface.RangeValue)).SetValue(320));
             await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Contains(publishPending ? "発行結果を確認" : "更新または発行が進行中"));
-            await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Width, Is.EqualTo(224)));
+            await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Width, Is.EqualTo(200)));
             Assert.That(session.UndoCount, Is.EqualTo(undo));
             Assert.That(session.Document.State.Settings.SheetColumns, Is.Empty);
         }
@@ -293,7 +293,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => scale = sheet.XamlRoot.RasterizationScale);
         using (session.BeginRemoteOperation()) {
             await SheetNativeInput.Drag(start, new(start.X + 64 * scale, start.Y), async () => {
-                await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width > 224);
+                await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width > 200);
                 Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
                 Assert.That(session.UndoCount, Is.EqualTo(undo));
             });
@@ -331,7 +331,7 @@ internal sealed partial class PlanSheetHostedTests
         double scale = 1;
         await Ui.Run(() => scale = sheet.XamlRoot.RasterizationScale);
         await SheetNativeInput.Drag(start, new(start.X + 64 * scale, start.Y), async () => {
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width > 224);
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width > 200);
             Assert.That(session.UndoCount, Is.EqualTo(undo));
             Assert.That(session.Document.State.Settings.SheetColumns, Is.Empty);
         });

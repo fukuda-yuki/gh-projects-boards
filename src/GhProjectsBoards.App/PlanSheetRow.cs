@@ -27,7 +27,10 @@ public sealed class PlanSheetRow : Grid
     private readonly Border chartSeparator = new() { BorderThickness = new(0, 0, 0, 1), BorderBrush = PlanSheetView.Brush("SheetSeparatorBrush"), IsHitTestVisible = false };
     private readonly Canvas chart = new() { Height = 28 };
     private readonly Canvas dependencyChart = new(), taskChart = new();
-    private readonly TextBlock id = new() { FontSize = 13, TextAlignment = TextAlignment.Right, Padding = new(4, 3, 8, 0) };
+    private readonly TextBlock id = new() { FontSize = 13, TextAlignment = TextAlignment.Right, Padding = new(2, 3, 6, 0) };
+    // Excel's row header (#263): the position helps the eye find a row, and is never a task reference.
+    private readonly TextBlock rowNumber = new() { FontSize = 11, Padding = new(5, 5, 0, 0), Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") };
+    private readonly Grid idContent = new() { ColumnDefinitions = { new() { Width = GridLength.Auto }, new() { Width = new(1, GridUnitType.Star) } } };
     private readonly Grid idCell = new();
     private readonly PlanRowHandle idHandle;
     private readonly Border selectionAccent = new() { Width = 3, Height = 16, CornerRadius = new(1.5),
@@ -56,7 +59,8 @@ public sealed class PlanSheetRow : Grid
         ? display : Cells.FirstOrDefault(c => c.Field == field);
     internal double FittedColumnWidth(string key)
     {
-        if (key == "Id") return PlanSheetView.MeasureColumnText(id.Text, id.FontSize, id.FontFamily, id.FontWeight) + id.Padding.Left + id.Padding.Right;
+        if (key == "Id") return PlanSheetView.MeasureColumnText(id.Text, id.FontSize, id.FontFamily, id.FontWeight) + id.Padding.Left + id.Padding.Right
+            + PlanSheetView.MeasureColumnText(rowNumber.Text, rowNumber.FontSize, rowNumber.FontFamily, rowNumber.FontWeight) + rowNumber.Padding.Left;
         var cell = Cells.Single(c => c.Field == key);
         var width = summaryCells.TryGetValue(key, out var summary) && summary.Visibility == Visibility.Visible
             ? PlanSheetView.MeasureColumnText(summary.Text.Text, summary.Text.FontSize, summary.Text.FontFamily, summary.Text.FontWeight)
@@ -121,7 +125,9 @@ public sealed class PlanSheetRow : Grid
         chartClip.PointerWheelChanged += (_, args) => Owner?.ScrollTimeline(args);
         BringIntoViewRequested += (_, args) => { if (Owner?.HoldingView == true) args.Handled = true; };
         Children.Add(sheetClip); Children.Add(chartClip); SetColumn(chartClip, 1);
-        idHandle = new(this) { Content = id };
+        AutomationProperties.SetAccessibilityView(rowNumber, AccessibilityView.Raw);
+        idContent.Children.Add(rowNumber); idContent.Children.Add(id); Grid.SetColumn(id, 1);
+        idHandle = new(this) { Content = idContent };
         idCell.Children.Add(idHandle); idCell.Children.Add(selectionAccent);
         idHandle.Click += (_, _) => Owner?.SelectWholeRow(Identity, PlanSheetView.Down(VirtualKey.Shift));
         idHandle.PreviewKeyDown += (_, args) => {
@@ -252,6 +258,7 @@ public sealed class PlanSheetRow : Grid
         EnsureColumns(owner);
         Height = chart.Height = owner.RowHeight;
         var number = owner.PlanIds.GetValueOrDefault(Identity);
+        var name = number == 0 ? "新規" : owner.TaskNames[Identity];
         ColumnDefinitions[0].Width = new(owner.SheetViewport); ColumnDefinitions[1].Width = new(owner.ChartViewport);
         Width = owner.SheetViewport + owner.ChartViewport;
         var sheetBounds = new Rect(0, 0, owner.SheetViewport, owner.RowHeight);
@@ -264,13 +271,14 @@ public sealed class PlanSheetRow : Grid
         selectionAccent.Visibility = owner.IsSelectedRow(Identity) ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetAutomationId(selectionAccent, "PlanSelectionAccent" + number);
         var warnings = owner.Schedule.GetValueOrDefault(Identity)?.Warnings ?? [];
-        id.Text = number == 0 ? "+" : number.ToString();
+        id.Text = number == 0 ? "+" : name;
+        rowNumber.Text = number == 0 ? "" : number.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var remoteProblem = owner.RemoteProblem(Identity);
         ToolTipService.SetToolTip(id, string.Join("\n", warnings) + remoteProblem);
-        AutomationProperties.SetName(id, number == 0 ? "新しいタスク" : $"ID {number}" + (warnings.Count > 0 ? " " + string.Join(" / ", warnings) : ""));
+        AutomationProperties.SetName(id, number == 0 ? "新しいタスク" : name + (warnings.Count > 0 ? " " + string.Join(" / ", warnings) : ""));
         AutomationProperties.SetAutomationId(id, "PlanRowId" + number);
         AutomationProperties.SetAutomationId(idHandle, "PlanRowHandle" + number);
-        AutomationProperties.SetName(idHandle, $"ID {number} 行を選択・移動");
+        AutomationProperties.SetName(idHandle, $"{name} 行を選択・移動");
         var depth = 0; var parent = owner.Rows.GetValueOrDefault(Identity)?.Parent;
         while (parent is not null && owner.Rows.TryGetValue(parent, out var ancestor) && depth < 30) { depth++; parent = ancestor.Parent; }
         var summary = owner.SummaryIds.Contains(Identity);
@@ -362,7 +370,7 @@ public sealed class PlanSheetRow : Grid
                 AutomationProperties.SetAutomationId(cell.AssigneeCountDisplay!, "PlanAssigneeCount" + number);
             }
             AutomationProperties.SetAutomationId(cell, $"PlanCell{number}_{field}");
-            AutomationProperties.SetName(cell, $"ID {(number == 0 ? "新規" : number)} {PlanSheetView.FullName(column)}"
+            AutomationProperties.SetName(cell, $"{name} {PlanSheetView.FullName(column)}"
                 + (field == "ForecastEnd" ? (owner.ForecastAccessibleValue(Identity) is { Length: > 0 } forecastName ? " " + forecastName : "")
                     : owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
             AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? stateHint ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
@@ -402,7 +410,7 @@ public sealed class PlanSheetRow : Grid
                     ? PlanSheetView.DateText(accessibleDate, true)
                     : field == "ForecastEnd" ? owner.ForecastAccessibleValue(Identity)
                     : missing > 0 ? $"{value}（{(field == PlanField.Estimate ? "見積" : "残")}のないタスク {missing} 件を除く）" : value;
-                AutomationProperties.SetName(display, $"ID {number} {PlanSheetView.FullName(column)} {accessibleValue} · {PlanOperations.SummaryReadOnlyReason(field)}");
+                AutomationProperties.SetName(display, $"{name} {PlanSheetView.FullName(column)} {accessibleValue} · {PlanOperations.SummaryReadOnlyReason(field)}");
                 var fullValue = field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : accessibleValue;
                 AutomationProperties.SetHelpText(display, string.Join(" · ", new[] { fullValue, AutomationProperties.GetHelpText(cell) }.Where(value => value.Length > 0)));
                 ToolTipService.SetToolTip(display, PlanSheetView.EffortPrefix(column) + (problem ?? fullValue));
@@ -416,7 +424,7 @@ public sealed class PlanSheetRow : Grid
         var done = taskRow?.Closed == true;
         var effort = owner.Schedule.GetValueOrDefault(Identity);
         var unpublished = owner.Unpublished.Fields.ContainsKey(Identity);
-        var stateText = PlanSheetText.Indicator(taskRow, effort, late, remoteProblem, unpublished, owner.Marks);
+        var stateText = PlanSheetText.Indicator(owner.TaskNames, taskRow, effort, late, remoteProblem, unpublished, owner.Marks);
         // Outlined marks only, never filled (#236 part B): red 期限超過, yellow 予定より遅れ and 見積超過.
         var overdueMark = owner.Marks.Overdue && late?.Level == PlanLatenessLevel.Overdue;
         var yellowMark = owner.Marks.Later && late?.Level == PlanLatenessLevel.Later
@@ -660,7 +668,7 @@ public sealed class PlanSheetRow : Grid
                 endpoint.Fill = PlanSheetView.Brush("TextFillColorSecondaryBrush");
                 Canvas.SetLeft(endpoint, ChartX(owner, known)); Canvas.SetTop(endpoint, (owner.RowHeight - 10) / 2);
                 AutomationProperties.SetAutomationId(endpoint, "PlanEndpoint" + number);
-                AutomationProperties.SetName(endpoint, $"ID {number} {(task.Start.Value is not null ? "開始" : "終了")} {known:yyyy-MM-dd}");
+                AutomationProperties.SetName(endpoint, $"{owner.TaskNames[Identity]} {(task.Start.Value is not null ? "開始" : "終了")} {known:yyyy-MM-dd}");
             }
             return;
         }
@@ -687,7 +695,7 @@ public sealed class PlanSheetRow : Grid
         var lateness = owner.LatenessOf(Identity);
         var late = lateness?.DaysLater;
         var overdue = lateness?.Level == PlanLatenessLevel.Overdue;
-        var barName = $"ID {number} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
+        var barName = $"{owner.TaskNames[Identity]} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
             + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" {(overdue ? "期限超過" : "予定より遅れ")} +{days}日" : "");
         AutomationProperties.SetAutomationId(bar, "PlanBar" + number);
         AutomationProperties.SetName(bar, barName);
