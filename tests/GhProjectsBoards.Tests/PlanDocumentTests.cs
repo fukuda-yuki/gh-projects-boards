@@ -147,6 +147,46 @@ internal sealed class PlanDocumentTests
     }
     private static EditPlanCells Edit(string field, object? value, string id = "issue:1") => new(PlanOperationKind.Cell, [new(id, field, value)]);
 
+    [Test]
+    public async Task APlanSavedWithStartConstraintAndFixedDatesOpensWithOnlyThoseValuesDropped()
+    {
+        // #268: the fixture is a checkpoint the previous version saved, with 開始日指定 and 日程固定 mapped,
+        // shown as sheet columns, held by rows and history, and in a refresh conflict. Unpublished edits
+        // (title, estimate and the end they moved) and the Undo/Redo history must survive the upgrade.
+        var day = new DateOnly(2026, 10, 14);
+        var project = new ScopedId(new("github.com", 42), "PVT_legacy");
+        var store = new PlanStore(root);
+        Directory.CreateDirectory(store.Root);
+        using (var fixture = typeof(PlanDocumentTests).Assembly.GetManifestResourceStream("GhProjectsBoards.Tests.Fixtures.LegacySchedulingFieldsPlan.json")!)
+        using (var file = File.Create(store.FileFor(project))) await fixture.CopyToAsync(file);
+
+        var opened = await PlanSession.OpenAsync(store, project, day);
+        Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Loaded), opened.Error);
+        var session = opened.Session!; sessions.Add(session);
+        var document = session.Document;
+        Assert.Multiple(() =>
+        {
+            Assert.That(document.State.Rows.Select(r => (r.Identity, r.Title, r.Estimate, r.Start, r.End)), Is.EqualTo(new[] {
+                ("issue:1", "Task 1 edited", (decimal?)16, (DateOnly?)new DateOnly(2026, 10, 14), (DateOnly?)new DateOnly(2026, 10, 20)),
+                ("issue:2", "Task 2", 8, new DateOnly(2026, 10, 15), new DateOnly(2026, 10, 16)),
+                ("issue:3", "Task 3", 8, new DateOnly(2026, 10, 14), new DateOnly(2026, 10, 14)) }));
+            Assert.That(document.State.Settings.Columns.Select(c => c.Role), Is.EqualTo(new[] { PlanField.Estimate, PlanField.Start, PlanField.End }));
+            Assert.That(document.State.Settings.SheetColumns, Is.EqualTo(new PlanSheetColumnChoice[] { new(PlanField.Status, true, null) }));
+            Assert.That(document.State.Settings.People.Single().Name, Is.EqualTo("Alice"));
+            Assert.That(document.Sync.Conflicts, Is.Empty);
+            Assert.That(PlanOperations.Changes(document, day).Fields["issue:1"], Is.EquivalentTo(new[] { PlanField.Title, PlanField.Estimate, PlanField.End }));
+            Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo((4, 1)));
+        });
+
+        await session.Redo(day);
+        Assert.That(session.Document.State.Rows[1].Remaining, Is.EqualTo(4));
+        for (var i = 0; i < 5; i++) Assert.That((await session.Undo(day)).Succeeded, Is.True);
+        Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Task 1"));
+        Assert.That((await session.FlushAsync()).Succeeded, Is.True);
+        var saved = await File.ReadAllTextAsync(store.FileFor(project));
+        Assert.That(saved, Does.Not.Contain("startNoEarlierThan").And.Not.Contain("\"fixed\"").And.Not.Contain("\"StartNoEarlierThan\""));
+    }
+
     [TestCase(false), TestCase(true)]
     public async Task OutlineCommandPersistsOneExactUndoRedoStepAcrossReopening(bool arrange)
     {
