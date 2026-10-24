@@ -57,41 +57,32 @@ internal static class ProjectQueries
         }
         """.Replace("PAGE_INFO", PageInfo).Replace("ISSUE_FIELD", IssueField);
     public static readonly string Items = "query ProjectItems($id:ID!,$after:String){node(id:$id){__typename ... on ProjectV2{id items(first:100,after:$after){" + PageInfo + " nodes{id}}}}}";
-    public static readonly string ItemDetails = """
-        query ProjectItemDetails($ids:[ID!]!) {
-          nodes(ids:$ids) {
-            __typename id
-            ... on ProjectV2Item {
-              type isArchived project { id }
-              content {
-                __typename
-                ... on Node { id }
-                ... on Issue {
-                  labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt viewerCanUpdate viewerCanSetFields milestone { id title dueOn state } NATIVE
-                  repository { id nameWithOwner owner { id } }
-                }
-              }
-              fieldValues(first: 100) { PAGE_INFO VALUES }
-            }
+    // #201: the item-detail selection shared by the complete read and the scoped publication read. The
+    // publication read resolves each Issue to its Project items and reads those items in the same request,
+    // so its pre-write and verification reads cost one request per batch instead of two.
+    private const string ItemDetail = """
+        type isArchived project { id }
+        content {
+          __typename
+          ... on Node { id }
+          ... on Issue {
+            labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt viewerCanUpdate viewerCanSetFields milestone { id title dueOn state } NATIVE
+            repository { id nameWithOwner owner { id } }
           }
         }
-        """.Replace("NATIVE", Native).Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference).Replace("ISSUE_FIELD_VALUE", IssueFieldValue);
+        fieldValues(first: 100) { PAGE_INFO VALUES }
+        """;
+    public static readonly string ItemDetails = ("query ProjectItemDetails($ids:[ID!]!) { nodes(ids:$ids) { __typename id ... on ProjectV2Item { " + ItemDetail + " } } }")
+        .Replace("NATIVE", Native).Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values)
+        .Replace("FIELD_REFERENCE", FieldReference).Replace("ISSUE_FIELD_VALUE", IssueFieldValue);
+    // #201: a publication read substitutes the native sub-issue connection into the same detail request,
+    // because its lease also carries the sibling order that a child-order write needs.
+    public static readonly string PublishItemDetails = ("query PlanPublishItemDetails($ids:[ID!]!) { nodes(ids:$ids) { __typename id ... on Issue { projectItems(first: 100) { " + PageInfo + " nodes { __typename id ... on ProjectV2Item { " + ItemDetail + " } } } } } }")
+        .Replace("NATIVE", Native).Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values)
+        .Replace("FIELD_REFERENCE", FieldReference).Replace("ISSUE_FIELD_VALUE", IssueFieldValue)
+        .Replace("parent { id }", "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}");
+
     internal static string ItemValueSelection(int index)
         => ("v" + index + ":node(id:$id" + index + "){__typename ... on ProjectV2Item{id project{id} fieldValues(first:100,after:$after" + index + "){PAGE_INFO VALUES}}}")
             .Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference).Replace("ISSUE_FIELD_VALUE", IssueFieldValue);
-    // #201: the publication read resolves only the Issues it is about to write to their Project items,
-    // so a publish never walks the Project's item connection. ProjectItemDetails then reads those items.
-    public static readonly string PublishItems = """
-        query PlanPublishItems($ids:[ID!]!) {
-          nodes(ids:$ids) {
-            __typename id
-            ... on Issue {
-              projectItems(first: 100) {
-                PAGE_INFO
-                nodes { id project { id } }
-              }
-            }
-          }
-        }
-        """.Replace("PAGE_INFO", PageInfo);
 }

@@ -24,6 +24,9 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
 {
     // GitHub prefers serial requests; use the owner-measured bound and back off on pushback.
     private const int FieldConcurrencyLimit = 4;
+    // #201: the Project, field and option metadata one publish read once, plus the repositories its first
+    // scoped read covered. Every later scoped read of the same attempt reuses it; a new publish starts empty.
+    private sealed class PublishObservation { public ProjectReadModel? Metadata { get; set; } }
     public List<int> EffectiveBatchSizes { get; } = [];
     public TimeSpan CreationWait { get; private set; }
     public DateTimeOffset? CreationPhaseStarted { get; private set; }
@@ -117,20 +120,26 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             || RowReferences(JsonNode.Parse(write.Input)!).Any(id => Uncovered(remote, id)));
     private static bool Uncovered(PlanRemoteSnapshot remote, string identity)
         => !identity.StartsWith("local:", StringComparison.Ordinal) && !remote.Items.ContainsKey(identity);
-    private async Task<PlanRemoteSnapshot> ReadItems(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token, ImmutableArray<string> scope)
+    private async Task<PlanRemoteSnapshot> ReadItems(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token,
+        ImmutableArray<string> scope, PublishObservation? observation = null)
     {
         var document = session.Document;
         if (document.Project.Scope != ConnectionScope.From(context)) throw new InvalidOperationException("プロジェクトの接続先が一致しません。");
-        var read = await PlanSnapshot.ReadItemsConsistentAsync(service, lease, context, document.Project, scope, token).ConfigureAwait(false);
+        var seeded = observation?.Metadata;
+        var read = await PlanSnapshot.ReadItemsConsistentAsync(service, lease, context, document.Project, scope, token, seeded).ConfigureAwait(false);
         token.ThrowIfCancellationRequested();
-        return PlanSnapshot.FromItems(read, document, scope);
+        var carried = seeded?.Issues.Values.Select(i => i.Repository.NameWithOwner).ToHashSet(StringComparer.Ordinal);
+        var snapshot = PlanSnapshot.FromItems(read, document, scope, carried: carried);
+        if (observation is not null && observation.Metadata is null) observation.Metadata = read.Project;
+        return snapshot;
     }
-    private async Task<PlanRemoteSnapshot> ReadMemberships(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token)
+    private async Task<PlanRemoteSnapshot> ReadMemberships(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token,
+        PublishObservation? observation = null)
     {
         var created = session.Document.Sync.Publish?.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.ResultId is not null).Select(w => w.ResultId!).ToArray() ?? [];
         for (var attempt = 0; ; attempt++)
         {
-            var remote = await ReadItems(session, lease, token, PublicationScope(session.Document, today)).ConfigureAwait(false);
+            var remote = await ReadItems(session, lease, token, PublicationScope(session.Document, today), observation).ConfigureAwait(false);
             if (attempt == 3 || created.All(remote.Items.ContainsKey)) return remote;
             await Task.Delay(TimeSpan.FromSeconds(1), token).ConfigureAwait(false);
         }
@@ -262,11 +271,11 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
         }
     }
-    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null, bool refresh = false, bool reset = false, bool publish = false)
+    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null, bool refresh = false, bool reset = false, bool publish = false, PublishObservation? observation = null)
     {
         await ReconcileCreations(session, lease, token).ConfigureAwait(false);
         var remote = publish
-            ? await ReadItems(session, lease, token, PublicationScope(session.Document, today)).ConfigureAwait(false)
+            ? await ReadItems(session, lease, token, PublicationScope(session.Document, today), observation).ConfigureAwait(false)
             : await Read(session, lease, token, progressReporter).ConfigureAwait(false);
         progressReporter?.Report(new("日程を計算"));
         token.ThrowIfCancellationRequested();
@@ -313,7 +322,8 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             using var lease = await service.BeginOperationAsync(context, token).ConfigureAwait(false);
             CreationWait = TimeSpan.Zero; CreationPhaseStarted = null; EffectiveBatchSizes.Clear();
             progressReporter?.Report(new("最新情報の確認"));
-            var remote = await Reconcile(session, lease, today, token, publish: true).ConfigureAwait(false);
+            var observation = new PublishObservation();
+            var remote = await Reconcile(session, lease, today, token, publish: true, observation: observation).ConfigureAwait(false);
             var serialFields = false; var stateFollowed = false;
             // Creation outcomes are adopted before the remaining writes are planned from current local inputs.
             while (true)
@@ -345,7 +355,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 // anchor or a promoted row is resolved from the row itself instead of a whole-Project read.
                 if (progress.Writes.Any(w => Uncovered(remote, w)))
                     remote = await ReadItems(session, lease, token, WriteScope(progress.Writes)
-                        .AddRange(PublicationScope(session.Document, today))).ConfigureAwait(false);
+                        .AddRange(PublicationScope(session.Document, today)), observation).ConfigureAwait(false);
                 var creating = progress.Writes.Any(w => w.Stage == PlanPublishStage.Create);
                 // #231: a close or reopen is followed in the same publish by the dates and remaining work that
                 // the close day GitHub reports implies, so the PMO publishes a 完了にする once.
@@ -469,7 +479,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                         w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) != true).ToArray();
                     if (uncertainLinks.Length > 0)
                     {
-                        var observed = await ReadItems(session, lease, token, PublicationScope(session.Document, today)).ConfigureAwait(false);
+                        var observed = await ReadItems(session, lease, token, PublicationScope(session.Document, today), observation).ConfigureAwait(false);
                         await Save(uncertainLinks.Where(w => PlanVerification.Verify(w, progress, observed, session.Document.State.Settings))
                             .Select(w => w with { State = PlanWriteState.Succeeded, Error = null }));
                     }
@@ -542,7 +552,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
 
                 progressReporter?.Report(new("検証"));
                 await ReconcileCreations(session, lease, token).ConfigureAwait(false);
-                remote = await ReadMemberships(session, lease, today, token).ConfigureAwait(false);
+                remote = await ReadMemberships(session, lease, today, token, observation).ConfigureAwait(false);
                 RequireSave(await session.AcceptPublished(remote, today).ConfigureAwait(false));
                 if (!creating && !changingState || session.Document.Sync.Publish is not null || session.Document.Sync.Failures.Any(f => f.Field == PlanField.NewTask)
                     || !creating && !session.Document.Sync.Failures.IsEmpty)

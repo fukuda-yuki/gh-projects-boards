@@ -57,9 +57,12 @@ internal static class FakePlanEditor
         }
         // #201: a publish reads and verifies only the items it writes, so a fault aimed at the Project's
         // item read must reach both the complete item walk and the scoped publication read.
-        var itemRead = query.Contains("ProjectItems") || query.Contains("PlanPublishItems") || query.Contains("ProjectItemDetails");
+        var itemRead = query.Contains("ProjectItems") || query.Contains("PlanPublishItemDetails") || query.Contains("ProjectItemDetails");
         if ((fault == "readfailure" || fault is "after-and-read" or "before-and-read" && state.MutationBatches > 0) && itemRead) { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
         if (query.Contains("ProjectFields")) { state = state with { ReadAttempts = state.ReadAttempts + 1 }; Save(root, state); }
+        // #201: a scoped publication read is a read attempt as well. Its single request replaces the
+        // ProjectFields request that used to count the attempt before the item read.
+        else if (query.Contains("PlanPublishItemDetails")) { state = state with { ReadAttempts = state.ReadAttempts + 1 }; Save(root, state); }
         if ((fault == "verificationfailure" && state.MutationBatches >= faultBatch ||
             fault == "uncertain-verification" && state.MutationBatches >= faultBatch) && itemRead)
         { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
@@ -183,10 +186,11 @@ internal static class FakePlanEditor
             }
             Write(new JsonObject { ["data"]=data }); return 0;
         }
-        if (query.Contains("PlanPublishItems"))
+        if (query.Contains("PlanPublishItemDetails"))
         {
-            // #201: the publication read resolves only the requested Issue identities to their items.
-            // A churned read cannot deliver one of them, exactly as a churned item walk changes its total.
+            // #201: the publication read resolves only the requested Issue identities to their items and
+            // returns each item's details in the same response. A churned read cannot deliver one of them,
+            // exactly as a churned item walk changes its total.
             var churn = fault == "churn" && state.ReadAttempts <= faultBatch
                 || fault == "verification-churn" && state.MutationBatches > 0 && state.ReadAttempts <= 3;
             var nodes = new List<object?>();
@@ -199,8 +203,14 @@ internal static class FakePlanEditor
                 var visible = issue.Added && !(fault == "membership-delay" && state.MutationBatches is > 0 and <= 4
                     && state.ReadAttempts < 2 && int.Parse(issue.Row.Identity[1..]) % 2 == 0);
                 var owners = visible ? workspace ? new[] { "P1", "P2" } : new[] { "P1" } : [];
-                nodes.Add(new { __typename = "Issue", id,
-                    projectItems = Page(owners.Select(owner => (object)new { id = ItemIdFor(owner, "T-" + id), project = new { id = owner } }), owners.Length) });
+                var entries = new List<object>();
+                foreach (var owner in owners)
+                {
+                    // The item has to belong to the Project it arrived from, so build it in that Project's scope.
+                    projectId = owner;
+                    entries.Add(Item(issue));
+                }
+                nodes.Add(new { __typename = "Issue", id, projectItems = Page(entries, entries.Count) });
             }
             Write(new { data = new { nodes = nodes.ToArray(), viewer = new { databaseId = 42 } } });
             return 0;
