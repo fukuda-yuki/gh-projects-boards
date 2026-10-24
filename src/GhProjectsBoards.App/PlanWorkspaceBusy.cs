@@ -21,7 +21,7 @@ internal sealed partial class PlanWorkspaceView
     private readonly TextBlock busyHeading = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, FontSize = 20, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "PlanBusyHeading");
     private readonly TextBlock busyNote = new() { TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
     private readonly Button busyCancel = Id(new Button { Content = "中止", HorizontalAlignment = HorizontalAlignment.Center }, "PlanBusyCancel");
-    private readonly StackPanel busySteps = new() { Spacing = 8 };
+    private readonly StackPanel busySteps = Id(new StackPanel { Spacing = 8, Width = 280, HorizontalAlignment = HorizontalAlignment.Center }, "PlanBusySteps");
     private readonly Dictionary<string, (TextBlock Label, TextBlock Count)> busyStepRows = [];
     private readonly HashSet<string> completedBusySteps = [];
     private readonly DispatcherTimer busyDelay = new() { Interval = TimeSpan.FromMilliseconds(300) };

@@ -1469,7 +1469,9 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(heading.FontSize, Is.EqualTo(20));
                 Assert.That(heading.FontWeight, Is.EqualTo(Microsoft.UI.Text.FontWeights.SemiBold));
                 Assert.That(heading.TextAlignment, Is.EqualTo(TextAlignment.Center));
-                foreach (var element in new FrameworkElement[] { ring, heading, cancel }) {
+                var steps = Ui.Find<StackPanel>("PlanBusySteps");
+                Assert.That(steps.ActualWidth, Is.LessThan(panel.ActualWidth - 48), "The step list is a centred block, not a full-width list.");
+                foreach (var element in new FrameworkElement[] { ring, heading, steps, cancel }) {
                     // TextBlock.ActualWidth measures text, while ActualSize measures its arranged box.
                     var bounds = element.TransformToVisual(panel).TransformBounds(new Rect(0, 0, element.ActualSize.X, element.ActualSize.Y));
                     Assert.That(bounds.Left + bounds.Width / 2, Is.EqualTo(panel.ActualWidth / 2).Within(2),
