@@ -8,20 +8,19 @@ namespace GhProjectsBoards.Core.PlanEditor;
 internal sealed record PlanStartNotice(string Identity, string PredecessorIdentity, string PredecessorName,
     DateOnly Typed, DateOnly Scheduled)
 {
-    // Reports the typed start the given plan no longer holds because a predecessor ends later. The sheet draws
-    // the read schedule, so the comparison uses that same calculation.
-    internal static PlanStartNotice? Detect(PlanDocument document, string identity, DateOnly typed, DateOnly today)
+    // Reports the typed start the given plan no longer holds because a predecessor ends later. The caller
+    // passes the schedule it already draws, so reporting a commit never calculates the plan a second time.
+    internal static PlanStartNotice? Detect(PlanDocument document, string identity, DateOnly typed, ScheduledTask scheduled)
     {
-        var task = PlanOperations.Schedule(document, today).FirstOrDefault(t => t.Input.Identity == identity);
-        if (task is null || task.IsSummary || task.Start.Value is not { } scheduled || scheduled <= typed) return null;
+        if (scheduled.IsSummary || scheduled.Start.Value is not { } start || start <= typed) return null;
         // Only a predecessor link produces this notice; 基準日 and プロジェクト開始日 are out of its scope.
         var names = PlanTaskNames.Of(document);
-        if (!names.TryPredecessor(task.StartReason, out var predecessor) || predecessor == identity) return null;
+        if (!names.TryPredecessor(scheduled.StartReason, out var predecessor) || predecessor == identity) return null;
         // A predecessor inherited from a requirement row is not this task's own link, so no command could
         // remove it from here. Report only a link this row holds.
         if (document.State.Rows.FirstOrDefault(r => r.Identity == identity) is not { } row
             || !row.Predecessors.Contains(predecessor)) return null;
-        return new(identity, predecessor, names[predecessor], typed, scheduled);
+        return new(identity, predecessor, names[predecessor], typed, start);
     }
 
     // The one ordinary cell operation that removes exactly the link the notice names: one Undo step that

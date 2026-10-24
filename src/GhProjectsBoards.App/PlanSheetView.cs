@@ -620,10 +620,13 @@ internal sealed partial class PlanSheetView : Grid
             FinishInput();
             Refresh();
             // #229: a typed start that a predecessor moved later is reported here, at the commit that
-            // produced it. A start that holds, or any other edit, leaves no notice behind.
+            // produced it, from the schedule Refresh has already calculated. A start that holds, or any
+            // other edit, leaves no notice behind.
             if (field == PlanField.Start && identity.Length > 0 && value is DateOnly typed)
             {
-                if (PlanStartNotice.Detect(Session.Document, identity, typed, Today) is { } notice) PresentStartNotice(notice);
+                if (Schedule.TryGetValue(identity, out var scheduledTask)
+                    && PlanStartNotice.Detect(Session.Document, identity, typed, scheduledTask) is { } notice)
+                    PresentStartNotice(notice);
                 else DismissStartNotice();
             }
             metrics.Mark("presented");

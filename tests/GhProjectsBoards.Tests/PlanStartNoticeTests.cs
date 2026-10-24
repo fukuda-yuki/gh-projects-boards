@@ -72,7 +72,7 @@ internal sealed class PlanStartNoticeTests
     {
         var edited = Edited(Document(null, EndsOnFebruary17(), Task("I44")), "I45", PlanField.Start, D("2026-01-12"));
 
-        var notice = PlanStartNotice.Detect(edited, "I45", D("2026-01-12"), Today);
+        var notice = PlanStartNotice.Detect(edited, "I45", D("2026-01-12"), Scheduled(edited, "I45"));
 
         Assert.That(notice, Is.Not.Null);
         Assert.Multiple(() =>
@@ -98,9 +98,9 @@ internal sealed class PlanStartNoticeTests
         Assert.Multiple(() =>
         {
             Assert.That(Scheduled(holds, "I45").Start.Value, Is.EqualTo(D("2026-03-02")));
-            Assert.That(PlanStartNotice.Detect(holds, "I45", D("2026-03-02"), Today), Is.Null);
+            Assert.That(PlanStartNotice.Detect(holds, "I45", D("2026-03-02"), Scheduled(holds, "I45")), Is.Null);
             Assert.That(Scheduled(free, "I45").Start.Value, Is.EqualTo(D("2026-01-12")));
-            Assert.That(PlanStartNotice.Detect(free, "I45", D("2026-01-12"), Today), Is.Null);
+            Assert.That(PlanStartNotice.Detect(free, "I45", D("2026-01-12"), Scheduled(free, "I45")), Is.Null);
         });
     }
 
@@ -114,7 +114,7 @@ internal sealed class PlanStartNoticeTests
         {
             Assert.That(Scheduled(edited, "I45").Start.Value, Is.EqualTo(D("2026-03-02")));
             Assert.That(Scheduled(edited, "I45").StartReason, Is.EqualTo("プロジェクト開始日"));
-            Assert.That(PlanStartNotice.Detect(edited, "I45", D("2026-01-12"), Today), Is.Null);
+            Assert.That(PlanStartNotice.Detect(edited, "I45", D("2026-01-12"), Scheduled(edited, "I45")), Is.Null);
         });
     }
 
@@ -124,7 +124,7 @@ internal sealed class PlanStartNoticeTests
         var session = await Session(Document(null, EndsOnJanuary5(), EndsOnFebruary17(), Task("I43", "I44")));
         var typed = await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I45", PlanField.Start, D("2026-01-12"))]), Today);
         Assert.That(typed.Succeeded, Is.True, typed.Error);
-        var notice = PlanStartNotice.Detect(session.Document, "I45", D("2026-01-12"), Today);
+        var notice = PlanStartNotice.Detect(session.Document, "I45", D("2026-01-12"), Scheduled(session.Document, "I45"));
         Assert.That(notice, Is.Not.Null);
         Assert.That(notice!.PredecessorName, Is.EqualTo("#44"), "The predecessor that finished later won, so it is the one reported.");
         var command = PlanStartNotice.Unlink(session.Document, notice);
