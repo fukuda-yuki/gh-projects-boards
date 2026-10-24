@@ -1,0 +1,304 @@
+{
+  "version": 1,
+  "revision": 2,
+  "document": {
+    "project": {
+      "scope": {
+        "host": "github.com",
+        "viewerId": 42
+      },
+      "nodeId": "PVT_names"
+    },
+    "baseline": {
+      "rows": [
+        {
+          "identity": "I18",
+          "title": "Task I18",
+          "repository": "acme/repo",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [],
+          "predecessors": [],
+          "parent": null,
+          "estimate": 8,
+          "remaining": null,
+          "actual": null,
+          "start": null,
+          "end": null
+        },
+        {
+          "identity": "I19",
+          "title": "Task I19",
+          "repository": "acme/repo",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [],
+          "predecessors": [],
+          "parent": null,
+          "estimate": 8,
+          "remaining": null,
+          "actual": null,
+          "start": null,
+          "end": null
+        }
+      ],
+      "columns": [],
+      "milestones": [],
+      "repositoryMilestones": [],
+      "repositoryLabels": []
+    },
+    "state": {
+      "rows": [
+        {
+          "identity": "I18",
+          "title": "Task I18",
+          "repository": "acme/repo",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [],
+          "predecessors": [],
+          "parent": null,
+          "estimate": 8,
+          "remaining": null,
+          "actual": null,
+          "start": null,
+          "end": null
+        },
+        {
+          "identity": "I19",
+          "title": "Task I19 edited",
+          "repository": "acme/repo",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [],
+          "predecessors": [],
+          "parent": null,
+          "estimate": 8,
+          "remaining": null,
+          "actual": null,
+          "start": null,
+          "end": null
+        },
+        {
+          "identity": "local:3431d48d39ef426c941ec54cea0a8483",
+          "title": "\u65B0\u3057\u3044\u4F5C\u696D",
+          "repository": "acme/repo",
+          "milestoneTitle": null,
+          "labels": [],
+          "extraValues": {},
+          "csvSourceHash": null,
+          "status": null,
+          "phase": null,
+          "closed": false,
+          "closeDate": null,
+          "cancelled": false,
+          "removed": false,
+          "assignees": [],
+          "predecessors": [
+            "I19"
+          ],
+          "parent": null,
+          "estimate": null,
+          "remaining": null,
+          "actual": null,
+          "start": null,
+          "end": null
+        }
+      ],
+      "settings": {
+        "sheetColumns": [],
+        "phaseMilestones": {},
+        "columns": [],
+        "companyDaysOff": [],
+        "importedHolidays": null,
+        "people": [],
+        "projectStart": "2026-10-14",
+        "projectEnd": null,
+        "defaultRepository": "acme/repo",
+        "statusDate": "2026-10-14",
+        "showOverdueMark": true,
+        "showLaterMark": true,
+        "showOverEstimateMark": true
+      },
+      "archivedIdentities": []
+    },
+    "sync": {
+      "unverified": [],
+      "failures": [],
+      "nativeOrders": {},
+      "localOrderChoices": {},
+      "creationStarts": [],
+      "notBefore": null,
+      "publish": null,
+      "peopleNames": {},
+      "issueLinks": {
+        "I18": {
+          "caption": "acme/repo#18",
+          "url": "https://github.com/acme/repo/issues/18"
+        },
+        "I19": {
+          "caption": "acme/repo#19",
+          "url": "https://github.com/acme/repo/issues/19"
+        }
+      },
+      "cannotUpdate": [],
+      "inaccessibleCount": 0,
+      "draftCount": 0,
+      "pullRequestCount": 0,
+      "conflicts": [],
+      "unavailable": []
+    }
+  },
+  "undo": [
+    {
+      "kind": "Cell",
+      "rows": [
+        {
+          "identity": "I19",
+          "before": {
+            "identity": "I19",
+            "title": "Task I19",
+            "repository": "acme/repo",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 8,
+            "remaining": null,
+            "actual": null,
+            "start": null,
+            "end": null
+          },
+          "after": {
+            "identity": "I19",
+            "title": "Task I19 edited",
+            "repository": "acme/repo",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [],
+            "predecessors": [],
+            "parent": null,
+            "estimate": 8,
+            "remaining": null,
+            "actual": null,
+            "start": null,
+            "end": null
+          }
+        }
+      ],
+      "beforeOrder": null,
+      "afterOrder": null,
+      "beforeSettings": null,
+      "afterSettings": null,
+      "discardedRows": [],
+      "beforeUnavailable": null,
+      "afterUnavailable": null,
+      "beforeLocalOrderChoices": null,
+      "afterLocalOrderChoices": null,
+      "beforeConflicts": null,
+      "afterConflicts": null
+    },
+    {
+      "kind": "Insert",
+      "rows": [
+        {
+          "identity": "local:3431d48d39ef426c941ec54cea0a8483",
+          "before": null,
+          "after": {
+            "identity": "local:3431d48d39ef426c941ec54cea0a8483",
+            "title": "\u65B0\u3057\u3044\u4F5C\u696D",
+            "repository": "acme/repo",
+            "milestoneTitle": null,
+            "labels": [],
+            "extraValues": {},
+            "csvSourceHash": null,
+            "status": null,
+            "phase": null,
+            "closed": false,
+            "closeDate": null,
+            "cancelled": false,
+            "removed": false,
+            "assignees": [],
+            "predecessors": [
+              "I19"
+            ],
+            "parent": null,
+            "estimate": null,
+            "remaining": null,
+            "actual": null,
+            "start": null,
+            "end": null
+          }
+        }
+      ],
+      "beforeOrder": [
+        "I18",
+        "I19"
+      ],
+      "afterOrder": [
+        "I18",
+        "I19",
+        "local:3431d48d39ef426c941ec54cea0a8483"
+      ],
+      "beforeSettings": null,
+      "afterSettings": null,
+      "discardedRows": [],
+      "beforeUnavailable": null,
+      "afterUnavailable": null,
+      "beforeLocalOrderChoices": null,
+      "afterLocalOrderChoices": null,
+      "beforeConflicts": null,
+      "afterConflicts": null
+    }
+  ],
+  "redo": []
+}

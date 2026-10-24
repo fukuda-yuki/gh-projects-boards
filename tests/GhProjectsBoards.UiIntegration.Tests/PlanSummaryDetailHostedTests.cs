@@ -94,7 +94,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             var list = Ui.Find<FrameworkElement>("SummaryTasks");
             var ids = Ui.Tree(list).OfType<TextBlock>().Where(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_", StringComparison.Ordinal)).ToArray();
-            Assert.That(ids.Select(t => t.Text), Is.EqualTo(Enumerable.Range(1, 200).Select(i => i.ToString())));
+            Assert.That(ids.Select(t => t.Text), Is.EqualTo(Enumerable.Range(1, 200).Select(i => "#" + i)));
             var last = ids[^1];
             Assert.That(list.ActualHeight, Is.GreaterThan(320));
             Assert.That(last.TransformToVisual(list).TransformPoint(new()).Y + last.ActualHeight, Is.LessThanOrEqualTo(list.ActualHeight));

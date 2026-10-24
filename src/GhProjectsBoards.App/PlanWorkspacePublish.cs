@@ -298,8 +298,9 @@ internal sealed partial class PlanWorkspaceView
         var index = document.State.Rows.IndexOf(document.State.Rows.FirstOrDefault(r => r.Identity == identity)!);
         if (index < 0) return identity == document.Project.NodeId ? "プロジェクト" :
             document.Sync.IssueLinks.GetValueOrDefault(identity)?.Caption ?? "計画外Issue（未取得）";
-        // A new row without a title has nothing to show but its position (#247).
-        return document.State.Rows[index].Title.Length == 0 ? $"{index + 1}行目 タイトルのない新しい行" : $"{index + 1} {document.State.Rows[index].Title}";
+        // A task is named by its Issue number or 新N, never its row position (#263); an untitled new row has only that.
+        var name = PlanTaskNames.Of(document)[identity];
+        return document.State.Rows[index].Title.Length == 0 ? $"{name} タイトルのない新しい行" : $"{name} {document.State.Rows[index].Title}";
     }
     internal static string ReviewValue(PlanDocument document, string field, string? json)
     {

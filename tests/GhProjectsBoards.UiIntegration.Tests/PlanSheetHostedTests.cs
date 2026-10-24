@@ -110,15 +110,15 @@ internal sealed partial class PlanSheetHostedTests
         await SelectFocusedCell(1, PlanField.Estimate);
         var undo = session.UndoCount;
         await SheetNativeInput.Press(Windows.System.VirtualKey.F2, Windows.System.VirtualKey.Control);
-        await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == "2"
-            && Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "3");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == "新1"
+            && Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "新2");
         Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
         await SheetNativeInput.Press(Windows.System.VirtualKey.Z, Windows.System.VirtualKey.Control);
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == ""
             && Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "");
         await SelectFocusedCell(2, PlanField.Title); await SelectFocusedCell(4, PlanField.Title, true);
         await SheetNativeInput.Press(Windows.System.VirtualKey.F2, Windows.System.VirtualKey.Control);
-        await Ui.Until(() => Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "3");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "新2");
         await SelectFocusedCell(1, PlanField.Estimate);
         await SheetNativeInput.Press(Windows.System.VirtualKey.F2, Windows.System.VirtualKey.Control, Windows.System.VirtualKey.Shift);
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == ""
@@ -157,7 +157,7 @@ internal sealed partial class PlanSheetHostedTests
             [parent, child, predecessor], [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]);
         await SetColumnVisible(PlanField.Status, true);
         var undo = session.UndoCount;
-        foreach (var (field, text) in new[] { (PlanField.Assignees, "alice, bob"), (PlanField.Predecessors, "3"),
+        foreach (var (field, text) in new[] { (PlanField.Assignees, "alice, bob"), (PlanField.Predecessors, "新2"),
             (PlanField.Status, "Todo") }) {
             await Select(1, field);
             await Ui.Idle();
@@ -284,7 +284,7 @@ internal sealed partial class PlanSheetHostedTests
         var predecessor = new PlanRow("I3", "Earlier", "acme/repo");
         await MountPresentation([parent, child, predecessor], [parent, child, predecessor]);
         await SetColumnVisible(PlanField.Status, true);
-        foreach (var (field, expected) in new[] { (PlanField.Assignees, "alice"), (PlanField.Predecessors, "3"),
+        foreach (var (field, expected) in new[] { (PlanField.Assignees, "alice"), (PlanField.Predecessors, "新2"),
             (PlanField.Status, "Todo") }) {
             await Select(1, field);
             await Ui.Run(() => {
@@ -362,7 +362,7 @@ internal sealed partial class PlanSheetHostedTests
         await Select(1, PlanField.Estimate);
         await Ui.Until(() => {
             var left = Ui.Find<PlanSheetCell>("PlanCell2_Title").TransformToVisual(sheet).TransformPoint(new()).X + sheet.SheetOffset;
-            return Math.Abs(left - (hideId ? 0 : 52) - (hideIndicator ? 0 : 28)) <= 1;
+            return Math.Abs(left - (hideId ? 0 : 76) - (hideIndicator ? 0 : 28)) <= 1;
         });
         await Ui.Run(async () => {
             sheetHost.Background = PlanSheetView.Brush("WorkspaceCardBrush");
@@ -433,7 +433,7 @@ internal sealed partial class PlanSheetHostedTests
         await Select(1, PlanField.Title); await Ui.Idle();
         await Ui.Run(async () => {
             var header = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanHeaderId"));
-            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("新1"));
             Assert.That(header.TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(headerBefore).Within(1));
             await RenderedEvidence.Capture(sheetHost, "followup-selected-band");
         });
@@ -445,7 +445,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PlanCell1_Remaining");
             Assert.That(cell.Text, Is.EqualTo("8h"));
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(cell), Is.EqualTo("ID 1 見込み残存工数"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(cell), Is.EqualTo("新1 見込み残存工数"));
             Assert.That(ToolTipService.GetToolTip(cell), Is.EqualTo("見込み残存工数 · 8h"));
             Assert.That(Ui.Find<TextBlock>("PlanHeaderRemaining").Text, Is.EqualTo("残 h"));
             Assert.That(cell.IsReadOnly, Is.False);
@@ -510,16 +510,16 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(((SolidColorBrush)runs[0].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
             Assert.That(((SolidColorBrush)runs[1].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
             Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell1_ForecastEnd")),
-                Is.EqualTo("ID 1 見込終了 2026-10-09 (金) +2日（稼働日）"));
+                Is.EqualTo("#1 見込終了 2026-10-09 (金) +2日（稼働日）"));
             // A forecast that ends on the plan end keeps the secondary date and shows no red run.
             var aligned = Ui.Find<TextBlock>("PlanForecastDisplay2");
             var alignedRuns = aligned.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().ToArray();
             Assert.That(alignedRuns.Select(run => run.Text), Is.EqualTo(new[] { "10/5 (月)" }));
             Assert.That(((SolidColorBrush)alignedRuns[0].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
-            Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell2_ForecastEnd")), Is.EqualTo("ID 2 見込終了 2026-10-05 (月)"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell2_ForecastEnd")), Is.EqualTo("新1 見込終了 2026-10-05 (月)"));
             // No forecast: blank cell and no date in the accessible name.
             Assert.That(Ui.Find<TextBlock>("PlanForecastDisplay3").Inlines, Is.Empty);
-            Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell3_ForecastEnd")), Is.EqualTo("ID 3 見込終了"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell3_ForecastEnd")), Is.EqualTo("新2 見込終了"));
             // A requirement's roll-up draws the same two-colour forecast on its summary cell (#236 M3).
             Assert.That(Ui.Find<TextBlock>("PlanForecastDisplay4").Visibility, Is.EqualTo(Visibility.Collapsed),
                 "The summary cell owns the requirement's forecast paint.");
@@ -664,7 +664,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain(expected));
             Assert.That(indicator.Glyph, Is.EqualTo(glyph));
             Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator)));
-            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("#1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, state == "summary" ? Is.Empty : Is.Not.Empty);
             if (state == "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日を維持 · 終了: 開始から 8h"));
@@ -852,7 +852,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-empty"));
         await Select(1, PlanField.Title);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("#1"));
         });
     }
 
@@ -1497,7 +1497,7 @@ internal sealed partial class PlanSheetHostedTests
             throw;
         }
         // The line above the sheet only names the untitled row; the outline already shows where it is.
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetUntitledRows").Text == $"タイトル未入力: ID {session.Document.State.Rows.IndexOf(added) + 1}");
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetUntitledRows").Text == $"タイトル未入力: 新{session.Document.State.Rows.IndexOf(added) + 1}");
         await Ui.Run(() => {
             var title = Ui.Find<TextBox>(titleId);
             Assert.That(title.Text, Is.Empty);
@@ -1812,7 +1812,7 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        // #236 part B: the twelve default columns measure 988 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
+        // #236 part B: the twelve default columns measure 988 px (ID 76 + 状態 28 + タスク名 200 + 工程 48 +
         // 担当者 80 + 見積 72 + 残 72 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 108 + 先行 64) and the
         // divider 6 px. RefreshLayout lays the sheet out inside 20 px less than the control width (a reserve for
         // its own chrome) and keeps the Gantt at its 320 px minimum, so the honest threshold is
@@ -2312,7 +2312,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text,
-                Is.EqualTo("ID 2 は ID 1 の後に始まるため、ID 2 を ID 1 の下にインデントできません。先にリンクを解除してください。"));
+                Is.EqualTo("新2 は 新1 の後に始まるため、新2 を 新1 の下にインデントできません。先にリンクを解除してください。"));
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Visible));
         });
         Assert.That(session.Document, Is.SameAs(before));
@@ -2364,7 +2364,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Ready<TextBlock>("PlanRowId3");
         await Ui.Ready<TextBox>("PlanCell3_Title");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanRowId3").Text, Is.EqualTo("3"));
+            Assert.That(Ui.Find<TextBlock>("PlanRowId3").Text, Is.EqualTo("新3"));
         });
         await SetColumnVisible(PlanField.Start,false);
         await Ui.Run(() => Assert.That(Ui.Tree(sheet).OfType<TextBox>().Any(c =>
@@ -2380,11 +2380,11 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Idle(); await Select(1, PlanField.Title);
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("基準日")));
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 20)));
-        await Edit(1, PlanField.Predecessors, "2");
-        // #239/#241: 先行 input reads `#N` as an Issue number, while the refusal names the involved plan-row
-        // IDs as `ID n`, which is the form the sheet and the spec use.
+        await Edit(1, PlanField.Predecessors, "新2");
+        // #263: 先行 input and the refusal both name tasks by task name; a row without an Issue is 新N,
+        // as in this fixture.
         await Ui.Run(() => Assert.That(((TextBlock)Ui.Popup<Border>("SheetInputProblem")!.Child).Text,
-            Is.EqualTo("循環参照: ID 1, ID 2")));
+            Is.EqualTo("循環参照: 新1, 新2")));
         Assert.That(session.Document.State.Rows[0].Predecessors, Is.Empty);
     }
     [TestCase("日", 24d), TestCase("週", 8d), TestCase("月", 2d)]

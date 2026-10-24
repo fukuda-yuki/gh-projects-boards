@@ -37,7 +37,7 @@ internal sealed class PlanLatenessTests
         var scheduled = Schedule(document);
         var task = scheduled.Single(t => t.Input.Identity == identity);
         var lateness = PlanLateness.Classify(scheduled, Calendar, document.State.Settings.StatusDate ?? Status);
-        return PlanSheetText.Indicator(document.State.Rows.Single(r => r.Identity == identity), task, lateness.Tasks[identity], "", false);
+        return PlanSheetText.Indicator(PlanTaskNames.Of(document), document.State.Rows.Single(r => r.Identity == identity), task, lateness.Tasks[identity], "", false);
     }
 
     [Test]
@@ -109,6 +109,8 @@ internal sealed class PlanLatenessTests
         var document = Document(
             Row("before") with { Start = D("2026-10-01"), End = D("2026-10-07"), Estimate = 40, Remaining = 40 },
             Row() with { Start = D("2026-10-05"), End = D("2026-10-05"), Estimate = 8, Remaining = 8, Predecessors = ["before"] });
+        document = document with { Sync = document.Sync with { IssueLinks = document.Sync.IssueLinks.SetItem("before",
+            new("acme/repo#193", "https://github.com/acme/repo/issues/193")) } };
 
         var late = Late(document);
         var result = PlanLateness.Classify(Schedule(document), Calendar, Status);
@@ -120,7 +122,7 @@ internal sealed class PlanLatenessTests
             Assert.That(late.CausePredecessorRowId, Is.EqualTo(1));
             Assert.That(late.IsCause, Is.False, "A task late only because a predecessor moved is not a cause.");
             Assert.That(result.CauseTasks, Is.EqualTo(1), "Only the predecessor, overdue on its own dates.");
-            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +3日（先行 1 の遅れによる）"),
+            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +3日（先行 #193 の遅れによる）"),
                 "The plan end is 10/7; the predecessor's forecast uses up 10/9, so the forecast reaches 10/13 (10/12 is Sports Day).");
         });
     }

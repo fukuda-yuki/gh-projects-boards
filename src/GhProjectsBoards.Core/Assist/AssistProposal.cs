@@ -75,8 +75,7 @@ internal sealed record AssistProposal(string Id, long Revision, IReadOnlyList<As
     };
     internal static string Display(PlanDocument document, PlanRow row, string field) => field switch {
         PlanField.Assignees => string.Join(", ", row.Assignees.Select(id => AssistPlanReader.PersonName(document, id))),
-        PlanField.Predecessors => string.Join(", ", row.Predecessors.Select(id => document.State.Rows.FirstOrDefault(r => r.Identity == id) is { } predecessor
-            ? (document.State.Rows.IndexOf(predecessor) + 1).ToString(CultureInfo.InvariantCulture) : "計画外")),
+        PlanField.Predecessors => PlanTaskNames.Of(document).List(row.Predecessors),
         PlanField.Estimate => Number(row.Estimate), PlanField.Actual => Number(row.Actual), PlanField.Remaining => Number(row.Remaining),
         PlanField.Start => Date(row.Start), PlanField.End => Date(row.End),
         PlanField.Phase => row.Phase ?? "", PlanField.Title => row.Title,

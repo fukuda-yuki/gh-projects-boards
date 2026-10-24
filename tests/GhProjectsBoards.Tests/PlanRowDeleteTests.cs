@@ -14,8 +14,11 @@ internal sealed class PlanRowDeleteTests
     private string root = null!;
     [SetUp] public void Setup() { root = Path.Combine(Path.GetTempPath(), "ghpb-rowdelete-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root); }
     [TearDown] public void Cleanup() => Directory.Delete(root, true);
+    // Published rows carry Issues #17, #18…, so refusals name them as the team does (#263).
     private static PlanDocument Initial(params PlanRow[] rows)
-        => new(Project, new([.. rows], []), new([.. rows], new() { DefaultRepository = "acme/repo", StatusDate = Today, ProjectStart = Today }));
+        => new(Project, new([.. rows], []), new([.. rows], new() { DefaultRepository = "acme/repo", StatusDate = Today, ProjectStart = Today }))
+        { Sync = new() { IssueLinks = rows.Select((r, i) => (r.Identity, Number: 17 + i)).ToImmutableDictionary(l => l.Identity,
+            l => new PlanIssueLink($"acme/repo#{l.Number}", $"https://github.com/acme/repo/issues/{l.Number}")) } };
     private static EditPlanCells Edit(string id, string field, object? value) => new(PlanOperationKind.Cell, [new(id, field, value)]);
     private static string[] Ids(PlanDocument document) => document.State.Rows.Select(r => r.Identity).ToArray();
     private static PlannedDeletion Planned(string title = "誤って挿入")
@@ -77,7 +80,7 @@ internal sealed class PlanRowDeleteTests
     {
         var session = await PlanSession.CreateAsync(new(root), Initial(new PlanRow("A", "Existing", "acme/repo"), new PlanRow("B", "Other", "acme/repo")), Today);
         var error = Assert.Throws<ArgumentException>(() => { _ = session.Execute(new DeletePlanRows(["B"]), Today); });
-        Assert.That(error!.Message, Does.Contain("GitHub の Issue は削除できません（ID 2）"));
+        Assert.That(error!.Message, Does.Contain("GitHub の Issue は削除できません（#18）"));
         Assert.That(error.Message, Does.Contain("完了・中止・この版から外す"));
         Assert.That(Ids(session.Document), Is.EqualTo(new[] { "A", "B" }));
         Assert.That(session.UndoCount, Is.Zero, "A refused delete creates no history.");
@@ -93,7 +96,7 @@ internal sealed class PlanRowDeleteTests
         await session.Execute(new IndentPlanRows(["A"]), Today);
         Assert.That(session.Document.State.Rows.Single(r => r.Identity == "A").Parent, Is.EqualTo(parent.Identity));
         var error = Assert.Throws<ArgumentException>(() => { _ = session.Execute(new DeletePlanRows([parent.Identity]), Today); });
-        Assert.That(error!.Message, Does.Contain("GitHub の Issue は削除できません（ID 2）"));
+        Assert.That(error!.Message, Does.Contain("GitHub の Issue は削除できません（#17）"));
         Assert.That(Ids(session.Document), Is.EqualTo(new[] { parent.Identity, "A" }));
         Assert.That(session.Document.State.Rows.Single(r => r.Identity == "A").Parent, Is.EqualTo(parent.Identity), "A refused delete changes no relationship.");
         Assert.That(session.UndoCount, Is.EqualTo(2));

@@ -115,6 +115,10 @@ internal static class PlanCsvImport
                 if (keys.TryGetValue(token, out var id)) return id;
                 var caption = token.Contains('/') ? token : repository + "#" + token.TrimStart('#');
                 if (existing.TryGetValue(caption, out id)) return id;
+                // `repo#N` names the repository without its owner, as the sheet does (#263).
+                var named = token.IndexOf('#') > 0 && !token.Contains('/')
+                    ? existing.Where(p => p.Key.EndsWith("/" + token, StringComparison.OrdinalIgnoreCase)).Select(p => p.Value).ToArray() : [];
+                if (named.Length == 1) return named[0];
                 Error($"参照 {token} が見つかりません。"); return null;
             }
             var predecessors = Split(source.Predecessors).Select(Resolve).Where(id => id is not null).Cast<string>().Distinct().ToImmutableArray();

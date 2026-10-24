@@ -214,7 +214,7 @@ internal static class PlanPublishPlan
                         // A published Issue must keep a title; only a new row may be left untitled, and
                         // that row is held above instead of reaching this write (#247).
                         if (string.IsNullOrWhiteSpace(row.Title))
-                            throw new InvalidOperationException($"タイトル未入力: ID {scheduled.Input.RowId}");
+                            throw new InvalidOperationException($"タイトル未入力: {PlanTaskNames.Of(document)[row.Identity]}");
                         Add(row.Identity, PlanPublishStage.Fields, "updateIssue", "UpdateIssueInput", new { id = row.Identity, title = row.Title }, "issue { id }"); break;
                     case PlanField.Assignees:
                         foreach (var (mutation, ids) in new[] { ("removeAssigneesFromAssignable", before.Assignees.Except(row.Assignees).ToArray()),

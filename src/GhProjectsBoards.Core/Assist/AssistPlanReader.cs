@@ -2,8 +2,10 @@ using GhProjectsBoards.Core.PlanEditor;
 
 namespace GhProjectsBoards.Core.Assist;
 
-internal sealed record AssistTaskReference(string Identity, int Id, string Title)
+// Name is the task name the sheet shows (#263); Position only orders references and is not sent to the model.
+internal sealed record AssistTaskReference(string Identity, string Name, string Title)
 {
+    internal int Position { get; init; }
     public IReadOnlyList<AssistPerson> Assignees { get; init; } = [];
 }
 internal sealed record AssistPerson(string Identity, string Name);
@@ -46,6 +48,7 @@ internal sealed class AssistPlanReader
     private readonly Dictionary<string, ScheduledTask> scheduled;
     private readonly Dictionary<string, PlanRow> rows;
     private readonly Dictionary<string, AssistTaskReference> references;
+    private readonly PlanTaskNames names;
     private readonly PlanLatenessResult lateness;
     private readonly PlanUnpublished unpublished;
     public AssistPlanReader(PlanDocument document, DateOnly today)
@@ -53,7 +56,9 @@ internal sealed class AssistPlanReader
         this.document = document; this.today = today;
         schedule = PlanOperations.Schedule(document, today); scheduled = schedule.ToDictionary(t => t.Input.Identity);
         rows = PlanOperations.EffectiveRows(document).ToDictionary(r => r.Identity);
-        references = document.State.Rows.Select((r, i) => new AssistTaskReference(r.Identity, i + 1, r.Title) {
+        names = PlanTaskNames.Of(document);
+        references = document.State.Rows.Select((r, i) => new AssistTaskReference(r.Identity, names[r.Identity], r.Title) {
+            Position = i + 1,
             Assignees = rows[r.Identity].Assignees.Select(Person).ToArray()
         }).ToDictionary(r => r.Identity);
         var settings = document.State.Settings;
@@ -121,7 +126,7 @@ internal sealed class AssistPlanReader
             }
             return new AssistTaskDetails(Reference(id), row.Parent is { } parent && references.TryGetValue(parent, out var requirement) ? requirement : null, task.IsSummary,
                 row.Phase, row.Closed, row.Assignees.Select(Person).ToArray(), task.Estimate, task.Actual, task.Remaining, task.Forecast,
-                task.Start, task.End, task.StartReason, PlanLateness.EndReason(task),
+                task.Start, task.End, names.StartReason(task.StartReason), PlanLateness.EndReason(task),
                 differences, row.Predecessors.Where(references.ContainsKey).Select(Reference).ToArray(),
                 rows.Values.Where(r => r.Predecessors.Contains(id)).Select(r => Reference(r.Identity)).ToArray(),
                 task.Warnings, lateness.Tasks[id], unpublished.Fields.ContainsKey(id)) { MissingEstimates = task.MissingEstimates, MissingRemaining = task.MissingRemaining };

@@ -184,7 +184,7 @@ internal sealed partial class PlanSheetView
         var target = selected;
         if (!Rows.ContainsKey(target)) return;
         predecessorFlyout?.Hide();
-        var query = Id(new TextBox { PlaceholderText = "要求事項・タスク名・Issue番号" }, "PlanPredecessorSearch");
+        var query = Id(new TextBox { PlaceholderText = "#番号・タスク名・担当者・要求事項" }, "PlanPredecessorSearch");
         AutomationProperties.SetName(query, "先行タスクを検索");
         var candidates = Id(new ListView { Height = 260, SelectionMode = ListViewSelectionMode.Single }, "PlanPredecessorCandidates");
         AutomationProperties.SetName(candidates, "先行タスクの候補");
@@ -202,20 +202,21 @@ internal sealed partial class PlanSheetView
                 new Setter(FrameworkElement.MaxWidthProperty, Math.Max(0, XamlRoot.Size.Width - 32))
             } }
         };
-        var choices = Session.Document.State.Rows.Where(row => row.Identity != target).Select(row => {
+        // One line per task (#263): the name the 先行 cell will show, then what tells two similar titles apart.
+        var choices = PlanPredecessorChoices.Rank(Session.Document, target).Where(Rows.ContainsKey).Select(identity => {
+            var row = Rows[identity];
             var ancestors = new List<string>(); var current = row;
             var visited = new HashSet<string>();
             while (current.Parent is { } parent && visited.Add(parent) && Rows.TryGetValue(parent, out current!)) ancestors.Add(current.Title);
-            ancestors.Reverse();
-            var context = string.Join(" / ", ancestors);
-            var reference = Session.Document.Sync.IssueLinks.GetValueOrDefault(row.Identity)?.Caption ?? "";
-            var label = $"{context}  {row.Title}  · ID {PlanIds[row.Identity]}  {reference}".Trim();
-            return new PredecessorChoice(row.Identity, label, context + " " + row.Title + " " + reference);
+            var assignee = row.Assignees.Length == 0 ? "" : " " + AssigneeName(row.Assignees[0]);
+            var end = Schedule.GetValueOrDefault(identity)?.End.Value is { } day ? " · 終了 " + PlanSheetText.Date(day) : "";
+            var label = $"{TaskNames[identity]} {row.Title}{assignee}{end}";
+            return new PredecessorChoice(identity, label, label + " " + string.Join(" ", ancestors));
         }).ToArray();
         PredecessorChoice[] matches = [];
         void Search()
         {
-            matches = choices.Where(choice => choice.Search.Contains(query.Text.Trim(), StringComparison.CurrentCultureIgnoreCase)).ToArray();
+            matches = choices.Where(choice => choice.Search.Contains(PlanInput.Fold(query.Text).Trim(), StringComparison.CurrentCultureIgnoreCase)).ToArray();
             candidates.ItemsSource = matches.Select(choice => choice.Label).ToArray();
             confirm.IsEnabled = false;
         }

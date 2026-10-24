@@ -39,7 +39,9 @@ internal sealed partial class PlanSheetView : Grid
     internal IReadOnlyList<string> RowIds { get; private set; } = [];
     private PlanRowItems rowItems = [];
     internal Dictionary<string, int> RowIndexes { get; private set; } = [];
+    // Row positions: the unlabelled row number and the Gantt crossings only. Tasks are named by TaskNames (#263).
     internal Dictionary<string, int> PlanIds { get; private set; } = [];
+    internal PlanTaskNames TaskNames { get; private set; } = PlanTaskNames.None;
     internal ImmutableArray<PlanConflict> BlockingConflicts { get; private set; } = [];
     internal Dictionary<string, PlanRow> Rows { get; private set; } = [];
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
@@ -73,7 +75,7 @@ internal sealed partial class PlanSheetView : Grid
     internal bool IsUntitledNewRow(string identity) => untitledNewRows.Contains(identity);
     internal sealed record Column(string? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
-        new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 224), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
+        new(null, "ID", 76), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 200), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
         new(PlanField.Estimate, "見積 h", 72), new(PlanField.Remaining, "残 h", 72), new(PlanField.Actual, "実績 h", 56),
         new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ForecastEnd", "見込終了", 108), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.Status, "ステータス", 100)];
@@ -675,7 +677,9 @@ internal sealed partial class PlanSheetView : Grid
         var document = Session.Document;
         var configured = PlanSheetColumns.All(document).Select(c => {
             var standard = Columns.FirstOrDefault(s => (s.Indicator ? "Indicator" : s.Field ?? "Id") == c.Key);
-            return standard is null ? new Column(c.Key, c.Name, c.Width ?? 140) : standard with { Label = c.Name, Width = c.Width ?? standard.Width };
+            // repo#N needs room for the repository name (#263).
+            var width = c.Key == "Id" && PlanTaskNames.Of(document).CarryRepository ? 112 : standard?.Width ?? 140;
+            return standard is null ? new Column(c.Key, c.Name, c.Width ?? width) : standard with { Label = c.Name, Width = c.Width ?? width };
         }).ToArray();
         if (!ConfiguredColumns.SequenceEqual(configured)) ConfiguredColumns = configured;
         var choices = PlanSheetColumns.All(document).ToDictionary(c => c.Key);
@@ -694,6 +698,7 @@ internal sealed partial class PlanSheetView : Grid
             Rows = PlanOperations.EffectiveRows(document).ToDictionary(r => r.Identity);
             peopleNames = document.State.Settings.People.ToDictionary(p => p.Identity, p => p.Name);
             PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
+            TaskNames = PlanTaskNames.Of(document);
             var scheduled = PlanOperations.Schedule(document, today);
             Schedule = scheduled.ToDictionary(r => r.Input.Identity);
             var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
@@ -721,10 +726,10 @@ internal sealed partial class PlanSheetView : Grid
     // mark are derived from the document, so they vanish with the cause.
     private void RenderUntitledRows()
     {
-        var positions = untitledNewRows.Select(id => PlanIds.GetValueOrDefault(id)).Where(id => id > 0).ToArray();
+        var untitled = untitledNewRows.Where(PlanIds.ContainsKey).OrderBy(id => PlanIds[id]).ToArray();
         // The red outline already says where; the line only names the rows. 行を削除 is the toolbar's own command.
-        var text = positions.Length == 0 ? "" : "タイトル未入力: ID " + string.Join(", ", positions.Take(10))
-            + (positions.Length > 10 ? "（ほか " + (positions.Length - 10).ToString("N0") + " 件）" : "");
+        var text = untitled.Length == 0 ? "" : "タイトル未入力: " + TaskNames.List(untitled.Take(10))
+            + (untitled.Length > 10 ? "（ほか " + (untitled.Length - 10).ToString("N0") + " 件）" : "");
         if (untitledRows.Text == text) return;
         untitledRows.Text = text; AutomationProperties.SetName(untitledRows, text);
     }
@@ -840,7 +845,7 @@ internal sealed partial class PlanSheetView : Grid
             PlanField.Remaining => computed.Remaining is { } remaining ? remaining.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Actual => computed.Actual is { } actual ? actual.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Phase => Session.Document.State.Settings.Columns.Any(c => c.Role == field) ? row.Phase ?? "" : "",
-            PlanField.Predecessors => string.Join(", ", row.Predecessors.Select(p => PlanIds.TryGetValue(p, out var id) ? id.ToString() : "計画外")),
+            PlanField.Predecessors => TaskNames.List(row.Predecessors),
             PlanField.Assignees => row.Assignees.Length == 0 ? "" : AssigneeName(row.Assignees[0])
                 + (row.Assignees.Length > 1 ? $" +{row.Assignees.Length - 1}" : ""),
             _ => PlanOperations.Value(row, field)?.ToString() ?? ""

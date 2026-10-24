@@ -479,10 +479,10 @@ internal sealed partial class PlanWorkspaceHostedTests
             var updated = Ui.Find<TextBlock>("PlanDetailUpdated"); var open = Ui.Find<Button>("PlanDetailOpen");
             Windows.Foundation.Rect Bounds(FrameworkElement element) => element.TransformToVisual(view)
                 .TransformBounds(new(0, 0, element.ActualWidth, element.ActualHeight));
-            Assert.That(id.Text, Is.EqualTo("ID 1")); Assert.That(reference.Text, Is.EqualTo("acme/repo#1"));
+            // owner/repo#number already names a published task (#263), so the line carries nothing else.
+            Assert.That(id.Text, Is.Empty); Assert.That(reference.Text, Is.EqualTo("acme/repo#1"));
             var separator = Ui.Tree(view).OfType<TextBlock>().Single(t => t.Text == "·" && t.Parent == id.Parent);
-            Assert.That(Bounds(separator).Left - Bounds(id).Right, Is.GreaterThanOrEqualTo(3), "The separator needs visible space before it.");
-            Assert.That(Bounds(reference).Left - Bounds(separator).Right, Is.GreaterThanOrEqualTo(3), "The separator needs visible space after it."); 
+            Assert.That(separator.Visibility, Is.EqualTo(Visibility.Collapsed));
             Assert.That(state.Text, Is.EqualTo(closed ? "クローズ" : "オープン"));
             foreach (var text in new[] { id, reference, state, updated }) {
                 Assert.That(text.FontSize, Is.EqualTo(12));
@@ -493,7 +493,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(heading.FontWeight, Is.EqualTo(Microsoft.UI.Text.FontWeights.SemiBold));
             Assert.That(heading.TextWrapping, Is.EqualTo(TextWrapping.Wrap)); Assert.That(heading.MaxLines, Is.EqualTo(3));
             Assert.That(Bounds(reference).Top, Is.EqualTo(Bounds(id).Top).Within(1));
-            Assert.That(Bounds(reference).Left, Is.GreaterThan(Bounds(id).Right));
+            Assert.That(Bounds(reference).Left, Is.GreaterThanOrEqualTo(Bounds(id).Right));
             Assert.That(Bounds(updated).Top, Is.EqualTo(Bounds(state).Top).Within(1));
             Assert.That(Bounds(updated).Left, Is.GreaterThan(Bounds(state).Right));
             Assert.That(Bounds(heading).Top, Is.GreaterThanOrEqualTo(Bounds(id).Bottom));
@@ -573,7 +573,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Task.Delay(700);
         await Ui.Run(() => {
             var title = Ui.Find<TextBlock>("PlanDetailTitle"); var open = Ui.Find<Button>("PlanDetailOpen");
-            Assert.That(Ui.Find<TextBlock>("PlanDetailId").Text, Is.EqualTo("ID 2"));
+            Assert.That(Ui.Find<TextBlock>("PlanDetailId").Text, Is.EqualTo("新1"));
             Assert.That(Ui.Find<TextBlock>("PlanDetailReference").Text, Is.Empty);
             Assert.That(Ui.Find<TextBlock>("PlanDetailState").Text, Is.Empty);
             Assert.That(Ui.Find<TextBlock>("PlanDetailUpdated").Text, Is.Empty);

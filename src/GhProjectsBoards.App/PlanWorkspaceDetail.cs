@@ -161,7 +161,8 @@ internal sealed partial class PlanWorkspaceView
         var row = sheet is { } currentSheet && currentSheet.Session == workspace.Session
             ? workspace.Session?.Document.State.Rows.FirstOrDefault(r => currentSheet.IsSelectedRow(r.Identity)) : null;
         var identity = row?.Identity ?? "";
-        detailId.Text = row is null ? "" : $"ID {sheet!.PlanIds.GetValueOrDefault(identity)}";
+        // owner/repo#number already names a published task (#263); only a local task shows its 新N here.
+        detailId.Text = row is null || workspace.Session!.Document.Sync.IssueLinks.ContainsKey(identity) ? "" : sheet!.TaskNames[identity];
         if (row is not null && !workspace.Session!.Document.Sync.IssueLinks.ContainsKey(identity)) detailTitle.Text = row.Title;
         if (!reload && detailIdentity == identity) return;
         var keepHeader = reload && detailIdentity == identity;
@@ -174,7 +175,6 @@ internal sealed partial class PlanWorkspaceView
         }
         detailReference.Text = link.Caption; detailUrl = link.Url; detailOpen.IsEnabled = true;
         UpdateDetailEditCommands();
-        detailIdentitySeparator.Visibility = Visibility.Visible;
         detailHeader.IsTabStop = false;
         if (workspace.Context?.IsInvalidated != false || workspace.Service is null) {
             ShowDetailFailure("接続アカウントを確認できません。接続し直してください。"); return;

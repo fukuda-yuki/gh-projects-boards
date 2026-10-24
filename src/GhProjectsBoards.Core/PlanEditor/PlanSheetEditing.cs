@@ -63,7 +63,8 @@ internal static class PlanSheetEditing
                 if (candidates.Length > 0) return candidates[0];
                 throw new ArgumentException("日付は 2026-10-14、2026/10/14 または 10/14 の形で入力してください。");
             case PlanField.Predecessors:
-                return Split(PlanInput.Fold(text)).Select(value => Predecessor(document, value)).Distinct().ToImmutableArray();
+                var names = PlanTaskNames.Of(document);
+                return Split(PlanInput.Fold(text)).Select(names.Resolve).Distinct().ToImmutableArray();
             case PlanField.Assignees:
                 var people = KnownPeople(document, resolved);
                 return Split(text).Select(value => {
@@ -93,28 +94,6 @@ internal static class PlanSheetEditing
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
     private static string[] Split(string text) => text.Split([',', '、'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-    // #237: `#N` names Issue N wherever plan order put its row, and a bare number stays a plan row ID.
-    // The Issue number comes from the links the last read stored, so a full-width `＃` has already been
-    // folded and nothing is ever reinterpreted as a plan row ID.
-    private static string Predecessor(PlanDocument document, string value)
-    {
-        if (!value.StartsWith('#'))
-        {
-            if (!int.TryParse(value, out var row) || row <= 0 || row > document.State.Rows.Length)
-                throw new ArgumentException("先行タスクは計画内のIDで指定してください: " + value);
-            return document.State.Rows[row - 1].Identity;
-        }
-        if (!int.TryParse(value[1..], out var number) || number <= 0)
-            throw new ArgumentException("先行タスクは計画内のIDか Issue 番号（#19）で指定してください: " + value);
-        var carrying = document.State.Rows.Where(row => IssueNumber(document, row.Identity) == number).ToArray();
-        if (carrying.Length == 1) return carrying[0].Identity;
-        if (carrying.Length == 0) throw new ArgumentException($"Issue #{number} はこの版にありません。");
-        throw new ArgumentException($"Issue #{number} は複数の行にあります: " +
-            string.Join(", ", carrying.Select(row => document.Sync.IssueLinks[row.Identity].Caption)));
-    }
-    private static int? IssueNumber(PlanDocument document, string identity)
-        => document.Sync.IssueLinks.TryGetValue(identity, out var link) &&
-            int.TryParse(link.Caption[(link.Caption.LastIndexOf('#') + 1)..], out var number) ? number : null;
     internal static EditPlanCells Paste(PlanDocument document, IReadOnlyList<string> rows,
         IReadOnlyList<string> columns, CellRange selection, string text, DateOnly today, ImmutableArray<PlanResource> resolved = default)
     {

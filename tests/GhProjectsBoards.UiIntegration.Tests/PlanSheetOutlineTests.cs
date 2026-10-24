@@ -88,10 +88,10 @@ internal sealed partial class PlanSheetHostedTests
             foreach (var row in sheet.Realized.Where(r => r.IsLoaded && r.Identity.Length > 0 && sheet.RowIds.Contains(r.Identity))) {
                 var number = sheet.PlanIds[row.Identity];
                 var bar = Ui.Find<FrameworkElement>("PlanBar" + number, row);
-                Assert.That(AutomationProperties.GetName(bar), Does.StartWith($"ID {number} "));
+                Assert.That(AutomationProperties.GetName(bar), Does.StartWith($"{sheet.TaskNames[row.Identity]} "));
                 var barY = bar.TransformToVisual(row).TransformPoint(new()).Y;
                 Assert.That(barY, Is.InRange(0, row.ActualHeight));
-                Assert.That(Ui.Find<TextBlock>("PlanRowId" + number, row).Text, Is.EqualTo(number.ToString()));
+                Assert.That(Ui.Find<TextBlock>("PlanRowId" + number, row).Text, Is.EqualTo(sheet.TaskNames[row.Identity]));
             }
         });
         await Ui.Until(() => sheet.Realized.Single(r => r.Identity == "A").SelectionTarget(PlanField.Title)!.FocusState != FocusState.Unfocused);

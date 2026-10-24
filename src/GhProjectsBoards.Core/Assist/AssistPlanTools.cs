@@ -9,7 +9,7 @@ internal sealed class AssistPlanTools(PlanSession session, DateOnly today, strin
     private readonly Dictionary<string, int> referencePriority = [];
     private AssistProposal? pending;
     private AssistProposal? turnProposal;
-    public IReadOnlyList<AssistTaskReference> References { get { lock (gate) return references.Values.OrderBy(t => referencePriority[t.Identity]).ThenBy(t => t.Id).ToArray(); } }
+    public IReadOnlyList<AssistTaskReference> References { get { lock (gate) return references.Values.OrderBy(t => referencePriority[t.Identity]).ThenBy(t => t.Position).ToArray(); } }
     public AssistProposal? PendingProposal { get { lock (gate) return pending; } }
     public AssistProposal? TurnProposal { get { lock (gate) return turnProposal; } }
     public bool ProposalIsStale { get { lock (gate) return pending is { } p && session.CaptureRevision().Revision != p.Revision; } }

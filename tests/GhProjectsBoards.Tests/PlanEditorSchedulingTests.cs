@@ -206,7 +206,7 @@ internal sealed class PlanEditorSchedulingTests
     public void CyclesRejectWholeCalculationWithRowIds(PlanTask[] tasks, int[] ids)
     {
         var error = Assert.Throws<PlanCycleException>(() => Calculate(tasks, Settings));
-        Assert.That(error!.Message, Is.EqualTo("循環参照: " + string.Join(", ", ids.Select(id => $"ID {id}"))));
+        Assert.That(error!.Message, Is.EqualTo("循環参照: " + string.Join(", ", ids.Select(id => $"{id} 行目"))));
     }
 
     [Test]
@@ -254,7 +254,7 @@ internal sealed class PlanEditorSchedulingTests
         var result = Calculate(rows, Settings)[0];
         Assert.That((result.Estimate, result.Remaining, result.Actual), Is.EqualTo(((decimal?)estimate, (decimal?)remaining, (decimal?)(allMissing ? 0 : 2))));
         Assert.That((result.MissingEstimates, result.MissingRemaining), Is.EqualTo((missingEstimate, missingRemaining)));
-        Assert.That(PlanSheetText.Indicator(null, result, null, "", true),
+        Assert.That(PlanSheetText.Indicator(PlanTaskNames.None, null, result, null, "", true),
             Is.EqualTo($"見積のないタスク {missingEstimate}、未発行の変更あり"));
     }
 

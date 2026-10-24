@@ -9,7 +9,7 @@ internal static class PlanSheetText
     // carries its working-day count.
     internal static string ForecastEnd(ScheduledTask task, PlanTaskLateness? late)
         => task.ForecastEnd is { } end ? Date(end) + (late?.DaysLater is { } later ? " +" + later.ToString(CultureInfo.InvariantCulture) + "日" : "") : "";
-    internal static string Indicator(PlanRow? taskRow, ScheduledTask? effort, PlanTaskLateness? late,
+    internal static string Indicator(PlanTaskNames names, PlanRow? taskRow, ScheduledTask? effort, PlanTaskLateness? late,
         string remoteProblem, bool unpublished, PlanMarkVisibility? marks = null)
     {
         var shown = marks ?? PlanMarkVisibility.All;
@@ -29,7 +29,7 @@ internal static class PlanSheetText
             if (late.DaysLater is { } also) states.Add($"見込終了は +{also}日");
         }
         if (shown.Later && late?.DaysLater is { } days && late.Level == PlanLatenessLevel.Later)
-            states.Add($"予定より遅れ: +{days}日（{Cause(late)}）");
+            states.Add($"予定より遅れ: +{days}日（{Cause(names, late)}）");
         if (effort?.IsSummary == true && late is not null) {
             var descendants = new List<string>();
             if (shown.Overdue && late.OverdueDescendantTasks > 0) descendants.Add($"期限超過 {late.OverdueDescendantTasks}");
@@ -47,9 +47,9 @@ internal static class PlanSheetText
         if (unpublished) states.Add("未発行の変更あり");
         return string.Join("、", states);
 
-        static string Cause(PlanTaskLateness late) => late.CausePredecessorRowId is { } predecessor
-            ? $"先行 {predecessor} の遅れによる" : "自分の残による";
     }
+    internal static string Cause(PlanTaskNames names, PlanTaskLateness late) => late.CausePredecessorRowId is { } predecessor
+        ? $"先行 {names.AtPosition(predecessor)} の遅れによる" : "自分の残による";
     internal static string RemoteProblem(PlanSync sync, string identity)
     {
         if (sync.Unverified.Contains(identity)) return "GitHub で未確認 — 最新の情報に更新で確認";

@@ -116,7 +116,9 @@ internal static class PlanOperations
         Require(d.Baseline.Rows.All(r => !r.Identity.StartsWith("local:", StringComparison.Ordinal) && currentIds.Contains(r.Identity)), "基準行を削除またはローカル行に変更できません。");
         var baselineIds = d.Baseline.Rows.Select(r => r.Identity).ToHashSet();
         Require(d.State.Rows.All(r => baselineIds.Contains(r.Identity) || IsLocal(r.Identity)), "新規行にはローカル識別子が必要です。");
-        _ = Schedule(d, today);
+        // Open, refresh, reset and reload reach the scheduler only here; their cycle is named here (#263).
+        try { _ = Schedule(d, today); }
+        catch (PlanCycleException cycle) { throw Named(d, cycle); }
     }
     private static void ValidateRows(ImmutableArray<PlanRow> rows)
     {
@@ -308,7 +310,7 @@ internal static class PlanOperations
                 var deleting = delete.Targets.SelectMany(id => outline.Subtree(id)).Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
                 var published = d.Baseline.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
                 if (state.Rows.FirstOrDefault(r => deleting.Contains(r.Identity) && published.Contains(r.Identity)) is { } refused)
-                    throw new ArgumentException(PublishedRowRefusal(Position(state.Rows, refused.Identity)));
+                    throw new ArgumentException(PublishedRowRefusal(PlanTaskNames.Of(d)[refused.Identity]));
                 // A deleted predecessor no longer constrains its successors, which are rescheduled below. The
                 // parent's roll-up follows its remaining children by itself; rescheduling the parent would
                 // move every sibling that never depended on the deleted row (#236).
@@ -336,8 +338,9 @@ internal static class PlanOperations
         {
             // The scheduler reports a cycle by identity; a refused indent must name the link to remove (#241).
             if (IndentRefusal(d with { State = state }, indentRefusal.Value, cycle) is { } reason) throw new PlanCycleException(reason, cycle.Identities);
-            throw;
+            throw Named(d with { State = state }, cycle);
         }
+        catch (PlanCycleException cycle) { throw Named(d with { State = state }, cycle); }
         return (state, kind);
     }
     // Start and end are plan values: only a PMO edit that reaches a task rewrites them, and that edit
@@ -410,9 +413,7 @@ internal static class PlanOperations
         // The local rows, not the summary view: the new parent's link may be an unpublished edit, which the
         // scheduler still sees and the summary view would replace with the published value.
         var rows = candidate.State.Rows;
-        var parentId = Position(rows, indent.Parent);
-        var rootId = Position(rows, indent.Root);
-        if (parentId == 0 || rootId == 0) return null;
+        if (Position(rows, indent.Parent) == 0 || Position(rows, indent.Root) == 0) return null;
         var subtree = Descendants(rows, indent.Parent);
         var byId = rows.ToDictionary(r => r.Identity);
         foreach (var identity in cycle.Identities)
@@ -424,13 +425,20 @@ internal static class PlanOperations
                     : identity == indent.Parent && subtree.Contains(predecessor) ? indent.Parent : null;
                 if (dependent is null) continue;
                 var before = dependent == indent.Parent ? predecessor : indent.Parent;
-                var beforeId = Position(rows, before);
-                var dependentId = dependent == indent.Parent ? parentId : Position(rows, dependent);
-                if (beforeId == 0 || dependentId == 0) continue;
-                return $"ID {dependentId} は ID {beforeId} の後に始まるため、ID {rootId} を ID {parentId} の下にインデントできません。先にリンクを解除してください。";
+                if (Position(rows, before) == 0 || Position(rows, dependent) == 0) continue;
+                var names = PlanTaskNames.Of(candidate);
+                return $"{names[dependent]} は {names[before]} の後に始まるため、{names[indent.Root]} を {names[indent.Parent]} の下にインデントできません。先にリンクを解除してください。";
             }
         }
         return null;
+    }
+    // The scheduler knows only row positions; the PMO reads the cycle by task name (#263).
+    private static PlanCycleException Named(PlanDocument candidate, PlanCycleException cycle)
+    {
+        if (!cycle.Message.StartsWith("循環参照:", StringComparison.Ordinal)) return cycle;
+        var names = PlanTaskNames.Of(candidate);
+        var members = cycle.Identities.Where(names.Contains).OrderBy(id => Position(candidate.State.Rows, id)).Select(id => names[id]);
+        return new PlanCycleException("循環参照: " + string.Join(", ", members), cycle.Identities);
     }
     private static int Position(ImmutableArray<PlanRow> rows, string identity)
     {
@@ -543,8 +551,8 @@ internal static class PlanOperations
     }
     // An Issue cannot be deleted from the plan: #231 owns 完了・中止・この版から外す, and a delete that
     // reaches a published row is refused whole (named by the row it first reaches).
-    internal static string PublishedRowRefusal(int position)
-        => $"GitHub の Issue は削除できません（ID {position}）。完了・中止・この版から外す を使ってください";
+    internal static string PublishedRowRefusal(string name)
+        => $"GitHub の Issue は削除できません（{name}）。完了・中止・この版から外す を使ってください";
     // Rows a publish cannot create: a new row left without a title, and any new row that would be
     // created inside one. Everything else still publishes; writes referencing these rows are held (#247).
     internal static ImmutableHashSet<string> HeldRows(PlanDocument document)

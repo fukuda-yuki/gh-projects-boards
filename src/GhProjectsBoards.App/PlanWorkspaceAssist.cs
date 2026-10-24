@@ -155,8 +155,8 @@ internal sealed partial class PlanWorkspaceView
         if (row is null) assistSelected = null;
         assistChip.Visibility = row is null ? Visibility.Collapsed : Visibility.Visible;
         if (row is not null) {
-            assistChip.Content = new TextBlock { Text = $"選択中: {sheet!.PlanIds.GetValueOrDefault(row.Identity)} {row.Title} ×", MaxWidth = 292, TextTrimming = TextTrimming.CharacterEllipsis };
-            AutomationProperties.SetName(assistChip, $"選択中: {sheet.PlanIds.GetValueOrDefault(row.Identity)} {row.Title}、選択を外す");
+            assistChip.Content = new TextBlock { Text = $"選択中: {sheet!.TaskNames[row.Identity]} {row.Title} ×", MaxWidth = 292, TextTrimming = TextTrimming.CharacterEllipsis };
+            AutomationProperties.SetName(assistChip, $"選択中: {sheet.TaskNames[row.Identity]} {row.Title}、選択を外す");
         }
     }
     // The native composition edge is also used by hosted tests; it never synthesizes plan edits.
@@ -367,8 +367,8 @@ internal sealed partial class PlanWorkspaceView
         if (result.References is { Count: > 0 } references) {
             assistMessages.Items.Add(Label("参照したタスク"));
             foreach (var task in references.Take(5)) {
-                var link = Id(new HyperlinkButton { Content = new TextBlock { Text = $"{task.Id} {task.Title}", TextWrapping = TextWrapping.Wrap, MaxWidth = 304 }, HorizontalAlignment = HorizontalAlignment.Left }, $"AssistTask{task.Identity}-{assistMessages.Items.Count}");
-                AutomationProperties.SetName(link, $"{task.Id} {task.Title}");
+                var link = Id(new HyperlinkButton { Content = new TextBlock { Text = $"{task.Name} {task.Title}", TextWrapping = TextWrapping.Wrap, MaxWidth = 304 }, HorizontalAlignment = HorizontalAlignment.Left }, $"AssistTask{task.Identity}-{assistMessages.Items.Count}");
+                AutomationProperties.SetName(link, $"{task.Name} {task.Title}");
                 link.Click += async (_, _) => await Run(() => {
                     if (workspace.Session != referenceSession) return Task.CompletedTask;
                     sheet?.FilterTasks(new HashSet<string> { task.Identity }, "アシストの参照タスク"); Show("tasks"); sheet?.SelectAndFocus(task.Identity, PlanField.Title, false); return Task.CompletedTask;
@@ -395,7 +395,7 @@ internal sealed partial class PlanWorkspaceView
         var changes = new ListView { SelectionMode = ListViewSelectionMode.None, MaxHeight = 280, Padding = new(0),
             ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
                 new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch), new Setter(Control.PaddingProperty, new Thickness(0, 2, 0, 2)) } },
-            ItemsSource = proposal.Changes.Select(c => new AssistChangeView($"{c.Task.Id} {c.Task.Title}", PlanSheetColumns.ReviewName(c.Field), c.Current, c.Proposed)).ToArray(),
+            ItemsSource = proposal.Changes.Select(c => new AssistChangeView($"{c.Task.Name} {c.Task.Title}", PlanSheetColumns.ReviewName(c.Field), c.Current, c.Proposed)).ToArray(),
             ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load("""
                 <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
                   <Grid ColumnSpacing="8" RowSpacing="4" Padding="0,4,0,8">
@@ -417,7 +417,7 @@ internal sealed partial class PlanWorkspaceView
         if (effect.Items.Count > 0) {
             var effects = new ListView { SelectionMode = ListViewSelectionMode.None, MaxHeight = 120, Padding = new(0),
                 ItemContainerStyle = changes.ItemContainerStyle,
-                ItemsSource = effect.Items.Select(c => $"{c.Task.Id} {c.Task.Title}\n{c.PreviousStart:yyyy-MM-dd}–{c.PreviousEnd:yyyy-MM-dd} → {c.Start:yyyy-MM-dd}–{c.End:yyyy-MM-dd}").ToArray(),
+                ItemsSource = effect.Items.Select(c => $"{c.Task.Name} {c.Task.Title}\n{c.PreviousStart:yyyy-MM-dd}–{c.PreviousEnd:yyyy-MM-dd} → {c.Start:yyyy-MM-dd}–{c.End:yyyy-MM-dd}").ToArray(),
                 ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load("""
                     <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
                       <TextBlock Text="{Binding}" TextWrapping="Wrap" Padding="0,2,0,6"/>
