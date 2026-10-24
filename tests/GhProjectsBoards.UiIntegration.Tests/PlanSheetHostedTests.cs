@@ -475,6 +475,25 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test, Category("SheetRowPresentation")]
+    public async Task ForecastEndFitsATwoDigitSlipOnATaskAndItsRequirementAtTheDefaultWidth()
+    {
+        // At 1920 the PMO reads 見込終了 without widening it: a two-digit month and day plus a two-digit slip
+        // must fit, on a task and on its semibold requirement row.
+        var late = new PlanRow("I1", "Fixed far late", "acme/repo") { Estimate = 392, Remaining = 392, Start = Today, End = Today, Fixed = true, Parent = "P" };
+        var requirement = new PlanRow("P", "Requirement", "acme/repo");
+        await MountPresentation([late, requirement], [late, requirement]);
+        await Ui.Run(() => {
+            var leaf = Ui.Find<TextBlock>("PlanForecastDisplay1");
+            var summary = Ui.Find<PlanSummaryCell>("PlanCell2_ForecastEnd").Text;
+            var runs = leaf.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().Select(run => run.Text).ToArray();
+            Assert.That(runs[0], Is.EqualTo("12/15 (火)"));
+            Assert.That(runs[1], Does.Match(@"^ \+\d{2}日$"), "A two-digit slip.");
+            Assert.That(leaf.IsTextTrimmed, Is.False, "The task's slip stays readable at the default 見込終了 width.");
+            Assert.That(summary.IsTextTrimmed, Is.False, "The requirement's semibold slip stays readable at the default width.");
+        });
+    }
+
+    [Test, Category("SheetRowPresentation")]
     public async Task ForecastEndShowsTheDerivedDateInSecondaryTextAndOnlyALaterForecastAddsTheRedSlip()
     {
         // #236 decision 5: 見込終了 is the read-only forecast column after 終了日. Its date is secondary text,
@@ -1804,17 +1823,17 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        // #236 part B: the twelve default columns measure 1024 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
-        // 担当者 80 + 見積 96 + 残 96 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 96 + 先行 64) and the
+        // #236 part B: the twelve default columns measure 988 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
+        // 担当者 80 + 見積 72 + 残 72 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 108 + 先行 64) and the
         // divider 6 px. RefreshLayout lays the sheet out inside 20 px less than the control width (a reserve for
         // its own chrome) and keeps the Gantt at its 320 px minimum, so the honest threshold is
-        // 1024 + 6 + 320 + 20 = 1370 control px — the "about 1,370 effective pixels of window" the spec and
+        // 988 + 6 + 320 + 20 = 1334 control px — the "about 1,340 effective pixels of window" the spec and
         // manual quote. A narrower control clips 先行.
-        await Ui.Run(() => { sheet.Width = 1370; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        await Ui.Run(() => { sheet.Width = 1334; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        // Layout rounds a 1370 effective-pixel width to the display's physical pixels, so accept the rounded
+        // Layout rounds a 1334 effective-pixel width to the display's physical pixels, so accept the rounded
         // width; the fit assertions below are the claim this case measures.
-        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1370) <= 1);
+        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1334) <= 1);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");

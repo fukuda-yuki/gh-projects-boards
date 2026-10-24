@@ -355,10 +355,16 @@ internal sealed partial class PlanWorkspaceHostedTests
             var total = Ui.Find<FrameworkElement>("PlanCell1_Estimate");
             Assert.That(AutomationProperties.GetName(total), Does.Contain("16h（見積のないタスク 1 件を除く）"));
             Assert.That(ToolTipService.GetToolTip(total), Is.EqualTo("見積工数 · 16h（見積のないタスク 1 件を除く）"));
-            // The left-out count is its own caution tag beside the known sum, not a prefix of the number.
-            Assert.That(((PlanSummaryCell)total).Missing.Text, Is.EqualTo("未入力 1"));
-            Assert.That(((PlanSummaryCell)total).Text.Text, Is.EqualTo("16h"));
-            Assert.That(((PlanSummaryCell)total).Text.IsTextTrimmed, Is.False, "The sum stays readable beside its tag at the default width.");
+            // The known sum reads first; the left-out count follows as a number-only caution badge, and the
+            // sentence that explains it lives in the tooltip and the accessible name.
+            var cell = (PlanSummaryCell)total;
+            Assert.That(cell.Text.Text, Is.EqualTo("16h"));
+            Assert.That(cell.Missing.Text, Is.EqualTo("1"));
+            Assert.That(cell.Missing.FontSize, Is.EqualTo(11));
+            Assert.That(cell.MissingTag.TransformToVisual(cell).TransformPoint(default).X,
+                Is.GreaterThan(cell.Text.TransformToVisual(cell).TransformPoint(default).X), "The badge follows the sum.");
+            Assert.That(cell.ActualWidth, Is.EqualTo(72).Within(1), "見積 h keeps its compact default width.");
+            Assert.That(cell.Text.IsTextTrimmed, Is.False, "The sum stays readable beside its badge at the default width.");
             Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator1")), Does.Contain("見積のないタスク 1"));
         });
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue245-added-issues"));
@@ -578,9 +584,9 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(chart.ViewportWidth, Is.GreaterThanOrEqualTo(320), "The sheet may not take the Gantt's minimum.");
             }
             if (width == 1920) {
-                // Since 見積 h and 残 h widened to 96 px to fit a requirement's 未入力 tag, the sheet takes its
-                // 1029 px of columns plus the 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation) - 1029 = 829.
-                Assert.That(chart.ViewportWidth, Is.EqualTo(829).Within(2), "Default-column budget, allowing pixel rounding.");
+                // With 見積 h / 残 h at 72 px and 見込終了 at 108 px the sheet takes its 993 px of columns plus the
+                // 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation) - 993 = 865.
+                Assert.That(chart.ViewportWidth, Is.EqualTo(865).Within(2), "Default-column budget, allowing pixel rounding.");
                 Assert.That(fullRows, Is.EqualTo(29).Within(2));
             }
         });

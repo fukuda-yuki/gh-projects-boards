@@ -384,7 +384,7 @@ public sealed class PlanSheetRow : Grid
                 var missing = field == PlanField.Estimate ? owner.Schedule.GetValueOrDefault(Identity)?.MissingEstimates ?? 0
                     : field == PlanField.Remaining ? owner.Schedule.GetValueOrDefault(Identity)?.MissingRemaining ?? 0 : 0;
                 display.Text.Inlines.Clear();
-                display.Missing.Text = missing > 0 ? $"未入力 {missing}" : "";
+                display.Missing.Text = missing > 0 ? missing.ToString(System.Globalization.CultureInfo.InvariantCulture) : "";
                 display.MissingTag.Visibility = missing > 0 ? Visibility.Visible : Visibility.Collapsed;
                 if (field == "ForecastEnd") {
                     // The derived date is secondary text; a later forecast adds the critical red slip.
@@ -986,9 +986,9 @@ internal sealed class PlanSummaryCell : ContentControl
     private readonly PlanSheetRow row;
     private readonly string field;
     internal TextBlock Text { get; }
-    // A partial total names the leaf tasks it leaves out in a separate caution tag, so the count never reads
-    // as part of the number beside it.
-    internal TextBlock Missing { get; } = new() { FontSize = 10, Foreground = PlanSheetView.Brush("SystemFillColorCautionBrush"),
+    // A partial total counts the leaf tasks it leaves out in a separate caution badge after the sum, so the
+    // count never reads as part of the number; the tooltip and accessible name carry the sentence.
+    internal TextBlock Missing { get; } = new() { FontSize = 11, Foreground = PlanSheetView.Brush("SystemFillColorCautionBrush"),
         IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center };
     internal Border MissingTag { get; }
     internal PlanSummaryCell(PlanSheetRow row, string field)
@@ -1003,12 +1003,12 @@ internal sealed class PlanSummaryCell : ContentControl
         Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(Text, FontNumeralAlignment.Tabular);
         AutomationProperties.SetAccessibilityView(Text, AccessibilityView.Raw);
         AutomationProperties.SetAccessibilityView(Missing, AccessibilityView.Raw);
-        MissingTag = new Border { Child = Missing, Visibility = Visibility.Collapsed, Margin = new(4, 0, 0, 0), Padding = new(3, 0, 3, 0),
-            CornerRadius = new(2), BorderThickness = new(1), BorderBrush = PlanSheetView.Brush("SystemFillColorCautionBrush"),
+        MissingTag = new Border { Child = Missing, Visibility = Visibility.Collapsed, Margin = new(0, 0, 3, 0), Padding = new(3, 0, 3, 0),
+            MinWidth = 15, CornerRadius = new(8), BorderThickness = new(1), BorderBrush = PlanSheetView.Brush("SystemFillColorCautionBrush"),
             VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
         var content = new Grid();
-        content.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); content.ColumnDefinitions.Add(new());
-        content.Children.Add(MissingTag); content.Children.Add(Text); Grid.SetColumn(Text, 1);
+        content.ColumnDefinitions.Add(new()); content.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        content.Children.Add(Text); content.Children.Add(MissingTag); Grid.SetColumn(MissingTag, 1);
         Content = content;
         GotFocus += (_, _) => {
             // GotFocus can arrive after focus has moved to another cell.
