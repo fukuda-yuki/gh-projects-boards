@@ -1,6 +1,6 @@
 namespace GhProjectsBoards.Core.PlanEditor;
 
-// #229: a typed 開始日 is the task's own input (開始日指定, a start no earlier than) and a predecessor that
+// #229: a typed 開始日 is the task's plan start (a floor, start no earlier than) and a predecessor that
 // ends later wins the scheduled start. The commit that produced that difference reports which predecessor won
 // and the resulting date, and offers one command that removes exactly that link. A notice exists only for a
 // typed start: paste, fill, Undo/Redo and a refresh never produce one, and a start that holds or one moved
