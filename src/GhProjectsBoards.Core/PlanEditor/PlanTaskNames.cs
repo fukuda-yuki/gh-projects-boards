@@ -50,6 +50,16 @@ internal sealed partial class PlanTaskNames
     internal string StartReason(string reason)
         => PositionReason().Match(reason) is { Success: true } match
             ? AtPosition(int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture)) + " の終了後" : reason;
+    // The task a `{row position} の終了後` reason names, for a caller that needs the task itself (#229).
+    internal bool TryPredecessor(string reason, out string identity)
+    {
+        identity = "";
+        if (PositionReason().Match(reason) is not { Success: true } match) return false;
+        var position = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+        if (position < 1 || position > positions.Count) return false;
+        identity = positions[position - 1];
+        return true;
+    }
 
     // One entry of 先行 after #239 folding: N or #N, repo#N or owner/repo#N, or 新N. Nothing is linked by guess.
     internal string Resolve(string entry)
