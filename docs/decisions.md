@@ -170,7 +170,7 @@ CSV repository values require multi-repository creation within the selected Proj
 
 ## People load allocation (#80)
 
-Automatic tasks use the forecast's remaining-work allocation (#236), including partial working days, so remaining work starts no earlier than the 基準日 and after its predecessors' forecast ends. If no working day exists, the work remains explicitly unallocated. Completed tasks contribute no future load. Unassigned and multiply assigned tasks stay in separate groups with unknown capacity rather than duplicating hours across people. Weeks run Monday–Sunday and months use full calendar boundaries; aggregate hours and capacity before computing a percentage.
+Automatic tasks use the forecast's remaining-work allocation (#236), including partial working days, so remaining work starts no earlier than the 基準日 and after its predecessors' forecast ends. Completed tasks contribute no future load. Unassigned and multiply assigned tasks stay in separate groups with unknown capacity rather than duplicating hours across people. Weeks run Monday–Sunday and months use full calendar boundaries; aggregate hours and capacity before computing a percentage.
 
 ## Planning editor publish recovery (#79)
 
