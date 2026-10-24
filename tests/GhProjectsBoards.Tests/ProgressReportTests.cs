@@ -14,15 +14,15 @@ internal sealed class ProgressReportTests
     private static ProgressSnapshot Snapshot(string status, DateTimeOffset readAt, string psFinish, int? difference = 3, int owner = 0)
     {
         var tasks = ImmutableArray.Create(
-            Row(2, "Finish | passed", new("finish", D("2027-01-12"), null), cause: true),
-            Row(3, "[Not] started", new("start", D("2027-01-09"), null)),
-            Row(4, "Forecast later", new("forecast", D("2027-01-14"), 2), overEstimate: true));
+            Row(2, "Finish | passed", new("finish", D("2027-01-12"), 1), cause: true),
+            Row(3, "[Not] started", new("start", D("2027-01-09"), null), cause: true),
+            Row(4, "Forecast later", new("forecast", D("2027-01-14"), 2), cause: true, overEstimate: true));
         return new(ProgressSnapshot.SchemaV1, readAt, D(status), "Asia/Tokyo",
             new("github.com", owner == 0 ? "acme" : "other", 3, "第2027.04版", "https://github.com/users/acme/projects/3"),
             new(D("2026-10-13"), D("2027-04-30")), D("2027-05-04"), 2, Effort(3, 0, 0.5m),
             [new("PS", "PS 完了", D("2027-01-08"), D("2026-12-01"), D(psFinish), difference, Effort(3, 0, 0.9999m), 3, 1),
              new("PG", null, null, null, null, null, Effort(0, 0, null), 0, 0)],
-            new(tasks.Select(t => t.Issue).ToImmutableArray(), ["acme/repo#2"], ["acme/repo#4"]),
+            new(tasks.Select(t => t.Issue).ToImmutableArray(), tasks.Select(t => t.Issue).ToImmutableArray(), ["acme/repo#4"]),
             [new("acme/repo#1", "https://github.com/acme/repo/issues/1", "R01")], tasks);
     }
 
@@ -37,12 +37,33 @@ internal sealed class ProgressReportTests
         Assert.That(report, Does.Contain("| PS | 2027-01-08 (金) | 2027-01-13 (水) | +3 | 0 / 3 | 99% | 3 | 1 |"),
             "A phase with open tasks never reads 100%.");
         Assert.That(report, Does.Contain("| PG | — | — | — | 0 / 0 | — | 0 | 0 |"));
-        Assert.That(report, Does.Contain("## 遅れ（3）").And.Contain("## 遅れの原因（1）").And.Contain("## 見積超過（1）"));
-        Assert.That(report, Does.Contain("| [acme/repo\\#2](https://github.com/acme/repo/issues/2) | Finish \\| passed | PS | person-a | 終了日 1/12 を過ぎて未完了 |"));
+        Assert.That(report, Does.Contain("## 遅れの原因（3）").And.Contain("## 見積超過（1）"));
+        Assert.That(report, Does.Contain("| [acme/repo\\#2](https://github.com/acme/repo/issues/2) | Finish \\| passed | PS | person-a | 終了日 1/12 を過ぎて未完了 · 見込終了は +1日 |"));
         Assert.That(report, Does.Contain("| \\[Not\\] started | PS | person-a | 開始日 1/9 を過ぎて未着手 |"));
         Assert.That(report, Does.Contain("| Forecast later | PS | person-a | 見込終了 1/14 · +2日 |"));
         Assert.That(report, Does.Contain("| Forecast later | PS | person-a | 見積 16h → 見込 24h |"));
         Assert.That(report, Does.Contain("![工程ごとの完了見込の推移](report/phase-trend.svg)"));
+    }
+
+    [Test]
+    public void LateIsCountedByCaseWhileCausesAreListedMostDaysLateFirst()
+    {
+        var report = ProgressReport.Render([Snapshot("2027-01-13", DateTimeOffset.UnixEpoch, "2027-01-13")]).Markdown;
+
+        var late = Section(report, "## 遅れ（3）");
+        Assert.That(late, Does.Contain("終了日を過ぎて未完了 1 · 開始日を過ぎて未着手 1 · 見込終了が遅れ 1"));
+        Assert.That(late, Does.Not.Contain("|").And.Not.Contain("acme/repo"), "The full late set stays in the snapshot, not the report.");
+        var causes = Section(report, "## 遅れの原因（3）");
+        Assert.That(new[] { "\\#4", "\\#2", "\\#3" }.Select(issue => causes.IndexOf(issue, StringComparison.Ordinal)), Is.Ordered.And.All.GreaterThan(0),
+            "Most working days late first; a cause with no known forecast slip comes last.");
+    }
+
+    private static string Section(string markdown, string heading)
+    {
+        var start = markdown.IndexOf(heading, StringComparison.Ordinal);
+        Assert.That(start, Is.GreaterThanOrEqualTo(0), heading);
+        var end = markdown.IndexOf("\n## ", start + heading.Length, StringComparison.Ordinal);
+        return end < 0 ? markdown[start..] : markdown[start..end];
     }
 
     [Test]

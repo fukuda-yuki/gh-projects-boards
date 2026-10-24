@@ -79,7 +79,9 @@ internal sealed class ProgressSnapshotTests
         Assert.That(late.Select(t => t.Issue), Is.EquivalentTo(snapshot.Lateness.Late));
         foreach (var task in late)
         {
-            switch (task.Late!.Kind)
+            if (task.Late!.Days is { } days)
+                Assert.That((days, task.ForecastEnd > task.End), Is.EqualTo((Math.Max(days, 1), true)), "days counts how far 見込終了 is past 終了日.");
+            switch (task.Late.Kind)
             {
                 case "finish": Assert.That(task.Late.Date, Is.EqualTo(task.End).And.LessThan(snapshot.StatusDate)); break;
                 case "start": Assert.That((task.Late.Date, task.Actual ?? 0), Is.EqualTo((task.Start, 0m))); break;
@@ -91,6 +93,8 @@ internal sealed class ProgressSnapshotTests
             }
         }
         Assert.That(late.Select(t => t.Late!.Kind).Distinct(), Does.Contain("finish").And.Contain("forecast"));
+        Assert.That(late.Where(t => t.Late!.Kind != "forecast").Select(t => t.Late!.Days), Has.Some.Not.Null,
+            "An overdue task also states how far its 見込終了 is past its 終了日, the order of 遅れの原因.");
     }
 
     [Test]

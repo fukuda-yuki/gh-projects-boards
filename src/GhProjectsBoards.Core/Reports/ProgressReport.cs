@@ -41,11 +41,12 @@ internal static class ProgressReport
 
     internal static string Reason(ProgressTask task) => task.Late switch
     {
-        { Kind: "finish" } late => $"終了日 {Short(late.Date)} を過ぎて未完了",
-        { Kind: "start" } late => $"開始日 {Short(late.Date)} を過ぎて未着手",
+        { Kind: "finish" } late => $"終了日 {Short(late.Date)} を過ぎて未完了" + Slip(late),
+        { Kind: "start" } late => $"開始日 {Short(late.Date)} を過ぎて未着手" + Slip(late),
         { Kind: "forecast" } late => $"見込終了 {Short(late.Date)} · +{late.Days?.ToString(Invariant) ?? "?"}日",
         _ => ""
     };
+    private static string Slip(ProgressLate late) => late.Days is { } days ? $" · 見込終了は +{days.ToString(Invariant)}日" : "";
     internal static string Overrun(ProgressTask task) => $"見積 {Hours(task.Estimate)} → 見込 {Hours((task.Actual ?? 0) + task.Remaining)}";
 
     private static string Verdict(ProgressSnapshot s)
@@ -93,17 +94,24 @@ internal static class ProgressReport
         md.Append($"![工程ごとの完了見込の推移]({TrendPath})\n\n");
         md.Append($"基準日ごとの各工程の完了見込（実線）と目標日（破線）。記録 {N(points)} 回分。\n");
 
-        void List(string heading, IReadOnlyList<string> issues, Func<ProgressTask, string> reason)
+        // 遅れ is counted only: it covers most of a slipping plan, and the snapshot keeps every task.
+        var kinds = s.Lateness.Late.Select(i => tasks[i].Late?.Kind).ToArray();
+        int Kind(string kind) => kinds.Count(k => k == kind);
+        md.Append($"\n## 遅れ（{N(kinds.Length)}）\n\n");
+        md.Append($"終了日を過ぎて未完了 {N(Kind("finish"))} · 開始日を過ぎて未着手 {N(Kind("start"))} · 見込終了が遅れ {N(Kind("forecast"))}\n");
+
+        void List(string heading, IEnumerable<ProgressTask> listed, Func<ProgressTask, string> reason)
         {
-            md.Append($"\n## {heading}（{N(issues.Count)}）\n\n");
-            if (issues.Count == 0) { md.Append("ありません。\n"); return; }
+            var rows = listed.ToArray();
+            md.Append($"\n## {heading}（{N(rows.Length)}）\n\n");
+            if (rows.Length == 0) { md.Append("ありません。\n"); return; }
             md.Append("| Issue | タスク | 工程 | 担当者 | 理由 |\n| --- | --- | --- | --- | --- |\n");
-            foreach (var task in issues.Select(i => tasks[i]))
+            foreach (var task in rows)
                 md.Append($"| {Link(task)} | {Escape(task.Title)} | {Escape(task.Phase ?? "")} | {Escape(string.Join(", ", task.Assignees))} | {reason(task)} |\n");
         }
-        List("遅れ", s.Lateness.Late, Reason);
-        List("遅れの原因", s.Lateness.Cause, Reason);
-        List("見積超過", s.Lateness.OverEstimate, Overrun);
+        // The lateness set is in plan order, so a stable sort keeps plan order among equal slips.
+        List("遅れの原因", s.Lateness.Cause.Select(i => tasks[i]).OrderByDescending(t => t.Late?.Days ?? int.MinValue), Reason);
+        List("見積超過", s.Lateness.OverEstimate.Select(i => tasks[i]), Overrun);
         return md.ToString();
     }
 

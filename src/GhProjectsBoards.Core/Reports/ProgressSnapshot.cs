@@ -77,7 +77,7 @@ internal sealed record ProgressSnapshot(string Schema, DateTimeOffset ReadAt, Da
             var state = lateness.Tasks[task.Input.Identity];
             return state.Level switch
             {
-                PlanLatenessLevel.Overdue => new(state.OverdueKind == PlanOverdueKind.Start ? "start" : "finish", state.MissedDate!.Value, null),
+                PlanLatenessLevel.Overdue => new(state.OverdueKind == PlanOverdueKind.Start ? "start" : "finish", state.MissedDate!.Value, state.DaysLater),
                 PlanLatenessLevel.Later => new("forecast", task.ForecastEnd!.Value, state.DaysLater),
                 _ => null
             };

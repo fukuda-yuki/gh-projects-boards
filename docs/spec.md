@@ -641,7 +641,7 @@ One indented UTF-8 JSON file per 基準日, `<data>/<yyyy-MM-dd>.json`. A second
 
 An effort object (`totals` and each phase's `effort`) has `tasks`, `closed`, `estimate`, `actual`, `remaining`, `forecast` (hours), `variance` (forecast − estimate), `progress` (actual ÷ forecast, 0–1, four decimals) and `unknownEffort` (tasks whose 残 or 見込 is unknown). A sum with no known contributor is `null`.
 
-A task has `issue` (`owner/repo#n`, the reference used everywhere in the file), `url`, `title`, `parent` (the requirement's reference or `null`), `phase`, `milestone`, `assignees` (logins), `estimate`, `actual`, `remaining`, `start`, `end`, `forecastEnd`, `closed`, `closeDate`, `late`, `cause` and `overEstimate`. `late` is `null` or `{ "kind", "date", "days" }`: `finish` with the passed 終了日, `start` with the passed 開始日, or `forecast` with the 見込終了 and its working days after the 終了日. Unknown values are `null`. Node IDs, rates, Issue bodies and comments are not written.
+A task has `issue` (`owner/repo#n`, the reference used everywhere in the file), `url`, `title`, `parent` (the requirement's reference or `null`), `phase`, `milestone`, `assignees` (logins), `estimate`, `actual`, `remaining`, `start`, `end`, `forecastEnd`, `closed`, `closeDate`, `late`, `cause` and `overEstimate`. `late` is `null` or `{ "kind", "date", "days" }`: `finish` with the passed 終了日, `start` with the passed 開始日, or `forecast` with the 見込終了. `days` is the working days the 見込終了 is after the 終了日 for every kind, or `null` when it is not later or unknown. Unknown values are `null`. Node IDs, rates, Issue bodies and comments are not written.
 
 ### Report
 
@@ -651,4 +651,5 @@ A task has `issue` (`owner/repo#n`, the reference used everywhere in the file), 
 2. The verdict: 完了見込 against the 終了日 in working days.
 3. 工程別: 工程, 目標日, 完了見込, 差, 完了/タスク, 進捗, 遅れ, 見積超過.
 4. 工程の完了見込の推移 (milestone trend analysis): `report/phase-trend.svg`, one small panel per 工程 (nine 工程 are too many lines for one chart), each plotting its 完了見込 at each 基準日 with its 目標日 as a dashed level and the latest value labelled. A single snapshot shows one point per panel. The image has its own light or dark background.
-5. 遅れ, 遅れの原因 and 見積超過 lists, each task linked to its Issue with its 担当者 and the reason in the app's tooltip wording: 「終了日 1/12 を過ぎて未完了」, 「開始日 1/9 を過ぎて未着手」, 「見込終了 1/14 · +2日」 and 「見積 16h → 見込 24h」.
+5. 遅れ as counts only, split by case: 「終了日を過ぎて未完了 N · 開始日を過ぎて未着手 N · 見込終了が遅れ N」. A slipping plan makes most tasks late, so the full set stays in the snapshot.
+6. 遅れの原因 and 見積超過 lists in full, each task linked to its Issue with its 担当者 and the reason in the app's tooltip wording: 「終了日 1/12 を過ぎて未完了 · 見込終了は +2日」, 「開始日 1/9 を過ぎて未着手」, 「見込終了 1/14 · +2日」 and 「見積 16h → 見込 24h」. 遅れの原因 is ordered by `days`, most first, then plan order; a cause without `days` comes last. 見積超過 is in plan order.
