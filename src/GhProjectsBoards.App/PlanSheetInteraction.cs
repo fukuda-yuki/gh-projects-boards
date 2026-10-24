@@ -331,12 +331,13 @@ internal sealed partial class PlanSheetView
             if (top + RowHeight > offset + scroll.ViewportHeight)
                 offset = Math.Clamp(top + RowHeight - scroll.ViewportHeight, 0, scroll.ScrollableHeight);
             scroll.ChangeView(null, offset, null, true);
+            // Realize the rows at the new offset before the focus request, so the target container exists
+            // when it is asked to take focus; the request itself then needs no further retries.
+            List.UpdateLayout();
         }
         Select(identity, field, extend);
         if (wholeRow) SelectWholeRow(identity, true, focus: false);
         FocusCell(selected, selectedField, scrollIntoView: false);
-        // The target container can be realized by the layout pass that follows the scroll.
-        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, TryRestoreFocus);
         HoldingView = true;
     }
     private Flyout? goToFlyout;

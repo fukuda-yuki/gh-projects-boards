@@ -4,6 +4,7 @@ using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using NUnit.Framework;
 using Windows.System;
 
@@ -94,7 +95,12 @@ internal sealed class PlanSheetNavigationHostedTests
         await Ui.Run(() => { sheet.HandleEdgeKey(key, control, extend); });
     }
 
-    private Task AssertFocused(string identity, string field) => Ui.Until(() => Focused(identity, field));
+    private Task AssertFocused(string identity, string field) => Ui.Until(() => Focused(identity, field), () => {
+        var viewport = Viewport();
+        var focus = sheet.XamlRoot is { } root ? FocusManager.GetFocusedElement(root) as DependencyObject : null;
+        return $"target={CellId(identity, field)}, focus={focus?.GetType().Name}/{AutomationProperties.GetAutomationId(focus)}, "
+            + $"offset={viewport.VerticalOffset:F0}/{viewport.ScrollableHeight:F0}, realized={sheet.Realized.Count}";
+    });
 
     private Task AssertRowInView(string identity) => Ui.Until(() => {
         if (sheet.List.ContainerFromItem(identity) is not ListViewItem item || !item.IsLoaded) return false;
