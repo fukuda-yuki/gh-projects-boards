@@ -93,6 +93,9 @@ internal sealed class PlanStartDateNoticeHostedTests
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic), Is.True));
         await Ui.Until(() => session.UndoCount > undo);
         await Ui.Idle();
+        // The commit presents the notice after the local operation is accepted and the sheet has refreshed.
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanStartNotice").Text.Length > 0);
+        await Ui.Idle();
     }
 
     private static string NoticeText() => Ui.Find<TextBlock>("PlanStartNotice").Text;
@@ -130,6 +133,7 @@ internal sealed class PlanStartDateNoticeHostedTests
         await TypeStartAndLeave("1/12");
         await Ui.Run(() => Ui.Click("PlanStartNoticeAction"));
         await Ui.Idle();
+        await Ui.Until(() => Ui.Find<Control>("PlanCell2_Start").FocusState != FocusState.Unfocused);
 
         await Ui.Run(() =>
         {
@@ -139,8 +143,6 @@ internal sealed class PlanStartDateNoticeHostedTests
                 Assert.That(session.UndoCount, Is.EqualTo(2), "Removing the link is one more ordinary cell operation.");
                 Assert.That(Ui.Find<TextBox>("PlanCell2_Start").Text, Is.EqualTo("1/12 (月)"), "The typed start then holds.");
                 Assert.That(NoticeText(), Is.Empty, "The notice is gone once its cause is.");
-                Assert.That(Ui.Find<Control>("PlanCell2_Start").FocusState, Is.Not.EqualTo(FocusState.Unfocused),
-                    "Keyboard focus returns to the 開始日 cell.");
             });
         });
     }
@@ -158,6 +160,7 @@ internal sealed class PlanStartDateNoticeHostedTests
         });
         await Ui.Run(() => Ui.Click("PlanStartNoticeDismiss"));
         await Ui.Idle();
+        await Ui.Until(() => Ui.Find<Control>("PlanCell2_Start").FocusState != FocusState.Unfocused);
 
         await Ui.Run(() =>
         {
@@ -168,8 +171,6 @@ internal sealed class PlanStartDateNoticeHostedTests
                     "Closing the notice keeps the link.");
                 Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before), "Dismissing changes nothing in the plan.");
                 Assert.That(session.UndoCount, Is.EqualTo(undo), "Dismissing creates no Undo step.");
-                Assert.That(Ui.Find<Control>("PlanCell2_Start").FocusState, Is.Not.EqualTo(FocusState.Unfocused),
-                    "Keyboard focus returns to the 開始日 cell.");
             });
         });
     }
@@ -178,6 +179,9 @@ internal sealed class PlanStartDateNoticeHostedTests
     public async Task PasteAndUndoNeverRaiseTheNotice()
     {
         // A pasted start loses to the predecessor without a notice: a range operation is not a typed commit.
+        await Ui.Ready<TextBox>("PlanCell2_Start");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell2_Start").Focus(FocusState.Programmatic), Is.True));
+        await Ui.Idle();
         clipboard = new("1/12", null);
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.V));
         await Ui.Idle();

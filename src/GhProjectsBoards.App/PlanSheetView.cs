@@ -225,18 +225,20 @@ internal sealed partial class PlanSheetView : Grid
         for (var i = 0; i < 5; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
         selectedLine.Children.Add(selection); selectedLine.Children.Add(selectedTitle); SetColumn(selectedTitle, 1);
         var explanation = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Left };
+        // 0 start reason, 1 typed-start notice (#229), 2 lateness pill, 3 lateness detail, 4 impact links.
         explanation.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        for (var column = 0; column < 4; column++) explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         reason.VerticalAlignment = VerticalAlignment.Center;
         reason.Foreground = Brush("TextFillColorSecondaryBrush");
         slip.FontSize = 12; slip.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
         slipPill.Child = slip;
-        explanation.Children.Add(reason); explanation.Children.Add(slipPill); SetColumn(slipPill, 1);
-        explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 2);
+        explanation.Children.Add(reason);
+        InitializeStartNotice(explanation);
+        explanation.Children.Add(slipPill); SetColumn(slipPill, 2);
+        explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 3);
         var impact = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         impact.Children.Add(successorLink); impact.Children.Add(predecessorLink);
-        explanation.Children.Add(impact); SetColumn(impact, 3);
+        explanation.Children.Add(impact); SetColumn(impact, 4);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
         InitializeDetailToggle(selectedLine);
         selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
@@ -617,6 +619,13 @@ internal sealed partial class PlanSheetView : Grid
             metrics.Mark("accepted");
             FinishInput();
             Refresh();
+            // #229: a typed start that a predecessor moved later is reported here, at the commit that
+            // produced it. A start that holds, or any other edit, leaves no notice behind.
+            if (field == PlanField.Start && identity.Length > 0 && value is DateOnly typed)
+            {
+                if (PlanStartNotice.Detect(Session.Document, identity, typed, Today) is { } notice) PresentStartNotice(notice);
+                else DismissStartNotice();
+            }
             metrics.Mark("presented");
             CompositionTarget.Rendered -= FrameRendered; CompositionTarget.Rendered += FrameRendered; frameSubscribed = true;
             Check(await save);
@@ -668,6 +677,7 @@ internal sealed partial class PlanSheetView : Grid
     {
         CancelLookup();
         Pending.Remove((identity, field)); Problems.Remove((identity, field)); error.Text = "";
+        DismissStartNotice();
         Refresh();
     }
     internal Column[] ConfiguredColumns { get; private set; } = Columns;
@@ -675,6 +685,8 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (disposed) return;
         var document = Session.Document;
+        // #229: the typed-start notice explains one calculation; another operation makes its message stale.
+        if (shownStartNotice is not null && !ReferenceEquals(startNoticeDocument, document)) DismissStartNotice();
         var configured = PlanSheetColumns.All(document).Select(c => {
             var standard = Columns.FirstOrDefault(s => (s.Indicator ? "Indicator" : s.Field ?? "Id") == c.Key);
             // repo#N needs room for the repository name (#263).
