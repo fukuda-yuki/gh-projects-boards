@@ -51,6 +51,15 @@ For the authorized sandbox, connect to github.com with C:\Program Files\GitHub C
 
 **設定** contains column mappings, calendar, holidays and company days off, assignee rates and allowances, optional Project start and end, phase mapping and option counts, default repository and settings export/import. Accepted changes autosave and recalculate; **元に戻す** reverses one operation. The [Japanese user manual](docs/user-manual.md) describes these flows.
 
+## Progress report
+
+A private data repository calls the reusable workflow [progress-report.yml](.github/workflows/progress-report.yml) on a daily schedule. It commits one snapshot per 基準日 and rebuilds `REPORT.md` there; see [progress snapshots and report](docs/spec.md#progress-snapshots-and-report-262). The caller passes the Project URL, the settings file the app exported for that Project and a token that can read the Project as the `token` secret. To run the tool locally with gh's stored authentication:
+
+~~~powershell
+dotnet run --project src/GhProjectsBoards.Report -c Release -- snapshot --project <Project URL> --settings <exported settings> --data <folder>
+dotnet run --project src/GhProjectsBoards.Report -c Release -- report --data <folder> --out REPORT.md
+~~~
+
 ## Validation
 
 ~~~powershell
@@ -66,5 +75,6 @@ The hosted UI tests use real controls, Core and storage, with fake gh at the rem
 
 - src/GhProjectsBoards.Core: UI-independent connection, Project reading, scheduling, local documents and publication.
 - src/GhProjectsBoards.App: the ordinary WinUI shell, settings and rendering.
+- src/GhProjectsBoards.Report: the console that writes progress snapshots and the report for scheduled workflows.
 - tests: logic, adapter/storage, hosted UI and ordinary-executable checks.
 - docs: current contracts, design rationale and the user manual.
