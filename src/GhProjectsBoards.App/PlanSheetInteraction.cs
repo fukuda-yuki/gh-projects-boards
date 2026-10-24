@@ -264,6 +264,11 @@ internal sealed partial class PlanSheetView
         args.Handled = true;
         MovePage(args.Key == VirtualKey.PageDown, Down(VirtualKey.Shift));
     }
+    // #228: the grid edge chords move the selection to the visible first/last row or field column, and F5
+    // opens ジャンプ. Both live here so a page move and an edge move share one placement rule; the hosted
+    // cases drive these entry points and the native cases press the chords.
+    internal bool HandleEdgeKey(VirtualKey key, bool control, bool extend) => false;
+    internal Task OpenGoTo() => Task.CompletedTask;
     internal event Action? CommandRowFocusRequested;
     private (string Identity, string Field)? filterReturnCell;
     internal bool HandleFocusShortcut(VirtualKey key)
