@@ -358,6 +358,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             // The left-out count is its own caution tag beside the known sum, not a prefix of the number.
             Assert.That(((PlanSummaryCell)total).Missing.Text, Is.EqualTo("未入力 1"));
             Assert.That(((PlanSummaryCell)total).Text.Text, Is.EqualTo("16h"));
+            Assert.That(((PlanSummaryCell)total).Text.IsTextTrimmed, Is.False, "The sum stays readable beside its tag at the default width.");
             Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator1")), Does.Contain("見積のないタスク 1"));
         });
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue245-added-issues"));
@@ -2453,7 +2454,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open(); await Settings();
         await Ui.Run(() => {
             Assert.That(((PlanFieldChoice)Ui.Find<ComboBox>("PlanMapPhase").SelectedItem).Definition.Id, Is.EqualTo("F-Phase"));
-            Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程"));
+            Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Visibility, Is.EqualTo(Visibility.Collapsed), "No task lacks a phase, so there is nothing to say.");
             Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_SA").Text, Is.EqualTo("1"));
             Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_UI").Text, Is.EqualTo("0"));
             Assert.That(Ui.Find<ComboBox>("PlanPhaseMilestone_SA").Items.Cast<string>(), Is.EqualTo(new[] { "なし" }));

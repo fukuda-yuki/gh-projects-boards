@@ -1804,17 +1804,17 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        // #236 part B: the twelve default columns measure 944 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
-        // 担当者 80 + 見積 56 + 残 56 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 96 + 先行 64) and the
+        // #236 part B: the twelve default columns measure 1024 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
+        // 担当者 80 + 見積 96 + 残 96 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 96 + 先行 64) and the
         // divider 6 px. RefreshLayout lays the sheet out inside 20 px less than the control width (a reserve for
         // its own chrome) and keeps the Gantt at its 320 px minimum, so the honest threshold is
-        // 944 + 6 + 320 + 20 = 1290 control px — the "about 1,300 effective pixels of window" the spec and
-        // manual quote. A 1270 px control leaves 930 px for the sheet and clips 先行.
-        await Ui.Run(() => { sheet.Width = 1290; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        // 1024 + 6 + 320 + 20 = 1370 control px — the "about 1,370 effective pixels of window" the spec and
+        // manual quote. A narrower control clips 先行.
+        await Ui.Run(() => { sheet.Width = 1370; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        // Layout rounds a 1290 effective-pixel width to the display's physical pixels, so accept the rounded
+        // Layout rounds a 1370 effective-pixel width to the display's physical pixels, so accept the rounded
         // width; the fit assertions below are the claim this case measures.
-        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1290) <= 1);
+        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1370) <= 1);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");

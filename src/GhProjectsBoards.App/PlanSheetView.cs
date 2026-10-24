@@ -74,7 +74,7 @@ internal sealed partial class PlanSheetView : Grid
     internal sealed record Column(string? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
         new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 224), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
-        new(PlanField.Estimate, "見積 h", 56), new(PlanField.Remaining, "残 h", 56), new(PlanField.Actual, "実績 h", 56),
+        new(PlanField.Estimate, "見積 h", 96), new(PlanField.Remaining, "残 h", 96), new(PlanField.Actual, "実績 h", 56),
         new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ForecastEnd", "見込終了", 96), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.StartNoEarlierThan, "開始日指定", 100), new(PlanField.Fixed, "日程固定", 80), new(PlanField.Status, "ステータス", 100)];
     internal bool IndicatorVisible { get; private set; } = true;

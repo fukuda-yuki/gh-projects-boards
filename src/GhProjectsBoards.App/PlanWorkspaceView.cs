@@ -936,11 +936,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 phaseTargets.Children.Clear();
                 var mapping = session.Document.State.Settings.Columns.SingleOrDefault(c => c.Role == PlanField.Phase);
                 var field = session.Document.Baseline.Columns.SingleOrDefault(c => c.Id == mapping?.FieldId);
-                if (field is null) { phaseDetails.Text = "工程のフィールドが未設定です。"; return; }
+                if (field is null) { phaseDetails.Text = "工程のフィールドが未設定です。"; phaseDetails.Visibility = Visibility.Visible; return; }
                 var parents = session.Document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!).ToHashSet();
                 var counts = session.Document.State.Rows.Where(r => !parents.Contains(r.Identity)).ToLookup(r => r.Phase ?? "");
                 var unphased = counts[""].Count();
-                phaseDetails.Text = field.Name + (unphased > 0 ? $" · 工程なし {unphased:N0} タスク" : "");
+                phaseDetails.Text = unphased > 0 ? $"工程なし {unphased:N0} タスク" : "";
+                phaseDetails.Visibility = unphased > 0 ? Visibility.Visible : Visibility.Collapsed;
                 Grid PhaseRow(string option, string count, FrameworkElement target) {
                     var row = new Grid { ColumnSpacing = 12 };
                     foreach (var width in new[] { 100d, 100d, 320d }) row.ColumnDefinitions.Add(new() { Width = new(width) });
