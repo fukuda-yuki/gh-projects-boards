@@ -323,6 +323,9 @@ internal sealed partial class PlanSheetView
         if (Fields.Length == 0 || !RowIndexes.TryGetValue(identity, out var index) || !Fields.Contains(field)) return;
         if (rowScroll is { } scroll)
         {
+            // A filter or fold change replaces the item set; the native extent must be arranged before the
+            // offset is clamped, or the jump is clamped into the old, shorter list and the row is never realized.
+            List.UpdateLayout();
             var top = index * RowHeight;
             var offset = Math.Clamp(top, 0, scroll.ScrollableHeight);
             if (top + RowHeight > offset + scroll.ViewportHeight)
@@ -330,8 +333,10 @@ internal sealed partial class PlanSheetView
             scroll.ChangeView(null, offset, null, true);
         }
         Select(identity, field, extend);
-        if (wholeRow) SelectWholeRow(identity, true);
+        if (wholeRow) SelectWholeRow(identity, true, focus: false);
         FocusCell(selected, selectedField, scrollIntoView: false);
+        // The target container can be realized by the layout pass that follows the scroll.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, TryRestoreFocus);
         HoldingView = true;
     }
     private Flyout? goToFlyout;
