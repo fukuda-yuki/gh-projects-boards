@@ -7,10 +7,11 @@ const string Usage = """
     ghpb-report snapshot --project <Project URL> --settings <settings file> --data <folder>
                          [--status-date yyyy-MM-dd] [--time-zone Asia/Tokyo] [--gh <gh executable>]
     ghpb-report report --data <folder> --out <REPORT.md>
+    ghpb-report record --project <Project URL> --data <folder> [--time-zone Asia/Tokyo] [--gh <gh executable>]
     """;
 
 Console.OutputEncoding = new UTF8Encoding(false);
-if (args.Length == 0 || args[0] is not ("snapshot" or "report")) return Fail(Usage, 2);
+if (args.Length == 0 || args[0] is not ("snapshot" or "report" or "record")) return Fail(Usage, 2);
 var options = new Dictionary<string, string>(StringComparer.Ordinal);
 for (var n = 1; n < args.Length; n += 2)
 {
@@ -20,7 +21,18 @@ for (var n = 1; n < args.Length; n += 2)
 string? Option(string name) => options.GetValueOrDefault(name);
 try
 {
-    if (args[0] == "snapshot")
+    if (args[0] == "record")
+    {
+        // #272: every raw value of the Project, no settings file. The day is the read time's date in the time zone.
+        if (Option("project") is not { } project || Option("data") is not { } data) return Fail(Usage, 2);
+        var zone = TimeZoneInfo.FindSystemTimeZoneById(Option("time-zone") ?? "Asia/Tokyo");
+        var host = Uri.TryCreate(project, UriKind.Absolute, out var uri) ? uri.Host : throw new ArgumentException("プロジェクトの URL が不正です: " + project);
+        var service = new GhConnectionService(Option("gh") ?? "gh", host, timeout: TimeSpan.FromSeconds(120));
+        var snapshot = await RawRecord.ReadAsync(service, project, zone, () => DateTimeOffset.UtcNow);
+        var (path, items, removed) = RawStore.Write(data, snapshot);
+        Console.WriteLine($"{path}: アイテム {snapshot.Items.Count} · 書いた行 {items} · 外れた {removed}");
+    }
+    else if (args[0] == "snapshot")
     {
         if (Option("project") is not { } project || Option("settings") is not { } settingsPath || Option("data") is not { } data) return Fail(Usage, 2);
         var zone = TimeZoneInfo.FindSystemTimeZoneById(Option("time-zone") ?? "Asia/Tokyo");
