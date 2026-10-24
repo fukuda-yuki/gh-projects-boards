@@ -480,6 +480,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Windows.Foundation.Rect Bounds(FrameworkElement element) => element.TransformToVisual(view)
                 .TransformBounds(new(0, 0, element.ActualWidth, element.ActualHeight));
             Assert.That(id.Text, Is.EqualTo("ID 1")); Assert.That(reference.Text, Is.EqualTo("acme/repo#1"));
+            var separator = Ui.Tree(view).OfType<TextBlock>().Single(t => t.Text == "·" && t.Parent == id.Parent);
+            Assert.That(Bounds(separator).Left - Bounds(id).Right, Is.GreaterThanOrEqualTo(3), "The separator needs visible space before it.");
+            Assert.That(Bounds(reference).Left - Bounds(separator).Right, Is.GreaterThanOrEqualTo(3), "The separator needs visible space after it."); 
             Assert.That(state.Text, Is.EqualTo(closed ? "クローズ" : "オープン"));
             foreach (var text in new[] { id, reference, state, updated }) {
                 Assert.That(text.FontSize, Is.EqualTo(12));
@@ -500,8 +503,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
     }
 
-    [TestCase(1, "コメント (1 件)", true), TestCase(5, "コメント (5 件)", true), TestCase(6, "コメント (全 6 件中 最新 5 件)", true)]
-    [TestCase(1, "コメント (1 件)", false), TestCase(5, "コメント (5 件)", false), TestCase(6, "コメント (全 6 件中 最新 5 件)", false), Category("IssueDetail")]
+    [TestCase(1, "コメント 1 件", true), TestCase(5, "コメント 5 件", true), TestCase(6, "コメント 6 件（最新 5 件）", true)]
+    [TestCase(1, "コメント 1 件", false), TestCase(5, "コメント 5 件", false), TestCase(6, "コメント 6 件（最新 5 件）", false), Category("IssueDetail")]
     public async Task DetailCommentHeadingExplainsTheDisplayedCount(int count, string expected, bool fallback)
     {
         await Open(); if (fallback) await DetailFallback(); DetailScenario(comments: count);
@@ -703,7 +706,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(detailEnvironmentFolder, Is.EqualTo(Path.Combine(root, "PlanningEditor", "v1", "webview2")));
             var texts = Ui.Tree(Ui.Find<ScrollViewer>("PlanDetailMarkdown")).OfType<TextBlock>().ToArray();
             Assert.That(texts.Any(t => t.Text == "Comment 5" && t.IsTextSelectionEnabled), Is.True);
-            Assert.That(texts.Any(t => t.Text == "コメント (全 7 件中 最新 5 件)"), Is.True);
+            Assert.That(texts.Any(t => t.Text == "コメント 7 件（最新 5 件）"), Is.True);
+            Assert.That(texts.Any(t => t.Text == "Comment 7") && !texts.Any(t => t.Text == "Comment 2"), Is.True, "The newest five comments are shown.");
+            Assert.That(Ui.Tree(Ui.Find<ScrollViewer>("PlanDetailMarkdown")).OfType<HyperlinkButton>(), Is.Empty);
             Assert.That(texts.Any(t => t.Text.StartsWith("ghost · ")), Is.True);
             Assert.That(texts.Where(t => t.IsTextSelectionEnabled).All(t => t.TextWrapping == TextWrapping.Wrap), Is.True);
         });
@@ -785,7 +790,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(detailEnvironmentFolder, Is.EqualTo(Path.Combine(root, "PlanningEditor", "v1", "webview2")));
             Assert.That(JsonSerializer.Deserialize<string>(await web.CoreWebView2.ExecuteScriptAsync("document.querySelector('meta[http-equiv]').content")),
                 Is.EqualTo("default-src 'none'; img-src https: data:; style-src 'unsafe-inline'"));
-            Assert.That(text, Does.Contain("コメント (全 7 件中 最新 5 件)").And.Contain("Comment 5").And.Contain("ghost").And.Contain("(7 件)"));
+            Assert.That(text, Does.Contain("コメント 7 件（最新 5 件）").And.Contain("Comment 7").And.Contain("ghost").And.Not.Contain("すべてのコメント"));
             await web.CoreWebView2.ExecuteScriptAsync("document.getElementById('fixture-link').click()");
         });
         await Ui.Until(() => external.Count == 1);

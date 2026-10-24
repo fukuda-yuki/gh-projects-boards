@@ -13,9 +13,6 @@ internal sealed partial class PlanWorkspaceView
     private readonly TextBlock publishBlockedReason = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishBlockedReason");
     private readonly TextBlock publishStatusDate = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishStatusDate");
     private readonly TextBlock publishSummary = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishSummary");
-    // #201: a publish reads and verifies only the items it writes, so it does not refresh the plan.
-    private readonly TextBlock publishScope = Id(new TextBlock { TextWrapping = TextWrapping.Wrap,
-        Text = "発行は計画を最新の情報に更新しません。他の変更は「最新の情報に更新」で取り込みます。" }, "PlanPublishScope");
     // #258 D2: an Issue Field write changes the Issue itself, so every Project holding it shows the new value.
     private readonly TextBlock publishIssueFields = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishIssueFields");
     private readonly TextBlock publishResult = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishResult");
@@ -40,11 +37,11 @@ internal sealed partial class PlanWorkspaceView
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         confirmPublish = Button("発行する", "PlanPublishConfirm", Publish);
         confirmPublish.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
-        var close = Id(new Button { Content = "閉じる（変更は保持）" }, "PlanPublishClose");
+        var close = Id(new Button { Content = "閉じる" }, "PlanPublishClose");
         close.Click += (_, _) => { if (!closing && !publishing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
         var header = new StackPanel { Spacing = 8 };
-        header.Children.Add(actions); header.Children.Add(publishSummary); header.Children.Add(publishIssueFields); header.Children.Add(publishScope); header.Children.Add(publishResult); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
+        header.Children.Add(actions); header.Children.Add(publishSummary); header.Children.Add(publishIssueFields); header.Children.Add(publishResult); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
         AutomationProperties.SetLiveSetting(publishBlockedReason, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         AutomationProperties.SetLiveSetting(publishResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.Children.Add(header);
@@ -71,11 +68,10 @@ internal sealed partial class PlanWorkspaceView
         var statusDate = document.State.Settings.StatusDate ?? today;
         var pastStatusDate = statusDate < today;
         var dateText = statusDate.ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"));
-        publishStatusDate.Text = pastStatusDate
-            ? "注意: 基準日 " + dateText + " は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。"
-            // The dates in the review are the plan's stored values (#236); the 基準日 only decides lateness.
-            : "日付は計画の値です。基準日 " + dateText + " で遅れを判定しています。";
-        publishStatusDate.Foreground = PlanSheetView.Brush(pastStatusDate ? "SheetChangedMarkBrush" : "TextFillColorPrimaryBrush");
+        // Only a stale 基準日 is worth a line: the review's dates are the plan's own and need no caption.
+        publishStatusDate.Text = pastStatusDate ? "基準日 " + dateText + " は今日より前です。" : "";
+        publishStatusDate.Visibility = pastStatusDate ? Visibility.Visible : Visibility.Collapsed;
+        publishStatusDate.Foreground = PlanSheetView.Brush("SheetChangedMarkBrush");
         AutomationProperties.SetName(publishStatusDate, publishStatusDate.Text);
         var conflicts = PlanOperations.BlockingConflicts(document);
         var groups = new Dictionary<string, PlanPublishReviewGroup>();
@@ -223,7 +219,7 @@ internal sealed partial class PlanWorkspaceView
         // An interrupted or partly failed publication stays resumable through explicit confirmation.
         reviewHasWritableChanges = rendered.Any(group => group.HasWritableChanges) || document.Sync.Publish is not null || !document.Sync.Failures.IsEmpty;
         publishSummary.Text = workspace.Selected is { } project
-            ? $"{project.Title} ({project.OwnerLogin} / プロジェクト {project.Number}) の {reviewTaskCount} タスクを GitHub に書き込みます" : "";
+            ? $"{project.Title}（{project.OwnerLogin} / プロジェクト {project.Number}）に {reviewTaskCount} タスクを発行します" : "";
         publishSummary.Visibility = reviewTaskCount > 0 ? Visibility.Visible : Visibility.Collapsed;
         publishIssueFields.Text = issueFieldTasks.Count == 0 ? "" : $"「Issue フィールド」の値（{issueFieldTasks.Count} タスク）は Issue 自体に書き込みます。この Issue を含むほかのプロジェクトにも同じ値が表示されます。";
         publishIssueFields.Visibility = issueFieldTasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -312,7 +308,10 @@ internal sealed partial class PlanWorkspaceView
         var element = value.RootElement;
         string Identity(string id) => field == PlanField.Labels ? id : field == PlanField.Assignees ? document.Sync.PeopleNames.GetValueOrDefault(id,
             document.State.Settings.People.FirstOrDefault(p => p.Identity == id)?.Name ?? "担当者（未確認）") : Caption(document, id);
-        if (field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan && element.ValueKind == JsonValueKind.String && DateOnly.TryParseExact(element.GetString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day)) return day.ToString("yyyy/M/d", System.Globalization.CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)day.DayOfWeek] + ")";
+        if (field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan && element.ValueKind == JsonValueKind.String && DateOnly.TryParseExact(element.GetString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day))
+            // The plan's own date form; the year appears only when it is not the 基準日's year.
+            return (day.Year == (document.State.Settings.StatusDate ?? PlanClock.Today).Year ? "" : day.Year.ToString(System.Globalization.CultureInfo.InvariantCulture) + "/")
+                + day.ToString("M/d", System.Globalization.CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)day.DayOfWeek] + ")";
         if (field is PlanField.Estimate or PlanField.Actual or PlanField.Remaining && element.ValueKind == JsonValueKind.Number) return element.ToString() + "h";
         return element.ValueKind switch {
             JsonValueKind.Array => element.GetArrayLength() == 0 ? "未入力" : string.Join("、", element.EnumerateArray().Select(e => Identity(e.GetString()!))),

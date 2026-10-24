@@ -347,7 +347,7 @@ public sealed class PlanSheetRow : Grid
             cell.FontWeight = owner.Schedule.GetValueOrDefault(Identity)?.IsSummary == true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
             cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict || untitled ? 4 : 1);
             cell.Padding = field == PlanField.Title ? new(24 + depth * 12, 1, 4, 1) : new(4, 1, 4, 1);
-            var problem = owner.Problems.GetValueOrDefault((Identity, field)) ?? (untitled ? "タイトルを入力してください" : remoteProblem.Length > 0 ? remoteProblem : null);
+            var problem = owner.Problems.GetValueOrDefault((Identity, field)) ?? (untitled ? "タイトル未入力" : remoteProblem.Length > 0 ? remoteProblem : null);
             // A pending 完了 is local, so GitHub has not closed the Issue yet; the GitHub-owned read-only
             // reason would mislead. This is information, not a cell error, so it never colours the frame (#231).
             var stateHint = problem is null && cell.IsReadOnly && owner.IsPendingClose(Identity) && field is PlanField.Remaining or PlanField.End
@@ -384,16 +384,15 @@ public sealed class PlanSheetRow : Grid
                 var missing = field == PlanField.Estimate ? owner.Schedule.GetValueOrDefault(Identity)?.MissingEstimates ?? 0
                     : field == PlanField.Remaining ? owner.Schedule.GetValueOrDefault(Identity)?.MissingRemaining ?? 0 : 0;
                 display.Text.Inlines.Clear();
-                if (missing > 0)
-                    display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = $"未{missing} ", FontSize = 11,
-                        Foreground = PlanSheetView.Brush("SystemFillColorCautionBrush") });
+                display.Missing.Text = missing > 0 ? missing.ToString(System.Globalization.CultureInfo.InvariantCulture) : "";
+                display.MissingTag.Visibility = missing > 0 ? Visibility.Visible : Visibility.Collapsed;
                 if (field == "ForecastEnd") {
                     // The derived date is secondary text; a later forecast adds the critical red slip.
                     if (owner.ForecastEndOf(Identity) is { } forecastDate)
                         display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = PlanSheetView.DateText(forecastDate),
                             Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
                     if (owner.WorkingDaysLater(Identity) is { } later)
-                        display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = "  +" + later,
+                        display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = " +" + later + "日",
                             Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush") });
                 } else display.Text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = value });
                 display.Text.Foreground = PlanSheetView.Brush(field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End
@@ -690,7 +689,7 @@ public sealed class PlanSheetRow : Grid
         var late = lateness?.DaysLater;
         var overdue = lateness?.Level == PlanLatenessLevel.Overdue;
         var barName = $"ID {number} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
-            + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" {(overdue ? "期限超過" : "予定より遅れ")} +{days} 日" : "");
+            + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" {(overdue ? "期限超過" : "予定より遅れ")} +{days}日" : "");
         AutomationProperties.SetAutomationId(bar, "PlanBar" + number);
         AutomationProperties.SetName(bar, barName);
         ToolTipService.SetToolTip(bar, barName);
@@ -897,7 +896,7 @@ internal sealed class PlanSheetCell : TextBox
                 forecast.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = PlanSheetView.DateText(day),
                     Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
                 if (owner.WorkingDaysLater(row.Identity) is { } later)
-                    forecast.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = "  +" + later,
+                    forecast.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = " +" + later + "日",
                         Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush") });
             }
         }
@@ -987,6 +986,11 @@ internal sealed class PlanSummaryCell : ContentControl
     private readonly PlanSheetRow row;
     private readonly string field;
     internal TextBlock Text { get; }
+    // A partial total counts the leaf tasks it leaves out in a separate caution badge after the sum, so the
+    // count never reads as part of the number; the tooltip and accessible name carry the sentence.
+    internal TextBlock Missing { get; } = new() { FontSize = 11, Foreground = PlanSheetView.Brush("SystemFillColorCautionBrush"),
+        IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center };
+    internal Border MissingTag { get; }
     internal PlanSummaryCell(PlanSheetRow row, string field)
     {
         this.row = row; this.field = field;
@@ -998,7 +1002,14 @@ internal sealed class PlanSummaryCell : ContentControl
             TextAlignment = field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Predecessors ? TextAlignment.Right : TextAlignment.Left };
         Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(Text, FontNumeralAlignment.Tabular);
         AutomationProperties.SetAccessibilityView(Text, AccessibilityView.Raw);
-        Content = Text;
+        AutomationProperties.SetAccessibilityView(Missing, AccessibilityView.Raw);
+        MissingTag = new Border { Child = Missing, Visibility = Visibility.Collapsed, Margin = new(0, 0, 3, 0), Padding = new(3, 0, 3, 0),
+            MinWidth = 15, CornerRadius = new(8), BorderThickness = new(1), BorderBrush = PlanSheetView.Brush("SystemFillColorCautionBrush"),
+            VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
+        var content = new Grid();
+        content.ColumnDefinitions.Add(new()); content.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        content.Children.Add(Text); content.Children.Add(MissingTag); Grid.SetColumn(MissingTag, 1);
+        Content = content;
         GotFocus += (_, _) => {
             // GotFocus can arrive after focus has moved to another cell.
             if (FocusState != FocusState.Unfocused && row.Owner is { } owner && !owner.IsSelected(row.Identity, field))

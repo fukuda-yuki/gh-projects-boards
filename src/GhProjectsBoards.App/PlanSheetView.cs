@@ -74,8 +74,8 @@ internal sealed partial class PlanSheetView : Grid
     internal sealed record Column(string? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
         new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 224), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
-        new(PlanField.Estimate, "見積 h", 56), new(PlanField.Remaining, "残 h", 56), new(PlanField.Actual, "実績 h", 56),
-        new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ForecastEnd", "見込終了", 96), new(PlanField.Predecessors, "先行", 64),
+        new(PlanField.Estimate, "見積 h", 72), new(PlanField.Remaining, "残 h", 72), new(PlanField.Actual, "実績 h", 56),
+        new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ForecastEnd", "見込終了", 108), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.StartNoEarlierThan, "開始日指定", 100), new(PlanField.Fixed, "日程固定", 80), new(PlanField.Status, "ステータス", 100)];
     internal bool IndicatorVisible { get; private set; } = true;
     internal readonly HashSet<string?> Hidden = [PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status];
@@ -128,7 +128,6 @@ internal sealed partial class PlanSheetView : Grid
     private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
     private readonly TextBlock latenessDetail = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetLatenessDetail");
-    private readonly TextBlock emptyHint = Id(new TextBlock { Text = "タスクを選択すると、開始日と終了日の根拠を表示します", Foreground = Brush("TextFillColorSecondaryBrush"), TextTrimming = TextTrimming.CharacterEllipsis }, "PlanSheetEmptyHint");
     // The selection line's two impact links (#236 part B): what this task's lateness delayed, and the
     // predecessor that delayed it. One button per action, shown only when the lateness has that cause.
     private readonly HyperlinkButton successorLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0, Visibility = Visibility.Collapsed }, "PlanSelectionSuccessorFilter");
@@ -181,7 +180,8 @@ internal sealed partial class PlanSheetView : Grid
         var commands = commandBar = Id(new SheetCommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
             OverflowButtonVisibility = CommandBarOverflowButtonVisibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetCommands");
         AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
-        AddCommand(commands, "行を削除", "PlanSheetDelete", Symbol.Delete, DeleteRows).KeyboardAcceleratorTextOverride = "Ctrl+-";
+        deletePrimary = AddCommand(commands, "行を削除", "PlanSheetDelete", Symbol.Delete, DeleteRows);
+        deletePrimary.KeyboardAcceleratorTextOverride = "Ctrl+-";
         AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M2,5 L5,8 L2,11 L1,10 L3,8 L1,6 Z");
         AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M4,5 L1,8 L4,11 L5,10 L3,8 L5,6 Z");
         InitializeOverview(commands);
@@ -238,8 +238,6 @@ internal sealed partial class PlanSheetView : Grid
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
         InitializeDetailToggle(selectedLine);
         selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
-        selectedLine.Children.Add(emptyHint); SetColumnSpan(emptyHint, 3);
-        AutomationProperties.SetName(emptyHint, emptyHint.Text);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(selectedLine); SetRow(selectedLine, 2);
         var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(untitledRows); feedback.Children.Add(error);
@@ -724,9 +722,9 @@ internal sealed partial class PlanSheetView : Grid
     private void RenderUntitledRows()
     {
         var positions = untitledNewRows.Select(id => PlanIds.GetValueOrDefault(id)).Where(id => id > 0).ToArray();
-        var text = positions.Length == 0 ? "" : "タイトルを入力してください（ID "
-            + (positions.Length > 10 ? string.Join(", ", positions.Take(10)) + " ほか" + (positions.Length - 10).ToString("N0") + " 件" : string.Join(", ", positions))
-            + "）。行を削除 で行ごと消せます。";
+        // The red outline already says where; the line only names the rows. 行を削除 is the toolbar's own command.
+        var text = positions.Length == 0 ? "" : "タイトル未入力: ID " + string.Join(", ", positions.Take(10))
+            + (positions.Length > 10 ? "（ほか " + (positions.Length - 10).ToString("N0") + " 件）" : "");
         if (untitledRows.Text == text) return;
         untitledRows.Text = text; AutomationProperties.SetName(untitledRows, text);
     }
@@ -814,7 +812,7 @@ internal sealed partial class PlanSheetView : Grid
     // 見込終了 is a calculated read-only column: the date is secondary text and a later forecast adds a red
     // working-day slip (#236 decision 5).
     internal string ForecastAccessibleValue(string identity) => ForecastEndOf(identity) is { } day
-        ? DateText(day, true) + (WorkingDaysLater(identity) is { } later ? " +" + later + " 日（稼働日）" : "") : "";
+        ? DateText(day, true) + (WorkingDaysLater(identity) is { } later ? " +" + later + "日（稼働日）" : "") : "";
     internal string EditForm(string identity, string field) => IsDateField(field)
         ? CellDate(identity, field)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? ""
         : field == PlanField.Assignees && Rows.TryGetValue(identity, out var row)
@@ -838,7 +836,7 @@ internal sealed partial class PlanSheetView : Grid
             PlanField.Start => Date(computed.Start.Value), PlanField.End => Date(computed.End.Value),
             // 見込終了 is read-only and derived (#236 part B): the date plus the working days it is later.
             "ForecastEnd" => computed.ForecastEnd is { } forecast ? DateText(forecast)
-                + (lateness.Tasks.GetValueOrDefault(identity)?.DaysLater is { } later ? "  +" + later : "") : "",
+                + (lateness.Tasks.GetValueOrDefault(identity)?.DaysLater is { } later ? " +" + later + "日" : "") : "",
             PlanField.Estimate => computed.Estimate is { } estimate ? estimate.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Remaining => computed.Remaining is { } remaining ? remaining.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Actual => computed.Actual is { } actual ? actual.ToString(CultureInfo.CurrentCulture) + "h" : "",
@@ -979,9 +977,9 @@ internal sealed partial class PlanSheetView : Grid
     {
         var m = item.Milestone;
         var culture = CultureInfo.GetCultureInfo("ja-JP");
-        return $"{m.Title} 期日 {m.DueDate?.ToString("M/d (ddd)", culture) ?? "—"} · 完了見込 {item.Forecast?.ToString("M/d (ddd)", culture) ?? "—"}"
+        return $"{m.Title} 目標日 {m.DueDate?.ToString("M/d (ddd)", culture) ?? "—"} · 完了見込 {item.Forecast?.ToString("M/d (ddd)", culture) ?? "—"}"
             + (item.Forecast > m.DueDate ? $" · +{item.Difference}日" : "") + (m.Closed ? " · クローズ" : "")
-            + (m.ConflictingDates ? " · 期日がリポジトリで異なります" : "");
+            + (m.ConflictingDates ? " · 目標日がリポジトリで異なります" : "");
     }
     private Task SelectMilestone(string title) => Run(async () => {
         await CommitPending();
@@ -989,8 +987,7 @@ internal sealed partial class PlanSheetView : Grid
         if (current is null) return;
         if (current.LateTasks.Count > 0) FilterTasks(current.LateTasks.ToHashSet(), title);
         else {
-            emptyHint.Visibility = Visibility.Collapsed;
-            reason.Text = title + " · 期日を過ぎるタスクはありません";
+            reason.Text = title + " · 目標日を過ぎるタスクはありません";
             AutomationProperties.SetName(reason, reason.Text); ToolTipService.SetToolTip(reason, reason.Text);
         }
     }, "Milestone");

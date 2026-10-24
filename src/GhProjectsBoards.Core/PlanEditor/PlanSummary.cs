@@ -9,6 +9,7 @@ internal sealed record SummaryTasks(IReadOnlyList<string> Identities, int Closed
     public decimal? ProgressActual { get; init; }
     public decimal? VarianceEstimate { get; init; }
     public decimal? VarianceForecast { get; init; }
+    public int FinishExcluded { get; init; }
 }
 internal sealed record SummaryPhase(string? Phase, SummaryTasks Tasks, bool IsTotal = false)
 { public DateOnly? Target { get; init; } public int? Difference { get; init; } }
@@ -94,11 +95,12 @@ internal static class PlanSummary
             return new(source.Select(t => t.Input.Identity).ToArray(), source.Count(t => t.Input.Closed),
                 Total(t => t.Estimate), Total(t => t.Actual ?? 0), Total(t => t.Remaining), forecast,
                 Total(t => t.Variance), new(forecast.Value > 0 ? progressActual.Value / forecast.Value : null, forecast.Excluded),
-                source.Min(t => t.Start.Value), source.Any(t => Finish(t) is null) ? null : source.Max(Finish),
+                source.Min(t => t.Start.Value), source.Max(Finish),
                 source.Count(Overdue), source.Count(t => t.IsOverEstimate)) {
                     ProgressActual = progressActual.Value,
                     VarianceEstimate = Total(t => t.Variance.HasValue ? t.Estimate : null).Value,
-                    VarianceForecast = Total(t => t.Variance.HasValue ? t.Forecast : null).Value
+                    VarianceForecast = Total(t => t.Variance.HasValue ? t.Forecast : null).Value,
+                    FinishExcluded = source.Count(t => Finish(t) is null)
                 };
         }
         var total = Sum(tasks);

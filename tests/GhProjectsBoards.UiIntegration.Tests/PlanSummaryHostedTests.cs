@@ -30,8 +30,11 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await SummaryPlan();
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("SummaryRequiredLoad").Text, Does.Contain("32h"));
-            Assert.That(Ui.Find<TextBlock>("SummaryProgress").Text, Does.Contain("36h"));
+            // The cards show the figures; the formulas behind them are the cards' tooltips.
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<Border>("SummaryRequiredLoadCard")) as string, Does.Contain("残 32h ÷ 稼働可能"));
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<Border>("SummaryProgressCard")) as string, Does.Contain("÷ 見込 36h"));
+            Assert.That(Ui.Find<TextBlock>("SummaryRequiredLoad").Text, Does.Not.Contain("÷"));
+            Assert.That(Ui.Find<TextBlock>("SummaryProgress").Text, Does.Not.Contain("÷"));
             Assert.That(AutomationProperties.GetName(Ui.Find<Grid>("SummaryPhaseRow_0")), Does.Contain("残 h 24").And.Contain("見込 h 28"));
             Assert.That(AutomationProperties.GetName(Ui.Find<Grid>("SummaryPhaseRow_2")), Does.Contain("残 h 32").And.Contain("見込 h 36"));
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryPhase_0")), Does.Contain("SA"));
@@ -70,6 +73,28 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(finish.Text, Does.StartWith("10/9 (金)"), "完了見込 is the forecast end, not the retained plan end 10/7.");
             // 10/9 to the 10/30 Project end: 10/12 is a bundled holiday, so 14 working days remain.
             Assert.That(finish.Text, Does.Contain("終了日より 14 稼働日前"));
+        });
+    }
+    [Test]
+    public async Task AnEmptyInsertedRowLeavesTheFinishAndTheUnassignedLineReadable()
+    {
+        readDay = new(2026, 10, 5);
+        // An inserted row with no title, effort or dates is ordinary mid-edit state; the summary leaves it out
+        // and counts it instead of turning 完了見込 into 「—」 or the 担当者なし line into 「残 —（…）h」.
+        var row = new PlanRow("I1", "Fixed late", "acme/repo") { Estimate = 40, Remaining = 40, Start = readDay, End = readDay.AddDays(2), Fixed = true };
+        FakePlanEditor.Save(root, new([new(row, "", true)], 2) { AddedFields = [nameof(PlanField.Fixed)] });
+        await Open("Fixed late");
+        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
+            ProjectStart = readDay, ProjectEnd = new(2026, 10, 30), StatusDate = readDay }), readDay);
+        await workspace.Session.Execute(new InsertPlanRows([PlanRow.New("", "acme/repo")]), readDay);
+        await Ui.Run(() => Ui.Click("PlanShowSummary"));
+        await Ui.Ready<TextBlock>("SummaryFinish");
+        await Ui.Run(() => {
+            var finish = Ui.Find<TextBlock>("SummaryFinish").Text;
+            Assert.That(finish, Does.StartWith("10/9 (金)（日程なし 1 タスクを除く）"));
+            Assert.That(finish, Does.Contain("終了日より 14 稼働日前"));
+            var unassigned = string.Concat(((StackPanel)Ui.Find<Button>("SummaryUnassigned").Content).Children.OfType<TextBlock>().Select(text => text.Text));
+            Assert.That(unassigned, Is.EqualTo("担当者なし 2 · 残 40h（工数未入力 1 タスクを除く）"));
         });
     }
 

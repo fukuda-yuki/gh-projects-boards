@@ -88,7 +88,7 @@ public sealed class PlanSheetImeTests
                     Key(VirtualKeyShort.ESCAPE); Wait(() => cell.Text == original);
                 } else {
                     Key(VirtualKeyShort.RETURN);
-                    Wait(() => Count() == "1 未発行のタスク" && Find("PlanCell2_Title").Properties.HasKeyboardFocus.ValueOrDefault);
+                    Wait(() => Count() == "未発行 1 タスク" && Find("PlanCell2_Title").Properties.HasKeyboardFocus.ValueOrDefault);
                     Assert.That(SavedText(root, settings), Is.EqualTo("日本語"));
                     if (scenario.StartsWith("reconvert", StringComparison.Ordinal))
                     {

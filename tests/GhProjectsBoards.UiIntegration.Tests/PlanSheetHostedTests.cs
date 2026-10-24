@@ -51,7 +51,9 @@ internal sealed partial class PlanSheetHostedTests
         // end keeps the start calculated, which the date-origin cases require and the date cells need to exist.
         rows = rows.Select(row => row with { End = Today }).ToImmutableArray();
         session = await PlanSession.CreateAsync(new(root), new(new(new("github.com", 1), "P1"), new(rows, []),
-            new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo",
+            // The version runs to the end of June, as a real version does; the timeline spans the version, so
+            // the scroll cases need one longer than the viewport.
+            new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo", ProjectEnd = new(2027, 6, 30),
                 People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null)).ToImmutableArray() : [new("U1", "alice", 100, null)],
                 Columns = [new(PlanField.Start, "start", "Start date", "DATE"), new(PlanField.End, "end", "End date", "DATE"),
                     new(PlanField.Remaining, "remaining", "Remaining", "NUMBER")] })), Today);
@@ -289,7 +291,7 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Run(() => {
                 var cell = Ui.Find<FrameworkElement>($"PlanCell1_{field}");
                 Assert.That(cell, Is.Not.InstanceOf<TextBox>());
-                Assert.That(Ui.Tree(cell).OfType<TextBlock>().Single().Text, Is.EqualTo(held ? expected : ""));
+                Assert.That(string.Concat(Ui.Tree(cell).OfType<TextBlock>().Select(t => t.Text)), Is.EqualTo(held ? expected : ""));
                 Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(cell).GetName(), Does.Contain("要求事項の行では編集できません"));
             });
         }
@@ -473,6 +475,25 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test, Category("SheetRowPresentation")]
+    public async Task ForecastEndFitsATwoDigitSlipOnATaskAndItsRequirementAtTheDefaultWidth()
+    {
+        // At 1920 the PMO reads 見込終了 without widening it: a two-digit month and day plus a two-digit slip
+        // must fit, on a task and on its semibold requirement row.
+        var late = new PlanRow("I1", "Fixed far late", "acme/repo") { Estimate = 392, Remaining = 392, Start = Today, End = Today, Fixed = true, Parent = "P" };
+        var requirement = new PlanRow("P", "Requirement", "acme/repo");
+        await MountPresentation([late, requirement], [late, requirement]);
+        await Ui.Run(() => {
+            var leaf = Ui.Find<TextBlock>("PlanForecastDisplay1");
+            var summary = Ui.Find<PlanSummaryCell>("PlanCell2_ForecastEnd").Text;
+            var runs = leaf.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().Select(run => run.Text).ToArray();
+            Assert.That(runs[0], Is.EqualTo("12/15 (火)"));
+            Assert.That(runs[1], Does.Match(@"^ \+\d{2}日$"), "A two-digit slip.");
+            Assert.That(leaf.IsTextTrimmed, Is.False, "The task's slip stays readable at the default 見込終了 width.");
+            Assert.That(summary.IsTextTrimmed, Is.False, "The requirement's semibold slip stays readable at the default width.");
+        });
+    }
+
+    [Test, Category("SheetRowPresentation")]
     public async Task ForecastEndShowsTheDerivedDateInSecondaryTextAndOnlyALaterForecastAddsTheRedSlip()
     {
         // #236 decision 5: 見込終了 is the read-only forecast column after 終了日. Its date is secondary text,
@@ -486,11 +507,11 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => {
             var slip = Ui.Find<TextBlock>("PlanForecastDisplay1");
             var runs = slip.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().ToArray();
-            Assert.That(runs.Select(run => run.Text), Is.EqualTo(new[] { "10/9 (金)", "  +2" }));
+            Assert.That(runs.Select(run => run.Text), Is.EqualTo(new[] { "10/9 (金)", " +2日" }));
             Assert.That(((SolidColorBrush)runs[0].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
             Assert.That(((SolidColorBrush)runs[1].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
             Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell1_ForecastEnd")),
-                Is.EqualTo("ID 1 見込終了 2026-10-09 (金) +2 日（稼働日）"));
+                Is.EqualTo("ID 1 見込終了 2026-10-09 (金) +2日（稼働日）"));
             // A forecast that ends on the plan end keeps the secondary date and shows no red run.
             var aligned = Ui.Find<TextBlock>("PlanForecastDisplay2");
             var alignedRuns = aligned.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().ToArray();
@@ -505,10 +526,10 @@ internal sealed partial class PlanSheetHostedTests
                 "The summary cell owns the requirement's forecast paint.");
             var summary = Ui.Find<PlanSummaryCell>("PlanCell4_ForecastEnd");
             var summaryRuns = summary.Text.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().ToArray();
-            Assert.That(summaryRuns.Select(run => run.Text), Is.EqualTo(new[] { "10/9 (金)", "  +2" }));
+            Assert.That(summaryRuns.Select(run => run.Text), Is.EqualTo(new[] { "10/9 (金)", " +2日" }));
             Assert.That(((SolidColorBrush)summaryRuns[0].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
             Assert.That(((SolidColorBrush)summaryRuns[1].Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
-            Assert.That(AutomationProperties.GetName(summary), Does.Contain("2026-10-09 (金) +2 日（稼働日）"));
+            Assert.That(AutomationProperties.GetName(summary), Does.Contain("2026-10-09 (金) +2日（稼働日）"));
         });
     }
 
@@ -597,7 +618,7 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [TestCase("completed", "完了", "\uE73E")]
-    [TestCase("late", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8h）", "\uE7BA")]
+    [TestCase("late", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8h）", "\uE7BA")]
     [TestCase("typed", "開始日を指定", "\uE718")]
     [TestCase("fixed", "日程固定", "\uE718")]
     [TestCase("changed", "未発行の変更あり", "\u2022")]
@@ -639,7 +660,8 @@ internal sealed partial class PlanSheetHostedTests
             // The slip belongs to a lateness shape; a closed row has no forecast and no slip, so it only waits
             // for the reason line that carries its remote problem.
             var expectsSlip = state is "late" or "summary";
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0
+            // A requirement row has no reason of its own to state: its dates are its children's.
+            await Ui.Until(() => (state == "summary" || Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0)
                 && (!expectsSlip || Ui.Find<TextBlock>("PlanSheetSlip").ActualWidth > 0));
         }
         await Ui.Run(() => {
@@ -649,13 +671,13 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator)));
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
-            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.Not.Empty);
+            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, state == "summary" ? Is.Empty : Is.Not.Empty);
             if (state == "typed") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日指定 10/5 · 終了: 開始から 8h"));
             if (state == "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日を維持 · 終了: 開始から 8h"));
             Assert.That(Ui.Find<HyperlinkButton>("PlanSheetIssue").Content, Is.EqualTo("acme/repo#1"));
             var slip = Ui.Find<TextBlock>("PlanSheetSlip").Text;
             if (state == "late") {
-                Assert.That(slip, Is.EqualTo("完了予定 10/2 を過ぎて未完了 · +1 日"));
+                Assert.That(slip, Is.EqualTo("終了日 10/2 を過ぎて未完了 · +1日"));
                 var text = Ui.Find<TextBlock>("PlanStartReason");
                 var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
                 var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
@@ -665,7 +687,7 @@ internal sealed partial class PlanSheetHostedTests
             // A closed task has no forecast, so the delivered model shows no slip for it: the only thing the
             // published end could have measured is gone with the moving dates.
             else if (state is "failed" or "unverified") Assert.That(slip, Is.Empty);
-            else if (state == "summary") Assert.That(slip, Is.EqualTo("見込終了 10/5 (月) · 10/2 から +1 日"));
+            else if (state == "summary") Assert.That(slip, Is.EqualTo("見込終了 10/5 (月) · 10/2 から +1日"));
             else Assert.That(slip, Is.Empty);
             if (state is "failed" or "unverified") Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("完了").And.Contain("開始日を指定").And.Contain("未発行の変更あり"));
         });
@@ -696,11 +718,11 @@ internal sealed partial class PlanSheetHostedTests
         });
     }
 
-    [TestCase("finish", "完了予定 10/2 を過ぎて未完了 · +1 日")]
-    [TestCase("start", "開始予定 10/2 を過ぎて未着手")]
+    [TestCase("finish", "終了日 10/2 を過ぎて未完了 · +1日")]
+    [TestCase("start", "開始日 10/2 を過ぎて未着手")]
     // #236 part B: the slip compares the plan with the forecast, so it names 見込終了 and the plan end it
     // slipped from; the published basis is retired.
-    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1 日")]
+    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1日")]
     [Category("SelectionLine")]
     public async Task SelectionPillKeepsGregorianDatesUnderNonGregorianCulture(string state, string expected)
     {
@@ -731,20 +753,20 @@ internal sealed partial class PlanSheetHostedTests
     // #236 part B: the pill compares the plan with the forecast (「見込終了 M/d (曜) · M/d から +N 日」) and
     // the published-end basis is retired. Each state states the plan's own dates, because a task with no dates
     // has no forecast and no pill.
-    [TestCase("finish", "完了予定 10/2 を過ぎて未完了 · +1 日", true, "")]
-    [TestCase("start", "開始予定 10/2 を過ぎて未着手", true, "")]
-    [TestCase("moved", "完了予定 10/2 を過ぎて未完了 · +1 日", true, "")]
-    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1 日", false, "")]
+    [TestCase("finish", "終了日 10/2 を過ぎて未完了 · +1日", true, "")]
+    [TestCase("start", "開始日 10/2 を過ぎて未着手", true, "")]
+    [TestCase("moved", "終了日 10/2 を過ぎて未完了 · +1日", true, "")]
+    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1日", false, "")]
     // The predecessor state names its cause through the selection line's link, not the pill's detail line.
     // The successor starts when the predecessor's 10/7 work is used up, so it does not share that day.
-    [TestCase("predecessor", "見込終了 10/8 (木) · 10/5 から +3 日", false, "")]
+    [TestCase("predecessor", "見込終了 10/8 (木) · 10/5 から +3日", false, "")]
     // A typed start constraint moves the plan start, so the plan end follows it and no slip remains: the
     // delivered model has no lateness to show here (the published-basis slip this state used to show is gone).
     [TestCase("constraint", "", false, "")]
-    [TestCase("long", "見込終了 10/6 (火) · 10/5 から +1 日", false, "")]
-    [TestCase("summary-overdue", "見込終了 10/5 (月) · 10/2 から +1 日", true, "配下: 期限超過 1")]
-    [TestCase("summary-later", "見込終了 10/6 (火) · 10/5 から +1 日", false, "配下: 予定より遅れ 1")]
-    [TestCase("summary-counts", "見込終了 10/6 (火) · 10/5 から +1 日", true, "配下: 期限超過 1 · 予定より遅れ 1")]
+    [TestCase("long", "見込終了 10/6 (火) · 10/5 から +1日", false, "")]
+    [TestCase("summary-overdue", "見込終了 10/5 (月) · 10/2 から +1日", true, "配下: 期限超過 1")]
+    [TestCase("summary-later", "見込終了 10/6 (火) · 10/5 から +1日", false, "配下: 予定より遅れ 1")]
+    [TestCase("summary-counts", "見込終了 10/6 (火) · 10/5 から +1日", true, "配下: 期限超過 1 · 予定より遅れ 1")]
     [TestCase("none", "", false, "")]
     [Category("SelectionLine")]
     public async Task SelectionPresentsLatenessAndKeepsIssueAtRight(string state, string expected, bool tinted, string detail)
@@ -789,7 +811,7 @@ internal sealed partial class PlanSheetHostedTests
         }
         await MountPresentation(rows, baseline); await Select(1, PlanField.Title); await Ui.Idle();
         await Ui.Until(() => Ui.Find<HyperlinkButton>("PlanSheetIssue").ActualWidth > 0
-            && Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0);
+            && (state.StartsWith("summary") || Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0));
         await Ui.Run(() => {
             var slip = Ui.Find<TextBlock>("PlanSheetSlip"); var pill = (Border)VisualTreeHelper.GetParent(slip);
             Assert.That(slip.Text, Is.EqualTo(expected));
@@ -823,25 +845,24 @@ internal sealed partial class PlanSheetHostedTests
 
     [Test]
     [Category("SelectionLine")]
-    public async Task EmptySelectionShowsTheHintAndHidesItWhenARowIsSelected()
+    public async Task EmptySelectionLeavesTheSelectionLineBlankUntilARowIsSelected()
     {
         // #236 part B: the Project-wide lateness counts are the status bar's filter buttons in the workspace,
-        // so a bare sheet no longer owns a totals line. This case keeps its own subject — the empty-selection
-        // hint — and the count buttons are exercised where they live.
+        // so a bare sheet no longer owns a totals line. With nothing selected the line explains nothing: the
+        // selection itself is what gives it content.
         var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
         var rows = ImmutableArray.Create(row, row with { Identity = "I2", Remaining = 16 });
         var baseline = ImmutableArray.Create(row with { End = Today.AddDays(-3) }, row with { Identity = "I2", End = Today });
         await MountPresentation(rows, baseline);
         await Ui.Run(() => {
-            var hint = Ui.Find<TextBlock>("PlanSheetEmptyHint");
-            Assert.That(hint.Text, Is.EqualTo("タスクを選択すると、開始日と終了日の根拠を表示します"));
-            Assert.That(hint.Visibility, Is.EqualTo(Visibility.Visible));
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(hint), Is.EqualTo(hint.Text));
+            Assert.That(Ui.Tree(sheet).Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PlanSheetEmptyHint"), Is.False);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.Empty);
+            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.Empty);
         });
         await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-empty"));
         await Select(1, PlanField.Title);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanSheetEmptyHint").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
         });
     }
 
@@ -870,14 +891,14 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Mount(sheetHost);
     }
 
-    [TestCase("finish", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
-    [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true, Category = "OverdueMissingWork")]
-    [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
-    [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE7BA", true)]
+    [TestCase("finish", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
+    [TestCase("finish-estimate", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("finish-unknown", "期限超過: 終了日 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("start", "期限超過: 開始日 10/2 を過ぎて未着手", "\uE7BA", true)]
     // #236 part B: the mark compares the plan with the forecast, so 予定より遅れ names the cause and the
     // working days it slipped; the retired 「発行済み M/d から」 basis no longer appears anywhere.
-    [TestCase("later", "予定より遅れ: +1 日（自分の残による）", "\uE7BA", false)]
-    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
+    [TestCase("later", "予定より遅れ: +1日（自分の残による）", "\uE7BA", false)]
+    [TestCase("unchanged", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
     [TestCase("summary-overdue", "配下に期限超過 1", "\uE7BA", false)]
     [TestCase("summary-later", "配下に予定より遅れ 1", "\uE7BA", false)]
     [Category("SheetRowPresentation")]
@@ -1485,6 +1506,8 @@ internal sealed partial class PlanSheetHostedTests
             });
             throw;
         }
+        // The line above the sheet only names the untitled row; the outline already shows where it is.
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetUntitledRows").Text == $"タイトル未入力: ID {session.Document.State.Rows.IndexOf(added) + 1}");
         await Ui.Run(() => {
             var title = Ui.Find<TextBox>(titleId);
             Assert.That(title.Text, Is.Empty);
@@ -1493,6 +1516,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
         Assert.That(session.Document.State.Rows.Single(r => r.Identity == added.Identity).Title, Is.EqualTo("New planned task"));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetUntitledRows").Text, Is.Empty));
         Assert.That(session.Document.State.Rows.Where(r => r.Identity != added.Identity), Is.EqualTo(before));
     }
     [TestCase(1), TestCase(2), Category("PlanSheetReview4")]
@@ -1799,17 +1823,17 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        // #236 part B: the twelve default columns measure 944 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
-        // 担当者 80 + 見積 56 + 残 56 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 96 + 先行 64) and the
+        // #236 part B: the twelve default columns measure 988 px (ID 52 + 状態 28 + タスク名 224 + 工程 48 +
+        // 担当者 80 + 見積 72 + 残 72 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 108 + 先行 64) and the
         // divider 6 px. RefreshLayout lays the sheet out inside 20 px less than the control width (a reserve for
         // its own chrome) and keeps the Gantt at its 320 px minimum, so the honest threshold is
-        // 944 + 6 + 320 + 20 = 1290 control px — the "about 1,300 effective pixels of window" the spec and
-        // manual quote. A 1270 px control leaves 930 px for the sheet and clips 先行.
-        await Ui.Run(() => { sheet.Width = 1290; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        // 988 + 6 + 320 + 20 = 1334 control px — the "about 1,340 effective pixels of window" the spec and
+        // manual quote. A narrower control clips 先行.
+        await Ui.Run(() => { sheet.Width = 1334; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        // Layout rounds a 1290 effective-pixel width to the display's physical pixels, so accept the rounded
+        // Layout rounds a 1334 effective-pixel width to the display's physical pixels, so accept the rounded
         // width; the fit assertions below are the claim this case measures.
-        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1290) <= 1);
+        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1334) <= 1);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
@@ -2429,7 +2453,8 @@ internal sealed partial class PlanSheetHostedTests
             var y = cell.TransformToVisual(sheet).TransformPoint(new()).Y + cell.ActualHeight / 2;
             var barY = bar.TransformToVisual(sheet).TransformPoint(new()).Y + bar.ActualHeight / 2;
             Assert.That(barY, Is.EqualTo(y).Within(1));
-            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ScrollableWidth, Is.GreaterThan(0));
+            // 月 can fit the whole version in a wide viewport; finer scales always scroll across it.
+            if (zoom != "月") Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ScrollableWidth, Is.GreaterThan(0));
             Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(headerY));
             if (zoom != "月") {
                 var shade = Ui.Find<Rectangle>("PlanNonWorking20261003");

@@ -109,8 +109,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanColumnSettings").Text,Is.EqualTo("計画シートの列"));
-            Assert.That(Ui.Find<TextBlock>("PlanColumnIntro").Text,Is.EqualTo("表示する列、順序（ドラッグ）、表示名、幅を選びます。このプロジェクトのフィールドはすべて選べます。編集できる列は、計画シートで編集して発行します。"));
-            Assert.That(Ui.Find<TextBlock>("PlanColumnFootnote").Text,Is.EqualTo("見出しにマウスを置くと GitHub のフィールド名を表示します。リポジトリは移すと Issue の移管になるため、読み取りのみです。"));
+            Assert.That(Ui.Tree(Ui.Root).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) is "PlanColumnIntro" or "PlanColumnFootnote"), Is.False);
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<TextBlock>("PlanColumnModeRepository")), Is.EqualTo("リポジトリを変えると Issue の移管になるため、読み取りのみです。"));
             var input = Ui.Find<TextBox>("PlanColumnNameTitle");
             Assert.That(input.Header,Is.Null);
             Assert.That(input.PlaceholderText,Is.EqualTo("タスク名"));

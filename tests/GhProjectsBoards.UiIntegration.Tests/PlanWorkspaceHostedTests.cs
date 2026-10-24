@@ -122,8 +122,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (reset) {
             await OpenResetDialog();
             // A later edit reschedules only the edited task and its successors (#236), not the whole plan.
-            await Ui.Run(() => Assert.That(Ui.DialogText("PlanResetConfirm"),
-                Does.Contain("日程は GitHub の値をそのまま表示し、タスクを編集するまで動きません。").And.Not.Contain("全体を再計算")));
+            await Ui.Run(() => Assert.That(Ui.DialogText("PlanResetConfirm"), Does.Not.Contain("全体を再計算")));
             await Ui.Run(() => Ui.DialogButton("PlanResetConfirm", "PrimaryButton"));
             await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
             await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Contain("日程は GitHub の値のままです。")));
@@ -187,8 +186,10 @@ internal sealed partial class PlanWorkspaceHostedTests
             var text = Ui.DialogText("PlanResetConfirm");
             Assert.That(text, Does.Contain("破棄する未発行のタスク 2"));
             Assert.That(text, Does.Contain("入力した変更 2（新しく追加した 1 タスクを含む。これらは作られません）"));
-            Assert.That(text, Does.Contain("基準日は今日 " + dateText));
-            Assert.That(text, Does.Contain("元に戻す"));
+            Assert.That(text, Does.Contain(workspace.Selected!.Title + " の未発行の変更をすべて破棄します。"));
+            // The 基準日 is already today, so the reset changes nothing worth a line; settings stay as they are.
+            Assert.That(text, Does.Not.Contain("基準日は").And.Not.Contain("稼働率"));
+            Assert.That(text, Does.Contain("「元に戻す」で取り消せます。"));
             Ui.DialogButton("PlanResetConfirm", "CloseButton");
         });
         await Ui.Idle();
@@ -225,7 +226,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await Ui.Idle();
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("2")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 2 タスク")));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
@@ -269,10 +270,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(bar.Severity, Is.EqualTo(InfoBarSeverity.Informational));
             Assert.That(bar.IsClosable, Is.True);
             Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            // #236 part B: a refresh reads and moves no date, so the bar says exactly that and reports the
-            // lateness it found instead of a 基準日 change and a changed-task count (docs/spec.md).
-            Assert.That(bar.Message, Does.StartWith("日程は変えていません。"));
-            Assert.That(bar.Message, Does.Not.Contain("日程が変わったタスク").And.Not.Contain("基準日を"));
+            // #236 part B: a refresh reads and moves no date. The status bar already counts the lateness, so the
+            // bar repeats neither counts nor a no-change sentence; it offers only the one useful filter.
+            Assert.That(bar.Message, Is.Empty);
             Assert.That(bar.Content, Is.Null);
             // The bar's lateness filter is an identity set over this sheet. Its id and label are read here,
             // on the UI thread; the rendered button is found and invoked below, waiting for it to realise.
@@ -320,7 +320,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
             Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            Assert.That(bar.Message, Does.StartWith("日程は変えていません。"));
+            Assert.That(bar.Message, Is.Empty);
             Assert.That(bar.Content, Is.Null, "A refresh with no added Issue shows no added-Issue filter.");
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -351,10 +351,20 @@ internal sealed partial class PlanWorkspaceHostedTests
             var links = workspace.Session.Document.Sync.IssueLinks;
             string Number(string id) => links[id].Caption[links[id].Caption.LastIndexOf('#')..];
             Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.EndWith(
-                $"。GitHub で追加された Issue 2: {Number("I4")} R01 PG-005 不具合修正、{Number("I5")} 顧客からの問い合わせ対応"));
+                $"GitHub で追加された Issue 2: {Number("I4")} R01 PG-005 不具合修正、{Number("I5")} 顧客からの問い合わせ対応"));
             var total = Ui.Find<FrameworkElement>("PlanCell1_Estimate");
             Assert.That(AutomationProperties.GetName(total), Does.Contain("16h（見積のないタスク 1 件を除く）"));
             Assert.That(ToolTipService.GetToolTip(total), Is.EqualTo("見積工数 · 16h（見積のないタスク 1 件を除く）"));
+            // The known sum reads first; the left-out count follows as a number-only caution badge, and the
+            // sentence that explains it lives in the tooltip and the accessible name.
+            var cell = (PlanSummaryCell)total;
+            Assert.That(cell.Text.Text, Is.EqualTo("16h"));
+            Assert.That(cell.Missing.Text, Is.EqualTo("1"));
+            Assert.That(cell.Missing.FontSize, Is.EqualTo(11));
+            Assert.That(cell.MissingTag.TransformToVisual(cell).TransformPoint(default).X,
+                Is.GreaterThan(cell.Text.TransformToVisual(cell).TransformPoint(default).X), "The badge follows the sum.");
+            Assert.That(cell.ActualWidth, Is.EqualTo(72).Within(1), "見積 h keeps its compact default width.");
+            Assert.That(cell.Text.IsTextTrimmed, Is.False, "The sum stays readable beside its badge at the default width.");
             Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator1")), Does.Contain("見積のないタスク 1"));
         });
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue245-added-issues"));
@@ -418,7 +428,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             // #236 part B: the status date a PMO chose is not "moved back" by a refresh, and the bar no
             // longer reports a 基準日 change at all — it reports that no date moved (docs/spec.md).
             Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            Assert.That(bar.Message, Does.StartWith("日程は変えていません。").And.Not.Contain("再計算"));
+            Assert.That(bar.Message, Is.Empty);
             // The read day still becomes the 基準日 of the read document.
             Assert.That(Ui.Find<CalendarDatePicker>("PlanStatusDate").Date!.Value.Date, Is.EqualTo(new DateTime(2026, 10, 6)));
         });
@@ -574,9 +584,9 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(chart.ViewportWidth, Is.GreaterThanOrEqualTo(320), "The sheet may not take the Gantt's minimum.");
             }
             if (width == 1920) {
-                // Eleven columns since #236 part B added 見込終了: the sheet takes its 949 px of columns
-                // plus the 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation) - 949 = 909.
-                Assert.That(chart.ViewportWidth, Is.EqualTo(909).Within(2), "Eleven-column budget, allowing pixel rounding.");
+                // With 見積 h / 残 h at 72 px and 見込終了 at 108 px the sheet takes its 993 px of columns plus the
+                // 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation) - 993 = 865.
+                Assert.That(chart.ViewportWidth, Is.EqualTo(865).Within(2), "Default-column budget, allowing pixel rounding.");
                 Assert.That(fullRows, Is.EqualTo(29).Within(2));
             }
         });
@@ -1023,7 +1033,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("子A → 子Aの変更")));
         await Ui.Run(() => {
             Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(1), "Only the edited task is unpublished.");
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1"));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 1 タスク"));
             var lines = Ui.Tree(Ui.Find<ListView>("PlanPublishLines")).OfType<TextBlock>().Select(t => t.Text).ToArray();
             Assert.That(lines.Count(t => t.Contains("子タスクの順序")), Is.Zero, "A GitHub-side child-order difference is not a plan change.");
         });
@@ -1170,7 +1180,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
         await Ui.Ready<PlanSheetCell>("PlanCell3_Title");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo((unpublishedBeforeCsv + 3).ToString()));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo($"未発行 {unpublishedBeforeCsv + 3} タスク"));
             Assert.That(Ui.Find<PlanSheetCell>("PlanCell3_Title").Text, Is.EqualTo("設計の追加"));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         });
@@ -1186,7 +1196,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(workspace.Session.Document.State.Rows[0].Title, Is.EqualTo("設計の変更"));
             Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(unpublishedBeforeCsv));
         });
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == unpublishedBeforeCsv.ToString());
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == $"未発行 {unpublishedBeforeCsv} タスク");
         await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(null); });
         await Ui.ClickCommand("PlanSheetCsv");
         await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
@@ -1370,9 +1380,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<Button>("PlanPublish").IsEnabled && !Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));
         await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanUndo"); });
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "1");
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 1 タスク");
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 1 タスク")));
     }
 
     [TestCase(false), TestCase(true), Category("OperationStates")]
@@ -1401,6 +1411,14 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(Ui.Find<Button>("PlanRedo").IsEnabled, Is.False);
                 Assert.That(AutomationProperties.GetName(button), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
                 Assert.That(Ui.Find<Button>("PlanBusyCancel").Visibility, Is.EqualTo(publish ? Visibility.Collapsed : Visibility.Visible));
+                // The panel names the operation and its steps; what 中止 keeps lives on the button itself.
+                var texts = Ui.Tree(panel).OfType<TextBlock>().Where(t => t.Visibility == Visibility.Visible).Select(t => t.Text).ToArray();
+                Assert.That(texts, Has.None.Contains("終わるまで計画は操作できません"));
+                if (publish) Assert.That(texts, Does.Contain("閉じても、次の発行で続きから再開します。"));
+                else {
+                    Assert.That(texts, Has.None.Contains("中止すると"));
+                    Assert.That(ToolTipService.GetToolTip(Ui.Find<Button>("PlanBusyCancel")), Is.EqualTo("中止すると、操作の前の状態に戻ります。"));
+                }
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic), Is.False);
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.True);
             });
@@ -1451,7 +1469,9 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(heading.FontSize, Is.EqualTo(20));
                 Assert.That(heading.FontWeight, Is.EqualTo(Microsoft.UI.Text.FontWeights.SemiBold));
                 Assert.That(heading.TextAlignment, Is.EqualTo(TextAlignment.Center));
-                foreach (var element in new FrameworkElement[] { ring, heading, cancel }) {
+                var steps = Ui.Find<StackPanel>("PlanBusySteps");
+                Assert.That(steps.ActualWidth, Is.LessThan(panel.ActualWidth - 48), "The step list is a centred block, not a full-width list.");
+                foreach (var element in new FrameworkElement[] { ring, heading, steps, cancel }) {
                     // TextBlock.ActualWidth measures text, while ActualSize measures its arranged box.
                     var bounds = element.TransformToVisual(panel).TransformBounds(new Rect(0, 0, element.ActualSize.X, element.ActualSize.Y));
                     Assert.That(bounds.Left + bounds.Width / 2, Is.EqualTo(panel.ActualWidth / 2).Within(2),
@@ -2176,7 +2196,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P1");
         await Ui.Run(() => {
             Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1"));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 1 タスク"));
         });
         var restarted = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
         await restarted.Connect(new(FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
@@ -2307,6 +2327,35 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test]
+    public async Task SettingsListsOnlyTheExcludedKindsThatArePresent()
+    {
+        FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { Drafts = 2, PullRequests = 0, Redacted = 0, HiddenItems = 0 });
+        await Open(); await Settings();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanExcludedCounts").Text, Is.EqualTo("計画対象外: ドラフト 2 件")));
+        await Ui.Run(() => Ui.Click("PlanSettingsBack")); await Ui.Idle();
+        FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { Drafts = 0 });
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled); await Ui.Idle(); await Settings();
+        await Ui.Run(() => Assert.That(Ui.Tree(Ui.Root).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "PlanExcludedCounts"), Is.False));
+    }
+
+    [Test]
+    public async Task SettingsLabelsPersonColumnsOnceAndKeepsEachControlNamed()
+    {
+        await Open(); await Settings();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanPeopleHeaderRate").Text, Is.EqualTo("稼働率 (%)"));
+            Assert.That(Ui.Find<TextBlock>("PlanPeopleHeaderAllowance").Text, Is.EqualTo("上限工数 h"));
+            var rate = Ui.Find<NumberBox>("PlanRateU1");
+            var allowance = Ui.Find<TextBox>("PlanAllowanceU1");
+            Assert.That(rate.Header, Is.Null);
+            Assert.That(allowance.Header, Is.Null);
+            Assert.That(AutomationProperties.GetName(rate), Does.EndWith(" 稼働率 (%)"));
+            Assert.That(AutomationProperties.GetName(allowance), Does.EndWith(" 上限工数 h"));
+        });
+    }
+
+    [Test]
     public async Task SettingsMappingHeadersUseJapaneseConceptsAndKeepGitHubFieldNames()
     {
         await Open(); await Settings();
@@ -2413,14 +2462,14 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open(); await Settings();
         await Ui.Run(() => {
             Assert.That(((PlanFieldChoice)Ui.Find<ComboBox>("PlanMapPhase").SelectedItem).Definition.Id, Is.EqualTo("F-Phase"));
-            Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程 · 工程なし 0 タスク"));
+            Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Visibility, Is.EqualTo(Visibility.Collapsed), "No task lacks a phase, so there is nothing to say.");
             Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_SA").Text, Is.EqualTo("1"));
             Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_UI").Text, Is.EqualTo("0"));
             Assert.That(Ui.Find<ComboBox>("PlanPhaseMilestone_SA").Items.Cast<string>(), Is.EqualTo(new[] { "なし" }));
             Ui.Find<ComboBox>("PlanMapPhase").SelectedIndex = 0;
         });
         await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Does.StartWith("工程のフィールドが未設定です。")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程のフィールドが未設定です。")));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

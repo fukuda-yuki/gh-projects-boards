@@ -55,7 +55,7 @@ internal sealed class PlanLatenessTests
             Assert.That(late.OverdueKind, Is.EqualTo(PlanOverdueKind.Finish));
             Assert.That(late.MissedDate, Is.EqualTo(D("2026-10-05")));
             Assert.That(late.DaysLater, Is.EqualTo(2), "The remaining work now reaches 10/7.");
-            Assert.That(Indicator(document, today: D("2026-10-06")), Is.EqualTo("期限超過: 完了予定 10/5 を過ぎて未完了（見込み残存工数 16h）、見込終了は +2 日"));
+            Assert.That(Indicator(document, today: D("2026-10-06")), Is.EqualTo("期限超過: 終了日 10/5 を過ぎて未完了（見込み残存工数 16h）、見込終了は +2日"));
         });
     }
 
@@ -71,7 +71,7 @@ internal sealed class PlanLatenessTests
             Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Overdue));
             Assert.That(late.OverdueKind, Is.EqualTo(PlanOverdueKind.Start));
             Assert.That(late.MissedDate, Is.EqualTo(D("2026-10-01")));
-            Assert.That(Indicator(document), Is.EqualTo("期限超過: 開始予定 10/1 を過ぎて未着手、日程固定"));
+            Assert.That(Indicator(document), Is.EqualTo("期限超過: 開始日 10/1 を過ぎて未着手、日程固定"));
         });
     }
 
@@ -99,7 +99,7 @@ internal sealed class PlanLatenessTests
             Assert.That(late.DaysLater, Is.EqualTo(1), "10/6.");
             Assert.That(late.Cause, Is.EqualTo(PlanLateCause.OwnRemaining));
             Assert.That(late.IsCause, Is.True);
-            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +1 日（自分の残による）"));
+            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +1日（自分の残による）"));
         });
     }
 
@@ -120,7 +120,7 @@ internal sealed class PlanLatenessTests
             Assert.That(late.CausePredecessorRowId, Is.EqualTo(1));
             Assert.That(late.IsCause, Is.False, "A task late only because a predecessor moved is not a cause.");
             Assert.That(result.CauseTasks, Is.EqualTo(1), "Only the predecessor, overdue on its own dates.");
-            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +3 日（先行 1 の遅れによる）"),
+            Assert.That(Indicator(document), Is.EqualTo("予定より遅れ: +3日（先行 1 の遅れによる）"),
                 "The plan end is 10/7; the predecessor's forecast uses up 10/9, so the forecast reaches 10/13 (10/12 is Sports Day).");
         });
     }

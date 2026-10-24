@@ -8,7 +8,7 @@ internal static class PlanSheetText
     // 見込終了 (#236 part B): the read-only column after 終了日. Blank without a forecast; a later forecast
     // carries its working-day count.
     internal static string ForecastEnd(ScheduledTask task, PlanTaskLateness? late)
-        => task.ForecastEnd is { } end ? Date(end) + (late?.DaysLater is { } later ? " +" + later.ToString(CultureInfo.InvariantCulture) : "") : "";
+        => task.ForecastEnd is { } end ? Date(end) + (late?.DaysLater is { } later ? " +" + later.ToString(CultureInfo.InvariantCulture) + "日" : "") : "";
     internal static string Indicator(PlanRow? taskRow, ScheduledTask? effort, PlanTaskLateness? late,
         string remoteProblem, bool unpublished, PlanMarkVisibility? marks = null)
     {
@@ -25,12 +25,12 @@ internal static class PlanSheetText
             var remainingText = remaining is { } work
                 ? $"（見込み残存工数 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
             states.Add(late.OverdueKind == PlanOverdueKind.Finish
-                ? $"期限超過: 完了予定 {date} を過ぎて未完了{remainingText}"
-                : $"期限超過: 開始予定 {date} を過ぎて未着手");
-            if (late.DaysLater is { } also) states.Add($"見込終了は +{also} 日");
+                ? $"期限超過: 終了日 {date} を過ぎて未完了{remainingText}"
+                : $"期限超過: 開始日 {date} を過ぎて未着手");
+            if (late.DaysLater is { } also) states.Add($"見込終了は +{also}日");
         }
         if (shown.Later && late?.DaysLater is { } days && late.Level == PlanLatenessLevel.Later)
-            states.Add($"予定より遅れ: +{days} 日（{Cause(late)}）");
+            states.Add($"予定より遅れ: +{days}日（{Cause(late)}）");
         if (effort?.IsSummary == true && late is not null) {
             var descendants = new List<string>();
             if (shown.Overdue && late.OverdueDescendantTasks > 0) descendants.Add($"期限超過 {late.OverdueDescendantTasks}");

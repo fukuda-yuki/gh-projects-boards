@@ -19,7 +19,7 @@ internal sealed partial class PlanSheetView
     // context menu, so the keyboard route does not depend on a pointer.
     private AppBarButton completeRows = null!, cancelRows = null!, removeRows = null!, reopenRows = null!;
     // #247: 行を削除 is the same row command in the overflow as in the row menu, beside the primary and Ctrl+-.
-    private AppBarButton deleteOverflow = null!;
+    private AppBarButton deleteOverflow = null!, deletePrimary = null!;
     private Flyout? predecessorFlyout;
 
     private void InitializeOverview(CommandBar commands)
@@ -60,11 +60,14 @@ internal sealed partial class PlanSheetView
             AutomationProperties.SetHelpText(button, hint ?? "");
             ToolTipService.SetToolTip(button, hint is null ? button.Label : button.Label + ": " + hint);
         }
-        // #247: 行を削除 carries the row menu's refusal (a published Issue cannot be deleted) in the overflow too.
+        // #247: 行を削除 carries the row menu's refusal (a published Issue cannot be deleted) on the primary
+        // command and in the overflow too, so no route offers a deletion the plan would refuse.
         var deleteReason = DeleteReason(CommandTargets);
-        deleteOverflow.IsEnabled = deleteReason is null; deleteOverflow.AllowFocusWhenDisabled = true;
-        AutomationProperties.SetHelpText(deleteOverflow, deleteReason ?? "");
-        ToolTipService.SetToolTip(deleteOverflow, deleteReason is null ? deleteOverflow.Label : deleteOverflow.Label + ": " + deleteReason);
+        foreach (var button in new[] { deletePrimary, deleteOverflow }) {
+            button.IsEnabled = deleteReason is null; button.AllowFocusWhenDisabled = true;
+            AutomationProperties.SetHelpText(button, deleteReason ?? "");
+            ToolTipService.SetToolTip(button, deleteReason ?? button.Label);
+        }
         predecessorAdd.IsEnabled = Rows.ContainsKey(selected);
         foreach (var (button, unlink) in new[] { (linkTasks, false), (unlinkTasks, true) }) {
             var unavailable = TaskLinkUnavailable(unlink) ?? PlanTaskLinks.Prepare(Session.Document.State, MoveTargets, unlink).Reason;
@@ -134,18 +137,21 @@ internal sealed partial class PlanSheetView
         var previousFirst = FirstDay;
         var dates = Schedule.Values.SelectMany(task => new[] { task.Start.Value, task.End.Value })
             .Where(day => day is not null).Select(day => day!.Value).ToArray();
-        dates = dates.Append(StatusDate).Concat(Session.Document.Baseline.Milestones.Where(m => m.DueDate.HasValue).Select(m => m.DueDate!.Value)).ToArray();
-        // Any task can become the zoom anchor without selection changing the date coordinate system.
+        var settings = Session.Document.State.Settings;
+        dates = dates.Append(StatusDate).Concat(Session.Document.Baseline.Milestones.Where(m => m.DueDate.HasValue).Select(m => m.DueDate!.Value))
+            .Concat(new[] { settings.ProjectStart, settings.ProjectEnd }.Where(day => day is not null).Select(day => day!.Value)).ToArray();
+        // Every scale ends at the version plus a short margin: padding a coarse scale by viewport fractions
+        // filled the 月 chart with a year of empty months. The range stays independent of selection, so
+        // choosing another task never moves the date coordinates; the anchor is clamped into the range instead.
         // Full-period fixed marks use pixel gutters in the fitted scale, not extra calendar days.
-        var lead = acceptedZoom == 3 ? 0 : (int)Math.Ceiling(ChartViewport / (4 * DayWidth));
-        var trail = acceptedZoom == 3 ? 0 : (int)Math.Ceiling(ChartViewport * .75 / DayWidth);
-        FirstDay = DateOnly.FromDayNumber(Math.Max(0, dates.Min().DayNumber - lead));
-        var last = Math.Min(DateOnly.MaxValue.DayNumber, dates.Max().DayNumber + trail);
-        var span = last - FirstDay.DayNumber + 1;
-        DayCount = acceptedZoom == 3 ? span : Math.Max(365, span);
+        var margin = acceptedZoom == 3 ? 0 : TimelineMarginDays;
+        FirstDay = DateOnly.FromDayNumber(Math.Max(0, dates.Min().DayNumber - margin));
+        var last = Math.Min(DateOnly.MaxValue.DayNumber, dates.Max().DayNumber + margin);
+        DayCount = last - FirstDay.DayNumber + 1;
         return (previousFirst.DayNumber - FirstDay.DayNumber) * DayWidth;
     }
 
+    internal const int TimelineMarginDays = 7;
     private DateOnly TimelineAnchor => SelectedDate() ?? StatusDate;
 
     internal static double AnchorOffset(DateOnly anchor, DateOnly first, double dayWidth, double viewport) =>
@@ -178,11 +184,11 @@ internal sealed partial class PlanSheetView
         var target = selected;
         if (!Rows.ContainsKey(target)) return;
         predecessorFlyout?.Hide();
-        var query = Id(new TextBox { Header = "先行タスクを検索", PlaceholderText = "要求事項・タスク名・Issue番号" }, "PlanPredecessorSearch");
+        var query = Id(new TextBox { PlaceholderText = "要求事項・タスク名・Issue番号" }, "PlanPredecessorSearch");
         AutomationProperties.SetName(query, "先行タスクを検索");
         var candidates = Id(new ListView { Height = 260, SelectionMode = ListViewSelectionMode.Single }, "PlanPredecessorCandidates");
         AutomationProperties.SetName(candidates, "先行タスクの候補");
-        var confirm = Id(new Button { Content = "追加", IsEnabled = false }, "PlanPredecessorConfirm");
+        var confirm = Id(new Button { Content = "追加", IsEnabled = false, Style = (Style)Application.Current.Resources["AccentButtonStyle"] }, "PlanPredecessorConfirm");
         var cancel = Id(new Button { Content = "キャンセル" }, "PlanPredecessorCancel");
         var feedback = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanPredecessorError");
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };

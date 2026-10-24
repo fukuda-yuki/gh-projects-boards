@@ -88,7 +88,7 @@ internal sealed partial class PlanPublishReviewHostedTests
                 new Microsoft.UI.Xaml.Automation.Peers.ListViewItemAutomationPeer((ListViewItem)list.ContainerFromIndex(i)).GetName()).ToArray();
             Assert.That(names[0], Does.Contain("要求タスク 1").And.Contain("表示順  1 → 5"));
             Assert.That(names[1], Does.Contain("要求タスク 2").And.Contain("表示順  2 → 6"));
-            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain("の 2 タスクを GitHub に書き込みます"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain("に 2 タスクを発行します"));
         });
         Assert.That(workspace.Session!.Changes(Today).TaskCount, Is.EqualTo(2));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -106,14 +106,14 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true });
         await Ui.Run(() => {
             var project = workspace.Selected!;
-            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Is.EqualTo($"{project.Title} ({project.OwnerLogin} / プロジェクト {project.Number}) の 2 タスクを GitHub に書き込みます"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Is.EqualTo($"{project.Title}（{project.OwnerLogin} / プロジェクト {project.Number}）に 2 タスクを発行します"));
             var list = Ui.Find<ListView>("PlanPublishLines");
             Assert.That(list.Items.Count, Is.EqualTo(2));
             var name = new Microsoft.UI.Xaml.Automation.Peers.ListViewItemAutomationPeer((ListViewItem)list.ContainerFromIndex(0)).GetName();
             Assert.That(name, Does.Contain("変更したタスク").And.Contain("要求タスク 1 → 変更したタスク").And.Contain("実績工数  0h → 3h").And.Not.Contain("PlanPublishReviewGroup"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").Style, Is.SameAs(Application.Current.Resources["AccentButtonStyle"]));
             Assert.That(Ui.Find<Button>("PlanPublish").Style, Is.Not.SameAs(Application.Current.Resources["AccentButtonStyle"]));
-            Assert.That(Ui.Find<Button>("PlanPublishClose").Content, Is.EqualTo("閉じる（変更は保持）"));
+            Assert.That(Ui.Find<Button>("PlanPublishClose").Content, Is.EqualTo("閉じる"));
             Ui.Click("PlanPublishClose");
         });
         await Ui.Idle();
@@ -221,7 +221,7 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI2");
         await Ui.Run(() => {
             var expectedTasks = datesAlreadyPublished ? (edit ? 1 : 0) : 2;
-            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain($"の {expectedTasks} タスクを GitHub に書き込みます"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain($"に {expectedTasks} タスクを発行します"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.EqualTo(expectedTasks > 0));
             var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI2")).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("GitHub で削除されたフィールド"));
@@ -250,7 +250,7 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Run(() => {
             var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI1")).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("見込み残存工数  8h → 0h"));
-            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain($"の {expected} タスクを GitHub に書き込みます"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain($"に {expected} タスクを発行します"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -292,7 +292,7 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Ready<TextBlock>("PlanPublishStatusDate");
         // This persistent TextBlock is Loaded even while the review is hidden.
         // Invoke and the pending title commit complete after the calling UI turn.
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text.Length > 0);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text == DateMessage(dayOffset));
         await Ui.Idle();
         Assert.That(workspace.Session.Document.State.Rows[0].Title, Is.EqualTo("Edited"));
         if (refresh)
@@ -306,8 +306,8 @@ internal sealed partial class PlanPublishReviewHostedTests
             await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text == DateMessage(dayOffset));
             await Ui.Idle();
         }
-        // Dates are plan values (#236): the review states that fact and uses the 基準日 only for lateness,
-        // and it names no calculation or recalculation origin.
+        // Dates are plan values (#236): the review shows them without a caption and mentions the 基準日 only
+        // when it is stale; it names no calculation or recalculation origin.
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text, Is.EqualTo(DateMessage(dayOffset))));
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-publish-date-" + refresh));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -334,9 +334,8 @@ internal sealed partial class PlanPublishReviewHostedTests
     }
 
     private static string DateMessage(int dayOffset) => dayOffset switch {
-        -1 => "注意: 基準日 2026/10/06 (火) は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。",
-        0 => "日付は計画の値です。基準日 2026/10/07 (水) で遅れを判定しています。",
-        1 => "日付は計画の値です。基準日 2026/10/08 (木) で遅れを判定しています。",
+        -1 => "基準日 2026/10/06 (火) は今日より前です。",
+        0 or 1 => "",
         _ => throw new ArgumentOutOfRangeException(nameof(dayOffset))
     };
 
@@ -372,11 +371,12 @@ internal sealed partial class PlanPublishReviewHostedTests
                     [new("I1", PlanField.Title, "Edited")]), Today);
                 Ui.Click("PlanPublish");
             });
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text.StartsWith(DateMessage(dayOffset)));
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text == DateMessage(dayOffset) && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
             await Ui.Run(async () => {
                 var line = Ui.Find<TextBlock>("PlanPublishStatusDate");
                 Assert.That(AutomationProperties.GetName(line), Is.EqualTo(line.Text));
-                Assert.That(line.Foreground, Is.EqualTo(PlanSheetView.Brush(dayOffset < 0 ? "SheetChangedMarkBrush" : "TextFillColorPrimaryBrush")));
+                Assert.That(line.Visibility, Is.EqualTo(dayOffset < 0 ? Visibility.Visible : Visibility.Collapsed));
+                Assert.That(line.Foreground, Is.EqualTo(PlanSheetView.Brush("SheetChangedMarkBrush")));
                 Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
                 await RenderedEvidence.Capture(view, "issue166-status-date-" + dayOffset);
             });
@@ -403,6 +403,9 @@ internal sealed partial class PlanPublishReviewHostedTests
     public async Task ReviewDatesKeepTheYearInBeforeAfterAndGitHubValues()
     {
         await Open(1);
+        // The review uses the plan's own M/d (曜) form; only a date outside the 基準日's year names its year.
+        Assert.That(workspace.Session!.Document.State.Settings.StatusDate?.Year, Is.EqualTo(2026));
+        Assert.That(PlanWorkspaceView.ReviewValue(workspace.Session.Document, PlanField.End, "\"2026-11-27\""), Is.EqualTo("11/27 (金)"));
         var remote = FakePlanEditor.Load(root);
         FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Select(i => i with { Row = i.Row with { Start = new(2027, 10, 5), End = new(2027, 10, 5), Remaining = 0, Actual = 8 } }).ToImmutableArray() });
         await Ui.Run(() => Ui.Click("PlanRefresh")); await Ui.Idle();

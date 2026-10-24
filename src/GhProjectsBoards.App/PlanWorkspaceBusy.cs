@@ -19,10 +19,9 @@ internal sealed partial class PlanWorkspaceView
         Visibility = Visibility.Collapsed }, "PlanBusyPanel");
     private readonly ProgressRing busyRing = Id(new ProgressRing { Width = 40, Height = 40, HorizontalAlignment = HorizontalAlignment.Center, IsActive = false, IsIndeterminate = true }, "PlanBusyRing");
     private readonly TextBlock busyHeading = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, FontSize = 20, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "PlanBusyHeading");
-    private readonly TextBlock busyExplanation = new() { TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
     private readonly TextBlock busyNote = new() { TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
     private readonly Button busyCancel = Id(new Button { Content = "中止", HorizontalAlignment = HorizontalAlignment.Center }, "PlanBusyCancel");
-    private readonly StackPanel busySteps = new() { Spacing = 8 };
+    private readonly StackPanel busySteps = Id(new StackPanel { Spacing = 8, Width = 280, HorizontalAlignment = HorizontalAlignment.Center }, "PlanBusySteps");
     private readonly Dictionary<string, (TextBlock Label, TextBlock Count)> busyStepRows = [];
     private readonly HashSet<string> completedBusySteps = [];
     private readonly DispatcherTimer busyDelay = new() { Interval = TimeSpan.FromMilliseconds(300) };
@@ -35,9 +34,10 @@ internal sealed partial class PlanWorkspaceView
     {
         surfaceHost.Content = surfaces;
         busyBackdrop.Background = busyPanel.Background = PlanSheetView.Brush("WorkspaceCardBrush");
-        busyExplanation.Foreground = busyNote.Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush");
+        busyNote.Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush");
+        busyNote.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => busyNote.Visibility = busyNote.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed);
         var content = new StackPanel { Spacing = 16 };
-        content.Children.Add(busyRing); content.Children.Add(busyHeading); content.Children.Add(busyExplanation);
+        content.Children.Add(busyRing); content.Children.Add(busyHeading);
         content.Children.Add(busySteps); content.Children.Add(busyCancel); content.Children.Add(busyNote);
         busyPanel.Content = new ScrollViewer { Content = content, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         busyOverlay.Children.Add(busyBackdrop); busyOverlay.Children.Add(busyPanel);
@@ -55,15 +55,13 @@ internal sealed partial class PlanWorkspaceView
         busyKind = kind; var generation = ++busyGeneration;
         completedBusySteps.Clear(); currentBusyProgress = null; busyStepRows.Clear(); busySteps.Children.Clear();
         busyHeading.Text = heading;
-        busyExplanation.Text = kind == "publish"
-            ? "GitHub に書き込んでいます。終わるまで計画は操作できません。"
-            : "GitHub からプロジェクトの内容を読み込んでいます。終わるまで計画は操作できません。";
         busyCancel.IsEnabled = true;
         busyCancel.Visibility = kind == "publish" ? Visibility.Collapsed : Visibility.Visible;
-        busyNote.Text = kind == "publish"
-            ? "ウィンドウを閉じると発行は中断されます。次に 発行 すると残りを再開します。"
-            : kind == "refresh" ? "中止すると、操作の前の状態に戻ります。作成済みと確認した Issue と行の対応は残ります。"
-            : "中止すると、操作の前の状態に戻ります。";
+        // What 中止 keeps is the button's own explanation. Only a refresh that resumes an interrupted publish
+        // can confirm created Issues, so only then does it say those mappings stay.
+        var resumesPublish = kind == "refresh" && workspace.Session?.Document.Sync.Publish is not null;
+        ToolTipService.SetToolTip(busyCancel, "中止すると、操作の前の状態に戻ります。" + (resumesPublish ? "作成済みと確認した Issue と行の対応は残ります。" : ""));
+        busyNote.Text = kind == "publish" ? "閉じても、次の発行で続きから再開します。" : "";
         var steps = kind == "publish"
             ? new[] { "最新情報の確認", "新規 Issue", "フィールド・担当者", "親子関係", "先行タスク", "表示順", "検証" }
             : resolvingUrl ? new[] { "プロジェクトを確認", "プロジェクトの項目を取得", "日程を計算" }

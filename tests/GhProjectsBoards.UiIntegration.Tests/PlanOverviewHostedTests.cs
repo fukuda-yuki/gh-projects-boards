@@ -91,7 +91,9 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem, Is.EqualTo("週"));
             Assert.That(sheet.DayWidth, Is.EqualTo(8));
             if (earlierTask) Assert.That(sheet.ChartOffset, Is.GreaterThan(0));
-            Assert.That(sheet.X(Today), Is.EqualTo(sheet.ChartViewport / 4).Within(1));
+            // The range starts a short margin before the earliest date, so a 基準日 on the plan's first day sits
+            // at that margin rather than a quarter in; with earlier work there is room for the quarter.
+            Assert.That(sheet.X(Today), Is.EqualTo(earlierTask ? sheet.ChartViewport / 4 : PlanSheetView.TimelineMarginDays * sheet.DayWidth).Within(1));
             Assert.That(Ui.Find<Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)).Within(.1));
         });
         Assert.That(session.UndoCount, Is.Zero);
@@ -256,7 +258,7 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(Ui.Find<Rectangle>("PlanProgress1").Width, Is.EqualTo(bar.Width / 2).Within(.1));
             Assert.That(Ui.Tree(sheet).Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PlanProgress2"), Is.False);
             Assert.That(Ui.Find<Rectangle>("PlanProgress3").Width, Is.EqualTo(Ui.Find<Rectangle>("PlanBar3").Width));
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain("完了 50%").And.Contain("+1 日"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain("完了 50%").And.Contain("+1日"));
             foreach (var id in new[] { 1, 4 }) {
                 var late = Ui.Find<Shape>("PlanLate" + id);
                 // #236 part B: the slip starts after the inclusive plan end (10/5) and runs to the forecast end.
@@ -278,7 +280,7 @@ internal sealed class PlanOverviewHostedTests
             if (scale == "日") Assert.That(Canvas.GetLeft(pill) + pill.ActualWidth / 2, Is.EqualTo(sheet.X(Today)).Within(1));
             AssertNoOverlap(TimelineLabels("PlanTimelineUpper").Cast<FrameworkElement>().Append(pill));
             Assert.That(TimelineLabels("PlanTimelineUpper").Select(t => t.Text), Does.Contain("2026年9月").And.Contain("10月"));
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<Polygon>("PlanBar4")), Does.Contain("集計").And.Contain("+1 日"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<Polygon>("PlanBar4")), Does.Contain("集計").And.Contain("+1日"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<Polygon>("PlanBar6")), Does.Contain("マイルストーン"));
             foreach (var day in new[] { new DateOnly(2026, 10, 3), new(2026, 10, 7), new(2026, 10, 8), new(2026, 10, 12) }) {
                 var shade = Ui.Find<Rectangle>("PlanNonWorking" + day.ToString("yyyyMMdd"));
@@ -306,10 +308,33 @@ internal sealed class PlanOverviewHostedTests
                 sheet.UpdateLayout();
                 var x = selectTask ? BarXInChart(5) : Ui.Find<Line>("PlanStatusLine").X1;
                 TestContext.Out.WriteLine($"After frame: scale={scale}; offset={sheet.ChartOffset}; anchorX={x}");
-                Assert.That(x, Is.EqualTo(sheet.ChartViewport / 4).Within(2), "Anchor tolerance is two pixels.");
+                // The range ends at the version, so an anchor near either end sits as close to a quarter as the
+                // range allows; it is always in view.
+                var anchor = selectTask ? new DateOnly(2027, 4, 12) : Today;
+                var wanted = PlanSheetView.AnchorOffset(anchor, sheet.FirstDay, sheet.DayWidth, sheet.ChartViewport);
+                var offset = Math.Min(wanted, Ui.Find<ScrollViewer>("PlanGanttHorizontal").ScrollableWidth);
+                Assert.That(x, Is.InRange(0d, sheet.ChartViewport), "The anchor stays in view.");
+                Assert.That(x, Is.EqualTo((anchor.DayNumber - sheet.FirstDay.DayNumber) * sheet.DayWidth - offset).Within(2), "Anchor tolerance is two pixels.");
             });
         }
         Assert.That(session.UndoCount, Is.Zero);
+    }
+
+    [TestCase("日"), TestCase("週"), TestCase("月")]
+    public async Task EveryScaleEndsAtTheVersionWithAShortMargin(string scale)
+    {
+        // 月 once padded the chart with three quarters of a viewport and a year minimum, a year of empty
+        // months after a six-month version. The Project period counts as part of the version.
+        var end = new DateOnly(2027, 6, 30);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectEnd = end }), Today);
+        await Ui.Run(() => { sheet.Refresh(); Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = scale; });
+        await Ui.Idle();
+        await Ui.Run(() => {
+            var margin = PlanSheetView.TimelineMarginDays;
+            Assert.That(sheet.FirstDay, Is.EqualTo(Today.AddDays(-margin)));
+            Assert.That(sheet.FirstDay.AddDays(sheet.DayCount - 1), Is.EqualTo(end.AddDays(margin)));
+            Assert.That(Ui.Find<Line>("PlanStatusLine").X1, Is.InRange(0d, sheet.ChartViewport), "The 基準日 stays in view.");
+        });
     }
 
     [TestCase("週"), TestCase("月")]
@@ -578,8 +603,8 @@ internal sealed class PlanOverviewHostedTests
                 else Assert.That(segment.Fill is null || segment.Fill is SolidColorBrush { Color.A: 0 }, Is.True);
                 Assert.That(Ui.Tree(sheet).Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PlanLateLabel" + number), Is.EqualTo(overdue && scale == "週"));
                 var bar = Ui.Find<Shape>("PlanBar" + number);
-                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain($"+{days} 日"));
-                Assert.That(ToolTipService.GetToolTip(bar)?.ToString(), Does.Contain($"+{days} 日"));
+                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain($"+{days}日"));
+                Assert.That(ToolTipService.GetToolTip(bar)?.ToString(), Does.Contain($"+{days}日"));
                 if (overdue && scale == "週") {
                     var label = Ui.Find<TextBlock>("PlanLateLabel" + number);
                     Assert.That(label.Text, Is.EqualTo($"+{days}日"));
@@ -781,6 +806,11 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(visible.Right, Is.LessThanOrEqualTo(Ui.Root.XamlRoot.Size.Width));
             Assert.That(visible.Bottom, Is.LessThanOrEqualTo(Ui.Root.XamlRoot.Size.Height));
             Assert.That(candidates.ActualHeight, Is.GreaterThanOrEqualTo(180), "The chooser needs a usable candidate viewport.");
+            // The flyout's own command names the job; the search box carries it only as its accessible name.
+            var search = Ui.Popup<TextBox>("PlanPredecessorSearch")!;
+            Assert.That(search.Header, Is.Null);
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(search), Is.EqualTo("先行タスクを検索"));
+            Assert.That(Ui.Popup<Button>("PlanPredecessorConfirm")!.Style, Is.SameAs(Application.Current.Resources["AccentButtonStyle"]));
             foreach (var control in new FrameworkElement[] { Ui.Popup<TextBox>("PlanPredecessorSearch")!, candidates,
                 Ui.Popup<Button>("PlanPredecessorConfirm")!, Ui.Popup<Button>("PlanPredecessorCancel")! })
             {

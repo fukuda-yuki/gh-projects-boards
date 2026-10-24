@@ -10,8 +10,7 @@ internal sealed partial class PlanWorkspaceView
     private void RenderAssistSettings()
     {
         settings.Children.Add(new Border { Height = 1, Margin = new(0, 12, 0, 8), Background = PlanSheetView.Brush("WorkspaceCardStrokeBrush") });
-        assistSettingsHeading = Id(SettingsHeading("AI アシスト"), "AssistSettingsHeading"); settings.Children.Add(assistSettingsHeading);
-        settings.Children.Add(Label("この PC のすべてのプロジェクトに適用します。"));
+        assistSettingsHeading = Id(SettingsHeading("AI アシスト（この PC の全プロジェクト共通）"), "AssistSettingsHeading"); settings.Children.Add(assistSettingsHeading);
         var section = new StackPanel { Spacing = 8 };
         var mode = Id(new ComboBox { Header = "接続先", ItemsSource = new[] { "使わない", "GitHub Copilot", "API キー（BYOK）" }, SelectedIndex = (int)assistSettings.Mode }, "AssistMode");
         var provider = Id(new ComboBox { Header = "種類", ItemsSource = new[] { "OpenAI 互換", "Anthropic", "Azure OpenAI" }, SelectedIndex = (int)assistSettings.Provider }, "AssistProvider");
