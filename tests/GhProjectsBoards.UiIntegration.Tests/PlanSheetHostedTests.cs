@@ -110,15 +110,15 @@ internal sealed partial class PlanSheetHostedTests
         await SelectFocusedCell(1, PlanField.Estimate);
         var undo = session.UndoCount;
         await SheetNativeInput.Press(Windows.System.VirtualKey.F2, Windows.System.VirtualKey.Control);
-        await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == "2"
-            && Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "3");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == "新1"
+            && Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "新2");
         Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
         await SheetNativeInput.Press(Windows.System.VirtualKey.Z, Windows.System.VirtualKey.Control);
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == ""
             && Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "");
         await SelectFocusedCell(2, PlanField.Title); await SelectFocusedCell(4, PlanField.Title, true);
         await SheetNativeInput.Press(Windows.System.VirtualKey.F2, Windows.System.VirtualKey.Control);
-        await Ui.Until(() => Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "3");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "新2");
         await SelectFocusedCell(1, PlanField.Estimate);
         await SheetNativeInput.Press(Windows.System.VirtualKey.F2, Windows.System.VirtualKey.Control, Windows.System.VirtualKey.Shift);
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == ""

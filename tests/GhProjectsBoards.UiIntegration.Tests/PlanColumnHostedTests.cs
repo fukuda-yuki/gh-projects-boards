@@ -335,8 +335,8 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(session.UndoCount, Is.EqualTo(undo));
             Assert.That(session.Document.State.Settings.SheetColumns, Is.Empty);
         });
-        await Ui.Until(() => session.UndoCount == undo + 1 && Math.Abs(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width - 288) <= 1);
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width, Is.EqualTo(288).Within(1)));
+        await Ui.Until(() => session.UndoCount == undo + 1 && Math.Abs(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width - 264) <= 1);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width, Is.EqualTo(264).Within(1)));
         var point = await SheetNativeInput.PointFor("PlanHeaderGripTitle");
         SheetNativeInput.Move(point);
         SheetNativeInput.Button(true); SheetNativeInput.Button(false);
