@@ -62,6 +62,7 @@ internal sealed class PlanSummaryView : UserControl
     private static string Progress(SummaryTasks tasks) => PlanSummaryPresentation.Progress(tasks.Progress.Value, tasks.Closed == tasks.Count)
         + (tasks.Progress.Excluded > 0 ? $"（工数未入力 {tasks.Progress.Excluded:N0} タスクを除く）" : "");
     private static string Value(SummaryValue value) => Number(value.Value) + (value.Excluded > 0 ? $"（工数未入力 {value.Excluded:N0} タスクを除く）" : "");
+    private static string Finish(SummaryTasks tasks) => Date(tasks.Finish) + (tasks.FinishExcluded > 0 && tasks.Finish is not null ? $"（日程なし {tasks.FinishExcluded:N0} タスクを除く）" : "");
     private static string Phase(SummaryPhase phase) => phase.IsTotal ? "全体" : phase.Phase ?? "工程なし";
     private static TextBlock Text(string value, string id = "", bool numeric = false)
     {
@@ -146,25 +147,28 @@ internal sealed class PlanSummaryView : UserControl
         }
         Band(0, "残り稼働日", $"{Number(report.RemainingDays)} 日\n{Number(report.ElapsedDays)} / {Number(report.WorkingDays)} 稼働日が経過", "SummaryRemainingDays");
         var difference = report.FinishDifference is null ? "—" : report.FinishDifference > 0 ? $"終了日より {report.FinishDifference} 稼働日遅れ" : report.FinishDifference < 0 ? $"終了日より {-report.FinishDifference} 稼働日前" : "終了日どおり";
-        Band(1, "完了見込", $"{Date(report.ForecastFinish)}\n{difference}", "SummaryFinish", report.FinishDifference > 0, "担当者の負荷は含まない", "先行関係と見込み残存工数から計算（担当者の負荷は含まない）");
+        Band(1, "完了見込", $"{Finish(report.Total)}\n{difference}", "SummaryFinish", report.FinishDifference > 0, "担当者の負荷は含まない", "先行関係と見込み残存工数から計算（担当者の負荷は含まない）");
         Band(2, "終了日までに必要な稼働", $"{Percent(report.RequiredLoad)}{(report.RequiredLoad > 1 ? " 超過" : "")}", "SummaryRequiredLoad", report.RequiredLoad > 1,
             tooltip: $"残 {Value(report.Total.Remaining)}h ÷ 稼働可能 {Number(report.Capacity)}h（100% を超えると間に合わない）");
         Band(3, "進捗", $"{PlanSummaryPresentation.Progress(report.Total.Progress.Value, report.Total.Closed == report.Total.Count)}\n完了 {report.Total.Closed:N0} / {report.Total.Count:N0} タスク\n見積 {Number(report.Total.VarianceEstimate)}h より {Signed(report.Total.Variance.Value)}h" + (report.Total.Variance.Excluded > 0 ? $"（工数未入力 {report.Total.Variance.Excluded:N0} タスクを除く）" : ""), "SummaryProgress",
             tooltip: $"実績 {Number(report.Total.ProgressActual)}h ÷ 見込 {Value(report.Total.Forecast)}h");
         var attention = new StackPanel { Spacing = 3 }; attention.Children.Add(Text("要注意"));
-        void Attention(string label, string id, IReadOnlyList<string> tasks, string glyph) {
+        void Attention(string label, string id, IReadOnlyList<string> tasks, string glyph, string detail = "") {
             if (tasks.Count == 0) return;
-            var button = Button($"{label} {tasks.Count:N0}", id, () => filter(tasks.ToHashSet()));
+            var button = Button($"{label} {tasks.Count:N0}{detail}", id, () => filter(tasks.ToHashSet()));
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
             content.Children.Add(new FontIcon { Glyph = glyph, FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 13 });
-            content.Children.Add(TableText($"{label} {tasks.Count:N0}")); button.Content = content; attention.Children.Add(button);
+            content.Children.Add(TableText($"{label} {tasks.Count:N0}{detail}")); button.Content = content; attention.Children.Add(button);
         }
         Attention("期限超過", "SummaryOverdue", report.Attention.Overdue, "\uE814");
         Attention("遅れの原因", "SummaryCause", report.Attention.Cause, "\uE7BA");
         Attention("予定より遅れ", "SummaryLater", report.Attention.Later, "\uE7BA");
         Attention("見積超過", "SummaryOverEstimate", report.Attention.OverEstimate, "\uE7BA");
         Attention("残 0・未完了", "SummaryZeroRemaining", report.Attention.ZeroRemainingOpen, "\uE7BA");
-        Attention($"担当者なし 残 {Value(report.Attention.UnassignedRemaining)}h", "SummaryUnassigned", report.Attention.Unassigned, "\uE77B");
+        var unassignedRemaining = report.Attention.UnassignedRemaining;
+        var unassignedDetail = unassignedRemaining.Value is null ? "" : $" · 残 {Number(unassignedRemaining.Value)}h"
+            + (unassignedRemaining.Excluded > 0 ? $"（工数未入力 {unassignedRemaining.Excluded:N0} タスクを除く）" : "");
+        Attention("担当者なし", "SummaryUnassigned", report.Attention.Unassigned, "\uE77B", unassignedDetail);
         Attention("工数未入力", "SummaryUnknown", report.Attention.UnknownEffort, "\uE7BA");
         Cell(band, attention, 4); body.Children.Add(band);
         var mapped = s.Columns.Any(c => c.Role == PlanField.Phase && c.FieldId is not null);
@@ -183,7 +187,7 @@ internal sealed class PlanSummaryView : UserControl
             for (var n = 0; n < report.Phases.Count; n++) {
                 var phase = report.Phases[n]; var t = phase.Tasks; var row = Id(Row(widths), $"SummaryPhaseRow_{n}"); row.MinHeight = 29;
                 Cell(row, TableCell(Phase(phase), phase.IsTotal ? "SummaryPhaseTotal" : $"SummaryPhase_{n}", () => Select(Phase(phase), t.Identities), left: true), 0);
-                string[] values = [$"{t.Closed:N0} / {t.Count:N0}", Value(t.Estimate), Value(t.Actual), Value(t.Remaining), Value(t.Forecast), Signed(t.Variance.Value) + (t.Variance.Excluded > 0 ? $"（工数未入力 {t.Variance.Excluded:N0} タスクを除く）" : ""), Progress(t), Date(phase.Target), Date(t.Finish), Days(phase.Difference), $"{t.Overdue:N0}", $"{t.OverEstimate:N0}"];
+                string[] values = [$"{t.Closed:N0} / {t.Count:N0}", Value(t.Estimate), Value(t.Actual), Value(t.Remaining), Value(t.Forecast), Signed(t.Variance.Value) + (t.Variance.Excluded > 0 ? $"（工数未入力 {t.Variance.Excluded:N0} タスクを除く）" : ""), Progress(t), Date(phase.Target), Finish(t), Days(phase.Difference), $"{t.Overdue:N0}", $"{t.OverEstimate:N0}"];
                 for (var i = 0; i < values.Length; i++) { var text = TableText(values[i], numeric: true); ToolTipService.SetToolTip(text, names[i + 1] + " " + values[i]); AutomationProperties.SetName(text, Phase(phase) + " " + names[i + 1] + " " + values[i]); Cell(row, text, i + 1); }
                 AutomationProperties.SetName(row, Phase(phase) + " " + string.Join(" · ", values.Select((value, i) => names[i + 1] + " " + value)));
                 rows.Children.Add(row);

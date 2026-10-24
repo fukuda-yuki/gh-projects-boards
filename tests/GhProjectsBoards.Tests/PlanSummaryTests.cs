@@ -241,14 +241,19 @@ internal sealed class PlanSummaryTests
     }
 
     [Test]
-    public void ATaskWithNoEndMakesTheFinishUnknownRatherThanInventingOne()
+    public void ATaskWithNoEndIsLeftOutOfTheFinishAndCountedRatherThanHidingTheDate()
     {
+        // One inserted row with no title, effort or dates must not turn a 1,000-task finish into 「—」; it is
+        // left out and counted like an effort-less task in the totals, and nothing invents a date for it.
         var dated = new PlanRow("D", "Dated", "a/b") { Start = Day, End = Day.AddDays(1) };
-        var undated = new PlanRow("U", "Undated", "a/b");
+        var undated = new PlanRow("U", "", "a/b");
+        var both = Calculate(Document(dated, undated));
         Assert.Multiple(() => {
             Assert.That(Calculate(Document(undated)).ForecastFinish, Is.Null, "An undated-only plan has no finish.");
-            Assert.That(Calculate(Document(dated, undated)).ForecastFinish, Is.Null,
-                "A task without any end makes the Project finish unknown instead of contributing a date.");
+            Assert.That(both.ForecastFinish, Is.EqualTo(Day.AddDays(1)), "The dated task still finishes the version.");
+            Assert.That(both.Total.FinishExcluded, Is.EqualTo(1));
+            Assert.That(both.FinishDifference, Is.Not.Null);
+            Assert.That(both.Phases.Single(p => p.IsTotal).Tasks.Finish, Is.EqualTo(Day.AddDays(1)));
         });
     }
 
@@ -258,7 +263,8 @@ internal sealed class PlanSummaryTests
         var d = Document(new("I", "Unknown", "a/b") { Assignees = ["U1"] },
             new("K", "Kept", "a/b") { Assignees = ["U1"], Remaining = 8, Fixed = true, Start = new(2026, 11, 2), End = new(2026, 11, 2) });
         var result = Calculate(d);
-        Assert.That(result.ForecastFinish, Is.Null);
+        Assert.That(result.ForecastFinish, Is.EqualTo(new DateOnly(2026, 11, 4)), "The undated task is left out; the kept task finishes at its forecast end.");
+        Assert.That(result.Total.FinishExcluded, Is.EqualTo(1));
         Assert.That(result.Months!.Periods, Has.Count.EqualTo(2));
         var person = result.Months.People.Single(p => p.Identity == "U1");
         Assert.That(person.Unallocated, Does.Contain("I"));
