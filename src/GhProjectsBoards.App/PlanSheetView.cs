@@ -958,9 +958,17 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (!args.IsIntermediate) pageOffset = null;
         if (Problems.Count > 0) UpdateInputProblem();
-        // The visible window decides which links are drawn (#264); redraw once the gesture settles.
-        if (!args.IsIntermediate && !disposed) RefreshDependencyLinks();
+        // The visible window decides which links are drawn (#264). Redraw out of the scroll callback so the
+        // scroller is not re-entered while it raises its view-changed event.
+        if (!args.IsIntermediate && !disposed && !dependencyRepaintQueued) {
+            dependencyRepaintQueued = true;
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
+                dependencyRepaintQueued = false;
+                RefreshDependencyLinks();
+            });
+        }
     }
+    private bool dependencyRepaintQueued;
     private bool InputProblemCellIsVisible(PlanSheetCell cell)
     {
         if (cell.Visibility != Visibility.Visible || cell.ActualWidth <= 0 || cell.ActualHeight <= 0) return false;
