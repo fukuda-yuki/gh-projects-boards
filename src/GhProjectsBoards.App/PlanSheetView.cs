@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using GhProjectsBoards.Core.PlanEditor;
@@ -219,9 +219,10 @@ internal sealed partial class PlanSheetView : Grid
         var titleGroup = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
         titleGroup.Children.Add(selectedTitle); titleGroup.Children.Add(issueLink);
         selectedLine.Children.Add(titleGroup); SetColumn(titleGroup, 1);
-        var explanation = new Grid { ColumnSpacing = 0, HorizontalAlignment = HorizontalAlignment.Left };
         // 0 dates and scheduler reasons, 1 typed-start notice (#229), 2 lateness tag, 3 effect/cause links,
-        // 4 progress change, 5 見積超過, 6 requirement-row set counts or 自分の残による.
+        // 4 progress change, 5 見積超過, 6 requirement-row set counts or 自分の残による. A hidden column still
+        // takes its spacing, so the tag cancels that spacing while the start notice is absent.
+        var explanation = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Left };
         explanation.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         for (var column = 0; column < 6; column++) explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         reason.VerticalAlignment = VerticalAlignment.Center;
@@ -237,9 +238,7 @@ internal sealed partial class PlanSheetView : Grid
         explanation.Children.Add(progressLine); SetColumn(progressLine, 4);
         explanation.Children.Add(estimateDetail); SetColumn(estimateDetail, 5);
         explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 6);
-        // The gap belongs to each visible part, not the columns: an empty start notice must not widen it.
-        foreach (var part in explanation.Children.OfType<FrameworkElement>().Where(part => !ReferenceEquals(part, reason)))
-            part.Margin = new(part.Margin.Left + 10, part.Margin.Top, part.Margin.Right, part.Margin.Bottom);
+        slipPill.Margin = new(-10, 0, 0, 0);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
         InitializeDetailToggle(selectedLine);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
