@@ -11,4 +11,9 @@
   <ItemGroup>
     <ProjectReference Include="../GhProjectsBoards.Core/GhProjectsBoards.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The demo's waterfall shapes are the tracked evaluation versions, so the demo and the tests agree on one plan. -->
+    <EmbeddedResource Include="../../evaluation/version-plan.json" LogicalName="GhProjectsBoards.Report.version-plan.json" />
+    <EmbeddedResource Include="../../evaluation/version-plan-12m.json" LogicalName="GhProjectsBoards.Report.version-plan-12m.json" />
+  </ItemGroup>
 </Project>

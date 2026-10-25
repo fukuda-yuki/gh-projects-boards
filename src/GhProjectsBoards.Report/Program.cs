@@ -8,10 +8,12 @@ const string Usage = """
                          [--status-date yyyy-MM-dd] [--time-zone Asia/Tokyo] [--gh <gh executable>]
     ghpb-report report --data <folder> --out <REPORT.md>
     ghpb-report record --project <Project URL> --data <folder> [--time-zone Asia/Tokyo] [--gh <gh executable>]
+    ghpb-report demo --out <folder>
+    ghpb-report site --data <raw folder> --config <site.json> --out <folder>
     """;
 
 Console.OutputEncoding = new UTF8Encoding(false);
-if (args.Length == 0 || args[0] is not ("snapshot" or "report" or "record")) return Fail(Usage, 2);
+if (args.Length == 0 || args[0] is not ("snapshot" or "report" or "record" or "demo" or "site")) return Fail(Usage, 2);
 var options = new Dictionary<string, string>(StringComparer.Ordinal);
 for (var n = 1; n < args.Length; n += 2)
 {
@@ -21,7 +23,23 @@ for (var n = 1; n < args.Length; n += 2)
 string? Option(string name) => options.GetValueOrDefault(name);
 try
 {
-    if (args[0] == "record")
+    if (args[0] == "demo")
+    {
+        // #271: fictional demo records in the #272 format plus the site configuration, generated at build time and
+        // never committed. Fixed dates and no clock, so the output is byte-identical on every run.
+        if (Option("out") is not { } output) return Fail(Usage, 2);
+        DemoData.Write(output, Plan("version-plan.json"), Plan("version-plan-12m.json"));
+        Console.WriteLine($"{output}: デモデータを書き出しました");
+    }
+    else if (args[0] == "site")
+    {
+        // #271: reads only the raw records and the site configuration, so production can run it on data that no demo
+        // generated.
+        if (Option("data") is not { } data || Option("config") is not { } configPath || Option("out") is not { } output) return Fail(Usage, 2);
+        SiteBuilder.Build(data, configPath, output);
+        Console.WriteLine($"{output}: サイトを書き出しました");
+    }
+    else if (args[0] == "record")
     {
         // #272: every raw value of the Project, no settings file. The day is the read time's date in the time zone.
         if (Option("project") is not { } project || Option("data") is not { } data) return Fail(Usage, 2);
@@ -81,4 +99,14 @@ static void Write(string path, byte[] bytes)
         File.Move(temporary, path, overwrite: true);
     }
     finally { if (File.Exists(temporary)) File.Delete(temporary); }
+}
+
+// The demo's waterfall shapes are embedded so the command does not depend on the working directory.
+static string Plan(string name)
+{
+    var resource = "GhProjectsBoards.Report." + name;
+    using var stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream(resource)
+        ?? throw new InvalidOperationException("デモ用の計画ファイルが見つかりません: " + resource);
+    using var reader = new StreamReader(stream);
+    return reader.ReadToEnd();
 }
