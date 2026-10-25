@@ -346,6 +346,29 @@ internal static class RawStore
         return (path, count, removed);
     }
 
+    // Every recorded day of a Project, across its month folders. The site draws a week from its last recorded day,
+    // so it needs the days themselves, not a calendar range: a day with no file was never read and stays missing.
+    internal static SortedSet<DateOnly> Days(string root, string owner, int number)
+    {
+        var days = new SortedSet<DateOnly>();
+        var project = Path.Combine(root, owner, number.ToString(CultureInfo.InvariantCulture));
+        if (!Directory.Exists(project)) return days;
+        foreach (var file in Directory.EnumerateFiles(project, "*.jsonl", SearchOption.AllDirectories))
+            if (DateOf(file) is { } day) days.Add(day);
+        return days;
+    }
+
+    // The Project line is line 1 of a file and holds the field definitions the whole record needs; the latest file
+    // up to the day is the one whose definitions describe that day.
+    internal static string ProjectLine(string root, string owner, int number, DateOnly through)
+    {
+        var day = Days(root, owner, number).Where(d => d <= through).DefaultIfEmpty().Max();
+        if (day == default) throw new InvalidOperationException($"{through.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)} までの記録がありません: {owner}/{number}");
+        var folder = Folder(root, owner, number, day);
+        var file = Directory.EnumerateFiles(folder, "*.jsonl").Single(f => DateOf(f) == day);
+        return File.ReadLines(file).First();
+    }
+
     // The item lines as of the end of a day, from one month folder.
     internal static SortedDictionary<string, string> Read(string folder, DateOnly through)
     {
