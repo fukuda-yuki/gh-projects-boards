@@ -92,19 +92,19 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(sheet.DayWidth, Is.EqualTo(8));
             if (earlierTask) Assert.That(sheet.ChartOffset, Is.GreaterThan(0));
             // The range starts a short margin before the earliest date, so a 基準日 on the plan's first day sits
-            // at that margin rather than a fifth in; with earlier work there is room for the fifth (#265). The first row the
-            // sheet selects by itself is not a PMO selection, so it does not move the opening place.
+            // at that margin rather than a fifth in; with earlier work there is room for the fifth (#265). The
+            // sheet opens on the empty new-task row, which carries no dates, so it does not move the opening place.
             Assert.That(sheet.X(Today), Is.EqualTo(earlierTask ? sheet.ChartViewport / 5 : PlanSheetView.TimelineMarginDays * sheet.DayWidth).Within(1));
             Assert.That(Ui.Find<Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)).Within(.1));
         });
         Assert.That(session.UndoCount, Is.Zero);
     }
 
-    // #265: the first row is selected by the sheet itself on open. Its dates lie months before the 基準日 here,
-    // yet opening, a scale change and 基準日へ移動 all keep the 基準日 a fifth from the Gantt's left edge, and
-    // none of them edits the plan.
+    // #265: a sheet opens on the empty new-task row, which is the only selection it makes by itself. That row
+    // has no dates, so opening, a scale change and 基準日へ移動 all keep the 基準日 a fifth from the Gantt's
+    // left edge even though the earliest tasks lie months before it, and none of them edits the plan.
     [Test, Category("GanttPhase3")]
-    public async Task OpeningScaleChangeAndGoToStatusDateKeepTheStatusDateAFifthInWhileOnlyTheAutomaticRowIsSelected()
+    public async Task OpeningScaleChangeAndGoToStatusDateKeepTheStatusDateAFifthInWithNoTaskSelected()
     {
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var early = Today.AddDays(-90);
@@ -119,7 +119,8 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(Ui.Find<Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)).Within(.1), step);
         }
         await Ui.Run(() => {
-            Assert.That(sheet.IsSelectedRow("I1"), Is.True, "The sheet selects its first row by itself.");
+            Assert.That(sheet.IsSelectedRow(""), Is.True, "A sheet opens on the empty new-task row.");
+            Assert.That(sheet.IsSelectedRow("I1"), Is.False, "No task is selected until the PMO selects one.");
             AssertStatusAtFifth("open");
         });
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
@@ -137,6 +138,47 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<Button>("PlanGanttGoToStatusDate")), Is.EqualTo("基準日へ移動"));
             Assert.That(Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem, Is.EqualTo("日"), "Going to the 基準日 keeps the scale.");
             AssertStatusAtFifth("基準日へ移動");
+        });
+        Assert.That(session.UndoCount, Is.Zero);
+    }
+
+    // #265: a fold can hide the row the PMO selected, and the sheet then picks a visible row by itself. That
+    // pick is not a PMO selection, so a scale change keeps the 基準日 a fifth in rather than jumping to the
+    // picked row's dates; once the PMO selects a row again, a scale change anchors on it.
+    [Test, Category("GanttPhase3")]
+    public async Task AFoldThatHidesTheSelectedTaskKeepsTheScaleOnTheStatusDateUntilThePmoSelectsAgain()
+    {
+        await Ui.Unmount(sheetHost); await session.FlushAsync();
+        var early = Today.AddDays(-90);
+        var rows = session.Document.State.Rows.Select(r => r.Parent == "I1" ? r with { Start = early, End = early } : r).ToImmutableArray();
+        session = await PlanSession.CreateAsync(new(Path.Combine(root, "hidden")),
+            new(session.Document.Project, new(rows, []), new(rows, session.Document.State.Settings)), Today);
+        await Ui.Run(() => { sheetHost.Children.Clear(); sheet = new(session); sheetHost.Children.Add(sheet); });
+        await Ui.Mount(sheetHost); await Ui.Idle();
+        // I6 is a dated task under the I4 summary, whose rolled-up start (4/12) lies months after the 基準日.
+        await SelectCell(6, PlanField.Title);
+        await Ui.Run(() => sheet.SetFold("I4", true)); await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(sheet.IsSelectedRow("I6"), Is.False);
+            Assert.That(sheet.IsSelectedRow("I4"), Is.True, "The sheet picks a visible row itself.");
+        });
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            sheet.UpdateLayout();
+            Assert.That(sheet.X(Today), Is.EqualTo(sheet.ChartViewport / 5).Within(2), "The sheet's own pick does not anchor a scale change.");
+            Assert.That(Ui.Find<Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)).Within(.1));
+        });
+        // Choosing a row again is a PMO selection: the next scale change anchors that row's start.
+        await SelectCell(2, PlanField.Title);
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "週"); await Ui.Idle();
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            var anchor = Today.AddDays(-90);
+            var wanted = Math.Min(PlanSheetView.AnchorOffset(anchor, sheet.FirstDay, sheet.DayWidth, sheet.ChartViewport),
+                Ui.Find<ScrollViewer>("PlanGanttHorizontal").ScrollableWidth);
+            Assert.That(sheet.X(anchor), Is.EqualTo((anchor.DayNumber - sheet.FirstDay.DayNumber) * sheet.DayWidth - wanted).Within(2),
+                "A PMO selection anchors its own task.");
         });
         Assert.That(session.UndoCount, Is.Zero);
     }

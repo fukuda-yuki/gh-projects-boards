@@ -152,8 +152,9 @@ internal sealed partial class PlanSheetView
     }
 
     internal const int TimelineMarginDays = 7;
-    // The first row the sheet selects by itself on open is not the PMO's choice: until the PMO selects
-    // another row, opening and scale changes keep the 基準日 in place instead of that row's dates (#265).
+    // A row the sheet selected by itself because a filter or fold hid the PMO's row is not the PMO's
+    // choice: until the PMO selects a row, opening and scale changes keep the 基準日 in place (#265).
+    // A sheet opens on the empty new-task row, which carries no dates, so the same rule covers opening.
     private string? automaticSelection;
     private DateOnly TimelineAnchor => selected != automaticSelection ? SelectedDate() ?? StatusDate : StatusDate;
 
