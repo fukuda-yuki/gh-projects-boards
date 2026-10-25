@@ -676,8 +676,11 @@ internal sealed partial class PlanSheetHostedTests
             // #264: an unpublished change leaves the 状態 column and shows as the orange row bar instead.
             var bar = Ui.Tree(sheet).OfType<Border>().SingleOrDefault(element =>
                 Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(element) == "PlanUnpublishedBar1");
-            Assert.That(bar is not null && bar.Visibility == Visibility.Visible, Is.EqualTo(state == "changed"),
-                "Only the changed row wears the unpublished bar.");
+            // The failed and unverified fixtures also hold an unpublished end (the close moved it), so only
+            // their row carries the bar in this set; the other states differ from their baseline not at all.
+            var unpublishedRow = state is "changed" or "failed" or "unverified";
+            Assert.That(bar is not null && bar.Visibility == Visibility.Visible, Is.EqualTo(unpublishedRow),
+                "Only a row with an unpublished change wears the bar.");
             if (state == "changed") Assert.That(((SolidColorBrush)bar!.Background).Color,
                 Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SheetChangedMarkBrush")).Color));
             Assert.That(name, Does.Not.Contain("未発行の変更あり"), "未発行 is not a 状態 mark.");
@@ -691,6 +694,8 @@ internal sealed partial class PlanSheetHostedTests
                 Assert.That(slip, Is.EqualTo("終了日 10/2 を過ぎて未完了 · +1日"));
                 var text = Ui.Find<TextBlock>("PlanStartReason");
                 var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
+                // Measure the laid-out band: the pill is placed by a grid column after the reason text.
+                sheet.UpdateLayout();
                 var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
                 Assert.That(gap, Is.InRange(8d, 12d), "The late pill follows the reason immediately.");
                 Assert.That(pill.CornerRadius.TopLeft, Is.GreaterThan(0));

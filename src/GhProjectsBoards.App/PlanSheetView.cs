@@ -74,17 +74,30 @@ internal sealed partial class PlanSheetView : Grid
         .Select(conflict => $"この PC {PlanWorkspaceView.ReviewValue(Session.Document, conflict.Field, conflict.Local)} ／ GitHub {PlanWorkspaceView.ReviewValue(Session.Document, conflict.Field, conflict.Remote)}")
         .ToArray();
     // #264: a dependency link whose predecessor row is scrolled out of the row viewport is replaced by a
-    // stub on the successor row, so no line runs across the visible chart. Rows the list has realized are
-    // the rows on screen; the virtualization buffer is a few rows and names the same stub either way.
+    // stub on the successor row, so no line runs across the visible chart. The viewport comes from the row
+    // scroller, not from which containers happen to be realized: realization order must not decide whether
+    // a line is drawn, or a row bound before its predecessor would hide a link that is on screen.
     internal bool RowIsOnScreen(int rowIndex)
     {
-        var first = int.MaxValue; var last = -1;
+        if (rowScroll is { ViewportHeight: > 0 } scroll) {
+            var first = (int)Math.Floor(scroll.VerticalOffset / RowHeight);
+            var last = (int)Math.Ceiling((scroll.VerticalOffset + scroll.ViewportHeight) / RowHeight);
+            return rowIndex >= first && rowIndex < last;
+        }
+        var realizedFirst = int.MaxValue; var realizedLast = -1;
         foreach (var row in Realized) {
             var index = RowIndexes.GetValueOrDefault(row.Identity, -1);
             if (index < 0) continue;
-            first = Math.Min(first, index); last = Math.Max(last, index);
+            realizedFirst = Math.Min(realizedFirst, index); realizedLast = Math.Max(realizedLast, index);
         }
-        return last >= 0 && rowIndex >= first && rowIndex <= last;
+        return realizedLast >= 0 && rowIndex >= realizedFirst && rowIndex <= realizedLast;
+    }
+    // A vertical scroll changes which predecessor rows are on screen, so the realized rows redraw their
+    // dependency links once the viewport settles. The gesture itself stays allocation-free.
+    private void RefreshDependencyLinks()
+    {
+        if (disposed) return;
+        foreach (var row in Realized) row.RefreshDependencies();
     }
     private Dictionary<string, string> peopleNames = new();
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<string>>.Empty);
@@ -945,6 +958,8 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (!args.IsIntermediate) pageOffset = null;
         if (Problems.Count > 0) UpdateInputProblem();
+        if (!args.IsIntermediate && !disposed)
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, RefreshDependencyLinks);
     }
     private bool InputProblemCellIsVisible(PlanSheetCell cell)
     {

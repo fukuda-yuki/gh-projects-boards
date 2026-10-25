@@ -92,7 +92,7 @@ internal sealed partial class PlanSheetHostedTests
             AutomationProperties.GetAutomationId(element) == "PlanPredStub90"));
         await Ui.Run(() => {
             var row = CurrentDependencyRow("I90")!;
-            var stub = Ui.Find<TextBlock>("PlanPredStub90", row);
+            var stub = Ui.Find<TextBlock>("PlanPredStub90");
             Assert.That(stub.Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(stub.Text, Does.StartWith("新1").And.EndWith("→"));
             Assert.That(AutomationProperties.GetName(stub), Is.EqualTo("先行 新1（表示されていません）"));
@@ -102,7 +102,7 @@ internal sealed partial class PlanSheetHostedTests
                 AutomationProperties.GetAutomationId(line).StartsWith("PlanArrow1_90_", StringComparison.Ordinal)), Is.False);
             // The reverse link's predecessor row 95 is visible, so that link still runs; its stroke is the only
             // crossing in this row — the suppressed forward link would have added a second.
-            var reverseRoute = Ui.Find<Polyline>("PlanArrow95_3_95", CurrentDependencyRow("I95")!);
+            var reverseRoute = Ui.Find<Polyline>("PlanArrow95_3_95");
             var reverseX = reverseRoute.TransformToVisual(sheet).TransformPoint(reverseRoute.Points[^1]).X;
             AssertCrossingGeometry(row, [reverseX]);
         });

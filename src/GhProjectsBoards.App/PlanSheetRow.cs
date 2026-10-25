@@ -522,6 +522,14 @@ public sealed class PlanSheetRow : Grid
         }
         chart.Opacity = 1;
     }
+    // #264: redraw this row's dependency slice after the visible row window moved. The shapes are reused, so
+    // a scroll that brings a predecessor into or out of view only rewrites text and geometry.
+    internal void RefreshDependencies()
+    {
+        if (Owner is not { } owner || boundIdentity is null) return;
+        if (!owner.Schedule.TryGetValue(Identity, out _)) return;
+        DrawDependencies(owner, owner.PlanIds.GetValueOrDefault(Identity), owner.RowIndexes.GetValueOrDefault(Identity, -1));
+    }
     private void DrawDependencies(PlanSheetView owner, int number, int rowIndex)
     {
         var current = new HashSet<(string From, string To)>();

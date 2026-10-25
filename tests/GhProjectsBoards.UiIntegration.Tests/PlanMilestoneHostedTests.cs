@@ -106,7 +106,6 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(label, Does.StartWith("Design"));
             Assert.That(label, Does.Contain("+"));
         });
-        await RenderedEvidence.Capture(Ui.Find<Canvas>("PlanGanttHeader"), "milestone-passed-red");
     }
 
     [Test]
