@@ -461,7 +461,14 @@ internal sealed partial class PlanSheetHostedTests
     public async Task OverflowPredecessorCommandOpensItsSearchWithKeyboardFocus()
     {
         await Ui.Run(() => sheetHost.Width = 760);
-        await Ui.Until(() => Ui.CommandButton("PlanSheetPredecessorAdd").IsInOverflow);
+        var overflowState = "";
+        await Ui.Until(() => {
+            var button = Ui.CommandButton("PlanSheetPredecessorAdd");
+            var bar = Ui.Tree(Ui.Root).OfType<CommandBar>().Single();
+            overflowState = "bar=" + bar.ActualWidth + " sheet=" + sheet.ActualWidth + " primary=" + string.Join(",", bar.PrimaryCommands.OfType<AppBarButton>().Select(command =>
+                AutomationProperties.GetAutomationId(command) + ":" + command.IsInOverflow));
+            return button.IsInOverflow;
+        }, () => overflowState);
         await Select(2, PlanField.Title);
         await Ui.ClickCommand("PlanSheetPredecessorAdd");
         await Ui.Ready<TextBox>("PlanPredecessorSearch");
