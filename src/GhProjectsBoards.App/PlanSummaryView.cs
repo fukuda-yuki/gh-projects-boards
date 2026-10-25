@@ -660,11 +660,16 @@ internal sealed class PlanSummaryView : UserControl
         loadPlanOpen.IsEnabled = ids.Count > 0;
         loadPanel.Width = Math.Min(344, Math.Max(240, rightColumn.ActualWidth * 0.45));
         loadPanel.Visibility = Visibility.Visible;
-        // The matrix shares its width with the panel now; keep the selected cell inside its viewport.
+        // The matrix shares its width with the panel now; keep the clicked cell wholly inside both
+        // viewports instead of letting it sit half-clipped at the new edge.
         if (selectedCell is not null && cells.TryGetValue(selectedCell, out var button))
             DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
                 button.UpdateLayout();
-                button.StartBringIntoView(new() { AnimationDesired = false, HorizontalAlignmentRatio = 0.5, VerticalAlignmentRatio = 0.5 });
+                var point = button.TransformToVisual(matrixRows).TransformPoint(new());
+                var horizontal = Math.Clamp(point.X - (matrixScroll.ActualWidth - button.ActualWidth) / 2, 0, Math.Max(0, matrixScroll.ScrollableWidth));
+                matrixScroll.ScrollTo(horizontal, matrixScroll.VerticalOffset);
+                var vertical = Math.Clamp(point.Y - (matrixBody.ActualHeight - button.ActualHeight) / 2, 0, Math.Max(0, matrixBody.ScrollableHeight));
+                matrixBody.ChangeView(null, vertical, null, true);
             });
     }
     private void HideLoadPanel()
@@ -714,6 +719,7 @@ internal sealed class PlanSummaryView : UserControl
         Canvas.SetLeft(last, Math.Max(0, width - 30)); Canvas.SetTop(last, baseline + 2); loadDays.Children.Add(last);
     }
 }
+
 
 
 
