@@ -80,6 +80,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private TextBox? invalidSetting;
     private string? invalidSettingMessage;
     private string? invalidSettingText;
+    private string? settingsProblemMessage;
     private bool revealingSetting;
     private int settingsGeneration;
     private bool rendering, closing;
@@ -736,7 +737,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); ShowSettingsSection("columns"); return Task.CompletedTask; }),
+                next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { OpenSettingsPage("columns", "tasks"); return Task.CompletedTask; }),
                     reapplyStoredPlan: ReapplyStoredPlanAsync, savePlanCopy: SavePlanCopyAsync,
                     // #253: verify a typed login on demand for the row's repository through the read-only lease.
                     resolveAssignee: (repository, login, token) => ReferenceEquals(workspace.Session, session)
@@ -772,7 +773,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             summaryView = new(session, ids => {
                 sheet.FilterTasks(ids, "サマリーのタスク"); Show("tasks");
                 if (sheet.RowIds.Count > 0) sheet.SelectAndFocus(sheet.RowIds[0], PlanField.Title, false);
-            }, () => { settingsReturnPage = "summary"; RenderSettings(); Show("settings"); SyncTabs(); });
+            }, section => OpenSettingsPage(section, "summary"));
             summaryArea.Children.Clear(); summaryArea.Children.Add(summaryView);
         }
         summaryView.Refresh(sheet.Schedule, sheet.StatusDate);
@@ -810,12 +811,28 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void ClearSettingsInputProblem()
     {
+        ClearSettingsProblem();
         var input = invalidSetting; var message = invalidSettingMessage;
         // Invalidate recovery before closing the popup can cause focus/layout callbacks.
         invalidSetting = null; invalidSettingMessage = null; invalidSettingText = null;
         if (input is not null) AutomationProperties.SetHelpText(input, "");
         if (message is not null && error.Text == message) error.Text = "";
         settingsInputProblem.Close();
+    }
+    // A control that cannot keep rejected text (a date picker, a number box) reports its rejection beside itself
+    // and returns to the accepted value; the text editors keep their own editable rejected text (#251).
+    private void ShowSettingsProblem(FrameworkElement target, string message)
+    {
+        settingsProblemMessage = message;
+        settingsInputProblem.Show(target, message);
+        error.Text = message;
+    }
+    private void ClearSettingsProblem()
+    {
+        var message = settingsProblemMessage;
+        settingsProblemMessage = null;
+        settingsInputProblem.Close();
+        if (message is not null && error.Text == message) error.Text = "";
     }
     private void RevealSettingsInput()
     {

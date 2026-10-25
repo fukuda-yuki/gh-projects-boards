@@ -37,8 +37,16 @@ internal sealed partial class PlanWorkspaceView
         settingsArea.Children.Add(settingsNav);
     }
 
-    // Opens a section from elsewhere in the app (表示列, the assist pane's 設定を開く).
-    private void ShowSettingsSection(string key)
+    // Opens the page at one section from elsewhere in the app: 表示列, the summary's 設定を開く, the assist pane.
+    private void OpenSettingsPage(string section, string? returnPage = null)
+    {
+        if (returnPage is not null) settingsReturnPage = returnPage;
+        RenderSettings(); Show("settings"); SyncTabs(); ShowSettingsSection(section);
+    }
+
+    // Scrolls the content column to a section after the page is rendered (#251 page contract). Section keys are
+    // the NavigationView item tags; other views (summary, assist) open a section through this entry point.
+    internal void ShowSettingsSection(string key)
     {
         if (settingsSections.FirstOrDefault(s => (string)s.Item.Tag == key) is { Heading: { } heading }) ScrollToSettingsHeading(heading);
     }
@@ -197,6 +205,7 @@ internal sealed partial class PlanWorkspaceView
             AutomationProperties.SetName(picker, label);
             var clear = Id(new Button { Content = "クリア", VerticalAlignment = VerticalAlignment.Bottom }, id + "Clear");
             AutomationProperties.SetName(clear, label + "をクリア");
+            var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
             void Show() {
                 rendering = true;
                 try {
@@ -207,18 +216,25 @@ internal sealed partial class PlanWorkspaceView
                 finally { rendering = false; }
             }
             async Task Apply(DateOnly? day) {
-                if (generation != settingsGeneration || day == read(session.Document.State.Settings)) return;
-                try { await Run(() => ChangeSettings(s => change(s, day))); }
-                finally { if (generation == settingsGeneration) Show(); }
+                if (generation != settingsGeneration) return;
+                if (day == read(session.Document.State.Settings)) { ClearSettingsProblem(); Show(); return; }
+                // A rejected pair stays rejected beside its picker, without the text editors' editable rejected text.
+                string? rejected = null;
+                await Run(async () => {
+                    try { await ChangeSettings(s => change(s, day)); }
+                    catch (ArgumentException ex) { rejected = label + ": " + ex.Message; }
+                });
+                if (generation != settingsGeneration) return;
+                if (rejected is { } message) ShowSettingsProblem(panel, message); else ClearSettingsProblem();
+                Show();
             }
             picker.DateChanged += async (_, args) => {
                 if (rendering) return;
                 await Apply(args.NewDate is { } date ? DateOnly.FromDateTime(date.Date) : null);
             };
             clear.Click += async (_, _) => await Apply(null);
-            Show();
-            var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
             panel.Children.Add(picker); panel.Children.Add(clear);
+            Show();
             return panel;
         }
     }
