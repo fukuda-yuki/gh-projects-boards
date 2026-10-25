@@ -85,7 +85,7 @@ One JSON file names the site and the Projects to show. The configuration supplie
 
 ## Pages
 
-Both pages are laid out for the management display at 1920×1080 and fit without page scrolling. They use Japanese labels, one colour palette in the state option order, neutral grey for 未設定, and one legend (凡例) per page. The list page shows one legend line per distinct state option set because Projects may define different options.
+Both pages are laid out for the management display at 1920×1080 and fit without page scrolling. They use Japanese labels and one colour palette in the state option order, with neutral grey for 未設定. Colours follow each Project's own option order, so the same colour can mean different states in different Projects. The detail page has one legend (凡例) naming every state of its Project; the list page has no page legend and instead names each row's states and counts under its bar, so colour is never the only carrier.
 
 ### Project list
 
@@ -96,7 +96,7 @@ One row per Project:
 | プロジェクト | Display name, with the group field name below it |
 | 期間 | `periodStart – periodEnd`, or `—` when the Project has no period |
 | 完了 | Closed tasks / tasks, and 完了率 as a percentage |
-| 状態 | Composition bar of the latest record's tasks in state option order |
+| 状態 | Composition bar of the latest record's tasks in state option order, with a swatch, state name and count for every non-zero state under it |
 | 最終記録日 | Date of the latest record, `yyyy-MM-dd` |
 | CSV | Link to the Project's `items.csv` |
 
@@ -121,6 +121,7 @@ The detail page has no cumulative line chart, daily completion chart, plan line,
 - After the fixed columns, one column per Project value field in the record's `fields[]` order, for `TEXT`, `NUMBER`, `DATE`, `SINGLE_SELECT` and `ITERATION` fields. Built-in columns are not repeated.
 - Values are printed as recorded: dates as `yyyy-MM-dd` (JST where the record carries a time), numbers in invariant notation, a single-select option by its name and an iteration by its title; a missing value is blank. タスク and アーカイブ print はい or いいえ, 種類 prints Issue, PR, 下書き or 非公開, a merged pull request prints `MERGED` as its state, and assignees, labels and blocked-by Issues join with `; `.
 - Format: UTF-8 with BOM, CRLF line endings and RFC 4180 quoting, so Excel opens the file without an import step.
+- A cell whose recorded text starts with `=`, `+`, `-` or `@` is printed unchanged, so Excel may read it as a formula. The site does not escape data: the values stay as recorded.
 
 ## Content and page chrome
 
@@ -132,13 +133,13 @@ The detail page has no cumulative line chart, daily completion chart, plan line,
 
 ## Demo scenarios
 
-`demo` writes five fictional Projects in the #272 raw format plus a site configuration, generated at build time and not committed. Each recorded day goes through the recorder's own storage layout (monthly full copy plus daily changes), so the site reads demo data on the same path as real data. The waterfall Projects derive from the tracked version plans (40 requirements × 25 tasks, 9 phases); the other scenarios add synthetic Projects. Owners and repositories are fictional (`demo/order-system`, `demo/portal`, `demo/mobile-app`). The table lists the Projects in configuration order; the list page sorts them by period end.
+`demo` writes five fictional Projects in the #272 raw format plus a site configuration, generated at build time and not committed. Each recorded day goes through the recorder's own storage layout (monthly full copy plus daily changes), so the site reads demo data on the same path as real data. The waterfall Projects derive from the tracked version plans (40 requirements × 25 tasks, 9 phases); the other scenarios add synthetic Projects. Owners and repositories are fictional (`demo/order-system`, `demo/portal`, `demo/mobile-app`). Every Project's latest record is the same day, 2026-10-23 (Friday), and the waterfall plans are shifted by whole weeks from the tracked plans, so the list page compares all Projects at one point in time. The table lists the Projects in configuration order; the list page sorts them by period end.
 
 | Project | Group field | Scenario and what the pages show |
 | --- | --- | --- |
-| 第2027.04版 | 工程 | Waterfall with steady completion: 1,000 tasks close in plan order over the recorded working days, so the weekly bars climb and phases complete steadily |
-| 第2027.10版 | 工程 | Waterfall with a final-week batch: nothing closes until the last week, when most tasks close at once; a few closed tasks stay in Status `In progress`, so 完了 and the chart differ |
-| 改善バックログ | Iteration | Agile: 84 flat Issues without parents, Status options `Todo`, `Doing`, `Review` and `Done`, closures at iteration ends, and a current iteration that is only one week old |
+| 第2027.04版 | 工程 | Waterfall with steady completion: 1,000 tasks close in plan order; at the latest record the Project is about 86 % complete, the later Status values still hold work, and the header is below 100 % |
+| 第2027.10版 | 工程 | Waterfall with a final-week batch: nothing closes until the last recorded week, when most tasks close at once; a few closed tasks stay in Status `In progress`, so 完了 and the chart differ |
+| 改善バックログ | Iteration | Agile: 84 flat Issues without parents, Status options `Todo`, `Doing`, `Review` and `Done`, and a current iteration that is only one week old. Most of each iteration's Issues close on its last working day and appear in the batch recorded at the next iteration's first working day; one straggles into the next iteration; Doing and Review hold the work during the iteration |
 | 第2027.01版 | 工程 | Zero closed: tasks and requirements stay open, and a whole week without a record leaves an empty slot in the chart (two isolated days are simply absent from the record) |
 | 新規プロジェクト | 工程 | Just started: two weeks of records, four tasks closed and four tasks without a Status value (未設定); no period, so the list sorts it last |
 

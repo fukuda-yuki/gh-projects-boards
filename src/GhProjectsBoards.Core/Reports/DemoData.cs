@@ -54,9 +54,17 @@ internal static class DemoData
     private const int IterationDuration = 14;
     private static readonly DateOnly FirstIterationStart = new(2026, 4, 6);
 
+    // Every demo Project records its latest day on the same Friday, so the list page reads as one comparable snapshot.
+    // The waterfall plans are shifted by whole weeks from the tracked evaluation plans, which keeps weekdays and
+    // Mondays: their close schedules, phases and week shapes do not change, only their calendar position.
+    private static readonly DateOnly LatestRecord = new(2026, 10, 23);
+    private static readonly DateOnly SteadyPeriodEnd = new(2026, 11, 20);
+
     // Every item was added to its Project before the first recorded day; the content's own creation is earlier.
-    private const string WaterfallAddedAt = "2026-10-12T00:00:00Z";
-    private const string WaterfallCreatedAt = "2026-09-28T00:00:00Z";
+    private const string SteadyAddedAt = "2026-04-24T00:00:00Z";
+    private const string SteadyCreatedAt = "2026-04-01T00:00:00Z";
+    private const string BatchAddedAt = "2025-10-03T00:00:00Z";
+    private const string BatchCreatedAt = "2025-09-01T00:00:00Z";
     private const string AgileAddedAt = "2026-04-03T00:00:00Z";
     private const string AgileCreatedAt = "2026-03-16T00:00:00Z";
     private const string JanuaryAddedAt = "2026-07-31T00:00:00Z";
@@ -111,16 +119,16 @@ internal static class DemoData
               "name": "第2027.04版",
               "stateField": "Status",
               "groupField": "工程",
-              "periodStart": "2026-10-13",
-              "periodEnd": "2027-04-30"
+              "periodStart": "2026-05-05",
+              "periodEnd": "2026-11-20"
             },
             {
               "url": "https://github.com/users/demo/projects/2",
               "name": "第2027.10版",
               "stateField": "Status",
               "groupField": "工程",
-              "periodStart": "2026-10-13",
-              "periodEnd": "2027-10-29"
+              "periodStart": "2025-10-07",
+              "periodEnd": "2026-10-23"
             },
             {
               "url": "https://github.com/users/demo/projects/3",
@@ -225,8 +233,10 @@ internal static class DemoData
     private sealed record BatchTask(int Index, string Title, string Phase, int ParentIndex, string? Person, int Number);
     private sealed record AgileIssue(int Index, int Iteration, string Repository, int Number, string Title, string[] Assignees);
 
-    // Scenario 1: waterfall with steady completion. The 1,000 tasks close in plan order, spread evenly over the 144
-    // recorded working days; each one walks Backlog -> Ready -> In progress -> In review -> Done before its close.
+    // Scenario 1: waterfall with steady completion. The 1,000 tasks are still spread evenly over the period's working
+    // days in plan order, but the plan is shifted by whole weeks so that the latest record is LatestRecord: about 86 %
+    // of the tasks are closed and the ones scheduled after that day show the later Status values, so the header shows
+    // less than 100 %.
     private sealed class SteadyWaterfall : DemoProject
     {
         private readonly Plan plan;
@@ -235,7 +245,9 @@ internal static class DemoData
 
         protected override IEnumerable<Record> Days()
         {
-            var days = WorkingDays(plan.ProjectStart, plan.ProjectEnd).ToArray();
+            var (start, end) = Shifted(plan, SteadyPeriodEnd);
+            var days = WorkingDays(start, end).ToArray();
+            var latest = Array.FindLastIndex(days, day => day <= LatestRecord);
             var parentRows = plan.Rows.Where(row => row.Parent is null).ToArray();
             var taskRows = plan.Rows.Where(row => row.Parent is not null).ToArray();
             var parentIndexes = parentRows.Select((row, index) => (row.Key, Index: index))
@@ -254,9 +266,9 @@ internal static class DemoData
             var lastStatus = Enumerable.Repeat(-1, tasks.Length).ToArray();
             var lastActual = new decimal[tasks.Length];
             var mergeDay = days.Length / 2;
-            var pullRequestCloseDay = days.Length - 10;
+            var pullRequestCloseDay = latest - 6;
 
-            for (var d = 0; d < days.Length; d++)
+            for (var d = 0; d <= latest; d++)
             {
                 for (var t = 0; t < tasks.Length; t++)
                 {
@@ -266,29 +278,30 @@ internal static class DemoData
                     if (lastStatus[t] == status && lastActual[t] == actual) continue;
                     lastStatus[t] = status;
                     lastActual[t] = actual;
-                    var start = Math.Max(0, task.CloseIndex - 4);
+                    var startDay = Math.Max(0, task.CloseIndex - 4);
                     items[ItemId(Number, "task", t)] = SteadyTaskItem(Number, task, parents[task.ParentIndex],
-                        days[start], days[task.CloseIndex], status, actual, remaining, d >= task.CloseIndex, days[task.CloseIndex]);
+                        days[startDay], days[task.CloseIndex], status, actual, remaining, d >= task.CloseIndex,
+                        days[task.CloseIndex], SteadyAddedAt, SteadyCreatedAt);
                 }
                 for (var p = 0; p < parents.Length; p++)
                 {
                     if (d != 0 && d != parentClose[p]) continue;
                     var closed = d >= parentClose[p];
                     items[ItemId(Number, "parent", p)] = WaterfallParentItem(Number, parents[p],
-                        closed ? WaterfallDone : WaterfallBacklog, closed, days[parentClose[p]]);
+                        closed ? WaterfallDone : WaterfallBacklog, closed, days[parentClose[p]], SteadyAddedAt, SteadyCreatedAt);
                 }
                 if (d == 0)
                 {
-                    items[ItemId(Number, "pr", 1)] = PullRequestItem(Number, 1, 1041, "注文 API のエラー処理", WaterfallInReview, "OPEN", null, null);
-                    items[ItemId(Number, "pr", 2)] = PullRequestItem(Number, 2, 1042, "受注画面の入力チェック", WaterfallInReview, "OPEN", null, null);
-                    items[ItemId(Number, "pr", 3)] = PullRequestItem(Number, 3, 1043, "在庫バッチの実行時間短縮", WaterfallInProgress, "OPEN", null, null);
-                    items[ItemId(Number, "draft", 1)] = DraftItem(Number, 1, "ログイン画面の文言整理", WaterfallBacklog);
-                    items[ItemId(Number, "redacted", 1)] = RedactedItem(Number, 1);
+                    items[ItemId(Number, "pr", 1)] = PullRequestItem(Number, 1, 1041, "注文 API のエラー処理", WaterfallInReview, "OPEN", null, null, SteadyAddedAt, SteadyCreatedAt);
+                    items[ItemId(Number, "pr", 2)] = PullRequestItem(Number, 2, 1042, "受注画面の入力チェック", WaterfallInReview, "OPEN", null, null, SteadyAddedAt, SteadyCreatedAt);
+                    items[ItemId(Number, "pr", 3)] = PullRequestItem(Number, 3, 1043, "在庫バッチの実行時間短縮", WaterfallInProgress, "OPEN", null, null, SteadyAddedAt, SteadyCreatedAt);
+                    items[ItemId(Number, "draft", 1)] = DraftItem(Number, 1, "ログイン画面の文言整理", WaterfallBacklog, SteadyAddedAt, SteadyCreatedAt);
+                    items[ItemId(Number, "redacted", 1)] = RedactedItem(Number, 1, SteadyAddedAt);
                 }
                 if (d == mergeDay)
-                    items[ItemId(Number, "pr", 2)] = PullRequestItem(Number, 2, 1042, "受注画面の入力チェック", WaterfallDone, "MERGED", days[mergeDay], days[mergeDay]);
+                    items[ItemId(Number, "pr", 2)] = PullRequestItem(Number, 2, 1042, "受注画面の入力チェック", WaterfallDone, "MERGED", days[mergeDay], days[mergeDay], SteadyAddedAt, SteadyCreatedAt);
                 if (d == pullRequestCloseDay)
-                    items[ItemId(Number, "pr", 3)] = PullRequestItem(Number, 3, 1043, "在庫バッチの実行時間短縮", WaterfallDone, "CLOSED", days[pullRequestCloseDay], null);
+                    items[ItemId(Number, "pr", 3)] = PullRequestItem(Number, 3, 1043, "在庫バッチの実行時間短縮", WaterfallDone, "CLOSED", days[pullRequestCloseDay], null, SteadyAddedAt, SteadyCreatedAt);
                 yield return new Record(days[d], project, new Dictionary<string, string>(items, StringComparer.Ordinal));
             }
         }
@@ -307,7 +320,8 @@ internal static class DemoData
 
         protected override IEnumerable<Record> Days()
         {
-            var days = WorkingDays(plan.ProjectStart, plan.ProjectEnd).ToArray();
+            var (start, end) = Shifted(plan, LatestRecord);
+            var days = WorkingDays(start, end).ToArray();
             var parentRows = plan.Rows.Where(row => row.Parent is null).ToArray();
             var taskRows = plan.Rows.Where(row => row.Parent is not null).ToArray();
             var parentIndexes = parentRows.Select((row, index) => (row.Key, Index: index))
@@ -326,7 +340,8 @@ internal static class DemoData
             var lastClosed = new bool[tasks.Length];
 
             for (var p = 0; p < parents.Length; p++)
-                items[ItemId(Number, "parent", p)] = WaterfallParentItem(Number, parents[p], WaterfallBacklog, closed: false, days[0]);
+                items[ItemId(Number, "parent", p)] = WaterfallParentItem(Number, parents[p], WaterfallBacklog, closed: false,
+                    days[0], BatchAddedAt, BatchCreatedAt);
 
             for (var d = 0; d < days.Length; d++)
             {
@@ -338,7 +353,8 @@ internal static class DemoData
                     if (lastStatus[t] == status && lastClosed[t] == closed) continue;
                     lastStatus[t] = status;
                     lastClosed[t] = closed;
-                    items[ItemId(Number, "task", t)] = BatchTaskItem(Number, task, parents[task.ParentIndex], status, closed, days[Math.Max(0, closeDays[t])]);
+                    items[ItemId(Number, "task", t)] = BatchTaskItem(Number, task, parents[task.ParentIndex], status, closed,
+                        days[Math.Max(0, closeDays[t])], BatchAddedAt, BatchCreatedAt);
                 }
                 yield return new Record(days[d], project, new Dictionary<string, string>(items, StringComparer.Ordinal));
             }
@@ -363,18 +379,19 @@ internal static class DemoData
     }
 
     // Scenario 3: agile with iteration-end batches. 84 flat Issues (a leaf Issue is a task, so all of them are
-    // tasks); each iteration closes five on its last working day, and the current iteration is one record old.
+    // tasks); most of an iteration's five Issues close on its last working day and appear in the next iteration's
+    // first record, one straggles a few working days into the next iteration, and Doing/Review hold the work during
+    // the iteration. The current iteration is still running.
     private sealed class AgileIterations : DemoProject
     {
         private const int IssueCount = 84;
         private const int TasksPerIteration = 5;
         private const int CurrentIteration = 15;
-        private static readonly DateOnly LastRecord = new(2026, 10, 23);
         internal override int Number => 3;
 
         protected override IEnumerable<Record> Days()
         {
-            var days = WorkingDays(FirstIterationStart, LastRecord).ToArray();
+            var days = WorkingDays(FirstIterationStart, LatestRecord).ToArray();
             var issues = Enumerable.Range(0, IssueCount).Select(index => new AgileIssue(
                 index, Math.Min(index / TasksPerIteration + 1, CurrentIteration), Repositories[index % Repositories.Length], index + 1,
                 $"S{index + 1:D2} {AgileTitles[index % AgileTitles.Length]}", [People[index % People.Length]])).ToArray();
@@ -403,18 +420,26 @@ internal static class DemoData
             }
         }
 
+        // The recorder reads at 06:00, so work finished on an iteration's last working day (a Friday) appears in the
+        // next recorded day: the first working day of the following iteration is the batch record. Four of the five
+        // Issues close in it; one straggler closes two working days later. During the iteration Doing and Review hold
+        // the work, and the current iteration has no batch yet.
         private static (int Status, bool Closed) AgileState(AgileIssue issue, DateOnly day)
         {
             var start = IterationStart(issue.Iteration);
+            var rank = issue.Index % TasksPerIteration;
+            if (issue.Iteration < CurrentIteration)
+            {
+                var batch = IterationStart(issue.Iteration + 1);
+                var straggler = NextWorkingDay(NextWorkingDay(batch));
+                var closesAt = rank < TasksPerIteration - 1 ? batch : straggler;
+                if (day >= closesAt) return (AgileDone, true);
+                if (day >= batch) return (AgileReview, false);
+            }
             if (day < start) return (AgileTodo, false);
-            // Iterations start on Monday and only working days are recorded, so the working-day index inside the
-            // iteration is the elapsed calendar days minus the weekends.
-            var elapsed = day.DayNumber - start.DayNumber;
-            var workingDay = elapsed / 7 * 5 + elapsed % 7;
-            if (issue.Iteration < CurrentIteration && workingDay >= 9) return (AgileDone, true);
-            if (workingDay >= 7 + issue.Index % 2) return (AgileReview, false);
-            if (workingDay >= 2 + issue.Index % 5) return (AgileDoing, false);
-            return (AgileTodo, false);
+            var week = (day.DayNumber - start.DayNumber) / 7;
+            if (rank < 3) return (AgileDoing, false);
+            return week == 0 ? (AgileTodo, false) : (AgileReview, false);
         }
     }
 
@@ -523,6 +548,22 @@ internal static class DemoData
     {
         for (var day = from; day <= to; day = day.AddDays(1))
             if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)) yield return day;
+    }
+
+    // Shifts a tracked plan by whole weeks so its period ends on the target day. Weekdays, Mondays and the plan's
+    // relative shape stay the same; only the calendar position moves.
+    private static (DateOnly Start, DateOnly End) Shifted(Plan plan, DateOnly end)
+    {
+        var days = end.DayNumber - plan.ProjectEnd.DayNumber;
+        if (days % 7 != 0) throw new InvalidOperationException("版計画の期間は週単位でずらせません: " + plan.Title);
+        return (plan.ProjectStart.AddDays(days), end);
+    }
+
+    private static DateOnly NextWorkingDay(DateOnly day)
+    {
+        var next = day.AddDays(1);
+        while (next.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) next = next.AddDays(1);
+        return next;
     }
 
     private static string PhaseOf(PlanRow row)
@@ -721,7 +762,7 @@ internal static class DemoData
     };
 
     private static JsonObject PullRequestContent(string repository, int number, string title, string state, string? closedAt,
-        string? mergedAt, IReadOnlyList<string> assignees) => new()
+        string? mergedAt, IReadOnlyList<string> assignees, string createdAt) => new()
     {
         ["__typename"] = "PullRequest",
         ["id"] = "PR_" + repository.Replace('/', '_') + "_" + number.ToString(CultureInfo.InvariantCulture),
@@ -729,7 +770,7 @@ internal static class DemoData
         ["title"] = title,
         ["url"] = "https://github.com/" + repository + "/pull/" + number.ToString(CultureInfo.InvariantCulture),
         ["state"] = state,
-        ["createdAt"] = WaterfallCreatedAt,
+        ["createdAt"] = createdAt,
         ["closedAt"] = closedAt,
         ["repository"] = new JsonObject { ["nameWithOwner"] = repository },
         ["assignees"] = LoginsConnection(assignees),
@@ -738,32 +779,32 @@ internal static class DemoData
         ["mergedAt"] = mergedAt,
     };
 
-    private static JsonObject DraftContent(string title) => new()
+    private static JsonObject DraftContent(string title, string createdAt) => new()
     {
         ["__typename"] = "DraftIssue",
         ["id"] = "DI_demo_1",
         ["title"] = title,
-        ["createdAt"] = WaterfallCreatedAt,
+        ["createdAt"] = createdAt,
     };
 
     private static string PullRequestItem(int project, int index, int number, string title, int status, string state,
-        DateOnly? closedDay, DateOnly? mergedDay)
+        DateOnly? closedDay, DateOnly? mergedDay, string addedAt, string createdAt)
     {
         var repository = Repositories[index % Repositories.Length];
         var content = PullRequestContent(repository, number, title, state,
             closedDay is { } closed ? ClosedStamp(closed) : null,
             mergedDay is { } merged ? ClosedStamp(merged) : null,
-            [People[index % People.Length]]);
-        return Item(ItemId(project, "pr", index), "PULL_REQUEST", WaterfallAddedAt, content,
+            [People[index % People.Length]], createdAt);
+        return Item(ItemId(project, "pr", index), "PULL_REQUEST", addedAt, content,
             SingleSelectValue(StatusFieldId, "Status", WaterfallStatuses[status]));
     }
 
-    private static string DraftItem(int project, int index, string title, int status)
-        => Item(ItemId(project, "draft", index), "DRAFT_ISSUE", WaterfallAddedAt, DraftContent(title),
+    private static string DraftItem(int project, int index, string title, int status, string addedAt, string createdAt)
+        => Item(ItemId(project, "draft", index), "DRAFT_ISSUE", addedAt, DraftContent(title, createdAt),
             SingleSelectValue(StatusFieldId, "Status", WaterfallStatuses[status]));
 
-    private static string RedactedItem(int project, int index)
-        => Item(ItemId(project, "redacted", index), "REDACTED", WaterfallAddedAt, content: null);
+    private static string RedactedItem(int project, int index, string addedAt)
+        => Item(ItemId(project, "redacted", index), "REDACTED", addedAt, content: null);
 
     private static JsonObject WaterfallProject(int number, string title, bool withNumbers, bool withBuiltIns)
     {
@@ -806,12 +847,12 @@ internal static class DemoData
     }
 
     private static string SteadyTaskItem(int project, SteadyTask task, ParentPlan parent, DateOnly start, DateOnly end,
-        int status, decimal actual, decimal remaining, bool closed, DateOnly closeDay)
+        int status, decimal actual, decimal remaining, bool closed, DateOnly closeDay, string addedAt, string createdAt)
     {
         var content = IssueContent(parent.Repository, task.Number, task.Title, closed ? "CLOSED" : "OPEN",
             closed ? ClosedStamp(closeDay) : null, "Task", (parent.Repository, parent.Number), [PersonLogin(task.Person)],
-            WaterfallCreatedAt);
-        return Item(ItemId(project, "task", task.Index), "ISSUE", WaterfallAddedAt, content,
+            createdAt);
+        return Item(ItemId(project, "task", task.Index), "ISSUE", addedAt, content,
             SingleSelectValue(StatusFieldId, "Status", WaterfallStatuses[status]),
             SingleSelectValue(PhaseFieldId, "工程", PhaseOption(task.Phase)),
             NumberValue(EstimateFieldId, "見積", task.Estimate),
@@ -821,28 +862,37 @@ internal static class DemoData
             DateValue(EndDateFieldId, "終了日", end));
     }
 
-    private static string BatchTaskItem(int project, BatchTask task, ParentPlan parent, int status, bool closed, DateOnly closeDay)
+    private static string BatchTaskItem(int project, BatchTask task, ParentPlan parent, int status, bool closed,
+        DateOnly closeDay, string addedAt, string createdAt)
     {
         var content = IssueContent(parent.Repository, task.Number, task.Title, closed ? "CLOSED" : "OPEN",
             closed ? ClosedStamp(closeDay) : null, "Task", (parent.Repository, parent.Number), [PersonLogin(task.Person)],
-            WaterfallCreatedAt);
-        return Item(ItemId(project, "task", task.Index), "ISSUE", WaterfallAddedAt, content,
+            createdAt);
+        return Item(ItemId(project, "task", task.Index), "ISSUE", addedAt, content,
             SingleSelectValue(StatusFieldId, "Status", WaterfallStatuses[status]),
             SingleSelectValue(PhaseFieldId, "工程", PhaseOption(task.Phase)));
     }
 
-    private static string WaterfallParentItem(int project, ParentPlan parent, int status, bool closed, DateOnly closeDay)
+    private static string WaterfallParentItem(int project, ParentPlan parent, int status, bool closed, DateOnly closeDay,
+        string addedAt, string createdAt)
     {
         var content = IssueContent(parent.Repository, parent.Number, parent.Title, closed ? "CLOSED" : "OPEN",
-            closed ? ClosedStamp(closeDay) : null, "Requirement", null, parent.Assignees, WaterfallCreatedAt);
-        return Item(ItemId(project, "parent", parent.Index), "ISSUE", WaterfallAddedAt, content,
+            closed ? ClosedStamp(closeDay) : null, "Requirement", null, parent.Assignees, createdAt);
+        return Item(ItemId(project, "parent", parent.Index), "ISSUE", addedAt, content,
             SingleSelectValue(StatusFieldId, "Status", WaterfallStatuses[status]));
     }
+
+    // The Issue was closed on the iteration's last working day; a straggler closes two working days into the next
+    // iteration. The recorded state still turns Done on the next record, because the recorder read before the work.
+    private static DateOnly AgileClosedDay(AgileIssue issue)
+        => issue.Index % 5 == 4
+            ? NextWorkingDay(NextWorkingDay(IterationStart(issue.Iteration + 1)))
+            : IterationStart(issue.Iteration).AddDays(11);
 
     private static string AgileIssueItem(int project, AgileIssue issue, int status, bool closed)
     {
         var content = IssueContent(issue.Repository, issue.Number, issue.Title, closed ? "CLOSED" : "OPEN",
-            closed ? ClosedStamp(IterationStart(issue.Iteration).AddDays(11)) : null, "Task", null, issue.Assignees, AgileCreatedAt);
+            closed ? ClosedStamp(AgileClosedDay(issue)) : null, "Task", null, issue.Assignees, AgileCreatedAt);
         return Item(ItemId(project, "issue", issue.Index), "ISSUE", AgileAddedAt, content,
             SingleSelectValue(StatusFieldId, "Status", AgileStatuses[status]),
             IterationValue(issue.Iteration));

@@ -82,7 +82,7 @@ internal sealed class ManagementSiteDemoTests
     {
         var expected = new (string Name, int Items, int Tasks, int Parents, int Closed, int Days)[]
         {
-            ("第2027.04版", 1045, 1000, 40, 1000, 144),
+            ("第2027.04版", 1045, 1000, 40, 862, 124),
             ("第2027.10版", 1040, 1000, 40, 720, 274),
             ("改善バックログ", 84, 84, 0, 70, 145),
             ("第2027.01版", 56, 48, 8, 0, 53),
@@ -123,8 +123,8 @@ internal sealed class ManagementSiteDemoTests
         using (Assert.EnterMultipleScope())
         {
             Assert.That(project.Weeks, Has.Count.EqualTo(55), "The twelve-month plan draws one bar per week.");
-            Assert.That(SiteAnalysis.Date(last.Monday), Is.EqualTo("2027-10-25"));
-            Assert.That(SiteAnalysis.Date(last.Day!.Value), Is.EqualTo("2027-10-29"));
+            Assert.That(SiteAnalysis.Date(last.Monday), Is.EqualTo("2026-10-19"));
+            Assert.That(SiteAnalysis.Date(last.Day!.Value), Is.EqualTo("2026-10-23"));
             Assert.That(previous.Counts[done], Is.Zero, "Until the final week the batch has not happened.");
             Assert.That(project.Weeks.Take(54).Select(w => w.Counts[done]).Distinct(), Is.EqualTo(new[] { 0 }));
             Assert.That(last.Counts[done], Is.EqualTo(708));
@@ -147,11 +147,12 @@ internal sealed class ManagementSiteDemoTests
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(waterfall.Weeks, Has.Count.EqualTo(29));
-            Assert.That(SiteAnalysis.Date(waterfall.Weeks[0].Monday), Is.EqualTo("2026-10-12"), "The first drawn week starts on the Monday of the first record.");
-            Assert.That(SiteAnalysis.Date(waterfall.Weeks[0].Day!.Value), Is.EqualTo("2026-10-16"), "A bar is the last recorded day in its week, not the first.");
-            Assert.That(waterfall.Weeks.Single(w => w.Monday == new DateOnly(2027, 4, 19)).Counts[done], Is.EqualTo(966));
-            Assert.That(waterfall.Weeks[^1].Counts[done], Is.EqualTo(1000));
+            Assert.That(waterfall.Weeks, Has.Count.EqualTo(25));
+            Assert.That(SiteAnalysis.Date(waterfall.Weeks[0].Monday), Is.EqualTo("2026-05-04"), "The first drawn week starts on the Monday of the first record.");
+            Assert.That(SiteAnalysis.Date(waterfall.Weeks[0].Day!.Value), Is.EqualTo("2026-05-08"), "A bar is the last recorded day in its week, not the first.");
+            Assert.That(waterfall.Weeks.Single(w => w.Monday == new DateOnly(2026, 10, 12)).Counts[done], Is.EqualTo(827));
+            Assert.That(waterfall.Weeks[^1].Counts[done], Is.EqualTo(862));
+            Assert.That(SiteAnalysis.Date(waterfall.LatestDay), Is.EqualTo("2026-10-23"), "Every demo Project's latest record is the same Friday.");
             Assert.That(zero.Weeks, Has.Count.EqualTo(12), "A week inside the drawn range is kept even with no record.");
             Assert.That(missing.Day, Is.Null, "A week with no record is an empty slot, not the previous values.");
             Assert.That(missing.Total, Is.Zero);
@@ -175,8 +176,15 @@ internal sealed class ManagementSiteDemoTests
             Assert.That(project.Groups.Take(14).Select(row => (row.Tasks, row.Closed)), Is.All.EqualTo((5, 5)));
             Assert.That((project.Groups[^1].Tasks, project.Groups[^1].Closed), Is.EqualTo((14, 0)));
             Assert.That((project.TaskCount, project.ClosedCount), Is.EqualTo((84, 70)));
-            Assert.That(project.Weeks[^3].Counts[Index(project, "Done")], Is.EqualTo(65), "Closes cluster at iteration ends.");
-            Assert.That(project.Weeks[^2].Counts[Index(project, "Done")], Is.EqualTo(70), "The next iteration end closes the next batch.");
+            var done = Index(project, "Done");
+            Assert.That(project.Weeks[^4].Counts[done], Is.EqualTo(60), "The previous iteration's batch is already recorded.");
+            Assert.That(project.Weeks[^3].Counts[done], Is.EqualTo(65), "The batch is recorded in the first week of the next iteration.");
+            Assert.That(project.Weeks[^2].Counts[done], Is.EqualTo(project.Weeks[^3].Counts[done]),
+                "Two consecutive weeks inside one iteration keep the same Done count, so the chart shows a step and not a slope.");
+            Assert.That(project.Weeks[^1].Counts[done], Is.EqualTo(70), "Across the iteration boundary Done jumps by the iteration's batch.");
+            Assert.That(project.Weeks[^2].Counts[Index(project, "Review")], Is.EqualTo(2), "Review holds work during the week before the iteration ends.");
+            Assert.That(project.Weeks[^1].Counts[Index(project, "Doing")], Is.EqualTo(9), "Doing holds the current iteration's work.");
+            Assert.That(project.Weeks[^1].Counts[Index(project, "Todo")], Is.EqualTo(5));
         }
     }
 
@@ -195,7 +203,9 @@ internal sealed class ManagementSiteDemoTests
             Assert.That(first.Config.GroupField, Is.EqualTo("工程"));
             Assert.That(first.Groups.Select(row => row.Name), Is.EqualTo(phases), "Rows follow the record's option order.");
             Assert.That(first.Groups.Select(row => row.Tasks), Is.EqualTo(tasks));
-            Assert.That(first.Groups.Select(row => row.Closed), Is.EqualTo(tasks), "The steady version is complete.");
+            Assert.That(first.Groups.Select(row => row.Closed), Is.EqualTo(new[] { 105, 105, 105, 105, 136, 102, 102, 68, 34 }),
+                "The steady version is part-way through its close order, not complete.");
+            Assert.That(first.ClosedCount, Is.LessThan(first.TaskCount), "The header stays below 100 % at the latest record.");
             Assert.That(second.Groups.Select(row => row.Closed), Is.EqualTo(new[] { 87, 87, 87, 87, 116, 87, 85, 56, 28 }));
             Assert.That(zero.Groups.Select(row => row.Tasks), Is.EqualTo(new[] { 6, 6, 6, 5, 5, 5, 5, 5, 5 }));
             Assert.That(zero.Groups.Select(row => row.Closed).Distinct(), Is.EqualTo(new[] { 0 }));
@@ -228,7 +238,7 @@ internal sealed class ManagementSiteDemoTests
     public void TheListPageSortsByPeriodEndAndLinksEveryRowAndItsCsv()
     {
         var html = Page("index.html");
-        var order = new[] { "改善バックログ", "第2027.01版", "第2027.04版", "第2027.10版", "新規プロジェクト" };
+        var order = new[] { "第2027.10版", "改善バックログ", "第2027.04版", "第2027.01版", "新規プロジェクト" };
         var positions = order.Select(name => html.IndexOf(name, StringComparison.Ordinal)).ToArray();
 
         using (Assert.EnterMultipleScope())
@@ -237,9 +247,16 @@ internal sealed class ManagementSiteDemoTests
             Assert.That(positions, Is.Ordered, "Projects sort by period end, and the Project without a period sorts last.");
             Assert.That(html, Does.Contain("—"));
             Assert.That(html, Does.Contain("href=\"p/demo-1/index.html\""));
-            Assert.That(html, Does.Contain("download=\"第2027.04版_2027-04-30.csv\""));
-            Assert.That(html, Does.Contain("download=\"第2027.10版_2027-10-29.csv\""));
+            Assert.That(html, Does.Contain("download=\"第2027.04版_2026-10-23.csv\""));
+            Assert.That(html, Does.Contain("download=\"第2027.10版_2026-10-23.csv\""));
             Assert.That(html, Does.Contain("デモデータ").And.Contain("noindex"));
+            Assert.That(html, Does.Not.Contain("class=\"legend\""), "The list page names each row's states instead of showing one page legend.");
+            Assert.That(html, Does.Contain("class=\"bar-labels\""), "Every row labels its own composition bar.");
+            Assert.That(html, Does.Contain("Done 862"), "demo-1's latest states are named in its row.");
+            Assert.That(html, Does.Contain("Backlog 280").And.Contain("In progress 12").And.Contain("Done 708"), "demo-2's latest states are named in its row.");
+            Assert.That(html, Does.Contain("Todo 5").And.Contain("Doing 9"), "demo-3's own states are named in its row.");
+            Assert.That(html, Does.Contain("未設定 4"), "demo-5's unset tasks are named in its row.");
+            Assert.That(html, Does.Not.Contain("2027-10-29").And.Not.Contain("2027-04-30"), "No demo Project points at a future record date.");
         }
     }
 
@@ -264,7 +281,9 @@ internal sealed class ManagementSiteDemoTests
             foreach (var project in projects) Assert.That(Page("p/" + project.Config.FolderName + "/index.html"), Does.Contain("状態の推移"));
             Assert.That(Page("p/demo-1/index.html"), Does.Contain("工程ごとの完了"));
             Assert.That(Page("p/demo-3/index.html"), Does.Contain("Iterationごとの完了"));
-            Assert.That(Page("p/demo-2/index.html"), Does.Contain("2027-10-29 の週"), "A segment's hover title carries the week.");
+            Assert.That(Page("index.html"), Does.Not.Contain("class=\"legend\""), "The list page carries no page-level legend.");
+            Assert.That(Page("p/demo-1/index.html"), Does.Contain("class=\"legend\""), "The detail page keeps its one legend.");
+            Assert.That(Page("p/demo-2/index.html"), Does.Contain("2026-10-19 の週"), "A segment's hover title names the week by its Monday.");
             Assert.That(Page("p/demo-2/index.html"), Does.Contain("Done &#183; 708"), "A segment's hover title carries the state and count.");
         }
     }

@@ -385,6 +385,10 @@ internal sealed class ManagementSiteTests
         {
             Assert.That(index, Does.Contain("デモデータ").And.Contain("noindex").And.Contain("p/demo-1/index.html"));
             Assert.That(detail, Does.Contain("状態の推移").And.Contain("工程ごとの完了"));
+            Assert.That(index, Does.Not.Contain("class=\"legend\""), "The list page has no page-level legend.");
+            Assert.That(index, Does.Contain("class=\"bar-labels\""));
+            Assert.That(index, Does.Contain("Done 1"), "Each list row names the states with a count above zero.");
+            Assert.That(detail, Does.Contain("class=\"legend\""), "The detail page keeps its one legend.");
             Assert.That(index, Does.Not.Contain("<script").And.Not.Contain("http://").And.Not.Contain("https://"));
             Assert.That(detail, Does.Not.Contain("<script").And.Not.Contain("http://").And.Not.Contain("https://"));
             Assert.That(Forbidden.Where(word => index.Contains(word, StringComparison.Ordinal) || detail.Contains(word, StringComparison.Ordinal)),

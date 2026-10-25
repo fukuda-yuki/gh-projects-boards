@@ -50,8 +50,8 @@ internal sealed class DemoDataTests
 
     private static readonly (string Url, string Name, string GroupField, string? PeriodStart, string? PeriodEnd)[] SiteProjects =
     [
-        ("https://github.com/users/demo/projects/1", "第2027.04版", "工程", "2026-10-13", "2027-04-30"),
-        ("https://github.com/users/demo/projects/2", "第2027.10版", "工程", "2026-10-13", "2027-10-29"),
+        ("https://github.com/users/demo/projects/1", "第2027.04版", "工程", "2026-05-05", "2026-11-20"),
+        ("https://github.com/users/demo/projects/2", "第2027.10版", "工程", "2025-10-07", "2026-10-23"),
         ("https://github.com/users/demo/projects/3", "改善バックログ", "Iteration", "2026-04-06", "2026-10-25"),
         ("https://github.com/users/demo/projects/4", "第2027.01版", "工程", "2026-08-03", "2026-12-25"),
         ("https://github.com/users/demo/projects/5", "新規プロジェクト", "工程", null, null),
@@ -72,8 +72,8 @@ internal sealed class DemoDataTests
         }
     }
 
-    [TestCase(1, "2026-12-16")]
-    [TestCase(2, "2027-10-29")]
+    [TestCase(1, "2026-08-12")]
+    [TestCase(2, "2026-10-23")]
     [TestCase(3, "2026-07-01")]
     [TestCase(4, "2026-09-03")]
     [TestCase(5, "2026-10-21")]
@@ -147,7 +147,15 @@ internal sealed class DemoDataTests
     }
 
     [Test]
-    public void TheSteadyWaterfallCompletesEveryTask()
+    public void EveryDemoProjectRecordsTheSameLatestDay()
+    {
+        for (var project = 1; project <= 5; project++)
+            Assert.That(RecordedDays(project).Max, Is.EqualTo(new DateOnly(2026, 10, 23)),
+                "Every demo Project's latest record is the same Friday, so the list page shows one comparable snapshot (Project " + project + ").");
+    }
+
+    [Test]
+    public void TheSteadyWaterfallIsMostlyCompleteBeforeItsPeriodEnds()
     {
         var days = RecordedDays(1);
         var latest = ReadDay(1, days.Max);
@@ -156,21 +164,26 @@ internal sealed class DemoDataTests
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(days, Has.Count.EqualTo(144));
-            Assert.That(days.Min, Is.EqualTo(new DateOnly(2026, 10, 13)));
-            Assert.That(days.Max, Is.EqualTo(new DateOnly(2027, 4, 30)));
+            Assert.That(days, Has.Count.EqualTo(124));
+            Assert.That(days.Min, Is.EqualTo(new DateOnly(2026, 5, 5)));
+            Assert.That(days.Max, Is.EqualTo(new DateOnly(2026, 10, 23)));
             Assert.That(latest.Items, Has.Count.EqualTo(1045));
             Assert.That(parents, Has.Length.EqualTo(40));
             Assert.That(tasks, Has.Length.EqualTo(1000));
             Assert.That(latest.Items.Count(item => ItemType(item) == "PULL_REQUEST"), Is.EqualTo(3));
             Assert.That(latest.Items.Count(item => ItemType(item) == "DRAFT_ISSUE"), Is.EqualTo(1));
             Assert.That(latest.Items.Count(item => ItemType(item) == "REDACTED"), Is.EqualTo(1));
-            Assert.That(tasks.Count(IsClosed), Is.EqualTo(1000), "All 1,000 tasks are closed on the last record.");
-            Assert.That(tasks.Select(item => OptionName(item, "Status")).Distinct(), Is.EqualTo(new[] { "Done" }));
+            Assert.That(tasks.Count(IsClosed), Is.EqualTo(862),
+                "The latest record is about 86 % through the period, so most tasks are closed and the header is below 100 %.");
+            Assert.That(tasks.Where(IsClosed).Select(item => OptionName(item, "Status")).Distinct(), Is.EqualTo(new[] { "Done" }));
+            Assert.That(tasks.Count(item => OptionName(item, "Status") == "Backlog"), Is.EqualTo(104));
+            Assert.That(tasks.Count(item => OptionName(item, "Status") == "Ready"), Is.EqualTo(14));
+            Assert.That(tasks.Count(item => OptionName(item, "Status") == "In progress"), Is.EqualTo(13));
+            Assert.That(tasks.Count(item => OptionName(item, "Status") == "In review"), Is.EqualTo(7));
             Assert.That(tasks.All(item => HasField(item, "工程")), Is.True, "Every task carries its phase.");
             Assert.That(tasks.Select(item => OptionName(item, "工程")).Distinct().Count(), Is.EqualTo(9));
             Assert.That(tasks.All(item => HasField(item, "見積") && HasField(item, "実績") && HasField(item, "残") && HasField(item, "開始日") && HasField(item, "終了日")), Is.True);
-            Assert.That(parents.Count(IsClosed), Is.EqualTo(40), "Each requirement closes after all of its tasks.");
+            Assert.That(parents.Count(IsClosed), Is.EqualTo(34), "Requirements close after their last task; the last ones are still open.");
             Assert.That(parents.All(item => !HasField(item, "工程")), Is.True, "Requirement rows do not carry a phase.");
             Assert.That(project, Does.Contain("Title"), "Built-in columns are defined so the CSV can exclude them.");
             Assert.That(project, Does.Contain("Assignees"));
@@ -184,6 +197,8 @@ internal sealed class DemoDataTests
             Assert.That(tasks.Select(item => OptionName(item, "工程")).Distinct().OrderBy(name => name, StringComparer.Ordinal), Is.EquivalentTo(phases));
             Assert.That(phases.Select(phase => tasks.Count(item => OptionName(item, "工程") == phase)),
                 Is.EqualTo(new[] { 120, 120, 120, 120, 160, 120, 120, 80, 40 }), "The plan's phase rows.");
+            Assert.That(phases.Select(phase => tasks.Count(item => OptionName(item, "工程") == phase && IsClosed(item))),
+                Is.EqualTo(new[] { 105, 105, 105, 105, 136, 102, 102, 68, 34 }), "Closed tasks follow the plan's close order.");
             var statuses = ProjectFieldOptions(latest.ProjectLine, "Status");
             Assert.That(statuses, Is.EqualTo(new[] { "Backlog", "Ready", "In progress", "In review", "Done" }));
             Assert.That(ProjectNumber(latest.ProjectLine), Is.EqualTo(1));
@@ -194,7 +209,7 @@ internal sealed class DemoDataTests
     public void TheFinalWeekWaterfallClosesInABatch()
     {
         var days = RecordedDays(2);
-        var beforeFinalWeek = ReadDay(2, new DateOnly(2027, 10, 22));
+        var beforeFinalWeek = ReadDay(2, new DateOnly(2026, 10, 16));
         var beforeTasks = SplitLeafIssues(beforeFinalWeek.Items).Tasks;
         var latest = ReadDay(2, days.Max);
         var (parents, tasks) = SplitLeafIssues(latest.Items);
@@ -204,8 +219,8 @@ internal sealed class DemoDataTests
         using (Assert.EnterMultipleScope())
         {
             Assert.That(days, Has.Count.EqualTo(274));
-            Assert.That(days.Min, Is.EqualTo(new DateOnly(2026, 10, 13)));
-            Assert.That(days.Max, Is.EqualTo(new DateOnly(2027, 10, 29)));
+            Assert.That(days.Min, Is.EqualTo(new DateOnly(2025, 10, 7)));
+            Assert.That(days.Max, Is.EqualTo(new DateOnly(2026, 10, 23)));
             Assert.That(beforeTasks.Count(IsClosed), Is.EqualTo(0), "Nothing is closed before the final week.");
             Assert.That(beforeTasks.Count(item => OptionName(item, "Status") == "Ready"), Is.EqualTo(30));
             Assert.That(beforeTasks.Count(item => OptionName(item, "Status") == "In progress"), Is.EqualTo(20));
@@ -259,6 +274,18 @@ internal sealed class DemoDataTests
             Assert.That(Enumerable.Range(1, 14).Select(number => rows["Iteration " + number.ToString(CultureInfo.InvariantCulture)]),
                 Is.EqualTo(Enumerable.Repeat(5, 14)), "Each completed iteration holds five closed Issues.");
             Assert.That(rows["Iteration 15"], Is.EqualTo(14), "The current iteration holds the remaining Issues.");
+            var closedTasks = tasks.Where(IsClosed).ToArray();
+            foreach (var iteration in Enumerable.Range(1, 14))
+            {
+                var start = new DateOnly(2026, 4, 6).AddDays(14 * (iteration - 1));
+                var title = "Iteration " + iteration.ToString(CultureInfo.InvariantCulture);
+                var batch = closedTasks.Where(item => IterationTitleOf(item) == title).ToArray();
+                Assert.That(batch, Has.Length.EqualTo(5), title);
+                Assert.That(batch.Count(item => ClosedDay(item) == start.AddDays(11)), Is.EqualTo(4),
+                    title + ": most Issues close on the iteration's last working day.");
+                Assert.That(batch.Count(item => ClosedDay(item) == start.AddDays(16)), Is.EqualTo(1),
+                    title + ": one straggler closes in the next iteration.");
+            }
         }
     }
 
@@ -387,6 +414,13 @@ internal sealed class DemoDataTests
             && content.TryGetProperty("state", out var state)
             && state.ValueKind == JsonValueKind.String
             && state.GetString() == "CLOSED";
+
+    private static DateOnly? ClosedDay(JsonElement item)
+        => ContentOf(item) is { } content
+            && content.TryGetProperty("closedAt", out var closed)
+            && closed.ValueKind == JsonValueKind.String
+            ? DateOnly.ParseExact(closed.GetString()![..10], "yyyy-MM-dd", CultureInfo.InvariantCulture)
+            : null;
 
     private static bool HasField(JsonElement item, string field)
         => item.GetProperty("fields").TryGetProperty(field, out var value) && value.ValueKind != JsonValueKind.Null;

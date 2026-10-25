@@ -63,13 +63,12 @@ internal static class SiteRenderer
             page.Append($"<span class=\"cell-period\" role=\"cell\">{Esc(SiteAnalysis.Period(config1))}</span>");
             page.Append($"<span class=\"cell-done\" role=\"cell\"><span class=\"done-count\">{SiteAnalysis.Number(project.ClosedCount)} / {SiteAnalysis.Number(project.TaskCount)}</span>");
             page.Append($"<span class=\"percent\">{SiteAnalysis.Percent(project.ClosedCount, project.TaskCount)}%</span></span>");
-            page.Append($"<span class=\"cell-bar\" role=\"cell\">{CompositionBar(project, latest)}</span>");
+            page.Append($"<span class=\"cell-bar\" role=\"cell\">{CompositionBar(project, latest)}{BarLabels(project, latest)}</span>");
             page.Append($"<span class=\"cell-date\" role=\"cell\">{SiteAnalysis.Date(project.LatestDay)}</span>");
             page.Append($"<span class=\"cell-csv\" role=\"cell\"><a href=\"{Attr(csv)}\" download=\"{Attr(CsvName(project))}\">CSV</a></span>");
             page.Append("</div>");
         }
         page.Append("</div>");
-        page.Append(Legend(projects.Select(p => (IReadOnlyList<string>)p.States).DistinctBy(s => string.Join("\u001f", s)).ToArray()));
         page.Append("</main></body></html>");
         return page.ToString();
     }
@@ -164,6 +163,22 @@ internal static class SiteRenderer
         return sb.ToString();
     }
 
+    // Each list row names its own states, because colours follow the Project's own option order and two Projects can
+    // put different names in the same colour. The detail page keeps the one legend for the single Project.
+    private static string BarLabels(ProjectProgress project, WeeklyBar latest)
+    {
+        var sb = new StringBuilder("<span class=\"bar-labels\">");
+        for (var n = 0; n < latest.Counts.Count; n++)
+        {
+            var count = latest.Counts[n];
+            if (count == 0) continue;
+            sb.Append($"<span class=\"bar-label\"><span class=\"swatch\" style=\"background:{StateColor(project.States, n)}\"></span>");
+            sb.Append($"{Esc(project.States[n])} {SiteAnalysis.Number(count)}</span>");
+        }
+        sb.Append("</span>");
+        return sb.ToString();
+    }
+
     // The weekly stacked bars: one bar per drawn week, stacked bottom-up in the state's option order, an empty slot
     // for a week without a record, and the x axis labelled with each week's Monday. Dense charts rotate the week
     // labels so every week stays readable instead of dropping weeks from the axis.
@@ -190,7 +205,7 @@ internal static class SiteRenderer
         {
             var week = weeks[n];
             var x = left + n * slot + (slot - bar) / 2;
-            if (week.Day is { } day)
+            if (week.Day is not null)
             {
                 var y = top + plotHeight;
                 for (var state = 0; state < week.Counts.Count; state++)
@@ -200,7 +215,7 @@ internal static class SiteRenderer
                     var height = count / max * plotHeight;
                     y -= height;
                     sb.Append($"<rect x=\"{F(x)}\" y=\"{F(y)}\" width=\"{F(bar)}\" height=\"{F(Math.Max(height, 0.8))}\" fill=\"{StateColor(project.States, state)}\">");
-                    sb.Append($"<title>{Esc(SiteAnalysis.Date(day) + " の週 · " + project.States[state] + " · " + SiteAnalysis.Number(count))}</title></rect>");
+                    sb.Append($"<title>{Esc(SiteAnalysis.Date(week.Monday) + " の週 · " + project.States[state] + " · " + SiteAnalysis.Number(count))}</title></rect>");
                 }
             }
             if (n % labelStep != 0) continue;
@@ -293,7 +308,16 @@ internal static class SiteRenderer
         a { color: var(--accent); text-decoration: none; }
         a:hover { text-decoration: underline; }
         .page { max-width: 1880px; margin: 0 auto; padding: 0 28px 16px; }
-        .site-header, .project-header {
+        .site-header {
+          max-width: 1880px;
+          margin: 0 auto;
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px 16px;
+          padding: 14px 28px 10px;
+        }
+        .project-header {
           display: flex;
           align-items: center;
           flex-wrap: wrap;
@@ -345,6 +369,10 @@ internal static class SiteRenderer
         .cell-csv a { display: inline-block; padding: 3px 10px; border: 1px solid var(--border); border-radius: 4px; background: #fff; font-size: 13px; }
         .cell-csv a:hover { background: #eef4fb; text-decoration: none; }
         .composition { display: block; width: 100%; max-width: 360px; height: 16px; border-radius: 2px; overflow: hidden; }
+        .cell-bar { display: flex; flex-direction: column; gap: 5px; }
+        .bar-labels { display: flex; flex-wrap: wrap; gap: 2px 14px; color: var(--muted); font-size: 12px; line-height: 1.3; }
+        .bar-label { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+        .bar-label .swatch { width: 10px; height: 10px; }
         .legend { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
         .legend-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; margin: 0; padding: 0; list-style: none; }
         .legend li { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
@@ -362,7 +390,7 @@ internal static class SiteRenderer
         .chart .grid { stroke: #e4e8ec; stroke-width: 1; }
         .chart .axis { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
         .chart .axis-year { fill: var(--muted); font-size: 10px; }
-        .groups { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+        .groups { width: 100%; max-width: 1180px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
         .groups th, .groups td { padding: 3px 10px; border-bottom: 1px solid #eceff2; font-size: 14px; text-align: left; }
         .groups thead th { color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
         .groups tbody th { font-weight: 400; }
