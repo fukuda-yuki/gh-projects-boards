@@ -765,6 +765,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 sheets.Add(session.Document.Project, next);
             }
             taskArea.Children.Clear(); sheet = next; taskArea.Children.Add(sheet);
+            UpdateSheetSidePane();
         }
         sheet.Marks = workspace.Display.Marks;
         sheetFailureHost.Child = sheet.SaveFailure;
