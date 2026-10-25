@@ -77,6 +77,19 @@ internal sealed class PlanOverviewHostedTests
         finally { Ui.EndTest(); }
     }
 
+    // #242: a screen reader announces a row by its visible task name and title, never by the node ID it is bound to.
+    [Test]
+    public async Task RowsAreAnnouncedByTaskNameAndTitleAndFollowATitleEdit()
+    {
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").ContainerFromIndex(6) is ListViewItem { IsLoaded: true });
+        await Ui.Run(() => Assert.That(Enumerable.Range(0, 7).Select(RowName), Is.EqualTo(new[] {
+            "#101 R01 受注", "#102 R01 OT-001 運用", "#103 承認", "#104 R02 出荷", "#105 R02 OT-001 運用", "#106 承認", "新しいタスク" })));
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I3", PlanField.Title, "部長承認")]), Today);
+        await Ui.Run(() => sheet.Refresh());
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(RowName(2), Is.EqualTo("#103 部長承認")));
+    }
+
     [TestCase(false), TestCase(true), Category("GanttPhase3")]
     public async Task InitialWeekViewRevealsStatusDateWithoutEditingThePlan(bool earlierTask)
     {
@@ -868,6 +881,8 @@ internal sealed class PlanOverviewHostedTests
     }
 
     private PlanRow Row(string identity) => session.Document.State.Rows.Single(row => row.Identity == identity);
+    private static string RowName(int index) =>
+        new ListViewItemAutomationPeer((ListViewItem)Ui.Find<ListView>("PlanTasks").ContainerFromIndex(index)).GetName();
     private static string[] VisibleRows() => Ui.Find<ListView>("PlanTasks").Items.Cast<string>().ToArray();
     private bool RowIsFocused(int number) => Ui.Tree(sheet).OfType<Control>().Any(cell =>
         Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(cell).StartsWith($"PlanCell{number}_", StringComparison.Ordinal)

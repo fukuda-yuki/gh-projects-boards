@@ -71,6 +71,7 @@ public sealed class PlanSheetRow : Grid
         return width + cell.Padding.Left + cell.Padding.Right + 4;
     }
     private string? boundIdentity;
+    private ListViewItem? container;
     private int markPaints;
     private string? lastTag;
     private double chartOffset = double.NaN;
@@ -211,11 +212,11 @@ public sealed class PlanSheetRow : Grid
         strikeLine.Margin = new(24 + depth * 12, 0, 0, 0);
         markPaints++; lastTag = rowTag;
     }
-    internal void SetOwner(PlanSheetView? owner, string? identity)
+    internal void SetOwner(PlanSheetView? owner, string? identity, ListViewItem? itemContainer)
     {
         if (owner is not null) ArgumentNullException.ThrowIfNull(identity);
         else identity = null;
-        if (ReferenceEquals(Owner, owner) && boundIdentity == identity) return;
+        if (ReferenceEquals(Owner, owner) && boundIdentity == identity && ReferenceEquals(container, itemContainer)) return;
         // A recycled container can stay loaded while its task and visual parent change.
         // The native item notification owns both identity and lifetime. In particular,
         // an empty string item need not produce a string template DataContext.
@@ -224,7 +225,9 @@ public sealed class PlanSheetRow : Grid
         previous?.Realized.Remove(this);
         Owner = null; boundIdentity = null;
         if (hadBinding) ClearIds();
-        Owner = owner; boundIdentity = identity;
+        // The item is the row's node ID, which the container would otherwise announce (#242).
+        if (container is not null) AutomationProperties.SetName(container, "");
+        Owner = owner; boundIdentity = identity; container = owner is null ? null : itemContainer;
         if (owner is not null) {
             owner.Realized.Add(this);
             Refresh();
@@ -279,6 +282,8 @@ public sealed class PlanSheetRow : Grid
         AutomationProperties.SetAutomationId(id, "PlanRowId" + number);
         AutomationProperties.SetAutomationId(idHandle, "PlanRowHandle" + number);
         AutomationProperties.SetName(idHandle, $"{name} 行を選択・移動");
+        if (container is not null)
+            AutomationProperties.SetName(container, number == 0 ? "新しいタスク" : $"{name} {owner.Rows.GetValueOrDefault(Identity)?.Title}".TrimEnd());
         var depth = 0; var parent = owner.Rows.GetValueOrDefault(Identity)?.Parent;
         while (parent is not null && owner.Rows.TryGetValue(parent, out var ancestor) && depth < 30) { depth++; parent = ancestor.Parent; }
         var summary = owner.SummaryIds.Contains(Identity);
