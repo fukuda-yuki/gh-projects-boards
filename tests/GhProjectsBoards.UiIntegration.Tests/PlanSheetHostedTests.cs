@@ -455,21 +455,29 @@ internal sealed partial class PlanSheetHostedTests
         await Edit(1, PlanField.Remaining, "16");
         await Ui.Run(() => {
             Assert.That(((SolidColorBrush)Ui.Find<TextBox>("PlanCell1_Remaining").Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorPrimaryBrush")).Color));
+            // #264: 見積超過 is the 見積 h cell's own figure, not a 状態 mark.
+            var estimate = Ui.Find<TextBlock>("PlanEstimateDisplay1");
+            var runs = estimate.Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().ToArray();
+            Assert.That(runs.Select(run => run.Text), Is.EqualTo(new[] { "8h", " +8h" }));
+            Assert.That(((SolidColorBrush)runs[1].Foreground).Color,
+                Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCautionBrush")).Color));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell1_Estimate")),
+                Does.Contain("見積超過: 見込 16h（見積 8h）"));
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("見積超過: 見込工数 16h（見積工数 8h、差異 +8h）"));
-            Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator)));
-            Assert.That(indicator.Glyph, Is.Not.Empty);
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Not.Contain("見積超過"));
+            Assert.That(indicator.Glyph, Is.Empty);
         });
         await Edit(1, PlanField.Actual, "16");
         await Edit(1, PlanField.Remaining, "0");
         await Ui.Run(() => {
-            // #236 part B: 残 0・未完了 adds no mark to the plan sheet, so the indicator carries the
-            // 見積超過 mark (outlined warning) and the unpublished change, not a zero-remaining entry.
+            // #236 part B: 残 0・未完了 adds no mark to the plan sheet; 見積超過 lives in the 見積 h cell,
+            // so the 状態 column stays empty.
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
             var name = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator);
-            Assert.That(name, Does.Contain("見積超過: 見込工数 16h（見積工数 8h、差異 +8h）").And.Not.Contain("残 0・未完了"));
-            Assert.That(indicator.Glyph, Is.EqualTo("\uE7BA"));
-            Assert.That(indicator.Glyph, Is.Not.Empty);
+            Assert.That(name, Does.Not.Contain("見積超過").And.Not.Contain("残 0・未完了"));
+            Assert.That(indicator.Glyph, Is.Empty);
+            var runs = Ui.Find<TextBlock>("PlanEstimateDisplay1").Inlines.OfType<Microsoft.UI.Xaml.Documents.Run>().ToArray();
+            Assert.That(runs.Select(run => run.Text), Is.EqualTo(new[] { "8h", " +8h" }));
         });
     }
 
@@ -617,13 +625,13 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [TestCase("completed", "完了", "\uE73E")]
-    [TestCase("late", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8h）", "\uE7BA")]
-    [TestCase("changed", "未発行の変更あり", "\u2022")]
-    [TestCase("failed", "発行失敗", "\uEA39")]
-    [TestCase("unverified", "GitHub で未確認", "\uEA39")]
-    [TestCase("summary", "配下に期限超過 1", "\uE7BA")]
+    [TestCase("late", "終了日 10/2 を過ぎて未完了", "\uE7BA")]
+    [TestCase("changed", "", "")]
+    [TestCase("failed", "発行に失敗", "\uE783")]
+    [TestCase("unverified", "GitHub で未確認", "\uE783")]
+    [TestCase("summary", "配下: 遅れ 1", "\uE7BA")]
     [Category("PlanSheetPhase2")]
-    public async Task IndicatorPriorityAndSelectionExplainAllApplicableRowStates(string state, string expected, string glyph)
+    public async Task MarkPriorityAndSelectionExplainAllApplicableRowStates(string state, string expected, string glyph)
     {
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var row = new PlanRow("I1", "R05 顧客データの外部連携", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
@@ -661,9 +669,21 @@ internal sealed partial class PlanSheetHostedTests
         }
         await Ui.Run(() => {
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain(expected));
+            var name = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator);
             Assert.That(indicator.Glyph, Is.EqualTo(glyph));
-            Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator)));
+            Assert.That(name, Does.Contain(expected));
+            Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(name));
+            // #264: an unpublished change leaves the 状態 column and shows as the orange row bar instead.
+            var bar = Ui.Tree(sheet).OfType<Border>().SingleOrDefault(element =>
+                Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(element) == "PlanUnpublishedBar1");
+            // The failed and unverified fixtures also hold an unpublished end (the close moved it), so only
+            // their row carries the bar in this set; the other states differ from their baseline not at all.
+            var unpublishedRow = state is "changed" or "failed" or "unverified";
+            Assert.That(bar is not null && bar.Visibility == Visibility.Visible, Is.EqualTo(unpublishedRow),
+                "Only a row with an unpublished change wears the bar.");
+            if (state == "changed") Assert.That(((SolidColorBrush)bar!.Background).Color,
+                Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SheetChangedMarkBrush")).Color));
+            Assert.That(name, Does.Not.Contain("未発行の変更あり"), "未発行 is not a 状態 mark.");
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("#1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, state == "summary" ? Is.Empty : Is.Not.Empty);
@@ -674,6 +694,7 @@ internal sealed partial class PlanSheetHostedTests
                 Assert.That(slip, Is.EqualTo("終了日 10/2 を過ぎて未完了 · +1日"));
                 var text = Ui.Find<TextBlock>("PlanStartReason");
                 var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
+                sheet.UpdateLayout();
                 var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
                 // The selection line reserves its own column for the #229 start notice between the reason and
                 // the slip pill; collapsed, it leaves exactly the grid's two spacings between them.
@@ -686,7 +707,7 @@ internal sealed partial class PlanSheetHostedTests
             else if (state is "failed" or "unverified") Assert.That(slip, Is.Empty);
             else if (state == "summary") Assert.That(slip, Is.EqualTo("見込終了 10/5 (月) · 10/2 から +1日"));
             else Assert.That(slip, Is.Empty);
-            if (state is "failed" or "unverified") Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("完了").And.Contain("未発行の変更あり"));
+            if (state is "failed" or "unverified") Assert.That(name, Does.Contain("完了"));
         });
     }
     // #236: the plan consumes a task from its own start — Actual + Remaining — so the end reason counts hours
@@ -884,16 +905,16 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Mount(sheetHost);
     }
 
-    [TestCase("finish", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
-    [TestCase("finish-estimate", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true, Category = "OverdueMissingWork")]
-    [TestCase("finish-unknown", "期限超過: 終了日 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
-    [TestCase("start", "期限超過: 開始日 10/2 を過ぎて未着手", "\uE7BA", true)]
+    [TestCase("finish", "終了日 10/2 を過ぎて未完了", "\uE7BA", true)]
+    [TestCase("finish-estimate", "終了日 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("finish-unknown", "終了日 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("start", "開始日 10/2 を過ぎて未着手", "\uE7BA", false)]
     // #236 part B: the mark compares the plan with the forecast, so 予定より遅れ names the cause and the
     // working days it slipped; the retired 「発行済み M/d から」 basis no longer appears anywhere.
-    [TestCase("later", "予定より遅れ: +1日（自分の残による）", "\uE7BA", false)]
-    [TestCase("unchanged", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
-    [TestCase("summary-overdue", "配下に期限超過 1", "\uE7BA", false)]
-    [TestCase("summary-later", "配下に予定より遅れ 1", "\uE7BA", false)]
+    [TestCase("later", "見込終了 10/6 (火) · +1日（自分の残による）", "\uE7BA", false)]
+    [TestCase("unchanged", "終了日 10/2 を過ぎて未完了", "\uE7BA", true)]
+    [TestCase("summary-overdue", "配下: 遅れ 1", "\uE7BA", false)]
+    [TestCase("summary-later", "配下: 遅れ 1", "\uE7BA", false)]
     [Category("SheetRowPresentation")]
     public async Task LatenessMarkerAndEndColorFollowOverdueAndOwnEndMovement(string state, string expected, string glyph, bool critical)
     {
@@ -926,11 +947,12 @@ internal sealed partial class PlanSheetHostedTests
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
             var name = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator);
             Assert.That(name, Does.Contain(expected).And.Not.Contain("発行済み"));
-            if (state == "finish-unknown") Assert.That(name, Does.Not.Contain("（残"));
+            if (state == "finish-unknown") Assert.That(name, Does.Not.Contain("· +"));
             Assert.That(indicator.Glyph, Is.EqualTo(glyph));
             Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(name));
-            // A 期限超過 task also reports how far its forecast slipped; the published date is not compared.
-            if (state == "finish") Assert.That(name, Does.Contain("見込終了は +"));
+            // A passed 終了日 also reports how far its forecast slipped; the published date is not compared.
+            if (state == "finish") Assert.That(name, Does.Contain(" · +"));
+            // #264: only a passed 終了日 colours the end date; a passed start or a forecast slip does not.
             var end = state.StartsWith("summary") ? Ui.Find<PlanSummaryCell>("PlanCell1_End").Text.Foreground
                 : Ui.Find<PlanSheetCell>("PlanCell1_End").Foreground;
             var red = ((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color;

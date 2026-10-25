@@ -42,9 +42,10 @@ internal static class PlanCsvExport
                     return PlanExtraEditing.Value(row, field) is decimal numeric ? Number(numeric) : Text(PlanExtraEditing.Value(row, field)?.ToString() ?? "");
                 }
                 return field switch {
-                    "Indicator" => Text(PlanSheetText.Indicator(taskNames, row, task, lateness.Tasks.GetValueOrDefault(row.Identity),
-                        PlanSheetText.RemoteProblem(document.Sync, row.Identity), changes.Fields.ContainsKey(row.Identity),
-                        marks ?? PlanMarkVisibility.All)),
+                    // #264's one 状態 vocabulary; #251's display preference decides which lateness marks show.
+                    "Indicator" => Text(PlanSheetText.Mark(taskNames, row, task, lateness.Tasks.GetValueOrDefault(row.Identity),
+                        PlanSheetText.RemoteProblem(document.Sync, row.Identity),
+                        marks ?? PlanMarkVisibility.All).Text),
                     "ForecastEnd" => Text(PlanSheetText.ForecastEnd(task, lateness.Tasks.GetValueOrDefault(row.Identity))),
                     PlanField.Estimate => Number(task.Estimate), PlanField.Remaining => Number(task.Remaining), PlanField.Actual => Number(task.Actual),
                     PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value),

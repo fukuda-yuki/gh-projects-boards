@@ -69,6 +69,37 @@ internal sealed partial class PlanSheetView : Grid
     internal ImmutableArray<string> LaterDescendantsOf(string identity) =>
         PlanLateness.LaterDescendants(Schedule.Values.OrderBy(t => t.Input.RowId).ToArray(), identity, lateness);
     internal string IdentityOfRow(int rowId) => Schedule.Values.FirstOrDefault(t => t.Input.RowId == rowId)?.Input.Identity ?? "";
+    // #264: each blocking conflict in the 状態 tooltip's words, with both sides as the PMO reads them.
+    internal IReadOnlyList<string> ConflictValues(string identity) => BlockingConflicts
+        .Where(conflict => conflict.Identity == identity)
+        .Select(conflict => $"この PC {PlanWorkspaceView.ReviewValue(Session.Document, conflict.Field, conflict.Local)} ／ GitHub {PlanWorkspaceView.ReviewValue(Session.Document, conflict.Field, conflict.Remote)}")
+        .ToArray();
+    // #264: a dependency link whose predecessor row is scrolled out of the row viewport is replaced by a
+    // stub on the successor row, so no line runs across the visible chart. The viewport comes from the row
+    // scroller, not from which containers happen to be realized: realization order must not decide whether
+    // a line is drawn, or a row bound before its predecessor would hide a link that is on screen.
+    internal bool RowIsOnScreen(int rowIndex)
+    {
+        if (rowScroll is { ViewportHeight: > 0 } scroll) {
+            var first = (int)Math.Floor(scroll.VerticalOffset / RowHeight);
+            var last = (int)Math.Ceiling((scroll.VerticalOffset + scroll.ViewportHeight) / RowHeight);
+            return rowIndex >= first && rowIndex < last;
+        }
+        var realizedFirst = int.MaxValue; var realizedLast = -1;
+        foreach (var row in Realized) {
+            var index = RowIndexes.GetValueOrDefault(row.Identity, -1);
+            if (index < 0) continue;
+            realizedFirst = Math.Min(realizedFirst, index); realizedLast = Math.Max(realizedLast, index);
+        }
+        return realizedLast >= 0 && rowIndex >= realizedFirst && rowIndex <= realizedLast;
+    }
+    // A vertical scroll changes which predecessor rows are on screen, so the realized rows redraw their
+    // dependency links once the viewport settles. The gesture itself stays allocation-free.
+    private void RefreshDependencyLinks()
+    {
+        if (disposed) return;
+        foreach (var row in Realized) row.RefreshDependencies();
+    }
     private Dictionary<string, string> peopleNames = new();
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<string>>.Empty);
     private ImmutableArray<string> untitledNewRows = [];
@@ -920,7 +951,7 @@ internal sealed partial class PlanSheetView : Grid
         // This template is populated from Item, with no DataContext bindings.
         if (args.Phase == 0) args.Handled = true;
         if (args.ItemContainer.ContentTemplateRoot is PlanSheetRow row)
-            row.SetOwner(args.InRecycleQueue ? null : this, args.InRecycleQueue ? null : (string)args.Item);
+            row.SetOwner(args.InRecycleQueue ? null : this, args.InRecycleQueue ? null : (string)args.Item, (ListViewItem)args.ItemContainer);
         else if (!args.InRecycleQueue && args.Phase == 0)
             args.RegisterUpdateCallback(1, RowContentChanging);
     }
@@ -956,7 +987,17 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (!args.IsIntermediate) pageOffset = null;
         if (Problems.Count > 0) UpdateInputProblem();
+        // The visible window decides which links are drawn (#264). Redraw out of the scroll callback so the
+        // scroller is not re-entered while it raises its view-changed event.
+        if (!args.IsIntermediate && !disposed && !dependencyRepaintQueued) {
+            dependencyRepaintQueued = true;
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
+                dependencyRepaintQueued = false;
+                RefreshDependencyLinks();
+            });
+        }
     }
+    private bool dependencyRepaintQueued;
     private bool InputProblemCellIsVisible(PlanSheetCell cell)
     {
         if (cell.Visibility != Visibility.Visible || cell.ActualWidth <= 0 || cell.ActualHeight <= 0) return false;
@@ -1007,9 +1048,9 @@ internal sealed partial class PlanSheetView : Grid
         columnHeaders.Clear();
         foreach (var column in VisibleColumns)
         {
-            var text = Id(new TextBlock { Text = column.Indicator ? "\uE946" : Header(column), Width = column.Width, Padding = new(8, 0, 4, 6), FontSize = 12, VerticalAlignment = VerticalAlignment.Bottom, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("TextFillColorSecondaryBrush") },
+            // #264: the 状態 column's header reads its label; an icon read as "information".
+            var text = Id(new TextBlock { Text = Header(column), Width = column.Width, Padding = column.Indicator ? new(2, 0, 2, 6) : new(8, 0, 4, 6), FontSize = column.Indicator ? 11 : 12, VerticalAlignment = VerticalAlignment.Bottom, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("TextFillColorSecondaryBrush") },
                 "PlanHeader" + (column.Indicator ? "Indicator" : column.Field?.ToString() ?? "Id"));
-            if (column.Indicator) text.FontFamily = new FontFamily("Segoe Fluent Icons");
             AutomationProperties.SetName(text, FullName(column)); AutomationProperties.SetHelpText(text, HeaderHelp(column));
             ToolTipService.SetToolTip(text, HeaderHelp(column));
             var cell = new Grid { Height = 48, Width = column.Width }; cell.Children.Add(text); sheetHead.Children.Add(cell);
@@ -1053,7 +1094,11 @@ internal sealed partial class PlanSheetView : Grid
             if (x < 0 || x > ChartViewport) continue;
             var late = group.Any(value => value.Item.Forecast > due);
             var closed = group.All(value => value.Item.Milestone.Closed);
-            var brush = Brush(closed ? "TextFillColorDisabledBrush" : late ? "SystemFillColorCriticalBrush" : "TextFillColorSecondaryBrush");
+            // #264: a milestone turns red when its target date has passed and its work is not finished;
+            // a later forecast keeps the +N日 label without turning the marker red by itself.
+            var finished = group.All(value => value.Item.Tasks.Count > 0 && value.Item.Closed == value.Item.Tasks.Count);
+            var passed = due < StatusDate && !finished && !closed;
+            var brush = Brush(closed ? "TextFillColorDisabledBrush" : passed ? "SystemFillColorCriticalBrush" : "TextFillColorSecondaryBrush");
             var description = string.Join("\n", group.Select(value => MilestoneDescription(value.Item)));
             chartStatus.Children.Add(Id(new Microsoft.UI.Xaml.Shapes.Line { X1 = x, X2 = x, Y1 = 0, Y2 = height,
                 Stroke = brush, StrokeThickness = 1, StrokeDashArray = new DoubleCollection { 3, 2 } }, "PlanMilestoneLine_" + i));
@@ -1075,7 +1120,9 @@ internal sealed partial class PlanSheetView : Grid
             var next = g + 1 < groups.Length ? X(groups[g + 1].Key) : ChartViewport;
             var difference = late ? $"+{group.Max(value => value.Item.Difference)}日" : "";
             var title = string.Join(" / ", group.Select(value => value.Item.Milestone.Title));
-            // Name first, then the target and how late it is (#265): 「PS 1/27 +3日」.
+            // #265: the name comes first, then the target date and how late it is (「PS 1/27 +3日」); when the
+            // whole label does not fit, the name alone stays readable (the full text is in the tooltip and
+            // accessible name, #264).
             var text = $"{title} {due.Month}/{due.Day}" + (late ? " " + difference : "");
             var label = Id(new TextBlock { Text = text, FontSize = 11, Foreground = brush,
                 TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, IsHitTestVisible = false }, "PlanMilestoneLabel_" + i);
@@ -1084,7 +1131,11 @@ internal sealed partial class PlanSheetView : Grid
             var left = Math.Max(x + 12, labelRight);
             var available = Math.Max(0, Math.Min(next - 12, ChartViewport) - left);
             label.Measure(new Size(double.PositiveInfinity, 22));
-            if (label.DesiredSize.Width > available) {
+            if (label.DesiredSize.Width > available && difference.Length > 0) {
+                label.Text = title;
+                label.Measure(new Size(double.PositiveInfinity, 22));
+            }
+            if (label.DesiredSize.Width > available && difference.Length > 0) {
                 label.Text = difference;
                 label.Measure(new Size(double.PositiveInfinity, 22));
             }

@@ -254,8 +254,8 @@ internal sealed class PlanEditorSchedulingTests
         var result = Calculate(rows, Settings)[0];
         Assert.That((result.Estimate, result.Remaining, result.Actual), Is.EqualTo(((decimal?)estimate, (decimal?)remaining, (decimal?)(allMissing ? 0 : 2))));
         Assert.That((result.MissingEstimates, result.MissingRemaining), Is.EqualTo((missingEstimate, missingRemaining)));
-        Assert.That(PlanSheetText.Indicator(PlanTaskNames.None, null, result, null, "", true),
-            Is.EqualTo($"見積のないタスク {missingEstimate}、未発行の変更あり"));
+        Assert.That(PlanSheetText.Mark(PlanTaskNames.None, null, result, null, "").Mark, Is.EqualTo(PlanRowMark.None),
+            "The count of leaves without a value is a cell badge, not a 状態 mark (#264).");
     }
 
     [Test]
