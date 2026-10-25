@@ -1685,7 +1685,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         // #233: a notice sits below the surface, so opening one shortens the visible rows from the bottom
         // instead of pushing them down under the pointer.
         var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
-        if (sheet.Visibility == Visibility.Visible && sheet.ActualHeight > 0) {
+        if (sheet.ActualHeight > 0 && OnScreen(sheet)) {
             var sheetBottom = sheet.TransformToVisual(card).TransformPoint(new Point(0, sheet.ActualHeight)).Y;
             Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(sheetBottom - 1), "The notice sits below the sheet, not above it.");
         }
@@ -1693,6 +1693,14 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
         Assert.That(AutomationProperties.GetName(Ui.Find<SplitButton>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
         Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanPublish")), Is.EqualTo("発行…"));
+    }
+    // A collapsed surface keeps its last arranged size, so the sheet's own visibility alone does not say
+    // whether it is the surface on screen; a hidden ancestor does.
+    private static bool OnScreen(FrameworkElement element)
+    {
+        for (DependencyObject? node = element; node is not null; node = VisualTreeHelper.GetParent(node))
+            if (node is UIElement hidden && hidden.Visibility != Visibility.Visible) return false;
+        return true;
     }
 
     [Test]
