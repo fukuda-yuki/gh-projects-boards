@@ -67,7 +67,7 @@ internal static class PlanSheetEditing
                 return Split(PlanInput.Fold(text)).Select(names.Resolve).Distinct().ToImmutableArray();
             case PlanField.Assignees:
                 var people = KnownPeople(document, resolved);
-                return Split(text).Select(value => {
+                return PlanAssigneeChoices.Values(text).Select(value => {
                     var matches = people.Where(p => p.Name.Equals(value, StringComparison.OrdinalIgnoreCase)).Select(p => p.Identity).Distinct().ToArray();
                     if (matches.Length != 1) throw new ArgumentException("担当者を確認してください: " + value);
                     return matches[0];
@@ -78,10 +78,11 @@ internal static class PlanSheetEditing
             default: throw new ArgumentException("この列は編集できません。");
         }
     }
+    // The people a typed login can resolve to. The 担当者 candidate list (#225) offers this same source, so a
+    // chosen person always commits here.
     private static (string Identity, string Name)[] KnownPeople(PlanDocument document, ImmutableArray<PlanResource> resolved)
     {
-        var known = document.State.Settings.People.Select(p => (p.Identity, Name: document.Sync.PeopleNames.GetValueOrDefault(p.Identity, p.Name)))
-            .Concat(document.Sync.PeopleNames.Select(p => (Identity: p.Key, Name: p.Value)));
+        var known = PlanAssigneeChoices.Known(document);
         return (resolved.IsDefaultOrEmpty ? known : known.Concat(resolved.Select(p => (p.Identity, Name: p.Name)))).Distinct().ToArray();
     }
     // #253: the typed logins the sheet must verify against GitHub before it can commit. A value that already
@@ -89,7 +90,7 @@ internal static class PlanSheetEditing
     internal static string[] UnresolvedAssignees(PlanDocument document, string text, ImmutableArray<PlanResource> resolved = default)
     {
         var people = KnownPeople(document, resolved);
-        return Split(text).Where(value => people
+        return PlanAssigneeChoices.Values(text).Where(value => people
             .Where(p => p.Name.Equals(value, StringComparison.OrdinalIgnoreCase)).Select(p => p.Identity).Distinct().Count() != 1)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
