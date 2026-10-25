@@ -204,7 +204,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var ids = new[] { "AssistProvider", "AssistEndpoint", "AssistModel", "AssistWireApi", "AssistHeader", "AssistKey", "AssistCheck", "AssistSettingsResult" };
             var positions = ids.Select(id => Ui.Find<FrameworkElement>(id).TransformToVisual(view).TransformPoint(new()).Y).ToArray();
             Assert.That(positions.Zip(positions.Skip(1), (a, b) => b > a), Is.All.True, "Each connection field must occupy a later rendered row.");
-            Assert.That(Ui.Find<TextBlock>("AssistSettingsHeading").Text, Is.EqualTo("AI アシスト（この PC の全プロジェクト共通）"));
+            Assert.That(Ui.Find<TextBlock>("AssistSettingsHeading").Text, Is.EqualTo("AI アシスト"));
             Assert.That(Ui.Find<TextBlock>("AssistSettingsHeading").FontWeight.Weight, Is.GreaterThan(Ui.Find<TextBlock>("AssistSettingsResult").FontWeight.Weight));
             Ui.Find<TextBlock>("AssistSettingsHeading").StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 });
         });
@@ -653,6 +653,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<Button>("AssistOpenSettings");
         await Ui.Run(() => Ui.Click("AssistOpenSettings"));
         await Ui.Ready<ComboBox>("AssistMode");
+        await Ui.Ready<Button>("PlanSettingsBack");
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Until(() => Ui.Find<Border>("PlanAssistPane").Visibility == Visibility.Visible);
         await Ui.Run(ToggleAssist);

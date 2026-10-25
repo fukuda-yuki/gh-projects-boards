@@ -26,6 +26,29 @@ internal sealed class PlanPartBMarksTests
     }
 
     [Test]
+    public void AHiddenMarkLeavesRequirementRowsAndTheOtherMarksAlone()
+    {
+        var requirement = new PlanRow("I1", "要求事項", "acme/repo");
+        var overdue = new PlanRow("I2", "遅れ", "acme/repo") { Parent = "I1", Start = Day.AddDays(-3), End = Day.AddDays(-3), Remaining = 8 };
+        var later = new PlanRow("I3", "遅れ予定", "acme/repo") { Parent = "I1", Start = Day, End = Day, Estimate = 8, Remaining = 16 };
+        var document = Document(requirement, overdue, later);
+        var schedule = PlanOperations.Schedule(document, Day);
+        var tasks = schedule.ToDictionary(t => t.Input.Identity);
+        var lateClassification = PlanLateness.Classify(schedule, new PlanCalendar(), Day);
+        string Indicator(string identity, PlanMarkVisibility? marks = null) => PlanSheetText.Indicator(PlanTaskNames.Of(document),
+            document.State.Rows.Single(r => r.Identity == identity), tasks[identity], lateClassification.Tasks[identity], "", false, marks);
+
+        Assert.That(Indicator("I1"), Does.Contain("配下に期限超過 1").And.Contain("予定より遅れ 1").And.Contain("見積超過 1"));
+        Assert.That(Indicator("I1", new PlanMarkVisibility(Overdue: false)), Does.Not.Contain("期限超過").And.Contain("予定より遅れ 1").And.Contain("見積超過 1"),
+            "Hiding 期限超過 leaves the requirement row's other marks alone.");
+        Assert.That(Indicator("I1", new PlanMarkVisibility(Later: false)), Does.Not.Contain("予定より遅れ").And.Contain("期限超過 1").And.Contain("見積超過 1"));
+        Assert.That(Indicator("I1", new PlanMarkVisibility(OverEstimate: false)), Does.Not.Contain("見積超過").And.Contain("期限超過 1").And.Contain("予定より遅れ 1"));
+        Assert.That(Indicator("I3"), Does.Contain("見積超過"), "The row's own over-estimate mark is shown by default.");
+        Assert.That(Indicator("I3", new PlanMarkVisibility(OverEstimate: false)), Does.Not.Contain("見積超過"), "A hidden 見積超過 mark leaves the row tooltip.");
+        Assert.That(lateClassification.OverdueTasks + lateClassification.OverEstimateTasks, Is.GreaterThan(0), "The sets stay complete.");
+    }
+
+    [Test]
     public void ForecastEndIsTheDerivedForecastAndItsWorkingDaySlip()
     {
         var document = Document(new PlanRow("I1", "Late", "a/b") { Start = Day.AddDays(-3), End = Day.AddDays(-1), Remaining = 24 });

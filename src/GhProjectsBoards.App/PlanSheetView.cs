@@ -59,7 +59,8 @@ internal sealed partial class PlanSheetView : Grid
     internal IReadOnlySet<string> LaterSet => Set(late => late.Level == PlanLatenessLevel.Later);
     internal IReadOnlySet<string> CauseSet => Set(late => late.IsCause);
     internal IReadOnlySet<string> OverEstimateSet => Set(late => late.OverEstimate);
-    internal PlanMarkVisibility Marks => PlanMarkVisibility.From(Session.Document.State.Settings);
+    // #251 D1: this PC's display preference, set by the workspace for every Project's sheet.
+    internal PlanMarkVisibility Marks { get; set; } = PlanMarkVisibility.All;
     internal DateOnly? ForecastEndOf(string identity) => Schedule.GetValueOrDefault(identity)?.ForecastEnd;
     internal int? WorkingDaysLater(string identity) => LatenessOf(identity)?.DaysLater;
     // Ancestor requirement rows a lateness filter keeps for context: shown, but dimmed.

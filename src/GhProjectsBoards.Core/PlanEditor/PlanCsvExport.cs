@@ -6,7 +6,7 @@ namespace GhProjectsBoards.Core.PlanEditor;
 
 internal static class PlanCsvExport
 {
-    internal static byte[] Create(PlanDocument document, DateOnly today)
+    internal static byte[] Create(PlanDocument document, DateOnly today, PlanMarkVisibility? marks = null)
     {
         var columns = PlanSheetColumns.All(document);
         var visible = columns.Where(c => c.Visible && c.Key != "Id").ToArray();
@@ -44,7 +44,7 @@ internal static class PlanCsvExport
                 return field switch {
                     "Indicator" => Text(PlanSheetText.Indicator(taskNames, row, task, lateness.Tasks.GetValueOrDefault(row.Identity),
                         PlanSheetText.RemoteProblem(document.Sync, row.Identity), changes.Fields.ContainsKey(row.Identity),
-                        PlanMarkVisibility.From(document.State.Settings))),
+                        marks ?? PlanMarkVisibility.All)),
                     "ForecastEnd" => Text(PlanSheetText.ForecastEnd(task, lateness.Tasks.GetValueOrDefault(row.Identity))),
                     PlanField.Estimate => Number(task.Estimate), PlanField.Remaining => Number(task.Remaining), PlanField.Actual => Number(task.Actual),
                     PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value),

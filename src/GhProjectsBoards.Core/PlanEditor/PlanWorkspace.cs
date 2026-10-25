@@ -36,6 +36,16 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
     public ProjectChoice? Selected { get; private set; }
     public PlanSession? Session { get; private set; }
     public string Root => store.Root;
+    private readonly PlanDisplaySettingsStore displayStore = new(store);
+    private bool displayLoaded;
+    // #251 D1: this PC's display preferences, read on the first Project open (which carries over that Project's
+    // earlier per-Project switches when none are stored yet).
+    public PlanDisplaySettings Display { get; private set; } = PlanDisplaySettings.Default;
+    public async Task SaveDisplay(PlanDisplaySettings display)
+    {
+        await displayStore.SaveAsync(display);
+        Display = display; displayLoaded = true;
+    }
     public IReadOnlyList<PlanResource> People
     {
         get
@@ -168,6 +178,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         if (Service is null || Context is null || choice.Id.Scope != Scope) throw new InvalidOperationException("接続先が一致しません。");
         await Flush();
         var adoptionStarted = false;
+        if (!displayLoaded) { Display = await displayStore.LoadAsync(choice.Id); displayLoaded = true; }
         if (!sessions.TryGetValue(choice.Id, out var session))
         {
             var opened = await PlanSession.OpenAsync(store, choice.Id, today());
