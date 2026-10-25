@@ -700,6 +700,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
         if (page == "chooser") chooser.Activate();
         taskArea.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         settingsArea.Visibility = settingsScroll.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
+        // The section list is a NavigationView: its pane header and content are realized during the first layout
+        // pass after the page becomes visible, so lay it out here. A command that opens settings then completes
+        // with its controls loaded instead of one layout pass later (#251).
+        if (page == "settings") settingsNav.UpdateLayout();
         toolbar.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
         projectPicker.Visibility = workspace.Context is null ? Visibility.Collapsed : Visibility.Visible;
         settingsButton.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;

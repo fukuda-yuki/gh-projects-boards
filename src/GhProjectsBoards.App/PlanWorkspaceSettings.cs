@@ -168,6 +168,9 @@ internal sealed partial class PlanWorkspaceView
             settingsNav.SelectedItem = settingsSections.FirstOrDefault(s => (string)s.Item.Tag == selectedKey).Item ?? settingsSections[0].Item;
         }
         finally { rendering = false; }
+        // The page can be re-rendered while it is open (import, Undo, a settings save retry). Lay the new controls
+        // out before returning so the next step sees them loaded, not one layout pass behind.
+        if (currentPage == "settings") settingsNav.UpdateLayout();
     }
 
     private CheckBox MarkSwitch(string label, string id, Func<PlanMarkVisibility, bool> read, Func<PlanMarkVisibility, bool, PlanMarkVisibility> change)
@@ -176,7 +179,9 @@ internal sealed partial class PlanWorkspaceView
         AutomationProperties.SetName(box, label);
         ToolTipService.SetToolTip(box, label + "を表示します。件数と絞り込みは変わりません。");
         var generation = settingsGeneration;
-        box.Click += async (_, _) => {
+        // The switches follow the same Checked/Unchecked path as the column visibility boxes, so a keyboard or
+        // automation toggle behaves like a pointer click.
+        async void Changed(object sender, RoutedEventArgs args) {
             if (rendering || generation != settingsGeneration) return;
             var on = box.IsChecked == true;
             await Run(async () => {
@@ -187,7 +192,8 @@ internal sealed partial class PlanWorkspaceView
             rendering = true;
             try { box.IsChecked = read(workspace.Display.Marks); }
             finally { rendering = false; }
-        };
+        }
+        box.Checked += Changed; box.Unchecked += Changed;
         return box;
     }
 
