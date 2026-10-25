@@ -86,6 +86,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(DetailSheet.ChartViewport, Is.GreaterThanOrEqualTo(PlanSheetView.SidePaneChartMinimum));
             Assert.That(DetailSheet.SheetViewport, Is.LessThan(sheetBefore));
             Assert.That(Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth, Is.GreaterThan(0), "The sheet scrolls horizontally instead.");
+            Assert.That(Ui.Find<AppBarButton>("PlanSheetCollapseAll").IsInOverflow, Is.True, "The narrowed bar overflows from its end.");
+            Assert.That(Ui.Find<AppBarButton>("PlanSheetGoToDate").IsInOverflow, Is.False, "選択タスクの日程へ移動 overflows last.");
+            Assert.That(Ui.Find<Button>("PlanGanttGoToStatusDate").ActualWidth, Is.GreaterThan(0));
             ToggleDetail();
         });
         await Ui.Until(() => Math.Abs(DetailSheet.SheetViewport - sheetBefore) < .5);

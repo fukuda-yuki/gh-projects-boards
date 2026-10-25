@@ -239,6 +239,11 @@ internal sealed partial class PlanSheetView : Grid
             // The workspace flushes this queue, so invoke navigation only after it completes.
             if (accepted && openColumns is not null) await openColumns();
         }, queued: false);
+        // A narrow sheet (a side pane open) overflows from the end, except 選択タスクの日程へ移動, which goes
+        // last: with the Gantt kept at its minimum it is the way to a task's dates (#265). Lower orders go first.
+        for (var i = 0; i < commands.PrimaryCommands.Count; i++)
+            if (commands.PrimaryCommands[i] is ICommandBarElement element)
+                element.DynamicOverflowOrder = ReferenceEquals(element, goToDate) ? commands.PrimaryCommands.Count + 1 : commands.PrimaryCommands.Count - i;
         controls.Children.Add(InitializeCommandMenu(commands));
         var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
             Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
