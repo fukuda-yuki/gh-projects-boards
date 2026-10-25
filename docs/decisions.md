@@ -205,6 +205,13 @@ Project item totalCount can include items that are not returned to the viewer. A
 
 Use the same scheduled result as the sheet and compare it with the optional Project end, which is not a scheduling constraint. Show required load beside the forecast because scheduling does not level resources. Known effort remains useful when some tasks are unestimated: sum known contributors with explicit exclusion counts, using matching sets for progress and variance. Do not compare effort progress with time elapsed. Phase is an existing mapped Project single-select field; never create it on refresh. Rates and allowances belong in settings, while summary drill-down is read-only and returns exact task sets to the plan.
 
+## Person load matrix and drill-down (#230, PMO 2026-10-24)
+
+- **D1.** The month-cell content changes on purpose. A month cell always shows the 負荷率 in secondary text; a month with at least one day above the person's cap adds the number of such days in critical text (「131% 9日」), so the overload survives greyscale. The maximum daily load moves to the drill-down and the cell tooltip. A finished month before the 基準日 reads 「完了」, a month without work 「—」, and a zero value never carries a warning glyph. This is a specification change from the 負荷率 / 超過日数 / 最大日次負荷 triple, accepted because the triple did not fit a scannable cell.
+- **D2.** No drag reassignment and no automatic resource levelling. Reassigning stays an ordinary assignee edit on 計画; the app only shows its effect.
+- **D3.** The drill-down is a side panel inside the summary, not a popup, so the clicked cell stays visible and the table does not jump to the bottom of the page.
+- Placement is two columns after the verdict line and the Project band: 工程 and マイルストーン on the left, 担当者の負荷 on the right. Person names are links into 計画 filtered to that person via the shared exact-set route, not a second filter model. Load is shown while reassigning on the plan's selection line for the selected task's weeks, not only as a separate screen.
+
 ## Milestone targets (#133)
 
 See also [first-open period and mapping initialization](#period-and-milestone-mapping-on-first-open-195).
