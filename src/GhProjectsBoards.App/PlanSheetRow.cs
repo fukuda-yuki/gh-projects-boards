@@ -36,6 +36,9 @@ public sealed class PlanSheetRow : Grid
     private readonly Border selectionAccent = new() { Width = 3, Height = 16, CornerRadius = new(1.5),
         HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
     private readonly FontIcon indicator = new() { FontSize = 13, Width = 28, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = true };
+    // #264: unpublished changes get a 3 px orange bar at the row's left edge, so a late row never hides one.
+    private readonly Border unpublishedBar = new() { Width = 3, HorizontalAlignment = HorizontalAlignment.Left,
+        VerticalAlignment = VerticalAlignment.Stretch, IsHitTestVisible = false, Visibility = Visibility.Collapsed };
     private readonly List<Polygon?> corners = [];
     // #231 slice B: the pending-state tag and the 中止 strike-through, both only on the title cell.
     private TextBlock? tagChip;
@@ -71,6 +74,7 @@ public sealed class PlanSheetRow : Grid
         return width + cell.Padding.Left + cell.Padding.Right + 4;
     }
     private string? boundIdentity;
+    private ListViewItem? container;
     private int markPaints;
     private string? lastTag;
     private double chartOffset = double.NaN;
@@ -91,9 +95,10 @@ public sealed class PlanSheetRow : Grid
     // the current task does not draw is collapsed and loses its automation id, so no stale bar is found.
     private static readonly string[] TaskShapeOrder = ["endpoint", "task", "summary", "milestone", "progress", "lateTask", "lateSummary", "lateLabel"];
     private readonly Dictionary<string, FrameworkElement> taskShapes = [];
-    private static readonly FontFamily TextFont = new("Segoe UI"), IconFont = new("Segoe Fluent Icons");
-    private FontFamily? indicatorFontFamily;
+    private static readonly FontFamily IconFont = new("Segoe Fluent Icons");
     private NativePath? crossingPath;
+    // #264: the reused off-screen predecessor stub (`#1204 →`) in the Gantt row.
+    private TextBlock? predecessorStub;
     // #256: a link that passes a row draws a vertical stroke across it. One open figure walks down one
     // crossing and up the next; its connecting runs lie at -2 and RowHeight + 2, outside the row's clip, so
     // only the crossings show. A rebound row replaces only the run's points; a figure and a segment per
@@ -125,6 +130,9 @@ public sealed class PlanSheetRow : Grid
         chartClip.PointerWheelChanged += (_, args) => Owner?.ScrollTimeline(args);
         BringIntoViewRequested += (_, args) => { if (Owner?.HoldingView == true) args.Handled = true; };
         Children.Add(sheetClip); Children.Add(chartClip); SetColumn(chartClip, 1);
+        // The unpublished bar sits over the ID column's left edge, above the cells it belongs to.
+        unpublishedBar.Background = PlanSheetView.Brush("SheetChangedMarkBrush");
+        Children.Add(unpublishedBar); SetColumn(unpublishedBar, 0);
         AutomationProperties.SetAccessibilityView(rowNumber, AccessibilityView.Raw);
         idContent.Children.Add(rowNumber); idContent.Children.Add(id); Grid.SetColumn(id, 1);
         idHandle = new(this) { Content = idContent };
@@ -165,6 +173,7 @@ public sealed class PlanSheetRow : Grid
             var grid = new Grid(); grid.Children.Add(cell);
             if (cell.TitleDisplay is { } display) grid.Children.Add(display);
             if (cell.ForecastDisplay is { } forecast) grid.Children.Add(forecast);
+            if (cell.EstimateDisplay is { } estimate) grid.Children.Add(estimate);
             if (cell.AssigneeDisplay is { } assignees) grid.Children.Add(assignees);
             if (cell.Field == PlanField.Title) grid.Children.Add(fold);
             var frame = new Border { Child = grid, BorderThickness = new(0, 0, 0, 1) };
@@ -211,11 +220,11 @@ public sealed class PlanSheetRow : Grid
         strikeLine.Margin = new(24 + depth * 12, 0, 0, 0);
         markPaints++; lastTag = rowTag;
     }
-    internal void SetOwner(PlanSheetView? owner, string? identity)
+    internal void SetOwner(PlanSheetView? owner, string? identity, ListViewItem? itemContainer)
     {
         if (owner is not null) ArgumentNullException.ThrowIfNull(identity);
         else identity = null;
-        if (ReferenceEquals(Owner, owner) && boundIdentity == identity) return;
+        if (ReferenceEquals(Owner, owner) && boundIdentity == identity && ReferenceEquals(container, itemContainer)) return;
         // A recycled container can stay loaded while its task and visual parent change.
         // The native item notification owns both identity and lifetime. In particular,
         // an empty string item need not produce a string template DataContext.
@@ -224,7 +233,9 @@ public sealed class PlanSheetRow : Grid
         previous?.Realized.Remove(this);
         Owner = null; boundIdentity = null;
         if (hadBinding) ClearIds();
-        Owner = owner; boundIdentity = identity;
+        // The item is the row's node ID, which the container would otherwise announce (#242).
+        if (container is not null) AutomationProperties.SetName(container, "");
+        Owner = owner; boundIdentity = identity; container = owner is null ? null : itemContainer;
         if (owner is not null) {
             owner.Realized.Add(this);
             Refresh();
@@ -251,6 +262,10 @@ public sealed class PlanSheetRow : Grid
         }
         if (crossingPath is not null) AutomationProperties.SetAutomationId(crossingPath, "");
         crossingId = "";
+        if (predecessorStub is not null) {
+            predecessorStub.Visibility = Visibility.Collapsed; predecessorStub.Text = "";
+            AutomationProperties.SetAutomationId(predecessorStub, ""); AutomationProperties.SetName(predecessorStub, "");
+        }
     }
     internal void Refresh()
     {
@@ -279,6 +294,8 @@ public sealed class PlanSheetRow : Grid
         AutomationProperties.SetAutomationId(id, "PlanRowId" + number);
         AutomationProperties.SetAutomationId(idHandle, "PlanRowHandle" + number);
         AutomationProperties.SetName(idHandle, $"{name} 行を選択・移動");
+        if (container is not null)
+            AutomationProperties.SetName(container, number == 0 ? "新しいタスク" : $"{name} {owner.Rows.GetValueOrDefault(Identity)?.Title}".TrimEnd());
         var depth = 0; var parent = owner.Rows.GetValueOrDefault(Identity)?.Parent;
         while (parent is not null && owner.Rows.TryGetValue(parent, out var ancestor) && depth < 30) { depth++; parent = ancestor.Parent; }
         var summary = owner.SummaryIds.Contains(Identity);
@@ -349,8 +366,10 @@ public sealed class PlanSheetRow : Grid
                 AutomationProperties.SetAutomationId(fillHandle, $"PlanFillHandle{number}_{field}");
             }
             cell.FontStyle = Windows.UI.Text.FontStyle.Normal;
-            cell.Foreground = PlanSheetView.Brush(field == PlanField.End && late?.Level == PlanLatenessLevel.Overdue
-                ? "SystemFillColorCriticalBrush"
+            // #264: only a passed 終了日 colours the end date; a passed start or a forecast slip keeps the
+            // ordinary date colours (the mark and the wording carry those cases).
+            cell.Foreground = PlanSheetView.Brush(field == PlanField.End && late is { Level: PlanLatenessLevel.Overdue, OverdueKind: PlanOverdueKind.Finish } ? "SystemFillColorCriticalBrush"
+                : field == PlanField.Title && owner.IsDimmed(Identity) ? "TextFillColorSecondaryBrush"
                 : owner.IsCalculated(Identity, field) ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
             cell.FontWeight = owner.Schedule.GetValueOrDefault(Identity)?.IsSummary == true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
             cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict || untitled ? 4 : 1);
@@ -364,6 +383,13 @@ public sealed class PlanSheetRow : Grid
             cell.Refresh(text);
             if (cell.TitleDisplay is { } titleDisplay) AutomationProperties.SetAutomationId(titleDisplay, "PlanTitleDisplay" + number);
             if (cell.ForecastDisplay is { } forecastDisplay) AutomationProperties.SetAutomationId(forecastDisplay, "PlanForecastDisplay" + number);
+            // #264: the 見積 h cell carries the overrun figure; the sentence travels with the cell's name.
+            var overrunWording = field == PlanField.Estimate && owner.Schedule.GetValueOrDefault(Identity) is { } estimateTask
+                ? PlanSheetText.EstimateOverrunWording(estimateTask, owner.Marks) : null;
+            if (cell.EstimateDisplay is { } estimateDisplay) {
+                AutomationProperties.SetAutomationId(estimateDisplay, summary ? "" : "PlanEstimateDisplay" + number);
+                estimateDisplay.Visibility = summary ? Visibility.Collapsed : Visibility.Visible;
+            }
             if (cell.AssigneeDisplay is { } assigneeDisplay) {
                 assigneeDisplay.Visibility = cell.Visibility == Visibility.Visible && !cell.Editing ? Visibility.Visible : Visibility.Collapsed;
                 AutomationProperties.SetAutomationId(cell.AssigneeNameDisplay!, "PlanAssigneeName" + number);
@@ -371,10 +397,11 @@ public sealed class PlanSheetRow : Grid
             }
             AutomationProperties.SetAutomationId(cell, $"PlanCell{number}_{field}");
             AutomationProperties.SetName(cell, $"{name} {PlanSheetView.FullName(column)}"
-                + (field == "ForecastEnd" ? (owner.ForecastAccessibleValue(Identity) is { Length: > 0 } forecastName ? " " + forecastName : "")
+                + (overrunWording is not null ? " " + overrunWording
+                    : field == "ForecastEnd" ? (owner.ForecastAccessibleValue(Identity) is { Length: > 0 } forecastName ? " " + forecastName : "")
                     : owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
-            AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? stateHint ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
-            ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? stateHint ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
+            AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? overrunWording ?? stateHint ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
+            ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? overrunWording ?? stateHint ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
                 : field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : text)));
             if (summary && field != PlanField.Title) {
                 if (!summaryCells.TryGetValue(field, out var display)) {
@@ -421,25 +448,26 @@ public sealed class PlanSheetRow : Grid
             if (problem is not null) frames[i].BorderBrush = PlanSheetView.Brush("SystemFillColorCriticalBrush");
         }
         var taskRow = owner.Rows.GetValueOrDefault(Identity);
-        var done = taskRow?.Closed == true;
         var effort = owner.Schedule.GetValueOrDefault(Identity);
         var unpublished = owner.Unpublished.Fields.ContainsKey(Identity);
-        var stateText = PlanSheetText.Indicator(owner.TaskNames, taskRow, effort, late, remoteProblem, unpublished, owner.Marks);
-        // Outlined marks only, never filled (#236 part B): red 期限超過, yellow 予定より遅れ and 見積超過.
-        var overdueMark = owner.Marks.Overdue && late?.Level == PlanLatenessLevel.Overdue;
-        var yellowMark = owner.Marks.Later && late?.Level == PlanLatenessLevel.Later
-            || owner.Marks.OverEstimate && effort?.IsOverEstimate == true;
-        indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : overdueMark || yellowMark ? "\uE7BA"
-            : owner.IsDimmed(Identity) ? "\uE711"
-            : done ? "\uE73E" : unpublished ? "\u2022" : "";
-        var indicatorFont = indicator.Glyph == "\u2022" ? TextFont : IconFont;
-        if (!ReferenceEquals(indicatorFont, indicatorFontFamily)) { indicator.FontFamily = indicatorFont; indicatorFontFamily = indicatorFont; }
-        indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || overdueMark ? "SystemFillColorCriticalBrush"
-            : yellowMark || owner.IsCancelled(Identity) ? "SystemFillColorCautionBrush"
-            : done ? "IndicatorDoneBrush" : "SheetChangedMarkBrush");
+        var mark = PlanSheetText.Mark(owner.TaskNames, taskRow, effort, late, remoteProblem, owner.Marks, owner.ConflictValues(Identity));
+        // #264: one mark in the fixed priority; the two 遅れ cases share the outlined ⚠ shape and differ by
+        // colour and by the wording the tooltip carries. 未発行 and 見積超過 are not in this column.
+        indicator.Glyph = mark.Mark switch {
+            PlanRowMark.Failure => "\uE783", PlanRowMark.Conflict => "\uE8AB",
+            PlanRowMark.LatePassed or PlanRowMark.LateForecast => "\uE7BA",
+            PlanRowMark.SetAside => "\uE733", PlanRowMark.Done => "\uE73E", _ => "" };
+        indicator.Foreground = PlanSheetView.Brush(mark.Mark switch {
+            PlanRowMark.Failure or PlanRowMark.Conflict or PlanRowMark.LatePassed => "SystemFillColorCriticalBrush",
+            PlanRowMark.LateForecast => "SystemFillColorCautionBrush",
+            _ => "TextFillColorSecondaryBrush" });
         indicator.Visibility = owner.IndicatorVisible ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetAutomationId(indicator, "PlanIndicator" + number);
-        AutomationProperties.SetName(indicator, stateText); ToolTipService.SetToolTip(indicator, stateText);
+        AutomationProperties.SetName(indicator, mark.Text); ToolTipService.SetToolTip(indicator, mark.Text);
+        // #264: the unpublished bar keeps the row's left edge, independent of the 状態 mark and its switch.
+        unpublishedBar.Visibility = unpublished ? Visibility.Visible : Visibility.Collapsed;
+        AutomationProperties.SetAutomationId(unpublishedBar, unpublished ? "PlanUnpublishedBar" + number : "");
+        AutomationProperties.SetName(unpublishedBar, unpublished ? "未発行の変更" : "");
         Background = owner.IsSelectedRow(Identity) ? PlanSheetView.Brush("SheetSelectionBrush") : null;
         // 中止 and pending removal dim the whole row; a pending completion keeps its ordinary weight
         // because the task is finished, not set aside (#231). A count filter keeps ancestor requirement rows
@@ -472,7 +500,7 @@ public sealed class PlanSheetRow : Grid
         if (Owner is not { } owner || boundIdentity is null) { chart.Opacity = 0; return; }
         AutomationProperties.SetAutomationId(chartSeparator, "PlanChartSeparator" + owner.PlanIds.GetValueOrDefault(Identity));
         if (!owner.Schedule.TryGetValue(Identity, out var task)) {
-            dependencyChart.Children.Clear(); dependencyVisuals.Clear(); HideTaskShapes();
+            dependencyChart.Children.Clear(); dependencyVisuals.Clear(); predecessorStub = null; HideTaskShapes();
             crossingXs = []; ClearCrossings();
             chartPresentation = null; chart.Opacity = 1;
             return;
@@ -494,6 +522,14 @@ public sealed class PlanSheetRow : Grid
         }
         chart.Opacity = 1;
     }
+    // #264: redraw this row's dependency slice after the visible row window moved. The shapes are reused, so
+    // a scroll that brings a predecessor into or out of view only rewrites text and geometry.
+    internal void RefreshDependencies()
+    {
+        if (Owner is not { } owner || boundIdentity is null) return;
+        if (!owner.Schedule.TryGetValue(Identity, out _)) return;
+        DrawDependencies(owner, owner.PlanIds.GetValueOrDefault(Identity), owner.RowIndexes.GetValueOrDefault(Identity, -1));
+    }
     private void DrawDependencies(PlanSheetView owner, int number, int rowIndex)
     {
         var current = new HashSet<(string From, string To)>();
@@ -505,8 +541,15 @@ public sealed class PlanSheetRow : Grid
         var wanted = edges.Where(e => e.From == rowIndex || e.To == rowIndex).Select(e => (owner.RowIds[e.From], owner.RowIds[e.To])).ToHashSet();
         var spare = new Stack<DependencyVisual>(dependencyVisuals.Where(p => !wanted.Contains(p.Key)).Select(p => p.Value));
         foreach (var key in dependencyVisuals.Keys.Where(key => !wanted.Contains(key)).ToArray()) dependencyVisuals.Remove(key);
+        var offscreen = new List<string>();
         foreach (var edge in edges)
         {
+            // #264: a link whose predecessor row is scrolled out of view draws no line across the chart;
+            // the successor row shows a stub instead. Lines to a visible predecessor keep their arrow.
+            if (!owner.RowIsOnScreen(edge.From)) {
+                if (rowIndex == edge.To) offscreen.Add(owner.TaskNames[owner.RowIds[edge.From]]);
+                continue;
+            }
             var successor = owner.Schedule[owner.RowIds[edge.To]];
             var successorMilestone = successor.IsMilestone && successor.Start.Value == successor.End.Value;
             var predecessor = owner.Schedule[owner.RowIds[edge.From]];
@@ -592,7 +635,37 @@ public sealed class PlanSheetRow : Grid
             crossingBrush = brush;
             if (crossingPath is not null) crossingPath.Stroke = brush;
         }
+        DrawPredecessorStub(owner, number, rowIndex, offscreen);
         RefreshCrossings(owner, number);
+    }
+    // The off-screen predecessor stub (#264): `#1204 →` just before the bar start, with the sentence in its
+    // tooltip. One reused text block, so a rebound row never accumulates stale stubs.
+    private void DrawPredecessorStub(PlanSheetView owner, int number, int rowIndex, List<string> offscreen)
+    {
+        if (predecessorStub is null) {
+            predecessorStub = new TextBlock { FontSize = 11, IsHitTestVisible = false, Visibility = Visibility.Collapsed,
+                Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") };
+            dependencyChart.Children.Add(predecessorStub);
+        }
+        var stub = predecessorStub;
+        if (offscreen.Count == 0 || rowIndex < 0 || !owner.Schedule.TryGetValue(Identity, out var task)
+            || (task.Start.Value ?? task.End.Value) is not { } anchor) {
+            stub.Visibility = Visibility.Collapsed;
+            AutomationProperties.SetAutomationId(stub, "");
+            AutomationProperties.SetName(stub, "");
+            return;
+        }
+        var names = string.Join(", ", offscreen);
+        var text = names + " →";
+        var description = "先行 " + names + "（表示されていません）";
+        if (stub.Text != text) stub.Text = text;
+        stub.Visibility = Visibility.Visible;
+        AutomationProperties.SetAutomationId(stub, "PlanPredStub" + number);
+        AutomationProperties.SetName(stub, description); ToolTipService.SetToolTip(stub, description);
+        stub.Measure(new Size(double.PositiveInfinity, owner.RowHeight));
+        // Before the bar start; the chart clip keeps a stub for a bar at the left edge readable enough to scan.
+        Canvas.SetLeft(stub, Math.Max(0, ChartX(owner, anchor) - 6 - stub.DesiredSize.Width));
+        Canvas.SetTop(stub, (owner.RowHeight - stub.DesiredSize.Height) / 2);
     }
     private void ClearCrossings()
     {
@@ -752,6 +825,10 @@ internal sealed class PlanSheetCell : TextBox
     // in critical red (#236 decision 5). A TextBlock with runs draws that; the TextBox keeps its text and
     // input path with its paint hidden, like the title display.
     internal TextBlock? ForecastDisplay { get; }
+    // #264: 見積超過 reads as `+16h` in ochre next to the estimate value, in the cell that owns the value
+    // instead of the one-icon 状態 column. Two runs draw it; the TextBox keeps its text and input path with
+    // its paint hidden, like the title and forecast displays.
+    internal TextBlock? EstimateDisplay { get; }
     // Width the row-state tag takes at the right of the title, so the ellipsis ends before the tag (#231).
     internal double TagReserve { get; private set; }
     internal void ReserveForTag(double width) { if (TagReserve == width) return; TagReserve = width; RefreshDisplay(); }
@@ -772,6 +849,11 @@ internal sealed class PlanSheetCell : TextBox
             ForecastDisplay = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap,
                 VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
             AutomationProperties.SetAccessibilityView(ForecastDisplay, AccessibilityView.Raw);
+        }
+        if (field == PlanField.Estimate) {
+            EstimateDisplay = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap,
+                TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
+            AutomationProperties.SetAccessibilityView(EstimateDisplay, AccessibilityView.Raw);
         }
         if (field == PlanField.Assignees) {
             AssigneeDisplay = new Grid { IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center };
@@ -881,6 +963,7 @@ internal sealed class PlanSheetCell : TextBox
         if (Field == PlanField.Assignees) { AssigneeListDismissed = false; row.Owner?.CloseAssigneeCandidates(this); }
         if (TitleDisplay is { } display) AutomationProperties.SetAutomationId(display, "");
         if (ForecastDisplay is { } forecast) AutomationProperties.SetAutomationId(forecast, "");
+        if (EstimateDisplay is { } estimate) AutomationProperties.SetAutomationId(estimate, "");
         if (AssigneeNameDisplay is { } name) AutomationProperties.SetAutomationId(name, "");
         if (AssigneeCountDisplay is { } count) AutomationProperties.SetAutomationId(count, ""); }
     // #225: a chosen known person replaces the value being typed and commits as one Undo step; the list closes
@@ -940,6 +1023,19 @@ internal sealed class PlanSheetCell : TextBox
                     forecast.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = " +" + later + "日",
                         Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush") });
             }
+        }
+        if (EstimateDisplay is { } estimate) {
+            Opacity = Editing ? 1 : 0;
+            estimate.Visibility = Editing ? Visibility.Collapsed : Visibility.Visible;
+            estimate.Margin = Padding;
+            estimate.FontSize = FontSize; estimate.FontFamily = FontFamily; estimate.FontWeight = FontWeight;
+            estimate.Inlines.Clear();
+            var overrun = row.Owner is { } owner && owner.Schedule.TryGetValue(row.Identity, out var task)
+                ? PlanSheetText.EstimateOverrun(task, owner.Marks) : null;
+            estimate.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = shownText, Foreground = Foreground });
+            if (overrun is { })
+                estimate.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = " " + overrun,
+                    Foreground = PlanSheetView.Brush("SystemFillColorCautionBrush") });
         }
         if (TitleDisplay is not { } display) return;
         // Keep the full TextBox value, focus, hit testing and native input path intact.

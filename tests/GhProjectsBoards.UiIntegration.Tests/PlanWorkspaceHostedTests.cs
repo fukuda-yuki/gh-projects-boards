@@ -346,7 +346,12 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<Button>("PlanRefreshAddedFilter");
         await Ui.Run(() => {
             Assert.That(workspace.Session!.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I4", "I3", "I6", "I5" }));
-            Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator3")), Does.Contain("未発行の変更あり"));
+            // #264: an unpublished change is the row's orange bar, not a 状態 mark.
+            var unpublishedBar = Ui.Tree(view).OfType<Border>().SingleOrDefault(element =>
+                AutomationProperties.GetAutomationId(element) == "PlanUnpublishedBar3");
+            Assert.That(unpublishedBar is not null && unpublishedBar.Visibility == Visibility.Visible, Is.True,
+                "The unpublished row wears the bar.");
+            Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator3")), Does.Not.Contain("未発行"));
             Assert.That(workspace.Session.Changes(readDay).Fields.Where(p => p.Value.Contains(PlanField.Order)).Select(p => p.Key), Is.EqualTo(new[] { "I4" }));
             var links = workspace.Session.Document.Sync.IssueLinks;
             string Number(string id) => links[id].Caption[links[id].Caption.LastIndexOf('#')..];
@@ -365,7 +370,8 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Is.GreaterThan(cell.Text.TransformToVisual(cell).TransformPoint(default).X), "The badge follows the sum.");
             Assert.That(cell.ActualWidth, Is.EqualTo(72).Within(1), "見積 h keeps its compact default width.");
             Assert.That(cell.Text.IsTextTrimmed, Is.False, "The sum stays readable beside its badge at the default width.");
-            Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator1")), Does.Contain("見積のないタスク 1"));
+            // #264: the missing-estimate count belongs to the 見積 h cell, not the 状態 column.
+            Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator1")), Does.Not.Contain("見積のないタスク"));
         });
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue245-added-issues"));
         await Ui.Run(() => Ui.Click("PlanRefreshAddedFilter"));
