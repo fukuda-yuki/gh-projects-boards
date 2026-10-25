@@ -2,7 +2,11 @@ name: site-evidence
 # Temporary evidence job for the #271 pull request: builds the deterministic demo site and captures 1920x1080
 # screenshots plus page-scroll metrics on a Windows runner. Not part of the product; removed before merge.
 on:
-  workflow_dispatch:
+  push:
+    branches: [feature/271-management-site]
+    paths:
+      - '.github/scripts/site-evidence.mjs'
+      - '.github/workflows/site-evidence.yml'
 permissions:
   contents: read
 jobs:
