@@ -241,12 +241,16 @@ internal sealed partial class PlanSheetView
         };
         cancel.Click += (_, _) => flyout.Hide();
         content.KeyDown += (_, args) => { if (args.Key == VirtualKey.Escape) { flyout.Hide(); args.Handled = true; } };
-        // The overflow menu restores its own focus after this flyout opens; focus again once that settles.
+        // A menu opening this flyout restores its own focus after the flyout has opened; claim keyboard focus
+        // again on the next two dispatcher turns so the search is ready to type into.
+        void FocusQuery() {
+            if (ReferenceEquals(predecessorFlyout, flyout) && flyout.IsOpen && query.IsLoaded) query.Focus(FocusState.Programmatic);
+        }
+        query.Loaded += (_, _) => FocusQuery();
         flyout.Opened += (_, _) => {
-            query.Focus(FocusState.Programmatic);
-            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
-                if (ReferenceEquals(predecessorFlyout, flyout) && flyout.IsOpen && query.IsLoaded) query.Focus(FocusState.Programmatic);
-            });
+            FocusQuery();
+            DispatcherQueue.TryEnqueue(FocusQuery);
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, FocusQuery);
         };
         flyout.Closed += (_, _) => { if (ReferenceEquals(predecessorFlyout, flyout)) predecessorFlyout = null; };
         Search();

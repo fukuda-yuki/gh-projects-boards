@@ -465,12 +465,14 @@ internal sealed partial class PlanSheetHostedTests
         await Select(2, PlanField.Title);
         await Ui.ClickCommand("PlanSheetPredecessorAdd");
         await Ui.Ready<TextBox>("PlanPredecessorSearch");
-        await Ui.Until(() => Ui.Find<TextBox>("PlanPredecessorSearch").FocusState != FocusState.Unfocused, () => {
-            var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot) as FrameworkElement;
+        var focusedState = "";
+        await Ui.Until(() => {
             var query = Ui.Find<TextBox>("PlanPredecessorSearch");
-            return "focused=" + (focused is null ? "<null>" : focused.GetType().Name + "/" + AutomationProperties.GetAutomationId(focused))
-                + " queryLoaded=" + query.IsLoaded + " queryEnabled=" + query.IsEnabled + " queryFocus=" + query.FocusState;
-        });
+            var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot) as FrameworkElement;
+            focusedState = "queryFocus=" + query.FocusState + " loaded=" + query.IsLoaded + " enabled=" + query.IsEnabled
+                + " focused=" + (focused is null ? "<null>" : focused.GetType().Name + "/" + AutomationProperties.GetAutomationId(focused));
+            return query.FocusState != FocusState.Unfocused;
+        }, () => focusedState);
         await Ui.Run(() => {
             Assert.That(Ui.Popup<MenuFlyoutItem>("PlanSheetCopy"), Is.Null);
             Assert.That(Ui.Find<TextBox>("PlanPredecessorSearch").FocusState, Is.Not.EqualTo(FocusState.Unfocused));
