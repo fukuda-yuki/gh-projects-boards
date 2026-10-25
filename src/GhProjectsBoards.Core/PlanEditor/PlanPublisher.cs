@@ -24,6 +24,9 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
 {
     // GitHub prefers serial requests; use the owner-measured bound and back off on pushback.
     private const int FieldConcurrencyLimit = 4;
+    // #201: the Project, field and option metadata one publish read once, plus the repositories its first
+    // scoped read covered. Every later scoped read of the same attempt reuses it; a new publish starts empty.
+    private sealed class PublishObservation { public ProjectReadModel? Metadata { get; set; } }
     public List<int> EffectiveBatchSizes { get; } = [];
     public TimeSpan CreationWait { get; private set; }
     public DateTimeOffset? CreationPhaseStarted { get; private set; }
@@ -57,7 +60,9 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) when (Expected(ex)) {
             var saved = reset ? null : await RetainInterruptedAttempt(session).ConfigureAwait(false);
-            return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null);
+            var message = ex is ConnectionLostException ? ex.Message
+                : (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message;
+            return new(false, message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null);
         }
         finally { gate.Release(); }
     }
@@ -117,20 +122,26 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             || RowReferences(JsonNode.Parse(write.Input)!).Any(id => Uncovered(remote, id)));
     private static bool Uncovered(PlanRemoteSnapshot remote, string identity)
         => !identity.StartsWith("local:", StringComparison.Ordinal) && !remote.Items.ContainsKey(identity);
-    private async Task<PlanRemoteSnapshot> ReadItems(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token, ImmutableArray<string> scope)
+    private async Task<PlanRemoteSnapshot> ReadItems(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token,
+        ImmutableArray<string> scope, PublishObservation? observation = null)
     {
         var document = session.Document;
         if (document.Project.Scope != ConnectionScope.From(context)) throw new InvalidOperationException("プロジェクトの接続先が一致しません。");
-        var read = await PlanSnapshot.ReadItemsConsistentAsync(service, lease, context, document.Project, scope, token).ConfigureAwait(false);
+        var seeded = observation?.Metadata;
+        var read = await PlanSnapshot.ReadItemsConsistentAsync(service, lease, context, document.Project, scope, token, seeded).ConfigureAwait(false);
         token.ThrowIfCancellationRequested();
-        return PlanSnapshot.FromItems(read, document, scope);
+        var carried = seeded?.Issues.Values.Select(i => i.Repository.NameWithOwner).ToHashSet(StringComparer.Ordinal);
+        var snapshot = PlanSnapshot.FromItems(read, document, scope, carried: carried);
+        if (observation is not null && observation.Metadata is null) observation.Metadata = read.Project;
+        return snapshot;
     }
-    private async Task<PlanRemoteSnapshot> ReadMemberships(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token)
+    private async Task<PlanRemoteSnapshot> ReadMemberships(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token,
+        PublishObservation? observation = null)
     {
         var created = session.Document.Sync.Publish?.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.ResultId is not null).Select(w => w.ResultId!).ToArray() ?? [];
         for (var attempt = 0; ; attempt++)
         {
-            var remote = await ReadItems(session, lease, token, PublicationScope(session.Document, today)).ConfigureAwait(false);
+            var remote = await ReadItems(session, lease, token, PublicationScope(session.Document, today), observation).ConfigureAwait(false);
             if (attempt == 3 || created.All(remote.Items.ContainsKey)) return remote;
             await Task.Delay(TimeSpan.FromSeconds(1), token).ConfigureAwait(false);
         }
@@ -262,11 +273,11 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
         }
     }
-    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null, bool refresh = false, bool reset = false, bool publish = false)
+    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null, bool refresh = false, bool reset = false, bool publish = false, PublishObservation? observation = null)
     {
         await ReconcileCreations(session, lease, token).ConfigureAwait(false);
         var remote = publish
-            ? await ReadItems(session, lease, token, PublicationScope(session.Document, today)).ConfigureAwait(false)
+            ? await ReadItems(session, lease, token, PublicationScope(session.Document, today), observation).ConfigureAwait(false)
             : await Read(session, lease, token, progressReporter).ConfigureAwait(false);
         progressReporter?.Report(new("日程を計算"));
         token.ThrowIfCancellationRequested();
@@ -313,7 +324,8 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             using var lease = await service.BeginOperationAsync(context, token).ConfigureAwait(false);
             CreationWait = TimeSpan.Zero; CreationPhaseStarted = null; EffectiveBatchSizes.Clear();
             progressReporter?.Report(new("最新情報の確認"));
-            var remote = await Reconcile(session, lease, today, token, publish: true).ConfigureAwait(false);
+            var observation = new PublishObservation();
+            var remote = await Reconcile(session, lease, today, token, publish: true, observation: observation).ConfigureAwait(false);
             var serialFields = false; var stateFollowed = false;
             // Creation outcomes are adopted before the remaining writes are planned from current local inputs.
             while (true)
@@ -345,7 +357,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 // anchor or a promoted row is resolved from the row itself instead of a whole-Project read.
                 if (progress.Writes.Any(w => Uncovered(remote, w)))
                     remote = await ReadItems(session, lease, token, WriteScope(progress.Writes)
-                        .AddRange(PublicationScope(session.Document, today))).ConfigureAwait(false);
+                        .AddRange(PublicationScope(session.Document, today)), observation).ConfigureAwait(false);
                 var creating = progress.Writes.Any(w => w.Stage == PlanPublishStage.Create);
                 // #231: a close or reopen is followed in the same publish by the dates and remaining work that
                 // the close day GitHub reports implies, so the PMO publishes a 完了にする once.
@@ -443,12 +455,18 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     if (notBefore != session.Document.Sync.NotBefore)
                         RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = notBefore }).ConfigureAwait(false));
                     // Check the whole window before any split retry can dispatch another request.
+                    var lost = responses.Any(response => ConnectionLostException.IsTransportLoss(response.Failure, response.HttpStatus));
                     for (var i = 0; i < groups.Count; i++)
                     {
                         var recovery = Recovery(groups[i], responses[i]);
                         if (!recovery.Gateway && results[i].Any(w => w.State == PlanWriteState.Dispatched &&
                             !(recovery.Resource && w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
+                        {
+                            // #246: a response that never arrived is a lost connection; an answered 5xx
+                            // keeps the unconfirmed-response message.
+                            if (lost) throw new ConnectionLostException();
                             throw new InvalidOperationException("GitHubの応答を確認できないため発行を中断しました。最新の情報に更新で確認してから再発行してください。");
+                        }
                     }
                     if (notBefore is { } until && until - DateTimeOffset.UtcNow is var wait && wait > TimeSpan.Zero)
                         await Task.Delay(wait, token).ConfigureAwait(false);
@@ -469,7 +487,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                         w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) != true).ToArray();
                     if (uncertainLinks.Length > 0)
                     {
-                        var observed = await ReadItems(session, lease, token, PublicationScope(session.Document, today)).ConfigureAwait(false);
+                        var observed = await ReadItems(session, lease, token, PublicationScope(session.Document, today), observation).ConfigureAwait(false);
                         await Save(uncertainLinks.Where(w => PlanVerification.Verify(w, progress, observed, session.Document.State.Settings))
                             .Select(w => w with { State = PlanWriteState.Succeeded, Error = null }));
                     }
@@ -542,7 +560,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
 
                 progressReporter?.Report(new("検証"));
                 await ReconcileCreations(session, lease, token).ConfigureAwait(false);
-                remote = await ReadMemberships(session, lease, today, token).ConfigureAwait(false);
+                remote = await ReadMemberships(session, lease, today, token, observation).ConfigureAwait(false);
                 RequireSave(await session.AcceptPublished(remote, today).ConfigureAwait(false));
                 if (!creating && !changingState || session.Document.Sync.Publish is not null || session.Document.Sync.Failures.Any(f => f.Field == PlanField.NewTask)
                     || !creating && !session.Document.Sync.Failures.IsEmpty)
@@ -553,8 +571,27 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         catch (Exception ex) when (Expected(ex))
         {
             var saved = await RetainInterruptedAttempt(session).ConfigureAwait(false);
-            return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), review);
+            var message = ex is ConnectionLostException
+                ? InterruptedByConnection(session.Document.Sync.Publish)
+                : (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message;
+            return new(false, message + (saved is { Succeeded: false } ? " " + saved.Error : ""), review);
         }
         finally { gate.Release(); }
+    }
+    // #246: a lost connection is one message with the progress GitHub confirmed. A task counts only when
+    // every write this attempt sent for it was acknowledged; a dispatched write whose response was lost
+    // may or may not have been applied, so an unknown count is left out instead of guessed.
+    private static string InterruptedByConnection(PlanPublishProgress? progress)
+    {
+        var written = 0; var total = 0;
+        if (progress is not null)
+        {
+            var tasks = progress.Writes.GroupBy(w => w.Identity).ToArray();
+            total = tasks.Length;
+            written = tasks.Count(writes => writes.All(w => w.State == PlanWriteState.Succeeded));
+        }
+        var confirmed = written > 0 ? $"（{written} / {total} タスクを発行済み）" : "";
+        return "GitHub に接続できなくなったため、発行を中断しました" + confirmed
+            + "。接続が戻ったら「最新の情報に更新」で確認してから、もう一度発行してください。";
     }
 }
