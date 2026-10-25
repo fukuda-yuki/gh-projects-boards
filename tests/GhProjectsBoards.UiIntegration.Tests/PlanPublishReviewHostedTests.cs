@@ -52,9 +52,26 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Run(() => Ui.Click("PlanConnect"));
         await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Run(() => { Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty); Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0; });
-        await Ui.Until(() => workspace.Session is not null);
-        await Ui.Ready<PlanSheetCell>("PlanCell1_Title");
+        // A hosted runner reads, schedules and renders the 1,040-row version far slower than the owner's desktop,
+        // so that case alone gets a budget proportional to the version rather than the routine 20-second wait.
+        if (count >= 1040) await UntilWithBudget(() => workspace.Session is not null, 180, "The 1,040-row Project must finish opening.");
+        else await Ui.Until(() => workspace.Session is not null);
+        if (count >= 1040) await UntilWithBudget(() => Ui.Tree(view).OfType<PlanSheetCell>()
+            .Any(c => AutomationProperties.GetAutomationId(c) == "PlanCell1_Title" && c.IsLoaded), 120, "The 1,040-row sheet must render its first row.");
+        else await Ui.Ready<PlanSheetCell>("PlanCell1_Title");
         await Ui.Idle();
+    }
+    private static async Task UntilWithBudget(Func<bool> predicate, int seconds, string describe)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(seconds);
+        while (true)
+        {
+            var ready = false;
+            await Ui.Run(() => ready = predicate());
+            if (ready) return;
+            Assert.That(DateTime.UtcNow, Is.LessThan(deadline), describe);
+            await Task.Delay(100);
+        }
     }
     [TearDown]
     public async Task Cleanup()
@@ -109,10 +126,11 @@ internal sealed partial class PlanPublishReviewHostedTests
             var project = workspace.Selected!;
             Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Is.EqualTo("2 タスクを発行"));
             Assert.That(Ui.Find<TextBlock>("PlanPublishDestination").Text, Is.EqualTo($"{project.Title} → {project.OwnerLogin} / プロジェクト {project.Number}、acme/repo"));
-            Assert.That(Ui.Find<TextBlock>("PlanPublishCounts").Text, Is.EqualTo("書き込む値 3 · 新しい Issue 0"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishCounts").Text, Is.EqualTo("書き込む値 5 · 新しい Issue 0"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").Content, Is.EqualTo("2 タスクを発行"));
             var list = Ui.Find<ListView>("PlanPublishLines");
-            Assert.That(list.Items.Count, Is.EqualTo(3));
+            // あなたの変更 with its two groups, then 再計算で動いた日程 with one collapsed group per edit (#224).
+            Assert.That(list.Items.Count, Is.EqualTo(6));
             var name = new Microsoft.UI.Xaml.Automation.Peers.ListViewItemAutomationPeer((ListViewItem)list.ContainerFromIndex(1)).GetName();
             Assert.That(name, Does.Contain("変更したタスク").And.Contain("要求タスク 1 → 変更したタスク").And.Contain("実績工数  0h → 3h").And.Not.Contain("PlanPublishReviewGroup"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").Style, Is.SameAs(Application.Current.Resources["AccentButtonStyle"]));
@@ -229,7 +247,9 @@ internal sealed partial class PlanPublishReviewHostedTests
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.EqualTo(expectedTasks > 0));
             var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI2")).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("GitHub で削除されたフィールド"));
-            Assert.That(text, datesAlreadyPublished ? Does.Not.Contain("開始日") : Does.Contain("開始日").And.Contain("終了日"));
+            // #224: the end a typed start derives is a recalculated date, so it is grouped under the edit instead.
+            Assert.That(text, datesAlreadyPublished ? Does.Not.Contain("開始日") : Does.Contain("開始日"));
+            Assert.That(ReviewItems(), datesAlreadyPublished ? Does.Not.Contain("Section:§Recalculated") : Does.Contain("Section:§Recalculated"));
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
@@ -419,9 +439,13 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Run(async () => await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Paste, [
             new("I1", PlanField.End, new DateOnly(2032, 10, 5))]), Today));
         await Ui.Run(() => Ui.Click("PlanPublish"));
-        await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI1");
+        // #236 makes the typed end a plan date the scheduler derives, so the review groups it as a recalculated
+        // date with no entered field to name; the group heading is the one it starts closed under.
+        await Ui.Ready<Button>("PlanPublishCauseOther");
+        await Ui.Run(() => Ui.Click("PlanPublishCauseOther"));
+        await Ui.Ready<PlanPublishGroupView>("PlanPublishRecalculatedI1");
         await Ui.Run(() => {
-            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI1")).OfType<TextBlock>().Select(t => t.Text));
+            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishRecalculatedI1")).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("終了日  2027/10/5 (火) → 2032/10/5 (火)"));
             Ui.Click("PlanPublishClose");
         });
@@ -453,7 +477,8 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
         await Ui.Run(async () => {
             var list = Ui.Find<ListView>("PlanPublishLines");
-            Assert.That(list.Items.Count, Is.EqualTo(3), "One review group must contain every difference for its Issue.");
+            // あなたの変更 with both task groups, then 再計算で動いた日程 with one collapsed group per edit (#224).
+            Assert.That(list.Items.Count, Is.EqualTo(6), "One review group must contain every difference for its Issue.");
             var first = (ListViewItem)list.ContainerFromIndex(1);
             var text = string.Join("\n", Ui.Tree(first).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("acme/repo#1").And.Contain("要求タスク 1 → " + longTitle)
@@ -479,29 +504,36 @@ internal sealed partial class PlanPublishReviewHostedTests
             Ui.Click("PlanPublish");
         });
         await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
+        // #224: あなたの変更 with one group per edited task, then 再計算で動いた日程 with one collapsed group per edit.
+        const int ownGroups = 1040;
+        const int itemCount = 2 + ownGroups * 2;
         await Ui.Run(async () => {
             var list = Ui.Find<ListView>("PlanPublishLines");
-            Assert.That(list.Items.Count, Is.EqualTo(1041));
+            Assert.That(list.Items.Count, Is.EqualTo(itemCount));
             Assert.That(list.ItemsSource, Is.Not.Null);
-            Assert.That(list.ContainerFromIndex(1040), Is.Null, "Offscreen groups must remain virtualized.");
+            Assert.That(list.ContainerFromIndex(itemCount - 1), Is.Null, "Offscreen groups must remain virtualized.");
             var first = (ListViewItem)list.ContainerFromIndex(1);
             Assert.That(first.ActualHeight, Is.LessThan(100), "Three short differences must not consume three repeated Issue rows.");
             await RenderedEvidence.Capture(view, "publish-grouped-version-start");
-            list.ScrollIntoView(list.Items[1040], ScrollIntoViewAlignment.Leading);
+            list.ScrollIntoView(list.Items[ownGroups], ScrollIntoViewAlignment.Leading);
         });
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1040) is ListViewItem { IsLoaded: true } item &&
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(ownGroups) is ListViewItem { IsLoaded: true } item &&
             Ui.Tree(item).OfType<TextBlock>().Any(t => t.Text == "#1040 要求タスク 1040"));
         await Ui.Run(async () => {
             var list = Ui.Find<ListView>("PlanPublishLines");
-            var last = (ListViewItem)list.ContainerFromIndex(1040);
+            var last = (ListViewItem)list.ContainerFromIndex(ownGroups);
             var text = string.Join("\n", Ui.Tree(last).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(AutomationProperties.GetName(last), Does.Contain("要求タスク 1040").And.Contain("見積工数  8h → 16h").And.Not.Contain("1 要求タスク 1\n"));
             Assert.That(text, Does.Contain("要求タスク 1040").And.Contain("見積工数  8h → 16h")
                 .And.Contain("実績工数  0h → 3h").And.Contain("見込み残存工数  8h → 13h"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
-            await RenderedEvidence.Capture(view, "publish-grouped-version-end");
         });
+        // The last collapsed group is reachable, so the regrouping keeps every edit reachable at version scale.
+        await Ui.Run(() => { var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[^1], ScrollIntoViewAlignment.Leading); });
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(itemCount - 1) is ListViewItem { IsLoaded: true } item &&
+            AutomationProperties.GetName(item).Contains("#1040 要求タスク 1040 の見積工数・見込み残存工数・実績工数の変更で 1 タスク"));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-grouped-version-end"));
     }
     [Test]
     public async Task RecycledConflictKeepsItsIssueAndResolutionReturnsToThatIssueWithoutWriting()
