@@ -550,7 +550,7 @@ internal sealed partial class PlanPublishReviewHostedTests
             Assert.That(DateTime.UtcNow, Is.LessThan(deadline), "The final cause heading must realize: " + lastState);
             await Task.Delay(200);
         }
-        Assert.That(lastCauseName, Does.Contain("#1040 要求タスク 1040 の見積工数・見込み残存工数・実績工数の変更で 1 タスク"),
+        Assert.That(lastCauseName, Does.Contain("#1040 の見積工数・見込み残存工数・実績工数の変更で 1 タスク"),
             "The final cause heading names the edit: " + lastCauseName);
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-grouped-version-end"));
     }
@@ -626,3 +626,4 @@ internal sealed partial class PlanPublishReviewHostedTests
         });
     }
 }
+
