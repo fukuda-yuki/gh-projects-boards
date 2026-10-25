@@ -2402,16 +2402,15 @@ internal sealed partial class PlanWorkspaceHostedTests
         await PickDate("PlanProjectEnd", new(2027, 4, 30));
         await Ui.Until(() => Plan().State.Settings.ProjectEnd == new DateOnly(2027, 4, 30));
         var undo = workspace.Session!.UndoCount;
-        await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanProjectEndClear").IsEnabled, Is.True));
+        await Ui.Ready<Button>("PlanProjectEndClear");
         await Ui.Run(() => Ui.Click("PlanProjectEndClear"));
-        await Ui.Until(() => Plan().State.Settings.ProjectEnd is null);
-        await Ui.Run(() => Assert.That(Ui.Find<CalendarDatePicker>("PlanProjectEnd").Date, Is.Null));
+        await Ui.Until(() => Plan().State.Settings.ProjectEnd is null && Ui.Find<CalendarDatePicker>("PlanProjectEnd").Date is null);
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test]
-    public async Task SettingsPeriodCorrectionBackToAcceptedDateClearsTheProblemWithoutAnEdit()
+    public async Task SettingsPeriodRejectionClearsWhenAValidDateIsPicked()
     {
         await Open(); await Settings();
         PlanDocument Plan() => workspace.Session!.Document;
@@ -2422,15 +2421,19 @@ internal sealed partial class PlanWorkspaceHostedTests
         await PickDate("PlanProjectEnd", new(2026, 10, 4));
         await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true }
             && Ui.Find<TextBlock>("PlanError").Text.Contains("終了日は開始日以降"));
-        // Picking the accepted date again is not an edit; it only clears the callout.
-        await PickDate("PlanProjectEnd", new(2027, 4, 30));
-        await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is null && Ui.Find<TextBlock>("PlanError").Text.Length == 0);
+        // A calendar picker cannot keep the rejected text: it returns to the accepted date, without an edit.
         await Ui.Run(() => {
+            Assert.That(Ui.Find<CalendarDatePicker>("PlanProjectEnd").Date, Is.EqualTo(
+                new DateTimeOffset(new DateOnly(2027, 4, 30).ToDateTime(TimeOnly.MinValue))));
             Assert.That(Plan().State.Settings.ProjectEnd, Is.EqualTo(new DateOnly(2027, 4, 30)));
-            Assert.That(Ui.Find<CalendarDatePicker>("PlanProjectEnd").Date, Is.Not.Null);
         });
         Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        // A valid pick is one operation and clears the callout.
+        await PickDate("PlanProjectEnd", new(2027, 5, 31));
+        await Ui.Until(() => Plan().State.Settings.ProjectEnd == new DateOnly(2027, 5, 31));
+        await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is null && Ui.Find<TextBlock>("PlanError").Text.Length == 0);
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
     }
 
     [Test]

@@ -152,6 +152,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Tree(Ui.Find<StackPanel>("PlanStatusMarks")).OfType<Button>().Select(b => b.Content as string), Does.Contain("期限超過 1"));
         });
         await Settings();
+        await Ui.Ready<CheckBox>("PlanShowOverdueMark");
         await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("PlanShowOverdueMark")));
         await Ui.Until(() => !workspace.Display.Marks.Overdue);
         await Ui.Run(() => Ui.Click("PlanSettingsBack")); await Ui.Idle();

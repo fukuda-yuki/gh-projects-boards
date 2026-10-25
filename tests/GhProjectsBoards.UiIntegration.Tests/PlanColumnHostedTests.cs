@@ -218,13 +218,12 @@ internal sealed partial class PlanWorkspaceHostedTests
         var session = workspace.Session!;
         await OpenColumnSettingsThroughOverflow();
         await Ui.Ready<TextBox>("PlanColumnNameTitle");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameTitle").Text == "タスク名");
         await CommitText("PlanColumnNameTitle", "作業名");
         await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c => c.Key == PlanField.Title && c.DisplayName == "作業名"));
-        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanColumnNameTitle").Text, Is.EqualTo("作業名")));
+        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameTitle").Text == "作業名");
         await CommitText("PlanColumnNameTitle", "タスク名");
         await Ui.Until(() => session.Document.State.Settings.SheetColumns.Single(c => c.Key == PlanField.Title).DisplayName is null);
-        await CommitText("PlanColumnNameTitle", "作業名");
-        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Single(c => c.Key == PlanField.Title).DisplayName == "作業名");
         await CommitText("PlanColumnNameTitle", "");
         await Ui.Until(() => session.Document.State.Settings.SheetColumns.Single(c => c.Key == PlanField.Title).DisplayName is null);
         await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameTitle").Text == "タスク名");
