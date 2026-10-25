@@ -300,7 +300,7 @@ internal sealed partial class PlanSheetHostedTests
             var reverseX = Ui.Find<Polygon>($"PlanArrowHead{reverseFrom}_{reverseTo}_3", CurrentDependencyRow("I3")!)
                 .TransformToVisual(sheet).TransformPoint(new(3, 0)).X;
             foreach (var row in currentRows)
-                AssertCrossingGeometry(row, row.Identity switch { "I3" => [forwardX], "I90" => [reverseX], _ => [] });
+                AssertCrossingGeometry(row, row.Identity switch { "I3" => [forwardX], "I89" => [forwardX, reverseX], "I90" => [reverseX], _ => [] });
             var allPaths = Ui.Tree(sheet).OfType<PlanSheetRow>().SelectMany(row => Ui.Tree(row).OfType<NativePath>()).ToArray();
             Assert.That(allPaths.Select(AutomationProperties.GetAutomationId).Where(id => id.Length > 0),
                 Is.EquivalentTo(currentRows.SelectMany(row => Ui.Tree(row).OfType<NativePath>())

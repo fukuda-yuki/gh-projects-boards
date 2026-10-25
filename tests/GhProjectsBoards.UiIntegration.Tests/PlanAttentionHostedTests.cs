@@ -36,6 +36,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
     private static PlanSheetView Sheet() => Ui.Tree(Ui.Root).OfType<PlanSheetView>().Single();
     private static string Text(string id) => Ui.Find<TextBlock>(id).Text;
+    private static string FilterCount() => Ui.Find<TextBlock>("PlanSheetFilterCount").Visibility == Visibility.Visible ? Ui.Find<TextBlock>("PlanSheetFilterCount").Text : "";
 
     [Test, Category("PlanAttention")]
     public async Task AttentionStripSitsAboveTheCommandRowAndAReadResultMovesNoRows()
@@ -120,9 +121,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanAttentionPhases"));
         await Ui.Until(() => Ui.Tree(Ui.Root).Concat(OpenPopups()).Any(e => AutomationProperties.GetAutomationId(e) == "PlanAttentionPhase_PS"));
         await Ui.Run(() => Ui.ToggleToggleButton("PlanAttentionPhase_PS"));
-        var observedRows = "";
-        await Ui.Until(() => { observedRows = string.Join(",", Ui.Find<ListView>("PlanTasks").Items.Cast<string>());
-            return Ui.Find<ListView>("PlanTasks").Items.Count == 2; }, () => "rows after 担当者 person-U1 + 工程 PS: " + observedRows);
+        await Ui.Until(() => FilterCount() == "1 件", () => "filter count after 担当者 person-U1 + 工程 PS: " + FilterCount());
+        await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I4", "" }));
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionPhases")), Is.EqualTo("工程: PS"));
