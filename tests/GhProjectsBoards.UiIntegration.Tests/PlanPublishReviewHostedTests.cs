@@ -530,9 +530,28 @@ internal sealed partial class PlanPublishReviewHostedTests
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         });
         // The last collapsed group is reachable, so the regrouping keeps every edit reachable at version scale.
+        // A far jump on the hosted runner's virtualized list takes longer than the routine wait.
         await Ui.Run(() => { var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[^1], ScrollIntoViewAlignment.Leading); });
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(itemCount - 1) is ListViewItem { IsLoaded: true } item &&
-            AutomationProperties.GetName(item).Contains("#1040 要求タスク 1040 の見積工数・見込み残存工数・実績工数の変更で 1 タスク"));
+        await Ui.Idle();
+        var deadline = DateTime.UtcNow.AddSeconds(90);
+        string? lastCauseName = null;
+        string lastState = "";
+        while (lastCauseName is null)
+        {
+            await Ui.Run(() => {
+                var list = Ui.Find<ListView>("PlanPublishLines");
+                lastCauseName = list.ContainerFromIndex(itemCount - 1) is ListViewItem { IsLoaded: true } last
+                    ? AutomationProperties.GetName(last) : null;
+                lastState = "count=" + list.Items.Count + ", realized=[" + string.Join(" | ",
+                    Enumerable.Range(Math.Max(0, itemCount - 5), Math.Min(5, itemCount)).Select(i =>
+                        i + ":" + (list.ContainerFromIndex(i) is ListViewItem c ? AutomationProperties.GetName(c) : "null"))) + "]";
+            });
+            if (lastCauseName is not null) break;
+            Assert.That(DateTime.UtcNow, Is.LessThan(deadline), "The final cause heading must realize: " + lastState);
+            await Task.Delay(200);
+        }
+        Assert.That(lastCauseName, Does.Contain("#1040 要求タスク 1040 の見積工数・見込み残存工数・実績工数の変更で 1 タスク"),
+            "The final cause heading names the edit: " + lastCauseName);
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-grouped-version-end"));
     }
     [Test]
