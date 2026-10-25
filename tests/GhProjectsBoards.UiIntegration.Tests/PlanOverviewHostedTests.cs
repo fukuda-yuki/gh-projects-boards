@@ -166,11 +166,13 @@ internal sealed class PlanOverviewHostedTests
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
             sheet.UpdateLayout();
+            Assert.That(sheet.DayWidth, Is.EqualTo(PlanSheetView.DayScaleWidth));
             Assert.That(sheet.X(Today), Is.EqualTo(sheet.ChartViewport / 5).Within(2), "The sheet's own pick does not anchor a scale change.");
             Assert.That(Ui.Find<Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)).Within(.1));
         });
-        // Choosing a row again is a PMO selection: the next scale change anchors that row's start.
-        await SelectCell(2, PlanField.Title);
+        // Choosing a row again is a PMO selection: the next scale change anchors that row's start. I3 stays
+        // visible under the fold and no predecessor link reschedules it away from the date the fixture set.
+        await SelectCell(3, PlanField.Title);
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "週"); await Ui.Idle();
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
