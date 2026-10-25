@@ -743,7 +743,10 @@ internal sealed partial class PlanPublisherTests
     public async Task FreshTwentyFourIssuePlanRecordsSerialThroughputAndKeepsWorkflowDefaults(string fault)
     {
         using var stream = typeof(PlanPublisherTests).Assembly.GetManifestResourceStream("GhProjectsBoards.Tests.Fixtures.Phase9Snapshot2.json")!;
-        var document = (await JsonSerializer.DeserializeAsync<PlanDocument>(stream, PlanJson.Options))!;
+        using var buffer = new MemoryStream(); await stream.CopyToAsync(buffer);
+        // Read through the production upgrade path: the captured fixture still holds the per-Project mark switches
+        // that #251 moved to this PC's display preferences.
+        var document = PlanJson.Read<PlanDocument>(buffer.ToArray());
         var imported = document.State.Rows.Where(r => r.CsvSourceHash is not null).ToArray();
         var ids = imported.ToDictionary(r => r.Identity, r => PlanRow.New(r.Title).Identity);
         var rows = imported.Select(r => r with { Identity = ids[r.Identity], Parent = r.Parent is null ? null : ids[r.Parent],
@@ -769,7 +772,10 @@ internal sealed partial class PlanPublisherTests
     public async Task Snapshot2RecoveryRestoresRelationshipsAndFinishesWithoutCreation()
     {
         using var stream = typeof(PlanPublisherTests).Assembly.GetManifestResourceStream("GhProjectsBoards.Tests.Fixtures.Phase9Snapshot2.json")!;
-        var document = (await JsonSerializer.DeserializeAsync<PlanDocument>(stream, PlanJson.Options))!;
+        using var buffer = new MemoryStream(); await stream.CopyToAsync(buffer);
+        // Read through the production upgrade path: the captured fixture still holds the per-Project mark switches
+        // that #251 moved to this PC's display preferences.
+        var document = PlanJson.Read<PlanDocument>(buffer.ToArray());
         var today = new DateOnly(2026, 10, 7);
         // The captured fixture predates closedAt; this is a synthetic observation for the fake endpoint.
         PlanRow WithCloseDate(PlanRow row) => row.Closed ? row with { CloseDate = today } : row;

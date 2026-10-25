@@ -675,7 +675,10 @@ internal sealed partial class PlanSheetHostedTests
                 var text = Ui.Find<TextBlock>("PlanStartReason");
                 var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
                 var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
-                Assert.That(gap, Is.InRange(8d, 12d), "The late pill follows the reason immediately.");
+                // The selection line reserves its own column for the #229 start notice between the reason and
+                // the slip pill; collapsed, it leaves exactly the grid's two spacings between them.
+                var explanation = (Grid)VisualTreeHelper.GetParent(text);
+                Assert.That(gap, Is.InRange(explanation.ColumnSpacing, 2 * explanation.ColumnSpacing + 1d), "The late pill follows the reason immediately.");
                 Assert.That(pill.CornerRadius.TopLeft, Is.GreaterThan(0));
             }
             // A closed task has no forecast, so the delivered model shows no slip for it: the only thing the
@@ -1518,7 +1521,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => sheet.Run(() => Task.CompletedTask)); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex, Is.Zero);
-            Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(24));
+            Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(PlanSheetView.DayScaleWidth));
             Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true);
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset > 0);
@@ -1527,7 +1530,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(string.Join(" ", Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineUpper", StringComparison.Ordinal)).Select(t => t.Text)), Does.Contain("2026"));
             var labels = Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineLabel", StringComparison.Ordinal)).ToArray();
             Assert.That(labels, Is.Not.Empty);
-            Assert.That(labels.All(t => t.Text.Length is 1 or 2 && t.Text.All(char.IsDigit)), Is.True);
+            Assert.That(labels.Select(t => t.Text), Is.All.Match(@"^\d{1,2}[日月火水木金土]$"));
         });
     }
     [Test, Category("PlanSheetReview4")]
@@ -2205,7 +2208,7 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Until(() => File.Exists(metricsPath) && File.ReadAllLines(metricsPath!).Count(line => line.Contains("\"boundary\":\"rendered\"")) == i + 1);
             await Ui.Run(() => {
                 Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo(i % 2 == 0 ? "10/6 (火)" : "10/5 (月)"));
-                Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(i % 2 == 0 ? 48 : 24));
+                Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(i % 2 == 0 ? 2 * PlanSheetView.DayScaleWidth : PlanSheetView.DayScaleWidth));
             });
         }
         var records = File.ReadAllLines(metricsPath!).Select(line => JsonDocument.Parse(line).RootElement.Clone()).ToArray();
@@ -2240,7 +2243,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => {
             Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(16));
             Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("10/6 (火)"));
-            Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(48));
+            Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(2 * PlanSheetView.DayScaleWidth));
             Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
         });
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
@@ -2387,7 +2390,7 @@ internal sealed partial class PlanSheetHostedTests
             Is.EqualTo("循環参照: 新1, 新2")));
         Assert.That(session.Document.State.Rows[0].Predecessors, Is.Empty);
     }
-    [TestCase("日", 24d), TestCase("週", 8d), TestCase("月", 2d)]
+    [TestCase("日", PlanSheetView.DayScaleWidth), TestCase("週", 8d), TestCase("月", 2d)]
     public async Task ZoomAndVerticalScrollKeepSheetAndGanttOnTheSameRows(string zoom, double width)
     {
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = zoom);

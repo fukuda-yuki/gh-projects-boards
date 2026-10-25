@@ -133,9 +133,9 @@ internal static class Ui
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Check();
     }
-    public static async Task Until(Func<bool> predicate, Func<string>? describe = null)
+    public static async Task Until(Func<bool> predicate, Func<string>? describe = null, TimeSpan? timeout = null)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(20);
+        var deadline = DateTime.UtcNow.Add(timeout ?? TimeSpan.FromSeconds(20));
         while (true)
         {
             bool ready = false;

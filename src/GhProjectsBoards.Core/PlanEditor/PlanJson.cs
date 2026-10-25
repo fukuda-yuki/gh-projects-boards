@@ -30,10 +30,14 @@ internal static class PlanJson
     // them as row values, column mappings, sheet columns, conflicts, failures and publish writes; dropping
     // exactly those keeps every other stored value, including unpublished edits and the history.
     private static readonly string[] RemovedFields = ["StartNoEarlierThan", "Fixed"];
+    // #251 D1 moved the lateness mark switches from Project settings to this PC's display preferences. Their
+    // stored values are carried over once by PlanDisplaySettingsStore before a plan is read, then dropped here.
+    internal static readonly string[] RemovedSettings = ["showOverdueMark", "showLaterMark", "showOverEstimateMark"];
     private static JsonNode? WithoutRemovedFields(byte[] bytes)
     {
         var span = bytes.AsSpan();
-        if (span.IndexOf("\"startNoEarlierThan\""u8) < 0 && span.IndexOf("\"StartNoEarlierThan\""u8) < 0 && span.IndexOf("\"Fixed\""u8) < 0) return null;
+        if (span.IndexOf("\"startNoEarlierThan\""u8) < 0 && span.IndexOf("\"StartNoEarlierThan\""u8) < 0 && span.IndexOf("\"Fixed\""u8) < 0
+            && span.IndexOf("Mark\""u8) < 0) return null;
         var root = JsonNode.Parse(bytes);
         Strip(root);
         return root;
@@ -42,6 +46,7 @@ internal static class PlanJson
             if (node is JsonObject item)
             {
                 item.Remove("startNoEarlierThan"); item.Remove("fixed");
+                foreach (var name in RemovedSettings) item.Remove(name);
                 foreach (var (_, child) in item.ToArray()) Strip(child);
             }
             else if (node is JsonArray list)

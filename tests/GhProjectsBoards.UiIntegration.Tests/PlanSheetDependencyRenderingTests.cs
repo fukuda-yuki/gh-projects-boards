@@ -224,7 +224,9 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => {
             AssertDependencyEntersBar(1, 90, 90, true);
             Assert.That(Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X,
-                Is.EqualTo(originalStart + 24).Within(1));
+                // The 日 scale's day is 28 px (a number and its weekday initial), so one more day of work moves
+                // the successor by that day's width.
+                Is.EqualTo(originalStart + PlanSheetView.DayScaleWidth).Within(1));
         });
         expected = await CurrentCrossingEntryXs();
         await ShowDependencyRow(55);

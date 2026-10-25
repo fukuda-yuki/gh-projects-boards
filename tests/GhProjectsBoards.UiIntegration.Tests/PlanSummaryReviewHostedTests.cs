@@ -62,7 +62,8 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U2_0")), Does.EndWith(" —"));
             }
         });
-        await Settings(); await CommitText("PlanProjectEnd", "2026-11-30");
+        await Settings(); await PickDate("PlanProjectEnd", new(2026, 11, 30));
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.ProjectEnd == new DateOnly(2026, 11, 30));
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryStatusDate" && t.Text.Contains("11/30")));
         await Ui.Run(() => {
@@ -174,9 +175,10 @@ internal sealed partial class PlanWorkspaceHostedTests
             if (navigation == "tab") Ui.Click("PlanShowSummary");
             else {
                 var scroll = Ui.Find<ScrollViewer>("PlanSettingsScroll");
-                var input = Ui.Find<TextBox>("PlanAllowanceU1");
-                Assert.That(scroll.VerticalOffset + input.TransformToVisual(scroll).TransformPoint(new()).Y, Is.GreaterThan(scroll.ActualHeight), "Scrolling to the top must move this field outside the viewport.");
-                Assert.That(scroll.ChangeView(null, 0, null, true), Is.True);
+                // #251: the content column is the only thing that scrolls, so moving it to the end carries the
+                // dirty field out of the viewport and the page must bring it back for its message.
+                Assert.That(scroll.ScrollableHeight, Is.GreaterThan(scroll.ActualHeight), "The content column scrolls on its own.");
+                Assert.That(scroll.ChangeView(null, scroll.ScrollableHeight, null, true), Is.True);
             }
         });
         await Ui.Until(() => {

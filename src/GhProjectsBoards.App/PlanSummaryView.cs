@@ -13,7 +13,7 @@ internal sealed class PlanSummaryView : UserControl
 {
     internal PlanSession Session { get; }
     private readonly Action<IReadOnlySet<string>> filter;
-    private readonly Action settings;
+    private readonly Action<string> settings;
     private readonly StackPanel body = new() { Spacing = 12 };
     // #260 owns the verdict wording; the summary reserves its line above everything else.
     private readonly Grid verdictSlot = new();
@@ -58,7 +58,7 @@ internal sealed class PlanSummaryView : UserControl
     private static readonly CultureInfo Japanese = CultureInfo.GetCultureInfo("ja-JP");
     private static readonly string[] Measures = ["見込み残存工数 h", "見込工数 h", "進捗", "期限超過"];
     private const double NameColumn = 150, MatrixMaxHeight = 620;
-    internal PlanSummaryView(PlanSession session, Action<IReadOnlySet<string>> filter, Action settings)
+    internal PlanSummaryView(PlanSession session, Action<IReadOnlySet<string>> filter, Action<string> settings)
     {
         Session = session; this.filter = filter; this.settings = settings;
         AutomationProperties.SetAutomationId(this, "PlanSummary");
@@ -248,7 +248,7 @@ internal sealed class PlanSummaryView : UserControl
         body.Children.Add(Text($"期間 {Date(s.ProjectStart)} – {Date(s.ProjectEnd)}", "SummaryStatusDate"));
         if (s.ProjectEnd is null) {
             body.Children.Add(Text("終了日が未設定です", "SummaryNoEnd"));
-            body.Children.Add(Button("設定を開く", "SummaryPeriodSettings", settings));
+            body.Children.Add(Button("設定を開く", "SummaryPeriodSettings", () => settings("period")));
         }
         body.Children.Add(Band());
         RenderColumns();
@@ -305,7 +305,7 @@ internal sealed class PlanSummaryView : UserControl
         var mapped = s.Columns.Any(c => c.Role == PlanField.Phase && c.FieldId is not null);
         if (!mapped) {
             leftColumn.Children.Add(Text("工程のフィールドが未設定です。", "SummaryUnmapped"));
-            leftColumn.Children.Add(Button("設定を開く", "SummaryPhaseSettings", settings));
+            leftColumn.Children.Add(Button("設定を開く", "SummaryPhaseSettings", () => settings("phases")));
         } else {
             var table = Id(new StackPanel(), "SummaryPhaseTable"); table.Children.Add(Heading("工程別"));
             double[] widths = [88, 112, 72, 72, 72, 72, 72, 64, 108, 108, 64, 76, 76];
@@ -731,6 +731,7 @@ internal sealed class PlanSummaryView : UserControl
         Canvas.SetLeft(last, Math.Max(0, width - 30)); Canvas.SetTop(last, baseline + 2); loadDays.Children.Add(last);
     }
 }
+
 
 
 
