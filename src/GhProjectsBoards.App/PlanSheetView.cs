@@ -1042,9 +1042,10 @@ internal sealed partial class PlanSheetView : Grid
             if (x < 0 || x > ChartViewport) continue;
             var late = group.Any(value => value.Item.Forecast > due);
             var closed = group.All(value => value.Item.Milestone.Closed);
-            // #264: a milestone turns red when its target date has passed and its phase is not finished;
+            // #264: a milestone turns red when its target date has passed and its work is not finished;
             // a later forecast keeps the +N日 label without turning the marker red by itself.
-            var passed = due < StatusDate && !closed;
+            var finished = group.All(value => value.Item.Tasks.Count > 0 && value.Item.Closed == value.Item.Tasks.Count);
+            var passed = due < StatusDate && !finished && !closed;
             var brush = Brush(closed ? "TextFillColorDisabledBrush" : passed ? "SystemFillColorCriticalBrush" : "TextFillColorSecondaryBrush");
             var description = string.Join("\n", group.Select(value => MilestoneDescription(value.Item)));
             chartStatus.Children.Add(Id(new Microsoft.UI.Xaml.Shapes.Line { X1 = x, X2 = x, Y1 = 0, Y2 = height,
