@@ -389,9 +389,25 @@ internal sealed class PlanSession
                 undo = undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
                 redo = [];
             }
+            merged = Observe(original, merged, remote, today, reset);
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = merged, Undo = undo, Redo = redo };
             return QueueSave();
         }
+    }
+    // #238: the read observations the attention strip shows: each row's progress change time and, for a
+    // read of the whole Project, its time and the Issues it placed in the plan for the first time.
+    private static PlanDocument Observe(PlanDocument original, PlanDocument updated, PlanRemoteSnapshot remote, DateOnly today, bool reset = false)
+    {
+        var rows = updated.State.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+        return updated with { Sync = updated.Sync with {
+            ProgressUpdatedAt = remote.ProgressUpdatedAt.Where(pair => rows.Contains(pair.Key)).ToImmutableDictionary(StringComparer.Ordinal),
+            LastRead = remote.Scoped ? original.Sync.LastRead : new(ReadTime(today), reset ? [] : PlanRefreshResult.FindAdded(original, updated)) } };
+    }
+    // The read time on the read day: the evaluation fixes the day, and a real read day is the local date.
+    internal static DateTimeOffset ReadTime(DateOnly today)
+    {
+        var now = DateTimeOffset.Now;
+        return new(today.ToDateTime(TimeOnly.FromTimeSpan(now.TimeOfDay)), now.Offset);
     }
     // #231: the permission observation follows the read. A row the read no longer returns keeps its last
     // observation while it stays in the plan, and an entry for a row that left the plan is forgotten.
@@ -578,6 +594,7 @@ internal sealed class PlanSession
             updated = updated with { Sync = updated.Sync with { Failures = failures.Where(f =>
                 processed.Contains((f.Identity, f.Field)) || StillRequested(f)).ToImmutableArray() } };
             PlanOperations.ValidateDocument(updated, today);
+            updated = Observe(original, updated, remote, today);
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = updated, Undo = undo, Redo = redo };
             return QueueSave();
         }

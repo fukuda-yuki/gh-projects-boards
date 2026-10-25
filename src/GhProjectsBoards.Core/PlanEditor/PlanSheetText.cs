@@ -16,24 +16,12 @@ internal static class PlanSheetText
         var states = new List<string>();
         var done = taskRow?.Closed == true;
         if (remoteProblem.Length > 0) states.Add(remoteProblem);
-        if (shown.Overdue && late?.MissedDate is { } missed) {
-            // The indicator tooltip names the day as M/d; the weekday belongs to the sheet's date cells
-            // and the 見込終了 column (docs/spec.md line 192 versus 174).
-            var date = missed.ToString("M/d", CultureInfo.InvariantCulture);
-            var remaining = effort?.Remaining;
-            var remainingText = remaining is { } work
-                ? $"（見込み残存工数 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
-            states.Add(late.OverdueKind == PlanOverdueKind.Finish
-                ? $"期限超過: 終了日 {date} を過ぎて未完了{remainingText}"
-                : $"期限超過: 開始日 {date} を過ぎて未着手");
-            if (late.DaysLater is { } also) states.Add($"見込終了は +{also}日");
-        }
-        if (shown.Later && late?.DaysLater is { } days && late.Level == PlanLatenessLevel.Later)
-            states.Add($"予定より遅れ: +{days}日（{Cause(names, late)}）");
+        if (effort?.IsSummary != true && late is { IsLate: true } && (late.Level == PlanLatenessLevel.Overdue ? shown.Overdue : shown.Later))
+            states.Add(Late(names, effort, late));
         if (effort?.IsSummary == true && late is not null) {
             var descendants = new List<string>();
-            if (shown.Overdue && late.OverdueDescendantTasks > 0) descendants.Add($"期限超過 {late.OverdueDescendantTasks}");
-            if (shown.Later && late.LaterDescendantTasks > 0) descendants.Add($"予定より遅れ {late.LaterDescendantTasks}");
+            var lateDescendants = (shown.Overdue ? late.OverdueDescendantTasks : 0) + (shown.Later ? late.LaterDescendantTasks : 0);
+            if (lateDescendants > 0) descendants.Add($"遅れ {lateDescendants}");
             if (shown.OverEstimate && late.OverEstimateDescendantTasks > 0) descendants.Add($"見積超過 {late.OverEstimateDescendantTasks}");
             if (descendants.Count > 0) states.Add("配下に" + string.Join("、", descendants));
         }
@@ -47,6 +35,18 @@ internal static class PlanSheetText
         if (unpublished) states.Add("未発行の変更あり");
         return string.Join("、", states);
 
+    }
+    // The tooltip names which 遅れ case applies (#260 D0). The day is M/d; the weekday belongs to the
+    // sheet's date cells and the 見込終了 column.
+    internal static string Late(PlanTaskNames names, ScheduledTask? effort, PlanTaskLateness late)
+    {
+        var forecast = late.DaysLater is { } days ? $"見込終了 +{days}日（{Cause(names, late)}）" : "";
+        if (late.MissedDate is not { } missed) return "遅れ: " + forecast;
+        var date = missed.ToString("M/d", CultureInfo.InvariantCulture);
+        var remainingText = effort?.Remaining is { } work
+            ? $"（見込み残存工数 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
+        var text = late.OverdueKind == PlanOverdueKind.Finish ? $"遅れ: 終了日 {date} を過ぎて未完了{remainingText}" : $"遅れ: 開始日 {date} を過ぎて未着手";
+        return forecast.Length == 0 ? text : $"{text}、{forecast.Replace("見込終了 ", "見込終了は ")}";
     }
     internal static string Cause(PlanTaskNames names, PlanTaskLateness late) => late.CausePredecessorRowId is { } predecessor
         ? $"先行 {names.AtPosition(predecessor)} の遅れによる" : "自分の残による";

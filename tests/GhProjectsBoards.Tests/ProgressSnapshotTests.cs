@@ -51,12 +51,12 @@ internal sealed class ProgressSnapshotTests
 
         var snapshot = await Snapshot(await ExportedSettings());
 
-        Assert.That(summary.Attention.Later, Is.Not.Empty, "The evaluation has late work to compare.");
+        Assert.That(summary.Attention.Late, Is.Not.Empty, "The evaluation has late work to compare.");
         using (Assert.EnterMultipleScope())
         {
             Assert.That(snapshot.Tasks.Select(t => (t.Issue, t.ForecastEnd)),
                 Is.EquivalentTo(scheduled.Where(t => !t.IsSummary).Select(t => (issue[t.Input.Identity], t.ForecastEnd))));
-            Assert.That(snapshot.Lateness.Late.Order(StringComparer.Ordinal), Is.EqualTo(Issues(summary.Attention.Overdue.Concat(summary.Attention.Later))));
+            Assert.That(snapshot.Lateness.Late.Order(StringComparer.Ordinal), Is.EqualTo(Issues(summary.Attention.Late)));
             Assert.That(snapshot.Lateness.Cause.Order(StringComparer.Ordinal), Is.EqualTo(Issues(summary.Attention.Cause)));
             Assert.That(snapshot.Lateness.OverEstimate.Order(StringComparer.Ordinal), Is.EqualTo(Issues(summary.Attention.OverEstimate)));
             Assert.That(snapshot.ForecastFinish, Is.EqualTo(summary.ForecastFinish));

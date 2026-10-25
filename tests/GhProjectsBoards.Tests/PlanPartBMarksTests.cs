@@ -19,10 +19,10 @@ internal sealed class PlanPartBMarksTests
         var late = PlanLateness.Classify([task], new PlanCalendar(), Day);
         var row = document.State.Rows[0];
 
-        Assert.That(PlanSheetText.Indicator(PlanTaskNames.Of(document), row, task, late.Tasks["I1"], "", false), Does.Contain("期限超過"));
+        Assert.That(PlanSheetText.Indicator(PlanTaskNames.Of(document), row, task, late.Tasks["I1"], "", false), Does.Contain("遅れ: 終了日"));
         Assert.That(PlanSheetText.Indicator(PlanTaskNames.Of(document), row, task, late.Tasks["I1"], "", false, new PlanMarkVisibility(Overdue: false)),
-            Does.Not.Contain("期限超過"), "A hidden mark leaves the indicator tooltip.");
-        Assert.That(late.OverdueTasks, Is.EqualTo(1), "The set and its count are unaffected by a hidden mark.");
+            Does.Not.Contain("遅れ"), "A hidden mark leaves the indicator tooltip.");
+        Assert.That(late.LateTasks, Is.EqualTo(1), "The set and its count are unaffected by a hidden mark.");
     }
 
     [Test]
@@ -35,8 +35,8 @@ internal sealed class PlanPartBMarksTests
         Assert.That(task.ForecastEnd, Is.Not.Null);
         Assert.That(PlanSheetText.ForecastEnd(task, late.Tasks["I1"]),
             Is.EqualTo(PlanSheetText.Date(task.ForecastEnd!.Value) + " +" + late.Tasks["I1"].DaysLater + "日"));
-        // The plan end is before the 基準日, so the red 期限超過 mark wins; the slip still shows the forecast.
-        Assert.That(late.OverdueTasks, Is.EqualTo(1));
+        // The plan end is before the 基準日, so the mark is red; the slip still shows the forecast.
+        Assert.That(late.Tasks["I1"].Level, Is.EqualTo(PlanLatenessLevel.Overdue));
         Assert.That(late.Tasks["I1"].DaysLater, Is.GreaterThan(0));
     }
 }

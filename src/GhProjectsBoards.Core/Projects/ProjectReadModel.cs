@@ -45,7 +45,11 @@ internal sealed record ProjectFieldDefinition(ScopedId Id, ScopedId ProjectId, s
     public string? IssueFieldId { get; init; }
 }
 internal sealed record ProjectFieldValue(ScopedId? FieldId, string? ValueId, string TypeName,
-    ValueAvailability Availability, string? OptionId = null, string? Scalar = null);
+    ValueAvailability Availability, string? OptionId = null, string? Scalar = null)
+{
+    // When GitHub last changed a Project field value (#238). Organization Issue Field values report none.
+    public DateTimeOffset? UpdatedAt { get; init; }
+}
 internal sealed record ProjectItemReadModel(ScopedId Id, ProjectItemKind Kind, string TypeName,
     ScopedId? ContentId, bool IsArchived, IReadOnlyList<ProjectFieldValue> Values, bool ValuesComplete);
 internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number,

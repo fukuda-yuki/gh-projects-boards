@@ -649,7 +649,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 catch (Exception e) when (e is FormatException or OverflowException or InvalidOperationException) { known = false; }
                 var state = !known ? ValueAvailability.Unavailable : scalar is null ? ValueAvailability.Empty : ValueAvailability.Present;
                 if (!known) problems.Add(new(ReadProblemKind.IncompleteTraversal, "scalar"));
-                item.Values.Add(new(fieldId, valueId, type, state, Scalar: scalar)); return;
+                item.Values.Add(new(fieldId, valueId, type, state, Scalar: scalar) { UpdatedAt = UpdatedAt(node) }); return;
             }
             if (type != "ProjectV2ItemFieldSingleSelectValue")
             {
@@ -842,6 +842,9 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 _ => new(ValueAvailability.Unavailable)
             };
         }
+        private static DateTimeOffset? UpdatedAt(JsonElement node)
+            => Optional(node, "updatedAt") is { ValueKind: JsonValueKind.String } value && DateTimeOffset.TryParse(value.GetString(),
+                System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var at) ? at : null;
         private static ReadValue<DateTimeOffset?> ReadClosedAt(JsonElement node)
         {
             var value = Optional(node, "closedAt");

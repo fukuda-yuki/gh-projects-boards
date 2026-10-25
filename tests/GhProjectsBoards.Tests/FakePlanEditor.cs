@@ -7,7 +7,9 @@ using GhProjectsBoards.Core.PlanEditor;
 
 namespace GhProjectsBoards.Tests;
 
-internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } public string? Phase { get; init; } }
+internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } public string? Phase { get; init; }
+    // #238: when GitHub last changed this item's 実績 or 残 value; GitHub reports it per Project field value.
+    public DateTimeOffset? ProgressUpdatedAt { get; init; } }
 internal sealed record PlanFakeMilestone(string Id, string Repository, string Title, DateOnly? DueDate, bool Closed = false);
 // #253: a repository's assignable people for the on-demand resolver. A fixture declares them, so it can
 // stand for a 1,000-user repository that the resolver searches like GitHub does.
@@ -19,6 +21,9 @@ internal static class FakePlanEditor
     internal static string StatePath(string root) => Path.Combine(root, "plan-state.json");
     internal static PlanFakeState Load(string root) => JsonSerializer.Deserialize<PlanFakeState>(File.ReadAllText(StatePath(root)), Json)!;
     internal static void Save(string root, PlanFakeState state) => File.WriteAllText(StatePath(root), JsonSerializer.Serialize(state, Json));
+    // The fake's clock follows the app's read day when one is fixed, so a write is on the plan's own calendar.
+    internal static DateTimeOffset Now() => DateOnly.TryParseExact(Environment.GetEnvironmentVariable("GHPB_TODAY"), "yyyy-MM-dd",
+        CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) ? new(day.ToDateTime(new TimeOnly(9, 0)), TimeSpan.FromHours(9)) : DateTimeOffset.UtcNow;
     internal static object Page(IEnumerable<object> values, int total, bool next = false, string? cursor = null) => new { totalCount = total, nodes = values.ToArray(), pageInfo = new { hasNextPage = next, endCursor = cursor } };
     internal static async Task<int> Handle(string query, JsonElement variables, string root, JsonElement scenario)
     {
@@ -105,12 +110,13 @@ internal static class FakePlanEditor
         var fieldRoles = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start, PlanField.End, PlanField.Status };
         string Type(string role) => role is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "NUMBER" : role is PlanField.Status ? "SINGLE_SELECT" : "DATE";
         object Field(string role) => new { __typename = role is PlanField.Status ? "ProjectV2SingleSelectField" : "ProjectV2Field", id = "F-" + role, name = workspace && role == PlanField.Start ? "Start date" : workspace && role == PlanField.End ? "Target date" : role.ToString(), dataType = Type(role), isIssueField = false, project = new { id = projectId }, options = new[] { new { id = "progress", name = "In progress" }, new { id = "done", name = "Done" }, new { id = "backlog", name = "Backlog" } }.Where(_ => role == PlanField.Status).ToArray() };
-        object Value(PlanRow row, string role)
+        object Value(PlanRow row, string role, DateTimeOffset? progressUpdatedAt = null)
         {
             var scalar = JsonNode.Parse(PlanValues.Get(row, role));
             var value = new JsonObject { ["__typename"] = role is PlanField.Status ? "ProjectV2ItemFieldSingleSelectValue" : Type(role) == "NUMBER" ? "ProjectV2ItemFieldNumberValue" : "ProjectV2ItemFieldDateValue",
                 ["id"] = row.Identity + "-" + role, ["field"] = JsonSerializer.SerializeToNode(new { id = "F-" + role, project = new { id = projectId } }) };
             value[role is PlanField.Status ? "optionId" : Type(role) == "NUMBER" ? "number" : "date"] = role == PlanField.Status ? JsonValue.Create(row.Status == "Done" ? "done" : row.Status == "Backlog" ? "backlog" : "progress") : scalar;
+            if (role is PlanField.Actual or PlanField.Remaining && progressUpdatedAt is { } changed) value["updatedAt"] = changed.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
             return value;
         }
         object Children(string identity, int offset = 0)
@@ -124,7 +130,7 @@ internal static class FakePlanEditor
             options = state.Phases.Select(p => new { id = "phase-" + p, name = p }).ToArray() };
         object[] Values(PlanFakeIssue issue)
         {
-            var values = fieldRoles.Where(f => PlanValues.Get(issue.Row, f) is not ("null" or "false")).Select(f => Value(issue.Row, f));
+            var values = fieldRoles.Where(f => PlanValues.Get(issue.Row, f) is not ("null" or "false")).Select(f => Value(issue.Row, f, issue.ProgressUpdatedAt));
             var result = (issue.Phase is null ? values : values.Append(new { __typename = "ProjectV2ItemFieldSingleSelectValue", id = issue.Row.Identity + "-Phase",
                 field = new { id = "F-Phase", project = new { id = projectId } }, optionId = "phase-" + issue.Phase })).ToList();
             foreach (var definition in state.ExtraFields) {
@@ -388,6 +394,7 @@ internal static class FakePlanEditor
                         if (fault != "mismatch") {
                             row = PlanValues.Set(row, role, json);
                             if (role == PlanField.Phase) issue = issue with { Phase = row.Phase };
+                            if (role is PlanField.Actual or PlanField.Remaining) issue = issue with { ProgressUpdatedAt = Now() };
                         }
                         selection = "projectV2Item";
                     }
