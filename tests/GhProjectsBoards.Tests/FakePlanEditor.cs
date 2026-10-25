@@ -14,7 +14,7 @@ internal sealed record PlanFakeMilestone(string Id, string Repository, string Ti
 // #253: a repository's assignable people for the on-demand resolver. A fixture declares them, so it can
 // stand for a 1,000-user repository that the resolver searches like GitHub does.
 internal sealed record PlanFakeUser(string Id, string Login);
-internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanColumnDefinition> ExtraFields { get; init; } = []; public ImmutableArray<PlanRepositoryOption> Labels { get; init; } = []; public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public ImmutableArray<PlanFakeUser> AssignableUsers { get; init; } = []; public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanColumnDefinition> ExtraFields { get; init; } = []; public ImmutableArray<PlanRepositoryOption> Labels { get; init; } = []; public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public ImmutableArray<PlanFakeUser> AssignableUsers { get; init; } = []; public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public int OtherProjects { get; init; } public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -25,8 +25,28 @@ internal static class FakePlanEditor
     internal static DateTimeOffset Now() => DateOnly.TryParseExact(Environment.GetEnvironmentVariable("GHPB_TODAY"), "yyyy-MM-dd",
         CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) ? new(day.ToDateTime(new TimeOnly(9, 0)), TimeSpan.FromHours(9)) : DateTimeOffset.UtcNow;
     internal static object Page(IEnumerable<object> values, int total, bool next = false, string? cursor = null) => new { totalCount = total, nodes = values.ToArray(), pageInfo = new { hasNextPage = next, endCursor = cursor } };
+    // GitHub refuses a query that could return more than 500,000 nodes before running it. Every connection
+    // counts its `first` times the nodes of the connections around it, and nodes(ids:) counts its ids.
+    internal static long PossibleNodes(string query, JsonElement variables)
+    {
+        var ids = variables.ValueKind == JsonValueKind.Object && variables.TryGetProperty("ids", out var list) && list.ValueKind == JsonValueKind.Array ? list.GetArrayLength() : 1;
+        var scopes = new Stack<long>([1]);
+        long total = 0, opened = 0;
+        foreach (Match token in Regex.Matches(query, @"first\s*:\s*(\d+)|nodes\s*\(\s*ids|\{|\}"))
+        {
+            if (token.Value == "{") { scopes.Push(opened > 0 ? opened : scopes.Peek()); opened = 0; }
+            else if (token.Value == "}") scopes.Pop();
+            else { opened = scopes.Peek() * (token.Groups[1].Success ? long.Parse(token.Groups[1].Value, CultureInfo.InvariantCulture) : ids); total += opened; }
+        }
+        return total;
+    }
     internal static async Task<int> Handle(string query, JsonElement variables, string root, JsonElement scenario)
     {
+        if (PossibleNodes(query, variables) is var possible and > 500_000)
+        {
+            Write(new { errors = new[] { new { type = "MAX_NODE_LIMIT_EXCEEDED", message = $"This query requests up to {possible:N0} possible nodes which exceeds the maximum limit of 500,000." } } });
+            return 1;
+        }
         var state = Load(root);
         var fault = scenario.TryGetProperty("planFault", out var faultNode) ? faultNode.GetString() : null;
         var faultBatch = scenario.TryGetProperty("faultBatch", out var batchNode) ? batchNode.GetInt32() : 1;
@@ -211,7 +231,9 @@ internal static class FakePlanEditor
                 // complete read would have observed for the same item.
                 var visible = issue.Added && !(fault == "membership-delay" && state.MutationBatches is > 0 and <= 4
                     && state.ReadAttempts < 2 && int.Parse(issue.Row.Identity[1..]) % 2 == 0);
-                var owners = visible ? workspace ? new[] { "P1", "P2" } : new[] { "P1" } : [];
+                // Memberships in other Projects come first, so a fixture with many of them puts this Project's
+                // item on a later page of the Issue's projectItems connection.
+                var owners = visible ? Enumerable.Range(1, state.OtherProjects).Select(n => "PX" + n).Concat(workspace ? ["P1", "P2"] : ["P1"]).ToArray() : [];
                 var entries = new List<object>();
                 foreach (var owner in owners)
                 {
@@ -219,7 +241,11 @@ internal static class FakePlanEditor
                     projectId = owner;
                     entries.Add(Item(issue));
                 }
-                nodes.Add(new { __typename = "Issue", id, projectItems = Page(entries, entries.Count) });
+                var size = int.Parse(Regex.Match(query, @"projectItems\(first:\s*(\d+)").Groups[1].Value, CultureInfo.InvariantCulture);
+                var offset = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String ? int.Parse(after.GetString()!, CultureInfo.InvariantCulture) : 0;
+                var more = offset + size < entries.Count;
+                nodes.Add(new { __typename = "Issue", id, projectItems = Page(entries.Skip(offset).Take(size), entries.Count, more,
+                    more ? (offset + size).ToString(CultureInfo.InvariantCulture) : null) });
             }
             Write(new { data = new { nodes = nodes.ToArray(), viewer = new { databaseId = 42 } } });
             return 0;

@@ -2616,6 +2616,37 @@ internal sealed partial class PlanWorkspaceHostedTests
         finally { await workspace.RetrySave(); }
     }
 
+    // #289: a retained workspace keeps its native tree, and every later case pays for it in blocking gen2
+    // collections; the connection-page case in PlanWorkspaceLifetimeHostedTests never loads the plan toolbar.
+    [Test, Category("WorkspaceShell")]
+    public async Task AnUnloadedWorkspaceWithAnOpenPlanIsReleased()
+    {
+        var released = await OpenAndRelease();
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (released.IsAlive && DateTime.UtcNow < deadline)
+        {
+            await Task.Run(() => { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); });
+            await Ui.Run(() => { });
+            if (released.IsAlive) await Task.Delay(100);
+        }
+        Assert.That(released.IsAlive, Is.False, "An unloaded workspace that showed a plan must not stay reachable.");
+    }
+
+    // Only a weak reference leaves this method, so the caller's state machine cannot keep the view.
+    private async Task<WeakReference> OpenAndRelease()
+    {
+        await Open();
+        await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.True));
+        await Ui.Unmount(view, check: false);
+        var released = new WeakReference(view);
+        await workspace.Flush();
+        workspace = new(new(root), () => readDay);
+        await Ui.Run(() => view = new(workspace, (_, host) => new(FakeExecutable, host,
+            new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }))));
+        await Ui.Mount(view);
+        return released;
+    }
+
     [Test, Category("PlanWorkspaceReview")]
     public async Task ConnectingToAnEarlierVersionsPlanOffersReadingTheProjectAgainFromGitHub()
     {

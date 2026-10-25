@@ -78,6 +78,36 @@ internal sealed partial class PlanPublisherTests
         Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I3", "I2" }));
     }
 
+    // #201: GitHub refuses a query that could return more than 500,000 nodes, and the fake does too. A weekly
+    // publish moves hundreds of successors, so its written items span many read batches; every one of them
+    // is read before the writes and verified after them.
+    [Test]
+    public async Task APublishOfManyTasksReadsEveryWrittenItemWithinGitHubsQueryLimit()
+    {
+        await Start(60);
+        File.WriteAllText(Path.Combine(root, "calls.jsonl"), "");
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell,
+            Enumerable.Range(1, 60).Select(i => new PlanCellChange("I" + i, PlanField.Estimate, 5m)).ToImmutableArray()), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(ScopedIssueIds(), Is.EquivalentTo(Enumerable.Range(1, 60).Select(i => "I" + i)));
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Estimate), Is.All.EqualTo(5m));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero, "The verified publish leaves nothing unpublished.");
+    }
+
+    // #201: the read takes a few memberships per Issue to stay inside the limit, so an Issue that belongs to
+    // many Projects (a task carried across versions) finds this Project's item on a later membership page.
+    [Test]
+    public async Task AnIssueInManyProjectsIsReadFromALaterMembershipPage()
+    {
+        await Start(3, state => state with { OtherProjects = 12 });
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Estimate, 5m)]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I2").Row.Estimate, Is.EqualTo(5m));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero, "The written item was found and verified.");
+    }
+
     [Test]
     public async Task PublishingSeesARemoteChangeOnAWrittenItemItDidNotChange()
     {

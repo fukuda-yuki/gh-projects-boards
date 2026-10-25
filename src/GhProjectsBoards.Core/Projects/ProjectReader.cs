@@ -129,6 +129,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         }
 
         // Larger detail requests hit measured gateway timeouts; six sends stay well inside secondary limits.
+        // The scoped publication read uses the same batches and window.
         private const int DetailBatchSize = 25;
         private const int DetailConcurrency = 6;
         private readonly List<string> detailIds = [];
@@ -172,42 +173,65 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         // identities to their items in this Project and reads those items in the same request — the same
         // detail path the complete read uses, without walking the Project's item connection. A scope that
         // does not resolve to an item contributes no row, which is how an archived item stays absent.
+        // GitHub refuses a query that could return more than 500,000 nodes, so a request reads only a few
+        // memberships per Issue; an Issue in more Projects continues its own memberships in later requests.
         private async Task<bool> ReadItemScopeAsync()
         {
-            foreach (var slice in itemScope!.Distinct(StringComparer.Ordinal).Chunk(DetailBatchSize))
+            var requests = new Queue<(string[] Ids, string? After)>(itemScope!.Distinct(StringComparer.Ordinal)
+                .Chunk(DetailBatchSize).Select(slice => (slice, (string?)null)));
+            var pending = new Queue<(string[] Ids, string? After, Task<ApiResult> Response)>();
+            try
             {
-                if (stopped) return false;
-                cancellationToken.ThrowIfCancellationRequested();
-                var response = await SendAsync(ProjectQueries.PublishItemDetails, new { ids = slice });
-                if (!response.IsSuccess)
+                while (!stopped && (requests.Count > 0 || pending.Count > 0))
                 {
-                    RecordItemFailure(response);
-                    return false;
-                }
-                var nodes = Array(Property(response.Data ?? default, "data"), "nodes");
-                if (nodes.GetArrayLength() != slice.Length) throw new ReadException(ReadProblemKind.IncompleteTraversal);
-                for (var i = 0; i < slice.Length; i++)
-                {
-                    var node = nodes[i];
-                    // A node the read cannot deliver is a concurrent change, exactly as a missing detail
-                    // node is for the complete read.
-                    if (node.ValueKind == JsonValueKind.Null)
+                    while (requests.Count > 0 && pending.Count < DetailConcurrency)
                     {
-                        problems.Add(new(ReadProblemKind.ConcurrentChange, "items"));
-                        stopped = true;
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var (ids, after) = requests.Dequeue();
+                        pending.Enqueue((ids, after, SendAsync(ProjectQueries.PublishItemDetails, new { ids, after })));
+                    }
+                    var (slice, from, task) = pending.Dequeue();
+                    var response = await task;
+                    if (!response.IsSuccess)
+                    {
+                        RecordItemFailure(response);
                         return false;
                     }
-                    MatchNode(node, slice[i], "Issue");
-                    var membership = Property(node, "projectItems");
-                    if (Boolean(Property(membership, "pageInfo"), "hasNextPage")) throw new ReadException(ReadProblemKind.IncompleteTraversal);
-                    foreach (var entry in Array(membership, "nodes").EnumerateArray())
+                    var nodes = Array(Property(response.Data ?? default, "data"), "nodes");
+                    if (nodes.GetArrayLength() != slice.Length) throw new ReadException(ReadProblemKind.IncompleteTraversal);
+                    for (var i = 0; i < slice.Length; i++)
                     {
-                        if (Text(entry, "__typename") != "ProjectV2Item") throw new ReadException(ReadProblemKind.ScopeMismatch);
-                        if (Id(Property(entry, "project")) == projectId) await AddItemAsync(entry);
+                        var node = nodes[i];
+                        // A node the read cannot deliver is a concurrent change, exactly as a missing detail
+                        // node is for the complete read.
+                        if (node.ValueKind == JsonValueKind.Null)
+                        {
+                            problems.Add(new(ReadProblemKind.ConcurrentChange, "items"));
+                            stopped = true;
+                            return false;
+                        }
+                        MatchNode(node, slice[i], "Issue");
+                        var membership = Property(node, "projectItems");
+                        foreach (var entry in Array(membership, "nodes").EnumerateArray())
+                        {
+                            if (Text(entry, "__typename") != "ProjectV2Item") throw new ReadException(ReadProblemKind.ScopeMismatch);
+                            if (Id(Property(entry, "project")) == projectId) await AddItemAsync(entry);
+                        }
+                        var page = Property(membership, "pageInfo");
+                        if (!Boolean(page, "hasNextPage")) continue;
+                        var cursor = Text(page, "endCursor");
+                        if (cursor == from) throw new ReadException(ReadProblemKind.IncompleteTraversal);
+                        requests.Enqueue(([slice[i]], cursor));
                     }
                 }
+                return !stopped;
             }
-            return !stopped;
+            finally
+            {
+                // Even a validation failure or cancellation must not outlive this read's lease.
+                await Task.WhenAll(pending.Select(request => request.Response));
+                cancellationToken.ThrowIfCancellationRequested();
+            }
         }
 
         private async Task ObserveDetailFailuresAsync()
