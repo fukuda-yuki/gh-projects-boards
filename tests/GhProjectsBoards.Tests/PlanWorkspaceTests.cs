@@ -860,6 +860,33 @@ internal sealed class PlanWorkspaceTests
         finally { Directory.Delete(root, true); }
     }
 
+    // #246: opening a Project whose recheck cannot reach GitHub reports the connection problem, not a
+    // missing account or permission.
+    [TestCase("timeout")]
+    public async Task OpeningAProjectWithALostConnectionReportsTheConnectionMessage(string kind)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-open-connection-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo"), "", true)], 2));
+            GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com",
+                new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
+            var workspace = new PlanWorkspace(new(root), () => new(2026, 10, 13));
+            await workspace.Connect(Service());
+            var choice = (await workspace.Listings("fixture-user"))[0].Choice;
+            File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, state = kind }));
+
+            var error = Assert.CatchAsync<InvalidOperationException>(async () => await workspace.Open(choice));
+
+            Assert.That(error!.Message, Is.EqualTo("GitHub に接続できません。ネットワークを確認してください。"));
+            Assert.That(error.Message, Does.Not.Contain("認証またはアクセス権"));
+            Assert.That(workspace.Session, Is.Null);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     // The GraphQL queries the fake received, so a case can assert the requests a flow does and does not send.
     private static string[] RecordedQueries(string root)
     {

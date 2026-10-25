@@ -42,7 +42,9 @@ internal sealed partial class PlanSheetView
             ToolTipService.SetToolTip(button, reason ?? button.Label);
         }
     }
-    internal void SelectWholeRow(string identity, bool extend)
+    // A far edge jump places the viewport itself and then focuses without a second bring-into-view, so
+    // it takes the whole-row state without SelectWholeRow's own focus request (#228).
+    internal void SelectWholeRow(string identity, bool extend, bool focus = true)
     {
         if (!Rows.ContainsKey(identity) || Fields.Length == 0) return;
         var previous = Range;
@@ -52,7 +54,7 @@ internal sealed partial class PlanSheetView
         anchorField = Fields[^1];
         // A refusal explains the operation it refused; choosing another row dismisses it (#241, #240).
         error.Text = "";
-        UpdateReason(); RefreshOverviewCommands(); RefreshRealized(previous); FocusSelected();
+        UpdateReason(); RefreshOverviewCommands(); RefreshRealized(previous); if (focus) FocusSelected();
     }
     internal bool HandleOutlineShortcut(VirtualKey key)
     {

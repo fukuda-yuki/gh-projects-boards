@@ -33,13 +33,14 @@ internal static class PlanSnapshot
             await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
         }
     }
-    // #201: the same bounded concurrent-change policy as ReadConsistentAsync, for the scoped read.
+    // #201: the same bounded concurrent-change policy as ReadConsistentAsync, for the scoped read. The
+    // metadata a publish read earlier in the same attempt is handed over so verification reuses it.
     internal static async Task<ProjectReadResult> ReadItemsConsistentAsync(GhConnectionService service, GhConnectionService.OperationLease lease,
-        ConnectionContext context, ScopedId project, IReadOnlyList<string> issueIds, CancellationToken token)
+        ConnectionContext context, ScopedId project, IReadOnlyList<string> issueIds, CancellationToken token, ProjectReadModel? metadata = null)
     {
         for (var attempt = 1; ; attempt++)
         {
-            var result = await new ProjectReader(service, lease).ReadItemsAsync(context, project, issueIds, token).ConfigureAwait(false);
+            var result = await new ProjectReader(service, lease).ReadItemsAsync(context, project, issueIds, token, metadata).ConfigureAwait(false);
             if (result.Outcome == ProjectReadOutcome.Complete || attempt == 3 || result.Outcome != ProjectReadOutcome.Partial ||
                 result.Problems.Count == 0 || result.Problems.Any(p => p.Kind != ReadProblemKind.ConcurrentChange)) return result;
             await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
@@ -66,8 +67,11 @@ internal static class PlanSnapshot
     // #201: assembles the scoped observation into the whole-Project snapshot shape the merge, verification
     // and adoption paths expect. The written rows and their items come from the read; a row outside the
     // scope keeps its last known values, while one the read covered and did not deliver is treated as gone
-    // — that absence is how an archived or deleted item is verified.
-    internal static PlanRemoteSnapshot FromItems(ProjectReadResult result, PlanDocument document, IReadOnlyCollection<string> scope, TimeZoneInfo? timeZone = null)
+    // — that absence is how an archived or deleted item is verified. A read that reuses an earlier read's
+    // metadata (carried) also carries that read's repository catalogs, so those repositories are replaced
+    // exactly as the read itself covered them.
+    internal static PlanRemoteSnapshot FromItems(ProjectReadResult result, PlanDocument document, IReadOnlyCollection<string> scope,
+        TimeZoneInfo? timeZone = null, IReadOnlyCollection<string>? carried = null)
     {
         var p = RequireComplete(result, "発行対象の項目を取得できませんでした。計画は変更していません。再試行してください。 ");
         var settings = document.State.Settings;
@@ -82,6 +86,7 @@ internal static class PlanSnapshot
             .OfType<PlanRow>()
             .Concat(observed.Where(r => !known.Contains(r.Identity))).ToImmutableArray();
         var repositories = p.Issues.Values.Select(i => i.Repository.NameWithOwner).ToHashSet(StringComparer.Ordinal);
+        if (carried is not null) repositories.UnionWith(carried);
         return new(new(rows, Columns(p)) {
                 Milestones = document.Baseline.Milestones,
                 RepositoryMilestones = document.Baseline.RepositoryMilestones.Where(m => !repositories.Contains(m.Repository))
@@ -112,11 +117,17 @@ internal static class PlanSnapshot
     private static ProjectReadModel RequireComplete(ProjectReadResult result, string message)
     {
         if (result.Outcome != ProjectReadOutcome.Complete || result.Project is not { FieldsComplete: true, ItemsComplete: true, MilestonesComplete: true } p)
+        {
+            // #246: a read that never reached GitHub is a connection problem, not a read defect.
+            if (IsConnectionLost(result)) throw new ConnectionLostException();
             throw new InvalidOperationException(message + ReadDiagnostic(result));
+        }
         var statusField = p.Fields.SingleOrDefault(f => f.Name == "Status" && f.DataType == "SINGLE_SELECT" && f.ValueOwner == FieldOwner.ProjectItem);
         if (statusField is not null && statusField.Availability != ValueAvailability.Present) throw new InvalidOperationException("Status を読み取れません。");
         return p;
     }
+    internal static bool IsConnectionLost(ProjectReadResult result)
+        => result.Problems.Any(p => ConnectionLostException.IsTransportLoss(p.Failure, p.HttpStatus));
     // The fields whose values the app reads. A field it cannot read is never offered as a column or a mapping.
     private static ImmutableArray<PlanColumnDefinition> Columns(ProjectReadModel p)
         => p.Fields.Where(f => f.Availability == ValueAvailability.Present).Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType)

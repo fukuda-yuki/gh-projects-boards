@@ -50,9 +50,21 @@ internal sealed partial class PlanTaskNames
     internal string StartReason(string reason)
         => PositionReason().Match(reason) is { Success: true } match
             ? AtPosition(int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture)) + " の終了後" : reason;
+    // The task a `{row position} の終了後` reason names, for a caller that needs the task itself (#229).
+    internal bool TryPredecessor(string reason, out string identity)
+    {
+        identity = "";
+        if (PositionReason().Match(reason) is not { Success: true } match) return false;
+        var position = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+        if (position < 1 || position > positions.Count) return false;
+        identity = positions[position - 1];
+        return true;
+    }
 
     // One entry of 先行 after #239 folding: N or #N, repo#N or owner/repo#N, or 新N. Nothing is linked by guess.
-    internal string Resolve(string entry)
+    internal string Resolve(string entry) => Resolve(entry, "先行タスク");
+    // ジャンプ resolves the same grammar and reports it as タスク名 (#228).
+    internal string Resolve(string entry, string subject)
     {
         if (LocalName().Match(entry) is { Success: true } localName)
         {
@@ -61,7 +73,7 @@ internal sealed partial class PlanTaskNames
         }
         if (Reference().Match(entry) is not { Success: true } reference
             || !int.TryParse(reference.Groups["number"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var number) || number <= 0)
-            throw new ArgumentException("先行タスクは #524、repo#524 または 新2 の形で指定してください: " + entry);
+            throw new ArgumentException($"{subject}は #524、repo#524 または 新2 の形で指定してください: " + entry);
         var owner = reference.Groups["owner"].Value; var repository = reference.Groups["repo"].Value;
         var carrying = issues.Where(i => i.Number == number
             && (repository.Length == 0 || string.Equals(i.Repository, repository, StringComparison.OrdinalIgnoreCase))
