@@ -93,8 +93,6 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<MenuFlyoutItem>("PlanSheetColumns");
         await Ui.Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
             Ui.Popup<MenuFlyoutItem>("PlanSheetColumns")!).GetPattern(PatternInterface.Invoke)).Invoke());
-        // The section list realizes its pane and content over the first layout passes after the page appears.
-        await Ui.Ready<Button>("PlanSettingsBack");
     }
 
     [Test]
@@ -102,6 +100,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await OpenColumnSettingsThroughOverflow();
+        // The section list realizes its pane and content over the first layout passes after the page appears.
+        await Ui.Ready<Button>("PlanSettingsBack");
         await Ui.Ready<TextBlock>("PlanColumnSettings");
         await Ui.Until(() => {
             var title = Ui.Find<TextBlock>("PlanColumnSettings");
@@ -139,7 +139,12 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Find<TextBox>("PlanColumnNameRepository").Focus(FocusState.Keyboard);
             Ui.Find<TextBox>("PlanColumnNameRepository").StartBringIntoView(new() { AnimationDesired = false });
         });
-        await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSettingsScroll").VerticalOffset > before);
+        await Ui.Until(() => {
+            var viewport = Ui.Find<ScrollViewer>("PlanSettingsScroll");
+            var row = Ui.Find<TextBox>("PlanColumnNameRepository");
+            var top = row.TransformToVisual(viewport).TransformPoint(new()).Y;
+            return top >= 0 && top + row.ActualHeight <= viewport.ViewportHeight;
+        });
         await Ui.Run(() => {
             var back = Ui.Find<Button>("PlanSettingsBack");
             Assert.That(back.TransformToVisual(view).TransformPoint(new()).Y, Is.EqualTo(backY).Within(1));

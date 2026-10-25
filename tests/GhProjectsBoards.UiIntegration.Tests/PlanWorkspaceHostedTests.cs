@@ -845,7 +845,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task ShellStatusDateResolvesTheActiveViewsInputAndCreatesOneSettingsUndo(bool people)
     {
         await Open();
-        if (people) { await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
+        if (people) { await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
         var before = workspace.Session!.Document.State.Settings.StatusDate;
         var undo = workspace.Session.UndoCount;
         var inputId = people ? "PlanAllowanceU1" : "PlanCell1_Remaining";
@@ -949,7 +949,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         await CommitText("PlanCell1_Title", "履歴のある設計");
         await Ui.Until(() => Ui.Find<Button>("PlanUndo").IsEnabled);
-        if (people) { await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
+        if (people) { await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
         await Ui.Run(() => {
             var input = Ui.Find<TextBox>(people ? "PlanAllowanceU1" : "PlanCell1_Title");
             input.Focus(FocusState.Programmatic); input.Text = people ? "80" : "変更した設計";
@@ -1245,20 +1245,20 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsAllowancesStayWithTheSelectedProject()
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Open(); await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => { var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "80"; });
         await PickerCommand("PlanChooseProject");
         await Ui.Until(() => workspace.Session!.Document.State.Settings.People.Any(p => p.Allowance == 80));
         await ProjectChooserTestActions.SelectOwner("acme");
         await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Session!.Document.Project.NodeId == "P2");
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.Empty);
         });
         await SelectRegistered("P1");
         await Ui.Until(() => workspace.Session!.Document.Project.NodeId == "P1");
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.EqualTo("80")));
     }
 
@@ -1269,7 +1269,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU2");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU2");
         await Ui.Run(() => {
             var first = Ui.Find<TextBox>("PlanAllowanceU1"); first.Focus(FocusState.Programmatic); first.Text = "80";
             var second = Ui.Find<TextBox>("PlanAllowanceU2"); second.Focus(FocusState.Programmatic); second.Text = "7";
@@ -1290,7 +1290,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null), new("U3", "carol", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU3");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU3");
         await Ui.Run(() => {
             foreach (var (id, text) in new[] { ("U1", "80"), ("U2", "75"), ("U3", "7") }) {
                 var box = Ui.Find<TextBox>("PlanAllowance" + id); box.Focus(FocusState.Programmatic); box.Text = text;
@@ -1322,7 +1322,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsAllowancePersistsAndInvalidInputBlocksNavigationUntilCorrected()
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowSettings"));
+        await Open(); await Settings();
         await Ui.Ready<TextBox>("PlanAllowanceU1");
         var undo = workspace.Session!.UndoCount;
         await Ui.Run(() => { var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "-1"; Ui.Click("PlanShowTasks"); });
@@ -2834,7 +2834,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task SettingsListsOnlyAssignedPeopleAndAResolvedLoginJoinsThem()
     {
         await Open();
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<NumberBox>().Any(n => AutomationProperties.GetAutomationId(n) == "PlanRateU2"), Is.False,
                 "A person no task holds is not in the settings list.");
@@ -2852,7 +2852,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Assignees.Contains("U2"));
         Assert.That(RecordedHostedQueries(root).Count(query => query.Contains("PlanResolveAssignee")), Is.EqualTo(1),
             "One lookup for the one typed login the sheet did not know.");
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU2");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU2");
         await Ui.Run(() => {
             Assert.That(Ui.Find<NumberBox>("PlanRateU2").Value, Is.EqualTo(100), "The looked-up login is stored at 100% and listed.");
             Assert.That(workspace.Session!.UndoCount, Is.EqualTo(1));
