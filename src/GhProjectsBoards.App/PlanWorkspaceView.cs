@@ -172,6 +172,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
             try { await Run(() => { if (selected == summaryTab) RenderSummary(); Show(selected == summaryTab ? "summary" : "tasks"); return Task.CompletedTask; }); }
             finally { if (--pendingViewSelections == 0) SyncTabs(); }
         };
+        // #224 keeps the 計画 tab selected while the review is open, so clicking it changes no selection and raises
+        // no SelectionChanged. #233 still leaves the review from that click and returns focus to the selected cell.
+        tasksTab.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((_, args) => {
+            if (syncingTabs || currentPage != "publish" || closing || busyKind is not null) return;
+            args.Handled = true;
+            _ = Run(() => { Show("tasks"); return Task.CompletedTask; });
+        }), handledEventsToo: true);
         commandButtons.Children.Add(new TextBlock { Text = "基準日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
         commandButtons.Children.Add(statusDateHost);
         commandButtons.Children.Add(CommandDivider());
@@ -330,7 +337,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         // Keep the requested selection until queued switches finish, so another selection still raises an event.
         if (pendingViewSelections != 0) return;
         syncingTabs = true;
-        try { tabs.SelectedItem = currentPage == "tasks" ? tasksTab : currentPage == "summary" ? summaryTab : null; }
+        try { tabs.SelectedItem = currentPage is "tasks" or "publish" ? tasksTab : currentPage == "summary" ? summaryTab : null; }
         finally { syncingTabs = false; }
     }
     private void UpdateStatus()
@@ -559,14 +566,15 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private void UpdateCommandAvailability()
     {
         foreach (var button in commandButtons.Children.OfType<Button>())
-            button.IsEnabled = busyKind is null && (button == undoButton ? workspace.Session?.UndoCount > 0
-                : button == redoButton ? workspace.Session?.RedoCount > 0 : true);
+            // #224: an Undo or a refresh would change the plan under the open review, so both wait until it closes.
+            button.IsEnabled = busyKind is null && (button == undoButton ? workspace.Session?.UndoCount > 0 && currentPage != "publish"
+                : button == redoButton ? workspace.Session?.RedoCount > 0 && currentPage != "publish" : true);
     }
     private void SetRemotePresentation()
     {
         var busy = busyKind is not null;
         UpdateCommandAvailability();
-        refreshButton.IsEnabled = !busy;
+        refreshButton.IsEnabled = !busy && currentPage != "publish";
         UpdateResetAvailability();
         projectPicker.IsEnabled = settingsButton.IsEnabled = !busy;
         tasksTab.IsEnabled = summaryTab.IsEnabled = !busy;
@@ -695,7 +703,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         // The review replaced the sheet and took its focused cell with it; every way back to the plan gives the
         // keyboard back to the selected cell, as a closing dialog does (#233, DESIGN A2).
         if (currentPage == "publish" && page == "tasks") sheet?.FocusSelected();
-        currentPage = page; SyncTabs(); UpdateAssistVisibility(); UpdateDetailVisibility();
+        currentPage = page; SyncTabs(); UpdateAssistVisibility(); UpdateDetailVisibility(); SetRemotePresentation();
         openPublish.Style = page == "publish" ? null : (Style)Application.Current.Resources["AccentButtonStyle"];
         legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         summaryArea.Visibility = page == "summary" ? Visibility.Visible : Visibility.Collapsed;

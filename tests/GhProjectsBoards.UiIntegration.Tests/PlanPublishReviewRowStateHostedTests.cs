@@ -28,7 +28,7 @@ internal sealed partial class PlanPublishReviewHostedTests
             await workspace.Session!.Execute(new ClosePlanRows(["I1"]), Today);
             Ui.Click("PlanPublish");
         });
-        var name = await ReviewContainerName(0);
+        var name = await ReviewContainerName(1);
         Assert.That(name, Does.Contain("GitHub: Issue を完了として閉じます"));
         Assert.That(name, Does.Contain("状態"));
         Assert.That(name, Does.Contain("完了"));
@@ -44,9 +44,9 @@ internal sealed partial class PlanPublishReviewHostedTests
             Ui.Click("PlanPublish");
         });
         var names = new List<string>();
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true });
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(2) is ListViewItem { IsLoaded: true });
         await Ui.Run(() => {
-            for (var i = 0; i < 2; i++)
+            for (var i = 1; i < 3; i++)
                 names.Add(new ListViewItemAutomationPeer((ListViewItem)Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(i)).GetName());
         });
         Assert.That(names, Has.Some.Contains("GitHub: Issue を完了としてではなく閉じます（中止）"));
@@ -66,9 +66,9 @@ internal sealed partial class PlanPublishReviewHostedTests
             Ui.Click("PlanPublish");
         });
         var names = new List<string>();
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true });
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(2) is ListViewItem { IsLoaded: true });
         await Ui.Run(() => {
-            for (var i = 0; i < 2; i++)
+            for (var i = 1; i < 3; i++)
                 names.Add(new ListViewItemAutomationPeer((ListViewItem)Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(i)).GetName());
         });
         var closed = names.Single(n => n.Contains("GitHub: Issue を完了として閉じます"));
