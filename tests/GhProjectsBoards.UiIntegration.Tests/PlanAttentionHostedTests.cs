@@ -120,7 +120,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanAttentionPhases"));
         await Ui.Until(() => Ui.Tree(Ui.Root).Concat(OpenPopups()).Any(e => AutomationProperties.GetAutomationId(e) == "PlanAttentionPhase_PS"));
         await Ui.Run(() => Ui.ToggleToggleButton("PlanAttentionPhase_PS"));
-        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 2);
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 2,
+            () => "rows after 担当者 person-U1 + 工程 PS: " + string.Join(",", Ui.Find<ListView>("PlanTasks").Items.Cast<string>()));
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I4", "" }));
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionPhases")), Is.EqualTo("工程: PS"));

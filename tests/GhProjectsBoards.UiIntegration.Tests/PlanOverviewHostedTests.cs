@@ -631,7 +631,7 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Ready<TextBlock>("PlanRowId2");
         await Ui.Ready<TextBlock>("PlanRowId5");
         await Ui.Run(() => {
-            Assert.That(VisibleRows(), Is.EqualTo(new[] { "I2", "I5", "" }), "Ancestor context must not become a bulk-edit target.");
+            Assert.That(VisibleRows(), Is.EqualTo(new[] { "I1", "I2", "I4", "I5", "" }), "Ancestor context stays visible; only the matches are bulk-edit targets.");
             Assert.That(Ui.Find<TextBlock>("PlanRowId2").Text, Is.EqualTo("#102"));
             Assert.That(Ui.Find<TextBlock>("PlanRowId5").Text, Is.EqualTo("#105"));
         });

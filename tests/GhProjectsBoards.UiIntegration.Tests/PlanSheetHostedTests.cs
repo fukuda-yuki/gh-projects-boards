@@ -761,8 +761,8 @@ internal sealed partial class PlanSheetHostedTests
     [TestCase("predecessor", "見込終了 10/8 (木) · 10/7 から +1日", false, "")]
     [TestCase("long", "見込終了 10/6 (火) · 10/5 から +1日", false, "自分の残による")]
     [TestCase("summary-overdue", "見込終了 10/5 (月) · 10/2 から +1日", true, "配下: 遅れ 1")]
-    [TestCase("summary-later", "見込終了 10/6 (火) · 10/5 から +1日", false, "配下: 遅れ 1")]
-    [TestCase("summary-counts", "見込終了 10/6 (火) · 10/5 から +1日", true, "配下: 遅れ 2")]
+    [TestCase("summary-later", "見込終了 10/6 (火) · 10/5 から +1日", false, "配下: 遅れ 1 · 見積超過 1")]
+    [TestCase("summary-counts", "見込終了 10/6 (火) · 10/5 から +1日", true, "配下: 遅れ 2 · 見積超過 1")]
     [TestCase("none", "", false, "")]
     [Category("SelectionLine")]
     public async Task SelectionPresentsLatenessAndKeepsIssueAtRight(string state, string expected, bool tinted, string detail)

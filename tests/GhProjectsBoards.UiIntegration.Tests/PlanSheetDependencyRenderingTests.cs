@@ -274,11 +274,15 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Ready<TextBox>("PlanCell95_Title");
         await SheetNativeInput.Rendered();
         await Ui.Until(() => sheet.List.Items.Cast<string>().All(identity => CurrentDependencyRow(identity) is not null));
-        await WaitForDependencyPresentation(1, 3, 90);
-        await WaitForDependencyPresentation(4, 2, 3);
+        // Edge ids carry the visible row positions, so the context row shifts them.
+        var index = sheet.RowIds.Select((identity, position) => (identity, position)).ToDictionary(pair => pair.identity, pair => pair.position + 1);
+        int forwardFrom = index["I1"], forwardTo = index["I90"], reverseFrom = index["I95"], reverseTo = index["I3"];
+        await WaitForDependencyPresentation(forwardFrom, forwardTo, 90);
+        await WaitForDependencyPresentation(reverseFrom, reverseTo, 3);
         await Ui.Run(() => {
             string[] expectedArrows = [
-                "PlanArrow1_3_1", "PlanArrow1_3_90", "PlanArrow4_2_3", "PlanArrow4_2_95" ];
+                $"PlanArrow{forwardFrom}_{forwardTo}_1", $"PlanArrow{forwardFrom}_{forwardTo}_90",
+                $"PlanArrow{reverseFrom}_{reverseTo}_3", $"PlanArrow{reverseFrom}_{reverseTo}_95" ];
             var currentRows = sheet.List.Items.Cast<string>().Select(identity => {
                 var row = (sheet.List.ContainerFromItem(identity) as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
                 Assert.That(row, Is.Not.Null, $"Current filtered row {identity}");
@@ -307,7 +311,7 @@ internal sealed partial class PlanSheetHostedTests
                 Is.EquivalentTo(expectedArrows), "Recycled rows must not expose old dependency identities.");
             Assert.That(Ui.Tree(sheet).OfType<Polygon>().Select(AutomationProperties.GetAutomationId)
                 .Where(id => id.StartsWith("PlanArrowHead", StringComparison.Ordinal)),
-                Is.EquivalentTo(new[] { "PlanArrowHead1_3_90", "PlanArrowHead4_2_3" }));
+                Is.EquivalentTo(new[] { $"PlanArrowHead{forwardFrom}_{forwardTo}_90", $"PlanArrowHead{reverseFrom}_{reverseTo}_3" }));
             var retainedCounts = new Dictionary<PlanSheetRow, int>();
             foreach (var line in allArrows.Where(line => AutomationProperties.GetAutomationId(line).Length == 0)) {
                 PlanSheetRow? retainedRow = null;
@@ -329,8 +333,8 @@ internal sealed partial class PlanSheetHostedTests
                     if (parent is UIElement element && (element.Visibility == Visibility.Collapsed || element.Opacity == 0)) hidden = true;
                 Assert.That(hidden, Is.True, "Unidentified retained crossing paths must not paint old geometry.");
             }
-            AssertDependencyEntersBar(1, 3, 90, true);
-            AssertDependencyEntersBar(4, 2, 3, false);
+            AssertDependencyEntersBar(forwardFrom, forwardTo, 90, true);
+            AssertDependencyEntersBar(reverseFrom, reverseTo, 3, false);
         });
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "");
         await Ui.Until(() => sheet.List.Items.Count == 100);
