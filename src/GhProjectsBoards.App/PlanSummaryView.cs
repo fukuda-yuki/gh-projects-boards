@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -14,7 +14,7 @@ internal sealed class PlanSummaryView : UserControl
     internal PlanSession Session { get; }
     private readonly Action<IReadOnlySet<string>, string> filter;
     private readonly Action<PlanToggle> openToggle;
-    private readonly Action settings;
+    private readonly Action<string> settings;
     private readonly StackPanel body = new() { Spacing = 12 };
     private readonly StackPanel matrix = new() { Spacing = 4 };
     private readonly ScrollView matrixScroll;
@@ -29,7 +29,7 @@ internal sealed class PlanSummaryView : UserControl
     private int generation, measure, mode;
     private static readonly CultureInfo Japanese = CultureInfo.GetCultureInfo("ja-JP");
     private static readonly string[] Measures = ["見込み残存工数 h", "見込工数 h", "進捗", "遅れ"];
-    internal PlanSummaryView(PlanSession session, Action<IReadOnlySet<string>, string> filter, Action settings, Action<PlanToggle> openToggle)
+    internal PlanSummaryView(PlanSession session, Action<IReadOnlySet<string>, string> filter, Action<string> settings, Action<PlanToggle> openToggle)
     {
         Session = session; this.filter = filter; this.settings = settings; this.openToggle = openToggle; matrixScroll = Wide(matrix);
         AutomationProperties.SetAutomationId(this, "PlanSummary");
@@ -158,7 +158,7 @@ internal sealed class PlanSummaryView : UserControl
         body.Children.Add(Id(verdictPanel, "SummaryVerdict"));
         if (s.ProjectEnd is null) {
             body.Children.Add(Text("終了日が未設定です", "SummaryNoEnd"));
-            body.Children.Add(Button("設定を開く", "SummaryPeriodSettings", settings));
+            body.Children.Add(Button("設定を開く", "SummaryPeriodSettings", () => settings("period")));
         }
         var band = new Grid { ColumnSpacing = 10, RowSpacing = 8 };
         for (var i = 0; i < 5; i++) band.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -196,7 +196,7 @@ internal sealed class PlanSummaryView : UserControl
         var mapped = s.Columns.Any(c => c.Role == PlanField.Phase && c.FieldId is not null);
         if (!mapped) {
             body.Children.Add(Text("工程のフィールドが未設定です。", "SummaryUnmapped"));
-            body.Children.Add(Button("設定を開く", "SummaryPhaseSettings", settings));
+            body.Children.Add(Button("設定を開く", "SummaryPhaseSettings", () => settings("phases")));
         } else {
             var phases = new Grid { ColumnSpacing = 16 };
             phases.ColumnDefinitions.Add(new()); phases.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });

@@ -121,11 +121,14 @@ internal sealed partial class PlanWorkspaceView
         };
     }
     private bool DetailVisible => detailPane.Visibility == Visibility.Visible;
+    // Either side pane narrows the sheet; the sheet then keeps the Gantt's minimum width (#265).
+    private void UpdateSheetSidePane() => sheet?.SetSidePaneOpen(DetailVisible || assistPane.Visibility == Visibility.Visible);
     private void UpdateDetailVisibility()
     {
         detailToggle.IsEnabled = workspace.Session is not null && currentPage == "tasks";
         sheet?.SetDetailChecked(detailToggle.IsChecked == true);
         detailPane.Visibility = detailToggle.IsEnabled && detailToggle.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        UpdateSheetSidePane();
         if (DetailVisible) UpdateDetailSelection(); else CancelDetail();
     }
     private void CancelDetail(bool clearCache = false)

@@ -836,7 +836,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task ShellStatusDateResolvesTheActiveViewsInputAndCreatesOneSettingsUndo(bool people)
     {
         await Open();
-        if (people) { await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
+        if (people) { await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
         var before = workspace.Session!.Document.State.Settings.StatusDate;
         var undo = workspace.Session.UndoCount;
         var inputId = people ? "PlanAllowanceU1" : "PlanCell1_Remaining";
@@ -940,7 +940,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         await CommitText("PlanCell1_Title", "履歴のある設計");
         await Ui.Until(() => Ui.Find<Button>("PlanUndo").IsEnabled);
-        if (people) { await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
+        if (people) { await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
         await Ui.Run(() => {
             var input = Ui.Find<TextBox>(people ? "PlanAllowanceU1" : "PlanCell1_Title");
             input.Focus(FocusState.Programmatic); input.Text = people ? "80" : "変更した設計";
@@ -1236,20 +1236,20 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsAllowancesStayWithTheSelectedProject()
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Open(); await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => { var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "80"; });
         await PickerCommand("PlanChooseProject");
         await Ui.Until(() => workspace.Session!.Document.State.Settings.People.Any(p => p.Allowance == 80));
         await ProjectChooserTestActions.SelectOwner("acme");
         await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Session!.Document.Project.NodeId == "P2");
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.Empty);
         });
         await SelectRegistered("P1");
         await Ui.Until(() => workspace.Session!.Document.Project.NodeId == "P1");
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.EqualTo("80")));
     }
 
@@ -1260,7 +1260,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU2");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU2");
         await Ui.Run(() => {
             var first = Ui.Find<TextBox>("PlanAllowanceU1"); first.Focus(FocusState.Programmatic); first.Text = "80";
             var second = Ui.Find<TextBox>("PlanAllowanceU2"); second.Focus(FocusState.Programmatic); second.Text = "7";
@@ -1281,7 +1281,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null), new("U3", "carol", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU3");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU3");
         await Ui.Run(() => {
             foreach (var (id, text) in new[] { ("U1", "80"), ("U2", "75"), ("U3", "7") }) {
                 var box = Ui.Find<TextBox>("PlanAllowance" + id); box.Focus(FocusState.Programmatic); box.Text = text;
@@ -1313,7 +1313,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task SettingsAllowancePersistsAndInvalidInputBlocksNavigationUntilCorrected()
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowSettings"));
+        await Open(); await Settings();
         await Ui.Ready<TextBox>("PlanAllowanceU1");
         var undo = workspace.Session!.UndoCount;
         await Ui.Run(() => { var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "-1"; Ui.Click("PlanShowTasks"); });
@@ -1416,6 +1416,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Run(async () => await RenderedEvidence.Capture(view, publish ? "t6-publishing" : "t6-refreshing"));
         } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
         await Ui.Idle();
+        // #224: the review reopens with the publication result and holds Undo until it closes.
+        if (publish) { await Ui.Run(() => Ui.Click("PlanPublishClose")); await Ui.Idle(); }
         await Ui.Run(() => {
             Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
             Assert.That(AutomationProperties.GetName(Ui.Find<Control>(publish ? "PlanPublish" : "PlanRefresh")), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
@@ -1626,6 +1628,9 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "変更"; Ui.Click("PlanPublish"); });
+        await Ui.Idle();
+        // #224: the open review holds Undo until it closes, so this local Undo starts from the plan again.
+        await Ui.Run(() => Ui.Click("PlanPublishClose"));
         await Ui.Idle();
         var shown = false;
         long callback = 0;
@@ -2041,9 +2046,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Settings();
         var previous = workspace.Session!;
         await Ui.Run(() => {
-            var input = Ui.Find<TextBox>("PlanProjectStart");
+            var input = Ui.Find<TextBox>("PlanAllowanceU1");
             input.Focus(FocusState.Programmatic);
-            input.Text = "2026-10-20";
+            input.Text = "80";
             RoutedEventHandler? nextCommand = null;
             nextCommand = async (_, _) => {
                 input.LostFocus -= nextCommand;
@@ -2057,11 +2062,11 @@ internal sealed partial class PlanWorkspaceHostedTests
             input.LostFocus += nextCommand;
             Ui.Find<SelectorBarItem>("PlanShowTasks").Focus(FocusState.Programmatic);
         });
-        await Ui.Until(() => previous.Document.State.Settings.ProjectStart is not null);
+        await Ui.Until(() => previous.Document.State.Settings.People.Any(p => p.Identity == "U1" && p.Allowance == 80));
         await Ui.Until(() => view.IsEnabled);
         await Ui.Idle();
         await Ui.Run(() => {
-            Assert.That(previous.Document.State.Settings.ProjectStart, Is.EqualTo(new DateOnly(2026, 10, 20)));
+            Assert.That(previous.Document.State.Settings.People.Single(p => p.Identity == "U1").Allowance, Is.EqualTo(80));
             if (switchProject)
             {
                 Assert.That(workspace.Selected!.Id.NodeId, Is.EqualTo("P1"));
@@ -2160,6 +2165,12 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Ui.Run(() => Ui.Click("PlanShowSettings"));
         await Ui.Ready<ComboBox>("PlanMapEstimate");
+        // The section list realizes its controls over the first layout passes after the page becomes visible, so
+        // wait for one anchor in each part of the page before a case drives them (#251).
+        await Ui.Ready<Button>("PlanSettingsBack");
+        await Ui.Ready<Button>("PlanCompanyDaysOffAdd");
+        await Ui.Ready<CheckBox>("PlanShowOverdueMark");
+        await Ui.Ready<Button>("PlanImportSettings");
         await Ui.Idle();
     }
     // #253: the settings page lists only the people a row holds, so a case that seeds stored people for the
@@ -2181,6 +2192,13 @@ internal sealed partial class PlanWorkspaceHostedTests
             input.Text = value;
         });
         await Ui.Run(() => Ui.Find<Button>("PlanShowSettings").Focus(Microsoft.UI.Xaml.FocusState.Programmatic));
+        await Ui.Idle();
+    }
+    // 期間 uses date pickers like the 基準日 (#251), so its cases set the picked date instead of typing ISO text.
+    private async Task PickDate(string id, DateOnly? day)
+    {
+        await Ui.Run(() => Ui.Find<CalendarDatePicker>(id).Date = day is { } date
+            ? new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue)) : null);
         await Ui.Idle();
     }
     [Test]
@@ -2269,38 +2287,38 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open(); await Settings();
         await Ui.Run(() => {
-            var input = Ui.Find<TextBox>("PlanProjectStart");
+            var input = Ui.Find<TextBox>("PlanAllowanceU1");
             input.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
-            input.Text = "2026-10-07";
+            input.Text = "80";
         });
         await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.True));
         var loaded = await PlanSession.OpenAsync(new(root), workspace.Selected!.Id, new(2026, 10, 5));
-        Assert.That(loaded.Session!.Document.State.Settings.ProjectStart, Is.EqualTo(new DateOnly(2026, 10, 7)));
+        Assert.That(loaded.Session!.Document.State.Settings.People.Single(p => p.Identity == "U1").Allowance, Is.EqualTo(80));
         Assert.That(loaded.Session.UndoCount, Is.EqualTo(1));
     }
     [Test]
     public async Task InvalidSettingsKeepTheCurrentProjectAndInputUntilCorrected()
     {
         await Open(); await Settings();
-        await CommitText("PlanProjectStart", "invalid");
+        await CommitText("PlanAllowanceU1", "invalid");
         // Error text precedes the low-priority focus/scroll recovery that can dismiss a newly opened picker.
         await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0
             && Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true }
-            && Ui.Find<TextBox>("PlanProjectStart").FocusState != FocusState.Unfocused);
+            && Ui.Find<TextBox>("PlanAllowanceU1").FocusState != FocusState.Unfocused);
         await SheetNativeInput.Rendered();
         await PickerCommand("PlanChooseProject");
         if (pickerClosed is { } closingPicker) await closingPicker.Task.WaitAsync(TimeSpan.FromSeconds(5));
         await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true }
-            && Ui.Find<TextBox>("PlanProjectStart").FocusState != FocusState.Unfocused);
+            && Ui.Find<TextBox>("PlanAllowanceU1").FocusState != FocusState.Unfocused);
         await SheetNativeInput.Rendered();
         await Ui.Idle();
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PlanProjectStart").Text, Is.EqualTo("invalid"));
+            Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.EqualTo("invalid"));
             Assert.That(workspace.Selected!.Id.NodeId, Is.EqualTo("P1"));
             Assert.That(workspace.Session!.UndoCount, Is.Zero);
         });
-        await CommitText("PlanProjectStart", "2026-10-07");
-        await Ui.Until(() => workspace.Session!.Document.State.Settings.ProjectStart == new DateOnly(2026, 10, 7));
+        await CommitText("PlanAllowanceU1", "80");
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.People.Single(p => p.Identity == "U1").Allowance == 80);
         await Ui.Idle();
     }
 
@@ -2330,7 +2348,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open(); await Settings();
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanPeopleHeaderRate").Text, Is.EqualTo("稼働率 (%)"));
+            Assert.That(Ui.Find<TextBlock>("PlanPeopleHeaderRate").Text, Is.EqualTo("稼働率 %"));
             Assert.That(Ui.Find<TextBlock>("PlanPeopleHeaderAllowance").Text, Is.EqualTo("上限工数 h"));
             var rate = Ui.Find<NumberBox>("PlanRateU1");
             var allowance = Ui.Find<TextBox>("PlanAllowanceU1");
@@ -2362,83 +2380,75 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test]
-    public async Task SettingsPeriodRejectsReversedEndAndUndoRestoresAcceptedEnd()
+    public async Task SettingsPeriodPicksDatesRejectsReversedEndAndUndoRestoresAcceptedEnd()
     {
         await Open(); await Settings();
-        await CommitText("PlanProjectStart", "2026-10-05");
-        await Ui.Until(() => workspace.Session!.Document.State.Settings.ProjectStart == new DateOnly(2026, 10, 5));
+        PlanDocument Plan() => workspace.Session!.Document;
+        await PickDate("PlanProjectStart", new(2026, 10, 5));
+        await Ui.Until(() => Plan().State.Settings.ProjectStart == new DateOnly(2026, 10, 5));
         var undo = workspace.Session!.UndoCount;
-        await CommitText("PlanProjectEnd", "2026-10-04");
-        Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.Null);
-        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        await PickDate("PlanProjectEnd", new(2026, 10, 4));
         await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true });
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PlanProjectEnd").Text, Is.EqualTo("2026-10-04"));
+            Assert.That(Plan().State.Settings.ProjectEnd, Is.Null, "A rejected pair must not change the accepted settings.");
+            Assert.That(Ui.Find<CalendarDatePicker>("PlanProjectEnd").Date, Is.Null, "The picker returns to the accepted value.");
             Assert.That(((TextBlock)Ui.Popup<Border>("SettingsInputProblem")!.Child).Text, Does.Contain("終了日は開始日以降"));
         });
-        await CommitText("PlanProjectEnd", "2027-04-30");
-        // The settings commit is queued behind the focus change and saves asynchronously.
-        await Ui.Until(() => workspace.Session.Document.State.Settings.ProjectEnd == new DateOnly(2027, 4, 30));
-        await SettingsErrorCleared("PlanProjectEnd"); await Ui.Idle();
-        await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PlanProjectEnd").Text, Is.EqualTo("2027-04-30"));
-            Assert.That(Ui.Popup<Border>("SettingsInputProblem"), Is.Null, "Correction must dismiss the old validation message.");
-            Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanProjectEnd")), Is.Empty);
-            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
-            Assert.That(Ui.Find<TextBox>("PlanProjectEnd").FocusState, Is.EqualTo(FocusState.Unfocused), "Stale recovery must not steal focus after correction.");
-        });
-        Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.EqualTo(new DateOnly(2027, 4, 30)));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        await PickDate("PlanProjectEnd", new(2027, 4, 30));
+        await Ui.Until(() => Plan().State.Settings.ProjectEnd == new DateOnly(2027, 4, 30));
+        await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is null);
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
-        Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.Null);
+        Assert.That(Plan().State.Settings.ProjectEnd, Is.Null);
     }
 
-    [TestCase("PlanProjectStart"), TestCase("PlanProjectEnd")]
-    public async Task SettingsPeriodAcceptsSlashDateAndDisplaysIsoDate(string id)
+    [Test]
+    public async Task SettingsPeriodPickersShowThePickedDateAndClearIt()
     {
         await Open(); await Settings();
+        PlanDocument Plan() => workspace.Session!.Document;
+        await Ui.Run(() => Assert.That(Ui.Find<CalendarDatePicker>("PlanProjectStart").DateFormat, Does.Contain("dayofweek.abbreviated")));
+        await PickDate("PlanProjectStart", new(2026, 10, 13));
+        await Ui.Until(() => Plan().State.Settings.ProjectStart == new DateOnly(2026, 10, 13));
+        await Ui.Run(() => Assert.That(Ui.Tree(Ui.Find<CalendarDatePicker>("PlanProjectStart")).OfType<TextBlock>()
+            .Any(t => t.Text.Contains("2026/10/13")), Is.True, "The picker shows the date like the 基準日."));
+        await PickDate("PlanProjectEnd", new(2027, 4, 30));
+        await Ui.Until(() => Plan().State.Settings.ProjectEnd == new DateOnly(2027, 4, 30));
         var undo = workspace.Session!.UndoCount;
-        await CommitText(id, "2026/10/13");
-        await Ui.Until(() => (id == "PlanProjectStart" ? workspace.Session.Document.State.Settings.ProjectStart
-            : workspace.Session.Document.State.Settings.ProjectEnd) == new DateOnly(2026, 10, 13));
-        await Ui.Until(() => Ui.Find<TextBox>(id).Text == "2026-10-13");
-        await SettingsErrorCleared(id);
+        await Ui.Ready<Button>("PlanProjectEndClear");
+        await Ui.Run(() => Ui.Click("PlanProjectEndClear"));
+        await Ui.Until(() => Plan().State.Settings.ProjectEnd is null && Ui.Find<CalendarDatePicker>("PlanProjectEnd").Date is null);
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test]
-    public async Task SettingsPeriodCorrectionBackToAcceptedValueClearsAllFeedbackWithoutAnEdit()
+    public async Task SettingsPeriodRejectionClearsWhenAValidDateIsPicked()
     {
         await Open(); await Settings();
-        await CommitText("PlanProjectStart", "2026-10-05");
-        await CommitText("PlanProjectEnd", "2027-04-30");
-        await Ui.Until(() => workspace.Session!.Document.State.Settings.ProjectEnd == new DateOnly(2027, 4, 30));
-        await Ui.Idle();
+        PlanDocument Plan() => workspace.Session!.Document;
+        await PickDate("PlanProjectStart", new(2026, 10, 5));
+        await PickDate("PlanProjectEnd", new(2027, 4, 30));
+        await Ui.Until(() => Plan().State.Settings.ProjectEnd == new DateOnly(2027, 4, 30));
         var before = PlanJson.Text(workspace.Session!.Document); var undo = workspace.Session.UndoCount;
-        await CommitText("PlanProjectEnd", "2026-10-04");
+        await PickDate("PlanProjectEnd", new(2026, 10, 4));
         await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true }
             && Ui.Find<TextBlock>("PlanError").Text.Contains("終了日は開始日以降"));
-        await Ui.Run(() => Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanProjectEnd")), Does.Contain("終了日は開始日以降")));
-        await CommitText("PlanProjectEnd", "2027-04-30");
-        await SettingsErrorCleared("PlanProjectEnd"); await Ui.Idle();
-        await Ui.Run(() => Ui.Find<ScrollViewer>("PlanSettingsScroll").ChangeView(null, 0, null, true));
-        await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSettingsScroll").VerticalOffset == 0);
+        // A calendar picker cannot keep the rejected text: it returns to the accepted date, without an edit.
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PlanProjectEnd").Text, Is.EqualTo("2027-04-30"));
-            Assert.That(Ui.Popup<Border>("SettingsInputProblem"), Is.Null);
-            Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanProjectEnd")), Is.Empty);
-            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
+            Assert.That(Ui.Find<CalendarDatePicker>("PlanProjectEnd").Date, Is.EqualTo(
+                new DateTimeOffset(new DateOnly(2027, 4, 30).ToDateTime(TimeOnly.MinValue))));
+            Assert.That(Plan().State.Settings.ProjectEnd, Is.EqualTo(new DateOnly(2027, 4, 30)));
         });
         Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        // A valid pick is one operation and clears the callout.
+        await PickDate("PlanProjectEnd", new(2027, 5, 31));
+        await Ui.Until(() => Plan().State.Settings.ProjectEnd == new DateOnly(2027, 5, 31));
+        await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is null && Ui.Find<TextBlock>("PlanError").Text.Length == 0);
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
     }
-
-    private Task SettingsErrorCleared(string id) => Ui.Until(() =>
-        Ui.Popup<Border>("SettingsInputProblem") is null
-        && AutomationProperties.GetHelpText(Ui.Find<TextBox>(id)).Length == 0
-        && Ui.Find<TextBlock>("PlanError").Text.Length == 0
-        && Ui.Find<TextBox>(id).FocusState == FocusState.Unfocused);
 
     [Test]
     public async Task SettingsPhaseUsesTheColumnMappingAndListsOptionsAndLeafCounts()
@@ -2584,7 +2594,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         {
             using (var writer = new FileStream(path + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                await CommitText("PlanProjectStart", "2026-10-07");
+                await CommitText("PlanColumnNameTitle", "作業名");
                 await Ui.Until(() => Ui.Find<InfoBar>("PlanSaveFailure").IsOpen);
                 await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.False));
             }
@@ -2592,7 +2602,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Run(() => Ui.Click("PlanRetrySave")); await Ui.Idle();
             await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty));
             var reopened = await PlanSession.OpenAsync(new(root), workspace.Selected!.Id, new(2026, 10, 6));
-            Assert.That(reopened.Session!.Document.State.Settings.ProjectStart, Is.EqualTo(new DateOnly(2026, 10, 7)));
+            Assert.That(reopened.Session!.Document.State.Settings.SheetColumns.Single(c => c.Key == PlanField.Title).DisplayName, Is.EqualTo("作業名"));
             Assert.That(reopened.Session.UndoCount, Is.EqualTo(1));
             await Ui.Run(() => Ui.Click("PlanRefresh")); await Ui.Idle();
             await Ui.Run(async () => { Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty); Assert.That(await view.StopAsync(), Is.True); });
@@ -2784,7 +2794,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open(); await Settings();
         var day = new DateOnly(2026, 10, 7);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<Button>(id + "Add").IsEnabled, Is.False);
+            // #251: 追加 stays available without a chosen date (it opens the calendar instead of being a dead end).
+            Assert.That(Ui.Find<Button>(id + "Add").IsEnabled, Is.True);
             Assert.That(Ui.Tree(view).OfType<FrameworkElement>().Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e).StartsWith("PlanDaysOff") || e is TextBlock { Text: "個人休日" }), Is.False);
             Ui.Find<CalendarDatePicker>(id + "Date").Date = new DateTimeOffset(2026, 10, 7, 0, 0, 0, TimeSpan.Zero);
         });
@@ -2793,8 +2804,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(1));
         await Ui.Run(() => {
             var dates = Ui.Find<ListView>(id + "Dates");
-            Assert.That(dates.Items.Count, Is.EqualTo(1)); dates.SelectedIndex = 0;
-            Ui.Click(id + "Remove");
+            Assert.That(dates.Items.Count, Is.EqualTo(1));
+            // Each day carries its own 削除, so removing one needs no list selection.
+            Ui.Click(id + "Remove" + day.ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture));
         }); await Ui.Idle();
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(2));
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
@@ -2833,7 +2845,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task SettingsListsOnlyAssignedPeopleAndAResolvedLoginJoinsThem()
     {
         await Open();
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<NumberBox>().Any(n => AutomationProperties.GetAutomationId(n) == "PlanRateU2"), Is.False,
                 "A person no task holds is not in the settings list.");
@@ -2851,7 +2863,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Assignees.Contains("U2"));
         Assert.That(RecordedHostedQueries(root).Count(query => query.Contains("PlanResolveAssignee")), Is.EqualTo(1),
             "One lookup for the one typed login the sheet did not know.");
-        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU2");
+        await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU2");
         await Ui.Run(() => {
             Assert.That(Ui.Find<NumberBox>("PlanRateU2").Value, Is.EqualTo(100), "The looked-up login is stored at 100% and listed.");
             Assert.That(workspace.Session!.UndoCount, Is.EqualTo(1));
@@ -2954,3 +2966,4 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
 }
+

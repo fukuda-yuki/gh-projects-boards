@@ -204,7 +204,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var ids = new[] { "AssistProvider", "AssistEndpoint", "AssistModel", "AssistWireApi", "AssistHeader", "AssistKey", "AssistCheck", "AssistSettingsResult" };
             var positions = ids.Select(id => Ui.Find<FrameworkElement>(id).TransformToVisual(view).TransformPoint(new()).Y).ToArray();
             Assert.That(positions.Zip(positions.Skip(1), (a, b) => b > a), Is.All.True, "Each connection field must occupy a later rendered row.");
-            Assert.That(Ui.Find<TextBlock>("AssistSettingsHeading").Text, Is.EqualTo("AI アシスト（この PC の全プロジェクト共通）"));
+            Assert.That(Ui.Find<TextBlock>("AssistSettingsHeading").Text, Is.EqualTo("AI アシスト"));
             Assert.That(Ui.Find<TextBlock>("AssistSettingsHeading").FontWeight.Weight, Is.GreaterThan(Ui.Find<TextBlock>("AssistSettingsResult").FontWeight.Weight));
             Ui.Find<TextBlock>("AssistSettingsHeading").StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 });
         });
@@ -521,7 +521,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("Assist")]
-    public async Task AssistDockKeepsDefaultSheetColumnsVisibleAt1920AndAlsoOpensOnSummary()
+    public async Task AssistDockKeepsTheGanttMinimumAt1920AndAlsoOpensOnSummary()
     {
         await EnableAssist();
         await Ui.Run(() => ResizeWorkspace(1920, 1032));
@@ -529,9 +529,12 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             var pane = Ui.Find<Border>("PlanAssistPane");
             Assert.That(pane.ActualWidth, Is.EqualTo(380).Within(1));
+            // #265: an open side pane keeps the Gantt at its minimum and the sheet scrolls instead of
+            // shrinking the chart. The 380 px pane leaves the Gantt exactly its 640 px minimum at 1920.
             var horizontal = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
-            Assert.That(horizontal.ScrollableWidth, Is.Zero);
-            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ViewportWidth, Is.GreaterThanOrEqualTo(320));
+            Assert.That(horizontal.ScrollableWidth, Is.GreaterThan(0), "The sheet scrolls horizontally instead.");
+            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ViewportWidth,
+                Is.GreaterThanOrEqualTo(PlanSheetView.SidePaneChartMinimum));
             Assert.That(AutomationProperties.GetName(Ui.Find<ToggleButton>("PlanAssist")), Is.EqualTo("アシスト"));
         });
         await AskAssist();
@@ -653,6 +656,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<Button>("AssistOpenSettings");
         await Ui.Run(() => Ui.Click("AssistOpenSettings"));
         await Ui.Ready<ComboBox>("AssistMode");
+        await Ui.Ready<Button>("PlanSettingsBack");
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Until(() => Ui.Find<Border>("PlanAssistPane").Visibility == Visibility.Visible);
         await Ui.Run(ToggleAssist);

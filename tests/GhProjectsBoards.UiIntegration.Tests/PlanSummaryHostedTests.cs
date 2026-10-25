@@ -162,7 +162,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Columns = workspace.Session.Document.State.Settings.Columns.Where(c => c.Role != PlanField.Phase).ToImmutableArray() }), readDay);
         await Ui.Run(() => Ui.Click("PlanShowSummary")); await Ui.Ready<Button>("SummaryPeriodSettings");
         await Ui.Run(() => { Assert.That(Ui.Find<TextBlock>("SummaryUnmapped").Text, Does.Contain("未設定")); Ui.Click("SummaryPhaseSettings"); });
-        await Ui.Ready<TextBox>("PlanProjectEnd");
+        await Ui.Ready<CalendarDatePicker>("PlanProjectEnd");
     }
     [Test]
     public async Task SummaryAttentionDirectlyFiltersWithoutUndoOrRemoteRequests()
@@ -246,7 +246,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await SummaryPlan();
         await Ui.Run(() => Ui.Click("SummaryCell_U1_0"));
         await Settings();
-        await CommitText("PlanProjectEnd", "2026-11-30");
+        await PickDate("PlanProjectEnd", new(2026, 11, 30));
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.ProjectEnd == new DateOnly(2026, 11, 30));
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryStatusDate" && t.Text.Contains("11/30")));
         await Ui.Run(() => {

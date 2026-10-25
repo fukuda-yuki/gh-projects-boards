@@ -103,8 +103,7 @@ internal sealed partial class PlanWorkspaceView
     private Task OpenAssistSettings()
     {
         if (currentPage != "settings") settingsReturnPage = currentPage;
-        RenderSettings(); Show("settings"); settingsScroll.UpdateLayout();
-        assistSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 });
+        OpenSettingsPage("assist");
         return Task.CompletedTask;
     }
     private void UpdateAssistVisibility()
@@ -112,6 +111,7 @@ internal sealed partial class PlanWorkspaceView
         assistToggle.IsEnabled = workspace.Session is not null;
         assistPane.Visibility = assistToggle.IsChecked == true && workspace.Session is not null && currentPage is "tasks" or "summary"
             ? Visibility.Visible : Visibility.Collapsed;
+        UpdateSheetSidePane();
         UpdateAssistSelection(); UpdateAssistProposals();
     }
     private void RenderAssist()

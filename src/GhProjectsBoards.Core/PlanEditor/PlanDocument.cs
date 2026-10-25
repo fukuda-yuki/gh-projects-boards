@@ -59,11 +59,6 @@ internal sealed record ProjectPlanSettings
     public DateOnly? ProjectEnd { get; init; }
     public string? DefaultRepository { get; init; }
     public DateOnly? StatusDate { get; init; }
-    // #236 part B: each lateness mark can be hidden on its own. The sets, the counts and the filters are
-    // unaffected, so hiding a mark never hides the work behind it. #251 owns the wider settings inventory.
-    public bool ShowOverdueMark { get; init; } = true;
-    public bool ShowLaterMark { get; init; } = true;
-    public bool ShowOverEstimateMark { get; init; } = true;
 }
 internal sealed record PlanExtraValue(ValueAvailability Availability, string? Json);
 internal sealed record PlanRow(string Identity, string Title, string Repository)

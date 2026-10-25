@@ -438,7 +438,10 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Ready<MenuFlyoutItem>("PlanSheetCollapseAll");
         await Ui.Run(() => {
             Assert.That(Ui.Find<MenuFlyoutItem>("PlanSheetCollapseAll").IsEnabled, Is.False);
-            Assert.That(Ui.Find<MenuFlyoutItem>("PlanSheetGoToDate").IsEnabled, Is.False);
+            // #265: 選択タスクの日程へ移動 overflows last, so at this width it stays visible in the bar and
+            // shows its own availability there rather than in the menu.
+            Assert.That(Ui.CommandButton("PlanSheetGoToDate").IsInOverflow, Is.False);
+            Assert.That(Ui.CommandButton("PlanSheetGoToDate").IsEnabled, Is.False);
             sheet.SetRemoteBusy(true);
         });
         await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("PlanSheetCopy") is null);
@@ -452,9 +455,10 @@ internal sealed partial class PlanSheetHostedTests
             == ExpandCollapseState.Collapsed);
         await Ui.Run(() => sheet.SetRemoteBusy(false));
         await Select(1, PlanField.Title);
-        await Ui.Run(() => Ui.Click("PlanSheetMore"));
-        await Ui.Ready<MenuFlyoutItem>("PlanSheetGoToDate");
-        await Ui.Run(() => Assert.That(Ui.Find<MenuFlyoutItem>("PlanSheetGoToDate").IsEnabled, Is.True));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<AppBarButton>("PlanSheetMore").IsEnabled, Is.True);
+            Assert.That(Ui.CommandButton("PlanSheetGoToDate").IsEnabled, Is.True);
+        });
     }
 
     [Test]

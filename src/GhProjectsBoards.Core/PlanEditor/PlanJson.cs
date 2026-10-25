@@ -32,15 +32,20 @@ internal static class PlanJson
     private static readonly string[] RemovedFields = ["StartNoEarlierThan", "Fixed"];
     // #238 stores read observations with the plan. A plan saved before them opens with no read result and no
     // judged 未更新 instead of failing the strict format; opening rewrites nothing.
+    // #251 D1 moved the lateness mark switches from Project settings to this PC's display preferences. Their
+    // stored values are carried over once by PlanDisplaySettingsStore before a plan is read, then dropped here.
+    internal static readonly string[] RemovedSettings = ["showOverdueMark", "showLaterMark", "showOverEstimateMark"];
     private static JsonNode? Upgrade(byte[] bytes)
     {
         var span = bytes.AsSpan();
         var removed = span.IndexOf("\"startNoEarlierThan\""u8) >= 0 || span.IndexOf("\"StartNoEarlierThan\""u8) >= 0 || span.IndexOf("\"Fixed\""u8) >= 0;
+        var removedSettings = span.IndexOf("Mark\""u8) >= 0;
         var readObservations = span.IndexOf("\"progressUpdatedAt\""u8) < 0;
-        if (!removed && !readObservations) return null;
+        if (!removed && !removedSettings && !readObservations) return null;
+
         var root = JsonNode.Parse(bytes);
         if (readObservations) AddReadObservations(root);
-        if (removed) Strip(root);
+        if (removed || removedSettings) Strip(root);
         return root;
         static void AddReadObservations(JsonNode? node)
         {
@@ -61,6 +66,7 @@ internal static class PlanJson
             if (node is JsonObject item)
             {
                 item.Remove("startNoEarlierThan"); item.Remove("fixed");
+                foreach (var name in RemovedSettings) item.Remove(name);
                 foreach (var (_, child) in item.ToArray()) Strip(child);
             }
             else if (node is JsonArray list)

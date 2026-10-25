@@ -67,6 +67,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Canvas.GetLeft(marker) + marker.Width / 2, Is.EqualTo(sheet.X(readDay.AddDays(1))).Within(.1));
             Assert.That(AutomationProperties.GetName(marker), Does.Contain("+3日"));
             Assert.That(Ui.Find<TextBlock>("PlanMilestoneLabel_0").Text, Does.Contain("+3日"));
+            // #265: with room for the whole label it reads name first, then the target and the lateness.
+            var due = readDay.AddDays(1);
+            if (scale == 1) Assert.That(Ui.Find<TextBlock>("PlanMilestoneLabel_0").Text, Is.EqualTo($"Design {due.Month}/{due.Day} +3日"));
             Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Line>("PlanMilestoneLine_0").X1, Is.EqualTo(sheet.X(readDay.AddDays(1))).Within(.1));
             Assert.That(((SolidColorBrush)marker.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
             Assert.That(marker.Focus(FocusState.Keyboard), Is.True);

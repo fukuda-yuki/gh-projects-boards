@@ -9,10 +9,9 @@ internal sealed partial class PlanWorkspaceView
 {
     private void RenderAssistSettings()
     {
-        settings.Children.Add(new Border { Height = 1, Margin = new(0, 12, 0, 8), Background = PlanSheetView.Brush("WorkspaceCardStrokeBrush") });
-        assistSettingsHeading = Id(SettingsHeading("AI アシスト（この PC の全プロジェクト共通）"), "AssistSettingsHeading"); settings.Children.Add(assistSettingsHeading);
-        var section = new StackPanel { Spacing = 8 };
-        var mode = Id(new ComboBox { Header = "接続先", ItemsSource = new[] { "使わない", "GitHub Copilot", "API キー（BYOK）" }, SelectedIndex = (int)assistSettings.Mode }, "AssistMode");
+        var section = SettingsSection("assist", "AI アシスト", "AssistSettingsHeading", out var heading);
+        assistSettingsHeading = heading;
+        var mode = Id(new ComboBox { Header = "AI の接続先", ItemsSource = new[] { "使わない", "GitHub Copilot", "API キー（BYOK）" }, SelectedIndex = (int)assistSettings.Mode }, "AssistMode");
         var provider = Id(new ComboBox { Header = "種類", ItemsSource = new[] { "OpenAI 互換", "Anthropic", "Azure OpenAI" }, SelectedIndex = (int)assistSettings.Provider }, "AssistProvider");
         var wire = Id(new ComboBox { Header = "API 形式", ItemsSource = new[] { "Chat Completions", "Responses" }, SelectedIndex = (int)assistSettings.WireApi }, "AssistWireApi");
         var endpoint = Id(new TextBox { Header = "エンドポイント URL", Text = assistSettings.Endpoint }, "AssistEndpoint");
@@ -32,7 +31,7 @@ internal sealed partial class PlanWorkspaceView
         foreach (var control in new FrameworkElement[] { provider, endpoint, model, suggestions, wire, header, password, keyState, keyButtons })
             enabled.Children.Add(control);
         var check = Id(new Button { Content = "接続を確認" }, "AssistCheck"); enabled.Children.Add(check);
-        section.Children.Add(mode); section.Children.Add(enabled); section.Children.Add(feedback); settings.Children.Add(section);
+        section.Children.Add(mode); section.Children.Add(enabled); section.Children.Add(feedback);
         var generation = settingsGeneration;
         var composing = new HashSet<TextBox>(); var ended = new HashSet<TextBox>();
         var accepted = assistSettings;
