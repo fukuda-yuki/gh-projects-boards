@@ -60,6 +60,15 @@ dotnet run --project src/GhProjectsBoards.Report -c Release -- snapshot --projec
 dotnet run --project src/GhProjectsBoards.Report -c Release -- report --data <folder> --out REPORT.md
 ~~~
 
+## Management progress site
+
+A static GitHub Pages site for 経営層 lists the demo Projects and shows each one's weekly 状態の推移 and 完了率, with a per-Project CSV. It reads only the #272 raw records and needs no app, token or JavaScript; [management site](docs/management-site.md) defines the site configuration and page contract. The [pages workflow](.github/workflows/pages.yml) generates deterministic fictional demo data on every push to main that touches the site and deploys it to https://fukuda-yuki.github.io/gh-projects-boards/.
+
+~~~powershell
+dotnet run --project src/GhProjectsBoards.Report -c Release -- demo --out demo
+dotnet run --project src/GhProjectsBoards.Report -c Release -- site --data demo/raw --config demo/site.json --out site
+~~~
+
 ## Validation
 
 ~~~powershell
