@@ -68,6 +68,24 @@ internal sealed partial class PlanSheetView : Grid
     internal ImmutableArray<string> LaterDescendantsOf(string identity) =>
         PlanLateness.LaterDescendants(Schedule.Values.OrderBy(t => t.Input.RowId).ToArray(), identity, lateness);
     internal string IdentityOfRow(int rowId) => Schedule.Values.FirstOrDefault(t => t.Input.RowId == rowId)?.Input.Identity ?? "";
+    // #264: each blocking conflict in the 状態 tooltip's words, with both sides as the PMO reads them.
+    internal IReadOnlyList<string> ConflictValues(string identity) => BlockingConflicts
+        .Where(conflict => conflict.Identity == identity)
+        .Select(conflict => $"この PC {PlanWorkspaceView.ReviewValue(Session.Document, conflict.Field, conflict.Local)} ／ GitHub {PlanWorkspaceView.ReviewValue(Session.Document, conflict.Field, conflict.Remote)}")
+        .ToArray();
+    // #264: a dependency link whose predecessor row is scrolled out of the row viewport is replaced by a
+    // stub on the successor row, so no line runs across the visible chart. Rows the list has realized are
+    // the rows on screen; the virtualization buffer is a few rows and names the same stub either way.
+    internal bool RowIsOnScreen(int rowIndex)
+    {
+        var first = int.MaxValue; var last = -1;
+        foreach (var row in Realized) {
+            var index = RowIndexes.GetValueOrDefault(row.Identity, -1);
+            if (index < 0) continue;
+            first = Math.Min(first, index); last = Math.Max(last, index);
+        }
+        return last >= 0 && rowIndex >= first && rowIndex <= last;
+    }
     private Dictionary<string, string> peopleNames = new();
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<string>>.Empty);
     private ImmutableArray<string> untitledNewRows = [];
@@ -978,9 +996,9 @@ internal sealed partial class PlanSheetView : Grid
         columnHeaders.Clear();
         foreach (var column in VisibleColumns)
         {
-            var text = Id(new TextBlock { Text = column.Indicator ? "\uE946" : Header(column), Width = column.Width, Padding = new(8, 0, 4, 6), FontSize = 12, VerticalAlignment = VerticalAlignment.Bottom, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("TextFillColorSecondaryBrush") },
+            // #264: the 状態 column's header reads its label; an icon read as "information".
+            var text = Id(new TextBlock { Text = Header(column), Width = column.Width, Padding = column.Indicator ? new(2, 0, 2, 6) : new(8, 0, 4, 6), FontSize = column.Indicator ? 11 : 12, VerticalAlignment = VerticalAlignment.Bottom, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("TextFillColorSecondaryBrush") },
                 "PlanHeader" + (column.Indicator ? "Indicator" : column.Field?.ToString() ?? "Id"));
-            if (column.Indicator) text.FontFamily = new FontFamily("Segoe Fluent Icons");
             AutomationProperties.SetName(text, FullName(column)); AutomationProperties.SetHelpText(text, HeaderHelp(column));
             ToolTipService.SetToolTip(text, HeaderHelp(column));
             var cell = new Grid { Height = 48, Width = column.Width }; cell.Children.Add(text); sheetHead.Children.Add(cell);
@@ -1024,7 +1042,10 @@ internal sealed partial class PlanSheetView : Grid
             if (x < 0 || x > ChartViewport) continue;
             var late = group.Any(value => value.Item.Forecast > due);
             var closed = group.All(value => value.Item.Milestone.Closed);
-            var brush = Brush(closed ? "TextFillColorDisabledBrush" : late ? "SystemFillColorCriticalBrush" : "TextFillColorSecondaryBrush");
+            // #264: a milestone turns red when its target date has passed and its phase is not finished;
+            // a later forecast keeps the +N日 label without turning the marker red by itself.
+            var passed = due < StatusDate && !closed;
+            var brush = Brush(closed ? "TextFillColorDisabledBrush" : passed ? "SystemFillColorCriticalBrush" : "TextFillColorSecondaryBrush");
             var description = string.Join("\n", group.Select(value => MilestoneDescription(value.Item)));
             chartStatus.Children.Add(Id(new Microsoft.UI.Xaml.Shapes.Line { X1 = x, X2 = x, Y1 = 0, Y2 = height,
                 Stroke = brush, StrokeThickness = 1, StrokeDashArray = new DoubleCollection { 3, 2 } }, "PlanMilestoneLine_" + i));
@@ -1046,14 +1067,20 @@ internal sealed partial class PlanSheetView : Grid
             var next = g + 1 < groups.Length ? X(groups[g + 1].Key) : ChartViewport;
             var difference = late ? $"+{group.Max(value => value.Item.Difference)}日" : "";
             var title = string.Join(" / ", group.Select(value => value.Item.Milestone.Title));
-            var label = Id(new TextBlock { Text = (late ? difference + " " : "") + title, FontSize = 11, Foreground = brush,
+            // #264: the name comes first, then the lateness; when the whole label does not fit, the name
+            // alone stays readable (the full text is in the tooltip and accessible name).
+            var label = Id(new TextBlock { Text = difference.Length == 0 ? title : title + " " + difference, FontSize = 11, Foreground = brush,
                 TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, IsHitTestVisible = false }, "PlanMilestoneLabel_" + i);
             // Measure in the header's inherited text context, then constrain the rendered extent.
             chartHead.Children.Add(label);
             var left = Math.Max(x + 12, labelRight);
             var available = Math.Max(0, Math.Min(next - 12, ChartViewport) - left);
             label.Measure(new Size(double.PositiveInfinity, 22));
-            if (label.DesiredSize.Width > available) {
+            if (label.DesiredSize.Width > available && difference.Length > 0) {
+                label.Text = title;
+                label.Measure(new Size(double.PositiveInfinity, 22));
+            }
+            if (label.DesiredSize.Width > available && difference.Length > 0) {
                 label.Text = difference;
                 label.Measure(new Size(double.PositiveInfinity, 22));
             }

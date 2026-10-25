@@ -13,13 +13,13 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal sealed partial class PlanWorkspaceHostedTests
 {
-    private async Task MilestonePlan(bool sameDate = false, bool weekApart = false)
+    private async Task MilestonePlan(bool sameDate = false, bool weekApart = false, int dueOffset = 1)
     {
         readDay = new(2026, 10, 5);
         FakePlanEditor.Save(root, new([
             new(new("I1", "Late", "acme/repo") { MilestoneTitle = "Design", Phase = "SA", Start = readDay, End = readDay.AddDays(4) }, "", true) { Phase = "SA" },
             new(new("I2", "On time", "acme/repo") { MilestoneTitle = sameDate ? "Review" : "Design", Phase = "SA", Start = readDay, End = weekApart ? readDay.AddDays(11) : sameDate ? readDay.AddDays(3) : readDay }, "", true) { Phase = "SA" }], 3) {
-                Phases = ["SA"], Milestones = [new("M1", "acme/repo", "Design", readDay.AddDays(1)), new("M2", "acme/repo", sameDate ? "Review" : "Empty", weekApart ? readDay.AddDays(8) : sameDate ? readDay.AddDays(1) : readDay.AddDays(40))] });
+                Phases = ["SA"], Milestones = [new("M1", "acme/repo", "Design", readDay.AddDays(dueOffset)), new("M2", "acme/repo", sameDate ? "Review" : "Empty", weekApart ? readDay.AddDays(8) : sameDate ? readDay.AddDays(1) : readDay.AddDays(40))] });
         await Open("Late");
     }
 
@@ -68,7 +68,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(AutomationProperties.GetName(marker), Does.Contain("+3日"));
             Assert.That(Ui.Find<TextBlock>("PlanMilestoneLabel_0").Text, Does.Contain("+3日"));
             Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Line>("PlanMilestoneLine_0").X1, Is.EqualTo(sheet.X(readDay.AddDays(1))).Within(.1));
-            Assert.That(((SolidColorBrush)marker.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
+            // #264: the target is still ahead (10/6 against the 10/5 基準日), so the marker stays grey even
+            // though the forecast is late; the +3日 label and the tooltip carry that lateness.
+            Assert.That(((SolidColorBrush)marker.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
             Assert.That(marker.Focus(FocusState.Keyboard), Is.True);
             if (scale == 3) Assert.That(sheet.X(readDay.AddDays(40)), Is.InRange(0, sheet.ChartViewport));
         });
@@ -85,6 +87,42 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
         Assert.That(workspace.Session.Changes(readDay).TaskCount, Is.EqualTo(unpublished));
+    }
+
+    [Test]
+    public async Task MilestoneTurnsRedOnlyWhenTheTargetDateHasPassedAndThePhaseIsUnfinished()
+    {
+        await MilestonePlan(dueOffset: -4);
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex = 3);
+        await Ui.Idle();
+        await ReadyMilestone("PlanMilestone_0");
+        await Ui.Run(() => {
+            var marker = Ui.Find<Button>("PlanMilestone_0");
+            Assert.That(((SolidColorBrush)marker.Foreground).Color,
+                Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color),
+                "A target date behind the 基準日 on an unfinished phase turns the marker red.");
+            // #264: the label reads the name first, then the lateness.
+            var label = Ui.Find<TextBlock>("PlanMilestoneLabel_0").Text;
+            Assert.That(label, Does.StartWith("Design"));
+            Assert.That(label, Does.Contain("+"));
+        });
+        await RenderedEvidence.Capture(Ui.Find<Canvas>("PlanGanttHeader"), "milestone-passed-red");
+    }
+
+    [Test]
+    public async Task AClosedMilestoneStaysMutedAfterItsTargetDate()
+    {
+        readDay = new(2026, 10, 5);
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "Late", "acme/repo") { MilestoneTitle = "Design", Phase = "SA", Start = readDay, End = readDay.AddDays(4) }, "", true) { Phase = "SA" }], 3) {
+                Phases = ["SA"], Milestones = [new("M1", "acme/repo", "Design", readDay.AddDays(-4), true)] });
+        await Open("Late");
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex = 3);
+        await Ui.Idle();
+        await ReadyMilestone("PlanMilestone_0");
+        await Ui.Run(() => Assert.That(((SolidColorBrush)Ui.Find<Button>("PlanMilestone_0").Foreground).Color,
+            Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorDisabledBrush")).Color),
+            "A closed milestone is muted, never a passed-date warning."));
     }
 
     [TestCase(0, "Design", "I1", "+3日"), TestCase(1, "Review", "I2", "+2日")]

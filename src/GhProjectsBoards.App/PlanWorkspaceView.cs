@@ -63,7 +63,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Button conflictAction;
     private readonly TextBlock title = Id(new TextBlock { FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "OpenProjectName");
     // One form for every count, in a fixed width, so an edit that changes the count never moves the toolbar.
-    private readonly Border unpublishedBadge = new() { CornerRadius = new(10), Width = 128, Padding = new(6, 2, 6, 2), Background = PlanSheetView.Brush("SheetChangedMarkBrush") };
+    // #264: the count wears the unpublished bar; a positive count uses ordinary text over the same fill.
+    private readonly Border unpublishedBadge = new() { CornerRadius = new(10), Width = 128, Padding = new(6, 2, 6, 2), Background = PlanSheetView.Brush("ControlFillColorTransparentBrush") };
+    private readonly Border unpublishedBar = new() { Width = 3, CornerRadius = new(1.5), Background = PlanSheetView.Brush("SheetChangedMarkBrush"), Visibility = Visibility.Collapsed };
     private readonly TextBlock unpublished = Id(new TextBlock(), "PlanUnpublished");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanError");
     private readonly TextBox executable = Id(new TextBox { Header = "gh.exe", Text = ConnectionViewModel.FindGh(), MinWidth = 400 }, "PlanGhPath");
@@ -181,7 +183,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
         unpublished.VerticalAlignment = VerticalAlignment.Center;
         unpublished.TextAlignment = TextAlignment.Center;
         unpublished.FontSize = 12;
-        unpublishedBadge.Child = unpublished;
+        // #264: the shell row's unpublished count carries the same 3 px orange bar the marked rows wear,
+        // so the count and the rows read as one state.
+        var unpublishedContent = new Grid { ColumnDefinitions = { new() { Width = GridLength.Auto }, new() { Width = new(1, GridUnitType.Star) } } };
+        unpublishedBar.VerticalAlignment = VerticalAlignment.Stretch; unpublishedBar.Margin = new(0, 0, 4, 0);
+        unpublishedContent.Children.Add(unpublishedBar);
+        unpublishedContent.Children.Add(unpublished); Grid.SetColumn(unpublished, 1);
+        unpublishedBadge.Child = unpublishedContent;
         var unpublishedGroup = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new(8, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
         unpublishedGroup.Children.Add(unpublishedBadge);
         commandButtons.Children.Add(unpublishedGroup);
@@ -343,8 +351,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var count = sheet?.Session == session ? sheet.Unpublished.TaskCount : session.Changes(Today).TaskCount;
         unpublished.Text = $"未発行 {count.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"))} タスク";
         AutomationProperties.SetName(unpublished, unpublished.Text);
-        unpublished.Foreground = PlanSheetView.Brush(count > 0 ? "UnpublishedBadgeTextBrush" : "TextFillColorSecondaryBrush");
-        unpublishedBadge.Background = PlanSheetView.Brush(count > 0 ? "SheetChangedMarkBrush" : "ControlFillColorTransparentBrush");
+        unpublished.Foreground = PlanSheetView.Brush(count > 0 ? "TextFillColorPrimaryBrush" : "TextFillColorSecondaryBrush");
+        unpublishedBadge.Background = PlanSheetView.Brush(count > 0 ? "LayerFillColorDefaultBrush" : "ControlFillColorTransparentBrush");
+        unpublishedBar.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        AutomationProperties.SetAutomationId(unpublishedBar, count > 0 ? "PlanUnpublishedBar" : "");
+        AutomationProperties.SetName(unpublishedBar, count > 0 ? "未発行の変更" : "");
         var rows = session.Document.State.Rows;
         var parents = rows.Where(r => r.Parent is not null).Select(r => r.Parent).ToHashSet();
         var requirements = rows.Count(r => parents.Contains(r.Identity));

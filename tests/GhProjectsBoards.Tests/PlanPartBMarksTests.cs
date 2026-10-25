@@ -19,9 +19,9 @@ internal sealed class PlanPartBMarksTests
         var late = PlanLateness.Classify([task], new PlanCalendar(), Day);
         var row = document.State.Rows[0];
 
-        Assert.That(PlanSheetText.Indicator(PlanTaskNames.Of(document), row, task, late.Tasks["I1"], "", false), Does.Contain("期限超過"));
-        Assert.That(PlanSheetText.Indicator(PlanTaskNames.Of(document), row, task, late.Tasks["I1"], "", false, new PlanMarkVisibility(Overdue: false)),
-            Does.Not.Contain("期限超過"), "A hidden mark leaves the indicator tooltip.");
+        Assert.That(PlanSheetText.Mark(PlanTaskNames.Of(document), row, task, late.Tasks["I1"], "").Text, Does.Contain("終了日"));
+        Assert.That(PlanSheetText.Mark(PlanTaskNames.Of(document), row, task, late.Tasks["I1"], "", new PlanMarkVisibility(Overdue: false)).Text,
+            Does.Not.Contain("終了日"), "A hidden mark leaves the indicator tooltip.");
         Assert.That(late.OverdueTasks, Is.EqualTo(1), "The set and its count are unaffected by a hidden mark.");
     }
 

@@ -81,37 +81,75 @@ internal sealed partial class PlanSheetHostedTests
         }
     }
 
+    // #264: a link whose predecessor row is scrolled out of the window draws no line across the chart; the
+    // successor row shows its `#1204 →` stub instead, so the rows read as rows and not as grid lines.
     [Test]
-    public async Task LongCrossingDependenciesKeepTheirCurrentRowIdentityThroughBothScrollDirections()
+    public async Task AnOffscreenPredecessorShowsItsStubAndDrawsNoLineAcrossTheChart()
     {
         await SetLongCrossingDependencies();
-        var forwardX = await DependencyEntryX(1, 90, 90, true);
-        var reverseX = await DependencyEntryX(95, 3, 3, false);
-        foreach (var number in new[] { 30, 65, 90, 3, 55, 1 }) {
-            await ShowDependencyRow(number);
-            await SheetNativeInput.Rendered();
-            await Ui.Run(() => {
-                foreach (var row in sheet.Realized.Where(row => row.IsLoaded && row.Identity.Length > 0)) {
-                    var current = int.Parse(row.Identity[1..]);
-                    var expected = new List<string>();
-                    if (current is 1 or 2) expected.Add($"PlanArrow1_2_{current}");
-                    if (current is 1 or 90) expected.Add($"PlanArrow1_90_{current}");
-                    if (current is 3 or 95) expected.Add($"PlanArrow95_3_{current}");
-                    var arrows = Ui.Tree(row).OfType<Polyline>().Select(AutomationProperties.GetAutomationId).ToArray();
-                    Assert.That(arrows, Is.EquivalentTo(expected), $"Dependency identity on row {current}");
-                    var crossings = new List<double>();
-                    if (current is > 1 and < 90) crossings.Add(forwardX);
-                    if (current is > 3 and < 95) crossings.Add(reverseX);
-                    AssertCrossingGeometry(row, crossings);
-                    var heads = Ui.Tree(row).OfType<Polygon>().Select(AutomationProperties.GetAutomationId)
-                        .Where(id => id.StartsWith("PlanArrowHead", StringComparison.Ordinal)).ToArray();
-                    Assert.That(heads, Is.EquivalentTo(current switch {
-                        2 => new[] { "PlanArrowHead1_2_2" }, 3 => ["PlanArrowHead95_3_3"],
-                        90 => ["PlanArrowHead1_90_90"], _ => [] }));
-                }
-            });
-            if (number == 55) await Ui.Run(() => RenderedEvidence.Capture(sheet, "dependency-interior-crossings"));
-        }
+        await ShowDependencyRow(90);
+        await Ui.Run(() => {
+            var row = CurrentDependencyRow("I90")!;
+            var stub = Ui.Find<TextBlock>("PlanPredStub90", row);
+            Assert.That(stub.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(stub.Text, Does.StartWith("新1").And.EndWith("→"));
+            Assert.That(AutomationProperties.GetName(stub), Is.EqualTo("先行 新1（表示されていません）"));
+            Assert.That(ToolTipService.GetToolTip(stub), Is.EqualTo(AutomationProperties.GetName(stub)));
+            // The forward link (1 → 90) draws nothing in this window: no route and no crossing for it.
+            Assert.That(Ui.Tree(sheet).OfType<Polyline>().Any(line =>
+                AutomationProperties.GetAutomationId(line).StartsWith("PlanArrow1_90_", StringComparison.Ordinal)), Is.False);
+            // The reverse link's predecessor row 95 is visible, so that link still runs; its stroke is the only
+            // crossing in this row — the suppressed forward link would have added a second.
+            var reverseRoute = Ui.Find<Polyline>("PlanArrow95_3_95", CurrentDependencyRow("I95")!);
+            var reverseX = reverseRoute.TransformToVisual(sheet).TransformPoint(reverseRoute.Points[^1]).X;
+            AssertCrossingGeometry(row, [reverseX]);
+        });
+        await Ui.Run(() => RenderedEvidence.Capture(sheet, "offscreen-predecessor-stub"));
+
+        // Scrolling back to the predecessor draws its line again; the stub belongs to the successor window only.
+        await ShowDependencyRow(1);
+        await Ui.Run(() => {
+            var row = CurrentDependencyRow("I1")!;
+            Assert.That(Ui.Tree(row).OfType<Polyline>().Select(AutomationProperties.GetAutomationId),
+                Does.Contain("PlanArrow1_90_1"), "A visible predecessor draws the outgoing line.");
+            Assert.That(Ui.Tree(row).OfType<TextBlock>().Any(element =>
+                AutomationProperties.GetAutomationId(element).StartsWith("PlanPredStub", StringComparison.Ordinal)), Is.False);
+        });
+    }
+
+    // A link whose both rows are visible keeps its orthogonal arrow, its crossing through the rows between
+    // them and its head inside the successor bar; it survives horizontal scrolling.
+    [Test]
+    public async Task AVisiblePredecessorKeepsItsArrowCrossingAndHeadAcrossHorizontalScroll()
+    {
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [
+            new("I15", PlanField.Predecessors, new[] { "I1" }),
+            new("I1", PlanField.Title, "Edge start"), new("I15", PlanField.Title, "Edge finish")]), Today);
+        await Ui.Run(() => { sheet.Refresh(); Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"; });
+        await Ui.Idle();
+        await Ui.Run(() => sheet.List.ScrollIntoView("I1"));
+        await Ui.Until(() => CurrentDependencyRow("I1") is not null && CurrentDependencyRow("I15") is not null);
+        await ShowDependencyRow(15);
+        await WaitForDependencyPresentation(1, 15, 15);
+        double headX = 0;
+        await Ui.Run(() => {
+            AssertDependencyEntersBar(1, 15, 15, true);
+            headX = Ui.Find<Polygon>("PlanArrowHead1_15_15", CurrentDependencyRow("I15")!)
+                .TransformToVisual(sheet).TransformPoint(new(3, 6)).X;
+            var between = CurrentDependencyRow("I8");
+            Assert.That(between, Is.Not.Null, "The rows between the visible endpoints stay in the window.");
+            AssertCrossingGeometry(between!, [headX]);
+            // A visible predecessor owns its line: no stub.
+            Assert.That(Ui.Tree(CurrentDependencyRow("I15")!).OfType<TextBlock>().Any(element =>
+                AutomationProperties.GetAutomationId(element).StartsWith("PlanPredStub", StringComparison.Ordinal)), Is.False);
+        });
+        await Ui.Run(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true));
+        await Ui.Until(() => sheet.ChartOffset == 120);
+        await SheetNativeInput.Rendered();
+        await ShowDependencyRow(15);
+        await WaitForDependencyPresentation(1, 15, 15);
+        await Ui.Run(() => AssertDependencyEntersBar(1, 15, 15, true));
+        await Ui.Run(() => RenderedEvidence.Capture(sheet, "visible-predecessor-arrow"));
     }
 
     private async Task<double> DependencyEntryX(int from, int to, int number, bool down)
@@ -185,78 +223,6 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test]
-    public async Task HorizontalScrollThenPredecessorEditAndUndoKeepTheDistantArrowAttached()
-    {
-        await SetLongCrossingDependencies();
-        await ShowDependencyRow(90);
-        await Ui.Run(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true));
-        await Ui.Until(() => sheet.ChartOffset == 120);
-        await SheetNativeInput.Rendered();
-        await WaitForDependencyPresentation(1, 90, 90);
-        double originalStart = 0;
-        await Ui.Run(() => {
-            AssertDependencyEntersBar(1, 90, 90, true);
-            originalStart = Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X;
-        });
-        // #236 part B: the crossing is the arrow's entry into the successor's bar, and the arrow head in the
-        // successor's row is that same entry X. Derive the expected X from the tip the current view draws —
-        // the schedule's date and bar, not an X remembered from another scroll state, whose 8 px memory of an
-        // earlier state is what this case used to compare against.
-        var expected = await CurrentCrossingEntryXs();
-        await ShowDependencyRow(55);
-        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, expected));
-
-        await Ui.Run(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(0, null, null, true));
-        await Ui.Until(() => sheet.ChartOffset == 0);
-        await SheetNativeInput.Rendered();
-        expected = await CurrentCrossingEntryXs();
-        await ShowDependencyRow(55);
-        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, expected));
-        await Ui.Run(() => RenderedEvidence.Capture(sheet, "dependency-crossings-horizontal-origin"));
-
-        await Ui.Run(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true));
-        await Ui.Until(() => sheet.ChartOffset == 120);
-        await ShowDependencyRow(1);
-        await Edit(1, PlanField.Remaining, "16");
-        await ShowDependencyRow(90);
-        await SheetNativeInput.Rendered();
-        await WaitForDependencyPresentation(1, 90, 90);
-        await Ui.Run(() => {
-            AssertDependencyEntersBar(1, 90, 90, true);
-            Assert.That(Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X,
-                Is.EqualTo(originalStart + 24).Within(1));
-        });
-        expected = await CurrentCrossingEntryXs();
-        await ShowDependencyRow(55);
-        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, expected));
-
-        await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Z));
-        await Ui.Idle();
-        expected = await CurrentCrossingEntryXs();
-        await ShowDependencyRow(55);
-        await Ui.Run(() => AssertCrossingGeometry(CurrentDependencyRow("I55")!, expected));
-
-        await ShowDependencyRow(90);
-        await SheetNativeInput.Rendered();
-        await WaitForDependencyPresentation(1, 90, 90);
-        await Ui.Run(() => {
-            AssertDependencyEntersBar(1, 90, 90, true);
-            Assert.That(Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X,
-                Is.EqualTo(originalStart).Within(1));
-        });
-    }
-
-    // The screen X each long dependency enters its successor's bar at in the view the caller is measuring.
-    // Reading the drawn tip keeps the expectation derived from the schedule and scroll state in effect; a
-    // remembered X survives a scroll or an edit only by coincidence.
-    private async Task<double[]> CurrentCrossingEntryXs()
-    {
-        var forward = await DependencyEntryX(1, 90, 90, true);
-        var reverse = await DependencyEntryX(95, 3, 3, false);
-        return [forward, reverse];
-    }
-
-    [Test]
     public async Task FoldingAndFilteringRemoveHiddenDependenciesAndReindexVisibleArrowEnds()
     {
         await SetLongCrossingDependencies();
@@ -266,13 +232,14 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => sheet.SetFold("I89", true));
         await Ui.Ready<TextBox>("PlanCell1_Title");
         await Ui.Run(() => Assert.That(Ui.Tree(sheet).Select(AutomationProperties.GetAutomationId)
-            .Any(id => id.StartsWith("PlanArrow1_90_", StringComparison.Ordinal)), Is.False));
+            .Any(id => id.StartsWith("PlanArrow", StringComparison.Ordinal) && id.Contains("_90_", StringComparison.Ordinal)), Is.False));
 
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Edge");
         await Ui.Until(() => sheet.List.Items.Count == 5);
         await Ui.Ready<TextBox>("PlanCell95_Title");
         await SheetNativeInput.Rendered();
         await Ui.Until(() => sheet.List.Items.Cast<string>().All(identity => CurrentDependencyRow(identity) is not null));
+        // Filtered to five rows every endpoint is on screen, so the links between them are drawn again.
         await WaitForDependencyPresentation(1, 3, 90);
         await WaitForDependencyPresentation(4, 2, 3);
         await Ui.Run(() => {
@@ -335,6 +302,6 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => sheet.List.Items.Count == 100);
         await Ui.Ready<TextBox>("PlanCell1_Title");
         await Ui.Run(() => Assert.That(Ui.Tree(sheet).Select(AutomationProperties.GetAutomationId)
-            .Any(id => id.StartsWith("PlanArrow1_90_", StringComparison.Ordinal)), Is.False));
+            .Any(id => id.StartsWith("PlanArrow", StringComparison.Ordinal) && id.Contains("_90_", StringComparison.Ordinal)), Is.False));
     }
 }
