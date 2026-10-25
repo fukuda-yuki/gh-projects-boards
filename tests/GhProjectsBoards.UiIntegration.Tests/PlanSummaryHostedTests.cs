@@ -147,7 +147,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Click("SummaryMonth_U1_0");
         });
         // The month drill-down is the side panel beside the matrix (#230 D3), not the bottom detail.
-        await Ui.Ready<FrameworkElement>("SummaryLoadPanel");
+        await Ui.Ready<FrameworkElement>("SummaryLoadPanel"); await Ui.Ready<FrameworkElement>("SummaryLoadTasks"); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Tree(Ui.Find<PlanSummaryView>("PlanSummary")).OfType<FrameworkElement>().Any(e => AutomationProperties.GetAutomationId(e) == "SummaryTasks"), Is.False);
             Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryLoadTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryLoadTask_")), Is.EqualTo(2));
@@ -276,4 +276,5 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
 }
+
 

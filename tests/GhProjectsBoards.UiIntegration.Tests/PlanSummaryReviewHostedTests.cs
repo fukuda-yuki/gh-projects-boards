@@ -128,8 +128,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         } else {
             // The person matrix owns its rows' vertical range (sticky header): the wheel moves its body
             // while the page keeps its own offset.
-            var body = Ui.Find<ScrollViewer>("SummaryMatrixBody");
-            var bodyBefore = body.VerticalOffset; var pageBefore = scroll.VerticalOffset;
+            ScrollViewer body = null!; double bodyBefore = 0, pageBefore = 0;
+            await Ui.Run(() => { body = Ui.Find<ScrollViewer>("SummaryMatrixBody"); bodyBefore = body.VerticalOffset; pageBefore = scroll.VerticalOffset; });
             await SheetNativeInput.ScrollWheel(-120);
             await Ui.Until(() => body.VerticalOffset > bodyBefore);
             await Ui.Run(() => {
@@ -211,5 +211,6 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + (commit ? 1 : 0)));
     }
 }
+
 
 
