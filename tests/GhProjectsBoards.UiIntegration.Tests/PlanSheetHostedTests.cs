@@ -749,7 +749,7 @@ internal sealed partial class PlanSheetHostedTests
     // the published-end basis is retired. Each state states the plan's own dates, because a task with no dates
     // has no forecast and no pill.
     [TestCase("finish", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
-    [TestCase("start", "開始日 10/2 を過ぎて未着手", true, "自分の残による")]
+    [TestCase("start", "開始日 10/2 を過ぎて未着手", false, "自分の残による")]
     [TestCase("moved", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
     [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1日", false, "自分の残による")]
     // The predecessor state names its cause through the selection line's link, not the pill's detail line.
@@ -891,7 +891,7 @@ internal sealed partial class PlanSheetHostedTests
     [TestCase("finish", "遅れ: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
     [TestCase("finish-estimate", "遅れ: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true, Category = "OverdueMissingWork")]
     [TestCase("finish-unknown", "遅れ: 終了日 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
-    [TestCase("start", "遅れ: 開始日 10/2 を過ぎて未着手", "\uE7BA", true)]
+    [TestCase("start", "遅れ: 開始日 10/2 を過ぎて未着手", "\uE7BA", false)]
     // #236 part B: the mark compares the plan with the forecast, so 予定より遅れ names the cause and the
     // working days it slipped; the retired 「発行済み M/d から」 basis no longer appears anywhere.
     [TestCase("later", "遅れ: 見込終了 +1日（自分の残による）", "\uE7BA", false)]

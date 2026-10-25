@@ -134,24 +134,27 @@ internal sealed class PlanSummaryView : UserControl
         // explain it. Its count buttons press the strip's toggle on the plan, nothing else.
         var difference = report.FinishDifference is null ? "—" : report.FinishDifference > 0 ? $"終了日より {report.FinishDifference} 稼働日遅れ" : report.FinishDifference < 0 ? $"終了日より {-report.FinishDifference} 稼働日前" : "終了日どおり";
         var verdict = PlanSummary.Verdict(report, s);
-        var verdictPanel = new StackPanel { Spacing = 3 };
+        // #260 R6-4: the verdict comes first. It stays two rows so the measures and tables below keep the
+        // #127/#230 fold at 1920 × 1080: the worst slip in words, then the forecast, the phases that slip and
+        // the same counts as buttons that press the strip's toggle.
+        var verdictPanel = new StackPanel { Spacing = 2, Margin = new(0, 2, 0, 4) };
         var verdictHeadline = Text(verdict.Headline, "SummaryVerdictHeadline");
-        verdictHeadline.FontSize = 16; verdictHeadline.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+        verdictHeadline.FontSize = 15; verdictHeadline.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
         if (verdict.Slipping) verdictHeadline.Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush");
         verdictPanel.Children.Add(verdictHeadline);
-        verdictPanel.Children.Add(Text($"完了見込 {Finish(report.Total)} · {difference}", "SummaryVerdictForecast"));
+        var verdictLine = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 14, VerticalAlignment = VerticalAlignment.Center };
+        verdictLine.Children.Add(Text($"完了見込 {Finish(report.Total)} · {difference}", "SummaryVerdictForecast"));
         if (verdict.SlippingPhases.Count > 0)
-            verdictPanel.Children.Add(Text("目標日より遅れている工程: " + string.Join(" · ", verdict.SlippingPhases.Select(p => $"{p.Phase} +{p.Days}日")), "SummaryVerdictPhases"));
-        var verdictCounts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new(0, 4, 0, 0) };
+            verdictLine.Children.Add(Text("目標日より遅れている工程: " + string.Join(" · ", verdict.SlippingPhases.Select(p => $"{p.Phase} +{p.Days}日")), "SummaryVerdictPhases"));
         void VerdictCount(string label, string id, PlanToggle toggle, IReadOnlyList<string> identities) {
             if (identities.Count == 0) return;
-            verdictCounts.Children.Add(Button($"{label} {identities.Count:N0}", id, () => openToggle(toggle)));
+            verdictLine.Children.Add(Button($"{label} {identities.Count:N0}", id, () => openToggle(toggle)));
         }
         VerdictCount("遅れ", "SummaryVerdictLate", PlanToggle.Late, report.Attention.Late);
         VerdictCount("遅れの原因", "SummaryVerdictCause", PlanToggle.Cause, report.Attention.Cause);
         VerdictCount("見積超過", "SummaryVerdictOverEstimate", PlanToggle.OverEstimate, report.Attention.OverEstimate);
         VerdictCount("未更新", "SummaryVerdictNotUpdated", PlanToggle.NotUpdated, report.Attention.NotUpdated);
-        if (verdictCounts.Children.Count > 0) verdictPanel.Children.Add(verdictCounts);
+        verdictPanel.Children.Add(verdictLine);
         body.Children.Add(Id(verdictPanel, "SummaryVerdict"));
         if (s.ProjectEnd is null) {
             body.Children.Add(Text("終了日が未設定です", "SummaryNoEnd"));

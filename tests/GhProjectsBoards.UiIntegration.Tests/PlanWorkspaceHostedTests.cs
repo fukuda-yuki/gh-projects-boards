@@ -352,9 +352,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator1")), Does.Contain("見積のないタスク 1"));
         });
         await PressAttentionToggle("PlanAttentionAdded");
-        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 3);
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 4);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I4", "I5", "" }));
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I1", "I4", "I5", "" }));
             Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.Empty, "The toggle filter is not title text.");
             Assert.That(Ui.Find<ToggleButton>("PlanAttentionAdded").IsChecked, Is.True);
         });
@@ -385,8 +385,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(new DateTime(2026, 10, 20)));
         await Ui.Until(() => workspace.Session!.Document.State.Settings.StatusDate == new DateOnly(2026, 10, 20));
-        await Ui.Ready<ToggleButton>("PlanAttentionLate");
-        await Ui.Run(() => Assert.That(AttentionLabel("PlanAttentionLate"), Is.EqualTo("遅れ 1"), "The old 基準日 makes it late."));
+        await Ui.Until(() => AttentionLabel("PlanAttentionLate") == "遅れ 1", () => "The old 基準日 makes it late.");
         await RefreshFromToolbar();
         await Ui.Run(() => {
             Assert.That(workspace.Session!.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 6)), "The read day becomes the 基準日.");
@@ -674,7 +673,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 0 · タスク 3"));
-            var late = overdue || later ? "遅れ 1" : "遅れ 0";
+            var lateCount = (overdue ? 1 : 0) + (later ? 1 : 0);
+            var late = $"遅れ {lateCount}";
             Assert.That(AttentionLabel("PlanAttentionLate"), Is.EqualTo(late));
             Assert.That(AttentionLabel("PlanAttentionCause"), Is.EqualTo("遅れの原因 0"),
                 "A late task with no late successor is not a cause (#260).");

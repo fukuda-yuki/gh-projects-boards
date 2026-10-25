@@ -150,20 +150,20 @@ internal sealed partial class PlanSheetView
         progressLine.Text = "";
         estimateDetail.Text = "";
         if (late is not null && task is not null) {
+            // The tag keeps the red/ochre distinction while the strip counts one 遅れ set (#260 D0). A
+            // requirement row states only the forecast form, because its dates are its children's.
+            if (!task.IsSummary && late.OverdueKind is { } kind && late.MissedDate is { } missed) {
+                var missedDate = missed.ToString("M/d", CultureInfo.InvariantCulture);
+                slip.Text = kind == PlanOverdueKind.Finish ? $"終了日 {missedDate} を過ぎて未完了" : $"開始日 {missedDate} を過ぎて未着手";
+                if (late.DaysLater is { } days) slip.Text += $" · +{days}日";
+            } else if (late.DaysLater is { } days && task.End.Value is { } planned) {
+                slip.Text = $"見込終了 {ForecastLabel(selected)} · {planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days}日";
+            }
             if (task.IsSummary) {
                 // A requirement row's dates are its children's: it answers with the sets below it instead.
                 var counts = LatenessCounts(late);
                 latenessDetail.Text = counts.Length > 0 ? "配下: " + counts : "";
             } else {
-                // The tag keeps the red/ochre distinction while the strip counts one 遅れ set (#260 D0).
-                // A requirement row states the slip of its roll-up too; the red-case tag belongs to tasks.
-                if (!task.IsSummary && late.OverdueKind is { } kind && late.MissedDate is { } missed) {
-                    var missedDate = missed.ToString("M/d", CultureInfo.InvariantCulture);
-                    slip.Text = kind == PlanOverdueKind.Finish ? $"終了日 {missedDate} を過ぎて未完了" : $"開始日 {missedDate} を過ぎて未着手";
-                    if (late.DaysLater is { } days) slip.Text += $" · +{days}日";
-                } else if (late.DaysLater is { } days && task.End.Value is { } planned) {
-                    slip.Text = $"見込終了 {ForecastLabel(selected)} · {planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days}日";
-                }
                 // The effect or the cause, with its link (#260 2).
                 var delayed = late.IsLate ? DelayedSuccessorsOf(selected) : [];
                 if (delayed.Length > 0) {

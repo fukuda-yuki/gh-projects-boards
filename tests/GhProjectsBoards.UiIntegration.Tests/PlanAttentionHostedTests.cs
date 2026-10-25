@@ -78,7 +78,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Text("PlanStatusCounts"), Is.EqualTo("要求事項 1 · タスク 3"));
         });
         await PressAttentionToggle("PlanAttentionLate");
-        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Cast<string>().Count() == 3);
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 4);
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I1", "I2", "I3", "" }));
             Assert.That(Ui.Find<ToggleButton>("PlanAttentionLate").IsChecked, Is.True);
@@ -107,20 +107,20 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open("R01 要求事項");
         // 担当者 ▾: a search box over the Project's people; checking one value filters with OR inside it.
         await Ui.Run(() => Ui.Click("PlanAttentionAssignees"));
-        await Ui.Until(() => Ui.Find<TextBox>("PlanAttentionAssigneeSearch").IsLoaded);
+        await Ui.Ready<TextBox>("PlanAttentionAssigneeSearch");
         await Ui.Run(() => Ui.Find<TextBox>("PlanAttentionAssigneeSearch").Text = "person-U1");
         await Ui.Until(() => Ui.Tree(Ui.Root).Concat(OpenPopups()).Any(e => AutomationProperties.GetAutomationId(e) == "PlanAttentionAssignee_U1"));
         await Ui.Run(() => Ui.ToggleToggleButton("PlanAttentionAssignee_U1"));
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 4);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I2", "I4", "" }));
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I1", "I2", "I4", "" }), "The requirement row stays as context.");
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionAssignees")), Is.EqualTo("担当者: person-U1"));
         });
         // 工程 ▾ narrows the same match set; the parts combine with AND.
         await Ui.Run(() => Ui.Click("PlanAttentionPhases"));
         await Ui.Until(() => Ui.Tree(Ui.Root).Concat(OpenPopups()).Any(e => AutomationProperties.GetAutomationId(e) == "PlanAttentionPhase_PS"));
         await Ui.Run(() => Ui.ToggleToggleButton("PlanAttentionPhase_PS"));
-        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 3);
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 2);
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I4", "" }));
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionPhases")), Is.EqualTo("工程: PS"));
@@ -135,7 +135,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Text("PlanStatusCounts"), Is.EqualTo("条件に一致するタスクはありません"));
         });
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "");
-        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 3);
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 2);
         await Ui.Run(() => {
             Ui.Click("PlanAttentionClearAssignees");
             Ui.Click("PlanAttentionClearPhases");
@@ -194,7 +194,7 @@ internal sealed partial class PlanWorkspaceHostedTests
                 "The Issue reference sits next to the task name.");
         });
         // 後続を表示 applies the delayed successors as a named set on the strip.
-        await Ui.Run(() => Ui.Click("PlanSelectionSuccessorFilter"));
+        await Ui.Run(() => Ui.Invoke("PlanSelectionSuccessorFilter"));
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 3);
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I1", "I3", "" }));
@@ -220,13 +220,13 @@ internal sealed partial class PlanWorkspaceHostedTests
                 ProjectStart = new(2026, 9, 1), ProjectEnd = new(2026, 10, 5) }), new DateOnly(2026, 10, 6));
         });
         await Ui.Run(() => Ui.Click("PlanShowSummary"));
-        await Ui.Until(() => Ui.Tree(Ui.Root).Any(e => AutomationProperties.GetAutomationId(e) == "SummaryVerdictHeadline"));
+        await Ui.Ready<TextBlock>("SummaryVerdictHeadline");
         await Ui.Run(() => {
             var headline = Ui.Find<TextBlock>("SummaryVerdictHeadline");
             Assert.That(headline.Text, Does.Contain("稼働日遅れ"));
             Assert.That(headline.Text, Does.Contain("完了見込"), "The verdict names the worst slip first.");
-            Assert.That(Ui.Find<Button>("SummaryVerdictLate").Content?.ToString(), Is.EqualTo("遅れ 2"));
-            Assert.That(Ui.Find<Button>("SummaryVerdictCause").Content?.ToString(), Is.EqualTo("遅れの原因 1"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryVerdictLate")), Is.EqualTo("遅れ 2"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryVerdictCause")), Is.EqualTo("遅れの原因 1"));
             // The verdict is the first content line of the summary page.
             Assert.That(headline.TransformToVisual(Ui.Root).TransformPoint(new()).Y,
                 Is.LessThan(Ui.Find<TextBlock>("SummaryRemainingDays").TransformToVisual(Ui.Root).TransformPoint(new()).Y));

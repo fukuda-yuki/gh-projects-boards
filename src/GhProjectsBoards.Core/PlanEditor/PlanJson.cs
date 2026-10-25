@@ -85,9 +85,10 @@ internal static class PlanJson
             (sync.Unverified.IsEmpty || sync.Publish is not null) && sync.Unverified.All(id => checkpoint.Document.State.Rows.Any(r => r.Identity == id)) && !sync.Failures.IsDefault && sync.Failures.All(f => PlanField.IsDefined(f.Field) && !string.IsNullOrWhiteSpace(f.Reason)) && !sync.Conflicts.IsDefault && !sync.Unavailable.IsDefault && sync.InaccessibleCount >= 0 && sync.DraftCount >= 0 && sync.PullRequestCount >= 0 &&
             sync.Unavailable.Distinct().Count() == sync.Unavailable.Length && sync.Unavailable.All(id => checkpoint.Document.Baseline.Rows.Any(r => r.Identity == id)) &&
             !sync.CannotUpdate.IsDefault && sync.CannotUpdate.Distinct().Count() == sync.CannotUpdate.Length &&
-            // #238: observations belong to rows the plan holds, and the placed Issues stay a set.
-            sync.ProgressUpdatedAt.All(pair => checkpoint.Document.State.Rows.Any(r => r.Identity == pair.Key)) &&
-            (sync.LastRead is not { } lastRead || lastRead.Added.Distinct().Count() == lastRead.Added.Length && lastRead.Added.All(id => checkpoint.Document.State.Rows.Any(r => r.Identity == id))), "更新状態が不正です。");
+            // #238: read observations stay a set. They may name rows a later local delete removed, like the
+            // latest read's placed Issues, so their membership is not part of the stored invariant.
+            sync.ProgressUpdatedAt is not null &&
+            (sync.LastRead is not { } lastRead || lastRead.Added.Distinct().Count() == lastRead.Added.Length), "更新状態が不正です。");
         PlanOperations.Require(sync.Conflicts.Select(c => (c.Identity, c.Field)).Distinct().Count() == sync.Conflicts.Length &&
             sync.Conflicts.All(c => PlanField.IsDefined(c.Field) && c.Field != PlanField.NewTask && c.Baseline is not null && c.Local is not null && c.Remote is not null &&
                 (c.DeletedFieldName is null || PlanSheetColumns.IsExtra(c.Field) && c.Remote == "null" && !checkpoint.Document.Baseline.Columns.Any(f => "Project:" + f.Id == c.Field)) &&

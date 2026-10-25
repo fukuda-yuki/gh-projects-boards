@@ -263,6 +263,14 @@ internal static class Ui
             ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(split).GetPattern(PatternInterface.Invoke)).Invoke();
         } else Click((Button)control);
     }
+    // HyperlinkButton and other button-like controls are not Button: invoke the control the PMO presses.
+    public static void Invoke(string id)
+    {
+        var control = Find<Control>(id);
+        Assert.That(control.IsLoaded && control.IsEnabled, Is.True,
+            $"The control {id} must be loaded and enabled (loaded={control.IsLoaded}, enabled={control.IsEnabled})");
+        ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(control).GetPattern(PatternInterface.Invoke)).Invoke();
+    }
     public static void Toggle(CheckBox checkbox)
     {
         Assert.That(checkbox.IsLoaded && checkbox.IsEnabled, Is.True);
