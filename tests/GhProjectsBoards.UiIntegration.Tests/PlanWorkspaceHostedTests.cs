@@ -2157,6 +2157,12 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Ui.Run(() => Ui.Click("PlanShowSettings"));
         await Ui.Ready<ComboBox>("PlanMapEstimate");
+        // The section list realizes its controls over the first layout passes after the page becomes visible, so
+        // wait for one anchor in each part of the page before a case drives them (#251).
+        await Ui.Ready<Button>("PlanSettingsBack");
+        await Ui.Ready<Button>("PlanCompanyDaysOffAdd");
+        await Ui.Ready<CheckBox>("PlanShowOverdueMark");
+        await Ui.Ready<Button>("PlanImportSettings");
         await Ui.Idle();
     }
     // #253: the settings page lists only the people a row holds, so a case that seeds stored people for the
@@ -2525,6 +2531,8 @@ internal sealed partial class PlanWorkspaceHostedTests
 
     private async Task AddDay(string id, DateOnly day)
     {
+        await Ui.Ready<CalendarDatePicker>(id + "Date");
+        await Ui.Ready<Button>(id + "Add");
         await Ui.Run(() => {
             Ui.Find<CalendarDatePicker>(id + "Date").Date = new DateTimeOffset(day.Year, day.Month, day.Day, 0, 0, 0, TimeSpan.Zero);
             Ui.Click(id + "Add");

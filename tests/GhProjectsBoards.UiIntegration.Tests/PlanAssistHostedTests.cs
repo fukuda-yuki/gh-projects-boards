@@ -653,6 +653,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<Button>("AssistOpenSettings");
         await Ui.Run(() => Ui.Click("AssistOpenSettings"));
         await Ui.Ready<ComboBox>("AssistMode");
+        await Ui.Ready<Button>("PlanSettingsBack");
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Until(() => Ui.Find<Border>("PlanAssistPane").Visibility == Visibility.Visible);
         await Ui.Run(ToggleAssist);

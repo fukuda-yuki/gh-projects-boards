@@ -93,6 +93,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<MenuFlyoutItem>("PlanSheetColumns");
         await Ui.Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
             Ui.Popup<MenuFlyoutItem>("PlanSheetColumns")!).GetPattern(PatternInterface.Invoke)).Invoke());
+        // The section list realizes its pane and content over the first layout passes after the page appears.
+        await Ui.Ready<Button>("PlanSettingsBack");
     }
 
     [Test]
