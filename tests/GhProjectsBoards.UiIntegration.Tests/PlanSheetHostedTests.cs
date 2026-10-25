@@ -679,7 +679,10 @@ internal sealed partial class PlanSheetHostedTests
                 var text = Ui.Find<TextBlock>("PlanStartReason");
                 var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
                 var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
-                Assert.That(gap, Is.InRange(8d, 12d), "The late pill follows the reason immediately.");
+                // The selection line reserves its own column for the #229 start notice between the reason and
+                // the slip pill; collapsed, it leaves exactly the grid's two spacings between them.
+                var explanation = (Grid)VisualTreeHelper.GetParent(text);
+                Assert.That(gap, Is.InRange(explanation.ColumnSpacing, 2 * explanation.ColumnSpacing + 1d), "The late pill follows the reason immediately.");
                 Assert.That(pill.CornerRadius.TopLeft, Is.GreaterThan(0));
             }
             // A closed task has no forecast, so the delivered model shows no slip for it: the only thing the
