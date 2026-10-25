@@ -1120,15 +1120,11 @@ internal sealed partial class PlanSheetView : Grid
             var next = g + 1 < groups.Length ? X(groups[g + 1].Key) : ChartViewport;
             var difference = late ? $"+{group.Max(value => value.Item.Difference)}日" : "";
             var title = string.Join(" / ", group.Select(value => value.Item.Milestone.Title));
-<<<<<<< HEAD
-            // #264: the name comes first, then the lateness; when the whole label does not fit, the name
-            // alone stays readable (the full text is in the tooltip and accessible name).
-            var label = Id(new TextBlock { Text = difference.Length == 0 ? title : title + " " + difference, FontSize = 11, Foreground = brush,
-=======
-            // Name first, then the target and how late it is (#265): 「PS 1/27 +3日」.
+            // #265: the name comes first, then the target date and how late it is (「PS 1/27 +3日」); when the
+            // whole label does not fit, the name alone stays readable (the full text is in the tooltip and
+            // accessible name, #264).
             var text = $"{title} {due.Month}/{due.Day}" + (late ? " " + difference : "");
             var label = Id(new TextBlock { Text = text, FontSize = 11, Foreground = brush,
->>>>>>> origin/main
                 TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, IsHitTestVisible = false }, "PlanMilestoneLabel_" + i);
             // Measure in the header's inherited text context, then constrain the rendered extent.
             chartHead.Children.Add(label);
