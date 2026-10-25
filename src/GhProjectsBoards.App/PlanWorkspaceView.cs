@@ -331,7 +331,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         // Keep the requested selection until queued switches finish, so another selection still raises an event.
         if (pendingViewSelections != 0) return;
         syncingTabs = true;
-        try { tabs.SelectedItem = currentPage == "tasks" ? tasksTab : currentPage == "summary" ? summaryTab : null; }
+        try { tabs.SelectedItem = currentPage is "tasks" or "publish" ? tasksTab : currentPage == "summary" ? summaryTab : null; }
         finally { syncingTabs = false; }
     }
     private void UpdateStatus()
@@ -574,14 +574,15 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private void UpdateCommandAvailability()
     {
         foreach (var button in commandButtons.Children.OfType<Button>())
-            button.IsEnabled = busyKind is null && (button == undoButton ? workspace.Session?.UndoCount > 0
-                : button == redoButton ? workspace.Session?.RedoCount > 0 : true);
+            // #224: an Undo or a refresh would change the plan under the open review, so both wait until it closes.
+            button.IsEnabled = busyKind is null && (button == undoButton ? workspace.Session?.UndoCount > 0 && currentPage != "publish"
+                : button == redoButton ? workspace.Session?.RedoCount > 0 && currentPage != "publish" : true);
     }
     private void SetRemotePresentation()
     {
         var busy = busyKind is not null;
         UpdateCommandAvailability();
-        refreshButton.IsEnabled = !busy;
+        refreshButton.IsEnabled = !busy && currentPage != "publish";
         UpdateResetAvailability();
         projectPicker.IsEnabled = settingsButton.IsEnabled = !busy;
         tasksTab.IsEnabled = summaryTab.IsEnabled = !busy;
@@ -707,7 +708,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private void Show(string page)
     {
         if (page != "tasks") sheet?.CancelPendingFilter();
-        currentPage = page; SyncTabs(); UpdateAssistVisibility(); UpdateDetailVisibility();
+        currentPage = page; SyncTabs(); UpdateAssistVisibility(); UpdateDetailVisibility(); SetRemotePresentation();
         openPublish.Style = page == "publish" ? null : (Style)Application.Current.Resources["AccentButtonStyle"];
         legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         summaryArea.Visibility = page == "summary" ? Visibility.Visible : Visibility.Collapsed;
