@@ -158,9 +158,9 @@ internal sealed class PlanCsvExportTests
     {
         var row = new PlanRow("I1", "遅れ", "acme/repo") { Start = Today.AddDays(-3), End = Today.AddDays(-3), Remaining = 8 };
         var document = Columns(Document(row), "Indicator", "Title");
-        Assert.That(Read(PlanCsvExport.Create(document, Today))[1][1], Does.Contain("期限超過"));
+        Assert.That(Read(PlanCsvExport.Create(document, Today))[1][1], Does.Contain("終了日"));
         // #251 D2: the export shows what the plan sheet shows, so a hidden mark is absent here too.
-        Assert.That(Read(PlanCsvExport.Create(document, Today, new PlanMarkVisibility(Overdue: false)))[1][1], Does.Not.Contain("期限超過"));
+        Assert.That(Read(PlanCsvExport.Create(document, Today, new PlanMarkVisibility(Overdue: false)))[1][1], Does.Not.Contain("終了日"));
     }
 
     [Test]

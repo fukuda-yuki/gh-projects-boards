@@ -35,16 +35,24 @@ internal sealed class PlanPartBMarksTests
         var schedule = PlanOperations.Schedule(document, Day);
         var tasks = schedule.ToDictionary(t => t.Input.Identity);
         var lateClassification = PlanLateness.Classify(schedule, new PlanCalendar(), Day);
-        string Indicator(string identity, PlanMarkVisibility? marks = null) => PlanSheetText.Indicator(PlanTaskNames.Of(document),
-            document.State.Rows.Single(r => r.Identity == identity), tasks[identity], lateClassification.Tasks[identity], "", false, marks);
+        PlanRowMarkText Row(string identity, PlanMarkVisibility? marks = null) => PlanSheetText.Mark(PlanTaskNames.Of(document),
+            document.State.Rows.Single(r => r.Identity == identity), tasks[identity], lateClassification.Tasks[identity], "", marks);
 
-        Assert.That(Indicator("I1"), Does.Contain("配下に期限超過 1").And.Contain("予定より遅れ 1").And.Contain("見積超過 1"));
-        Assert.That(Indicator("I1", new PlanMarkVisibility(Overdue: false)), Does.Not.Contain("期限超過").And.Contain("予定より遅れ 1").And.Contain("見積超過 1"),
+        Assert.That(Row("I1").Mark, Is.EqualTo(PlanRowMark.LatePassed));
+        Assert.That(Row("I1").Text, Does.Contain("配下: 遅れ 2").And.Contain("見積超過 1"));
+        var hidePassed = Row("I1", new PlanMarkVisibility(Overdue: false));
+        Assert.That(hidePassed.Mark, Is.EqualTo(PlanRowMark.LateForecast), "Hiding the passed-date mark leaves the forecast mark.");
+        Assert.That(hidePassed.Text, Does.Contain("配下: 遅れ 1").And.Not.Contain("遅れ 2").And.Contain("見積超過 1"),
             "Hiding 期限超過 leaves the requirement row's other marks alone.");
-        Assert.That(Indicator("I1", new PlanMarkVisibility(Later: false)), Does.Not.Contain("予定より遅れ").And.Contain("期限超過 1").And.Contain("見積超過 1"));
-        Assert.That(Indicator("I1", new PlanMarkVisibility(OverEstimate: false)), Does.Not.Contain("見積超過").And.Contain("期限超過 1").And.Contain("予定より遅れ 1"));
-        Assert.That(Indicator("I3"), Does.Contain("見積超過"), "The row's own over-estimate mark is shown by default.");
-        Assert.That(Indicator("I3", new PlanMarkVisibility(OverEstimate: false)), Does.Not.Contain("見積超過"), "A hidden 見積超過 mark leaves the row tooltip.");
+        Assert.That(Row("I1", new PlanMarkVisibility(Later: false)).Text, Does.Contain("配下: 遅れ 1").And.Contain("見積超過 1"));
+        var hideOver = Row("I1", new PlanMarkVisibility(OverEstimate: false));
+        Assert.That(hideOver.Text, Does.Contain("配下: 遅れ 2").And.Not.Contain("見積超過"));
+        Assert.That(Row("I1", new PlanMarkVisibility(Overdue: false, Later: false)).Mark, Is.EqualTo(PlanRowMark.None),
+            "With both lateness switches off the requirement row carries no 状態 mark.");
+        // #264: 見積超過 is the 見積 h cell's figure, not a 状態 mark; its switch hides only that figure.
+        Assert.That(PlanSheetText.EstimateOverrun(tasks["I3"]), Does.EndWith("h"), "The row's own over-estimate figure is shown by default.");
+        Assert.That(PlanSheetText.EstimateOverrun(tasks["I3"], new PlanMarkVisibility(OverEstimate: false)), Is.Null,
+            "A hidden 見積超過 mark leaves the effort cell.");
         Assert.That(lateClassification.OverdueTasks + lateClassification.OverEstimateTasks, Is.GreaterThan(0), "The sets stay complete.");
     }
 

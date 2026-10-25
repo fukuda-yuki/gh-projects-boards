@@ -45,7 +45,7 @@ internal static class PlanCsvExport
                     // #264's one 状態 vocabulary; #251's display preference decides which lateness marks show.
                     "Indicator" => Text(PlanSheetText.Mark(taskNames, row, task, lateness.Tasks.GetValueOrDefault(row.Identity),
                         PlanSheetText.RemoteProblem(document.Sync, row.Identity),
-                        marks ?? PlanMarkVisibility.From(document.State.Settings)).Text),
+                        marks ?? PlanMarkVisibility.All).Text),
                     "ForecastEnd" => Text(PlanSheetText.ForecastEnd(task, lateness.Tasks.GetValueOrDefault(row.Identity))),
                     PlanField.Estimate => Number(task.Estimate), PlanField.Remaining => Number(task.Remaining), PlanField.Actual => Number(task.Actual),
                     PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value),
