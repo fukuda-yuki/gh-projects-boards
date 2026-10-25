@@ -172,6 +172,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
             try { await Run(() => { if (selected == summaryTab) RenderSummary(); Show(selected == summaryTab ? "summary" : "tasks"); return Task.CompletedTask; }); }
             finally { if (--pendingViewSelections == 0) SyncTabs(); }
         };
+        // #224 keeps the 計画 tab selected while the review is open, so clicking it changes no selection and raises
+        // no SelectionChanged. #233 still leaves the review from that click and returns focus to the selected cell.
+        tasksTab.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((_, args) => {
+            if (syncingTabs || currentPage != "publish" || closing || busyKind is not null) return;
+            args.Handled = true;
+            _ = Run(() => { Show("tasks"); return Task.CompletedTask; });
+        }), handledEventsToo: true);
         commandButtons.Children.Add(new TextBlock { Text = "基準日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
         commandButtons.Children.Add(statusDateHost);
         commandButtons.Children.Add(CommandDivider());
