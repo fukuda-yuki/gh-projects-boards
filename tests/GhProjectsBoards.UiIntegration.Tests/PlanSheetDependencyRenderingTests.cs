@@ -88,6 +88,8 @@ internal sealed partial class PlanSheetHostedTests
     {
         await SetLongCrossingDependencies();
         await ShowDependencyRow(90);
+        await Ui.Until(() => Ui.Tree(sheet).OfType<TextBlock>().Any(element =>
+            AutomationProperties.GetAutomationId(element) == "PlanPredStub90"));
         await Ui.Run(() => {
             var row = CurrentDependencyRow("I90")!;
             var stub = Ui.Find<TextBlock>("PlanPredStub90", row);
@@ -108,6 +110,8 @@ internal sealed partial class PlanSheetHostedTests
 
         // Scrolling back to the predecessor draws its line again; the stub belongs to the successor window only.
         await ShowDependencyRow(1);
+        await Ui.Until(() => Ui.Tree(sheet).OfType<Polyline>().Any(line =>
+            AutomationProperties.GetAutomationId(line) == "PlanArrow1_90_1"));
         await Ui.Run(() => {
             var row = CurrentDependencyRow("I1")!;
             Assert.That(Ui.Tree(row).OfType<Polyline>().Select(AutomationProperties.GetAutomationId),
@@ -129,7 +133,8 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Idle();
         await Ui.Run(() => sheet.List.ScrollIntoView("I1"));
         await Ui.Until(() => CurrentDependencyRow("I1") is not null && CurrentDependencyRow("I15") is not null);
-        await ShowDependencyRow(15);
+        // Both endpoints stay in the window: selecting without scrolling keeps rows 1..15 realized.
+        await Select(15, PlanField.Title);
         await WaitForDependencyPresentation(1, 15, 15);
         double headX = 0;
         await Ui.Run(() => {
@@ -146,7 +151,6 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true));
         await Ui.Until(() => sheet.ChartOffset == 120);
         await SheetNativeInput.Rendered();
-        await ShowDependencyRow(15);
         await WaitForDependencyPresentation(1, 15, 15);
         await Ui.Run(() => AssertDependencyEntersBar(1, 15, 15, true));
         await Ui.Run(() => RenderedEvidence.Capture(sheet, "visible-predecessor-arrow"));
