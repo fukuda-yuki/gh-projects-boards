@@ -6,6 +6,7 @@ using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using NUnit.Framework;
 namespace GhProjectsBoards.UiIntegration.Tests;
 
@@ -150,7 +151,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             Assert.That(AutomationProperties.GetName(Ui.Find<FontIcon>("PlanIndicator2")), Does.Contain("終了日"));
             // #260 D3: the 遅れ count lives on the attention strip, not in the status bar.
-            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionLate")), Does.Contain("遅れ 1"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<ToggleButton>("PlanAttentionLate")), Does.Contain("遅れ 1"));
         });
         await Settings();
         await Ui.Ready<CheckBox>("PlanShowOverdueMark");
@@ -164,7 +165,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var requirement = Ui.Find<FontIcon>("PlanIndicator1");
             Assert.That(AutomationProperties.GetName(requirement), Does.Not.Contain("配下"), "A hidden mark leaves the requirement row.");
             // #251 D2: the counts and their filters are lateness sets, not marks, so they keep finding the work.
-            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionLate")), Does.Contain("遅れ 1"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<ToggleButton>("PlanAttentionLate")), Does.Contain("遅れ 1"));
             Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().Marks.Overdue, Is.False);
         });
         // D1: the preference belongs to this PC, so another Project reads the same value.
