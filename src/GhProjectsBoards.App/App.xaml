@@ -16,12 +16,12 @@
                     <SolidColorBrush x:Key="WorkspaceCardBrush" Color="#FFFFFF"/>
                     <SolidColorBrush x:Key="WorkspaceCardStrokeBrush" Color="#E5E5E5"/>
                     <SolidColorBrush x:Key="SheetSelectionLineBrush" Color="#FAFAFA"/>
-                    <SolidColorBrush x:Key="UnpublishedBadgeTextBrush" Color="#FFFFFF"/>
                     <SolidColorBrush x:Key="SheetSeparatorBrush" Color="#F0F0F0"/>
                     <SolidColorBrush x:Key="SheetSelectionBrush" Color="#EBF3FC"/>
                     <SolidColorBrush x:Key="SheetSelectionStrokeBrush" Color="{ThemeResource SystemAccentColorDark1}"/>
                     <SolidColorBrush x:Key="SheetChangedBrush" Color="#FFF8E5"/>
-                    <SolidColorBrush x:Key="SheetChangedMarkBrush" Color="#9D5D00"/>
+                    <!-- #264: orange marks unpublished only; the bar, the corner and the shell count use it. -->
+                    <SolidColorBrush x:Key="SheetChangedMarkBrush" Color="#CA5010"/>
                     <SolidColorBrush x:Key="GanttTaskBrush" Color="#2266C2"/>
                     <SolidColorBrush x:Key="GanttTaskTintBrush" Color="#D6E5F7"/>
                     <SolidColorBrush x:Key="GanttSummaryBrush" Color="#3D3D3D"/>
@@ -29,14 +29,12 @@
                     <SolidColorBrush x:Key="GanttNonWorkingBrush" Color="#F7F7F7"/>
                     <SolidColorBrush x:Key="GanttLateBrush" Color="#C42B1C"/>
                     <SolidColorBrush x:Key="GanttLateTintBrush" Color="#FDE7E9"/>
-                    <SolidColorBrush x:Key="IndicatorDoneBrush" Color="#0F7B0F"/>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="HighContrast">
                     <SolidColorBrush x:Key="WorkspaceBackgroundBrush" Color="{ThemeResource SystemColorWindowColor}"/>
                     <SolidColorBrush x:Key="WorkspaceCardBrush" Color="{ThemeResource SystemColorWindowColor}"/>
                     <SolidColorBrush x:Key="WorkspaceCardStrokeBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
                     <SolidColorBrush x:Key="SheetSelectionLineBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-                    <SolidColorBrush x:Key="UnpublishedBadgeTextBrush" Color="{ThemeResource SystemColorWindowColor}"/>
                     <SolidColorBrush x:Key="SheetSeparatorBrush" Color="{ThemeResource SystemColorWindowColor}"/>
                     <SolidColorBrush x:Key="SheetSelectionBrush" Color="{ThemeResource SystemColorWindowColor}"/>
                     <SolidColorBrush x:Key="SheetSelectionStrokeBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
@@ -49,7 +47,6 @@
                     <SolidColorBrush x:Key="GanttNonWorkingBrush" Color="{ThemeResource SystemColorWindowColor}"/>
                     <SolidColorBrush x:Key="GanttLateBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
                     <SolidColorBrush x:Key="GanttLateTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-                    <SolidColorBrush x:Key="IndicatorDoneBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <Style TargetType="ListView">

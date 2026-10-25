@@ -148,7 +148,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         // The mark and its counts exist before the switch is turned off.
         await Ui.Run(() => {
-            Assert.That(AutomationProperties.GetName(Ui.Find<FontIcon>("PlanIndicator2")), Does.Contain("期限超過"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<FontIcon>("PlanIndicator2")), Does.Contain("終了日"));
             Assert.That(Ui.Tree(Ui.Find<StackPanel>("PlanStatusMarks")).OfType<Button>().Select(b => b.Content as string), Does.Contain("期限超過 1"));
         });
         await Settings();
@@ -158,10 +158,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanSettingsBack")); await Ui.Idle();
         await Ui.Run(() => {
             var leaf = Ui.Find<FontIcon>("PlanIndicator2");
-            Assert.That(AutomationProperties.GetName(leaf), Does.Not.Contain("期限超過"), "A hidden mark leaves 状態 and its tooltip.");
-            Assert.That(ToolTipService.GetToolTip(leaf), Does.Not.Contain("期限超過"));
+            Assert.That(AutomationProperties.GetName(leaf), Does.Not.Contain("終了日"), "A hidden mark leaves 状態 and its tooltip.");
+            Assert.That(ToolTipService.GetToolTip(leaf), Does.Not.Contain("終了日"));
             var requirement = Ui.Find<FontIcon>("PlanIndicator1");
-            Assert.That(AutomationProperties.GetName(requirement), Does.Not.Contain("期限超過"), "A hidden mark leaves the requirement row.");
+            Assert.That(AutomationProperties.GetName(requirement), Does.Not.Contain("配下"), "A hidden mark leaves the requirement row.");
             // #251 D2: the counts and their filters are lateness sets, not marks, so they keep finding the work.
             Assert.That(Ui.Tree(Ui.Find<StackPanel>("PlanStatusMarks")).OfType<Button>().Select(b => b.Content as string), Does.Contain("期限超過 1"));
             Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().Marks.Overdue, Is.False);

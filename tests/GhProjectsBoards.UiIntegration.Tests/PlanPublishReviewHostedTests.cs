@@ -391,7 +391,8 @@ internal sealed partial class PlanPublishReviewHostedTests
                 var line = Ui.Find<TextBlock>("PlanPublishStatusDate");
                 Assert.That(AutomationProperties.GetName(line), Is.EqualTo(line.Text));
                 Assert.That(line.Visibility, Is.EqualTo(dayOffset < 0 ? Visibility.Visible : Visibility.Collapsed));
-                Assert.That(line.Foreground, Is.EqualTo(PlanSheetView.Brush("SheetChangedMarkBrush")));
+                // #264: orange belongs to unpublished marks; the stale 基準日 notice uses the caution colour.
+                Assert.That(line.Foreground, Is.EqualTo(PlanSheetView.Brush("SystemFillColorCautionBrush")));
                 Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
                 await RenderedEvidence.Capture(view, "issue166-status-date-" + dayOffset);
             });

@@ -6,9 +6,9 @@ using NUnit.Framework;
 
 namespace GhProjectsBoards.Tests;
 
-// #236 / #260: lateness compares the plan dates with the 基準日 and the plan with the 見込終了 forecast.
-// One 遅れ set: red when the 終了日 has passed, ochre otherwise; 見積超過 is ochre, 残 0・未完了 shows
-// nothing, and 遅れの原因 is the root of a delay chain that makes a successor late.
+// #236: lateness compares the plan dates with the 基準日 and the plan with the 見込終了 forecast.
+// #264: the 状態 column shows one 遅れ mark, red for a passed date and ochre for a forecast slip, and
+// 見積超過 lives in the 見積 h cell instead. 残 0・未完了 shows nothing.
 [TestFixture]
 internal sealed class PlanLatenessTests
 {
@@ -37,7 +37,7 @@ internal sealed class PlanLatenessTests
         var scheduled = Schedule(document);
         var task = scheduled.Single(t => t.Input.Identity == identity);
         var lateness = PlanLateness.Classify(scheduled, Calendar, document.State.Settings.StatusDate ?? Status);
-        return PlanSheetText.Indicator(PlanTaskNames.Of(document), document.State.Rows.Single(r => r.Identity == identity), task, lateness.Tasks[identity], "", false);
+        return PlanSheetText.Mark(PlanTaskNames.Of(document), document.State.Rows.Single(r => r.Identity == identity), task, lateness.Tasks[identity], "").Text;
     }
 
     [Test]
@@ -55,13 +55,12 @@ internal sealed class PlanLatenessTests
             Assert.That(late.OverdueKind, Is.EqualTo(PlanOverdueKind.Finish));
             Assert.That(late.MissedDate, Is.EqualTo(D("2026-10-05")));
             Assert.That(late.DaysLater, Is.EqualTo(2), "The remaining work now reaches 10/7.");
-            Assert.That(Indicator(document, today: D("2026-10-06")), Is.EqualTo("遅れ: 終了日 10/5 を過ぎて未完了（見込み残存工数 16h）、見込終了は +2日（自分の残による）"));
-            Assert.That(late.IsLate, Is.True);
+            Assert.That(Indicator(document, today: D("2026-10-06")), Is.EqualTo("終了日 10/5 を過ぎて未完了 · +2日"));
         });
     }
 
     [Test]
-    public void AnUnstartedPlanStartBeforeTheStatusDateIsAnOchreLate()
+    public void AnUnstartedPlanStartBeforeTheStatusDateIsTheRedLateMark()
     {
         var document = Document(Row() with { Start = D("2026-10-01"), End = D("2026-10-20") });
 
@@ -69,11 +68,12 @@ internal sealed class PlanLatenessTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Later), "Only a passed 終了日 is red (#260 D0).");
+            // #264: a passed plan date is red; the 状態 column marks a passed start like a passed end.
+            Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Overdue));
             Assert.That(late.IsLate, Is.True);
             Assert.That(late.OverdueKind, Is.EqualTo(PlanOverdueKind.Start));
             Assert.That(late.MissedDate, Is.EqualTo(D("2026-10-01")));
-            Assert.That(Indicator(document), Is.EqualTo("遅れ: 開始日 10/1 を過ぎて未着手"));
+            Assert.That(Indicator(document), Is.EqualTo("開始日 10/1 を過ぎて未着手"));
         });
     }
 
@@ -100,8 +100,8 @@ internal sealed class PlanLatenessTests
             Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Later));
             Assert.That(late.DaysLater, Is.EqualTo(1), "10/6.");
             Assert.That(late.Cause, Is.EqualTo(PlanLateCause.OwnRemaining));
-            Assert.That(late.IsCause, Is.False, "It delays no successor.");
-            Assert.That(Indicator(document), Is.EqualTo("遅れ: 見込終了 +1日（自分の残による）"));
+            Assert.That(late.IsCause, Is.True);
+            Assert.That(Indicator(document), Is.EqualTo("見込終了 10/6 (火) · +1日（自分の残による）"));
         });
     }
 
@@ -123,10 +123,8 @@ internal sealed class PlanLatenessTests
             Assert.That(late.Cause, Is.EqualTo(PlanLateCause.Predecessor));
             Assert.That(late.CausePredecessorRowId, Is.EqualTo(1));
             Assert.That(late.IsCause, Is.False, "A task late only because a predecessor moved is not a cause.");
-            Assert.That(result.CauseTasks, Is.EqualTo(1), "Only the predecessor, late on its own dates and pushing the task.");
-            Assert.That(result.Tasks["before"].IsCause, Is.True);
-            Assert.That(result.DelayedSuccessors("before"), Is.EqualTo(new[] { "task" }));
-            Assert.That(Indicator(document), Is.EqualTo("遅れ: 見込終了 +3日（先行 #193 の遅れによる）"),
+            Assert.That(result.CauseTasks, Is.EqualTo(1), "Only the predecessor, overdue on its own dates.");
+            Assert.That(Indicator(document), Is.EqualTo("見込終了 10/13 (火) · +3日（先行 #193 の遅れによる）"),
                 "The plan end is 10/7; the predecessor's forecast uses up 10/9, so the forecast reaches 10/13 (10/12 is Sports Day).");
         });
     }
@@ -284,7 +282,8 @@ internal sealed class PlanLatenessTests
             Assert.That(result.Tasks["root"].OverEstimateDescendantTasks, Is.EqualTo(1));
             Assert.That(result.LateTasks, Is.EqualTo(2), "One 遅れ count; the summary is not counted.");
             Assert.That(result.OverEstimateTasks, Is.EqualTo(1));
-            Assert.That(result.CauseTasks, Is.Zero, "No late task delays a successor.");
+            // #264: 遅れの原因 contains 期限超過 and the tasks late through their own remaining work.
+            Assert.That(result.CauseTasks, Is.EqualTo(2));
         });
     }
 

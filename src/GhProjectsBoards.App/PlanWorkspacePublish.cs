@@ -100,7 +100,7 @@ internal sealed partial class PlanWorkspaceView
         // Only a stale 基準日 is worth a line: the review's dates are the plan's own and need no caption.
         publishStatusDate.Text = pastStatusDate ? "基準日 " + dateText + " は今日より前です。" : "";
         publishStatusDate.Visibility = pastStatusDate ? Visibility.Visible : Visibility.Collapsed;
-        publishStatusDate.Foreground = PlanSheetView.Brush("SheetChangedMarkBrush");
+        publishStatusDate.Foreground = PlanSheetView.Brush("SystemFillColorCautionBrush");
         AutomationProperties.SetName(publishStatusDate, publishStatusDate.Text);
         var conflicts = PlanOperations.BlockingConflicts(document);
         Func<bool> canAct = () => !publishing && !closing;

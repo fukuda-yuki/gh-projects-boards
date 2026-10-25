@@ -58,7 +58,8 @@ internal sealed class PlanAttentionTests
             Assert.That(lateness.Tasks["late"].Level, Is.EqualTo(PlanLatenessLevel.Later));
             Assert.That(attention.Late, Is.EqualTo(Set(["overdue", "late"])), "One set holds both cases.");
             Assert.That(lateness.LateTasks, Is.EqualTo(2));
-            Assert.That(attention.Cause, Is.Empty, "No late task delays a successor.");
+            // #264: 遅れの原因 contains 期限超過 and own-remaining slips, so both late tasks are causes.
+            Assert.That(attention.Cause, Is.EqualTo(Set(["overdue", "late"])));
         });
     }
 
