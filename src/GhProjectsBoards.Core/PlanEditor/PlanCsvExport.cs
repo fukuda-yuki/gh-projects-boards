@@ -6,7 +6,7 @@ namespace GhProjectsBoards.Core.PlanEditor;
 
 internal static class PlanCsvExport
 {
-    internal static byte[] Create(PlanDocument document, DateOnly today)
+    internal static byte[] Create(PlanDocument document, DateOnly today, PlanMarkVisibility? marks = null)
     {
         var columns = PlanSheetColumns.All(document);
         var visible = columns.Where(c => c.Visible && c.Key != "Id").ToArray();
@@ -42,9 +42,10 @@ internal static class PlanCsvExport
                     return PlanExtraEditing.Value(row, field) is decimal numeric ? Number(numeric) : Text(PlanExtraEditing.Value(row, field)?.ToString() ?? "");
                 }
                 return field switch {
+                    // #264's one 状態 vocabulary; #251's display preference decides which lateness marks show.
                     "Indicator" => Text(PlanSheetText.Mark(taskNames, row, task, lateness.Tasks.GetValueOrDefault(row.Identity),
                         PlanSheetText.RemoteProblem(document.Sync, row.Identity),
-                        PlanMarkVisibility.From(document.State.Settings)).Text),
+                        marks ?? PlanMarkVisibility.From(document.State.Settings)).Text),
                     "ForecastEnd" => Text(PlanSheetText.ForecastEnd(task, lateness.Tasks.GetValueOrDefault(row.Identity))),
                     PlanField.Estimate => Number(task.Estimate), PlanField.Remaining => Number(task.Remaining), PlanField.Actual => Number(task.Actual),
                     PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value),

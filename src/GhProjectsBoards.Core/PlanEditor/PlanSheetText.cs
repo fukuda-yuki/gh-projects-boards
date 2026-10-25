@@ -91,10 +91,9 @@ internal static class PlanSheetText
     }
 }
 
-// Which lateness marks the sheet draws. The sets, counts and filters stay complete either way.
+// Which lateness marks the sheet draws. The sets, counts and filters stay complete either way. A display
+// preference of this PC (#251 D1), stored in PlanDisplaySettings, never in a plan.
 internal sealed record PlanMarkVisibility(bool Overdue = true, bool Later = true, bool OverEstimate = true)
 {
     internal static readonly PlanMarkVisibility All = new();
-    internal static PlanMarkVisibility From(ProjectPlanSettings settings)
-        => new(settings.ShowOverdueMark, settings.ShowLaterMark, settings.ShowOverEstimateMark);
 }

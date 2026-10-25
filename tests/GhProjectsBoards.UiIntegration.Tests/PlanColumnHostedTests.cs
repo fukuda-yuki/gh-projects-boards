@@ -24,8 +24,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(input.PlaceholderText, Is.EqualTo("200"));
             Assert.That(AutomationProperties.GetName(input), Is.EqualTo("タスク名 の幅"));
             Assert.That(Ui.Tree(view).OfType<TextBox>().Any(t => AutomationProperties.GetAutomationId(t) == "PlanColumnWidthIndicator"), Is.False);
-            var list = Ui.Find<ListView>("PlanColumnList"); var down = Ui.Find<Button>("PlanColumnDownTitle");
-            Assert.That(down.TransformToVisual(list).TransformPoint(new(down.ActualWidth, 0)).X, Is.LessThanOrEqualTo(list.ActualWidth), "The row's last command stays inside the settings table.");
+            var list = Ui.Find<ListView>("PlanColumnList"); var last = Ui.Find<TextBlock>("PlanColumnModeTitle");
+            Assert.That(last.TransformToVisual(list).TransformPoint(new(last.ActualWidth, 0)).X, Is.LessThanOrEqualTo(list.ActualWidth), "The row's last cell stays inside the settings table.");
         });
         await CommitText("PlanColumnWidthTitle", "320");
         await Ui.Until(() => PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width == 320);
@@ -100,6 +100,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await OpenColumnSettingsThroughOverflow();
+        // The section list realizes its pane and content over the first layout passes after the page appears.
+        await Ui.Ready<Button>("PlanSettingsBack");
         await Ui.Ready<TextBlock>("PlanColumnSettings");
         await Ui.Until(() => {
             var title = Ui.Find<TextBlock>("PlanColumnSettings");
@@ -108,16 +110,15 @@ internal sealed partial class PlanWorkspaceHostedTests
             return y >= 0 && y + title.ActualHeight <= viewport.ViewportHeight;
         });
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanColumnSettings").Text,Is.EqualTo("計画シートの列"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnSettings").Text,Is.EqualTo("列"));
             Assert.That(Ui.Tree(Ui.Root).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) is "PlanColumnIntro" or "PlanColumnFootnote"), Is.False);
             Assert.That(ToolTipService.GetToolTip(Ui.Find<TextBlock>("PlanColumnModeRepository")), Is.EqualTo("リポジトリを変えると Issue の移管になるため、読み取りのみです。"));
             var input = Ui.Find<TextBox>("PlanColumnNameTitle");
             Assert.That(input.Header,Is.Null);
-            Assert.That(input.PlaceholderText,Is.EqualTo("タスク名"));
+            Assert.That(input.Text,Is.EqualTo("タスク名"), "The box shows the current name as text, not as a placeholder.");
             Assert.That(AutomationProperties.GetName(input),Is.EqualTo("タスク名 の表示名"));
             Assert.That(AutomationProperties.GetName(Ui.Find<CheckBox>("PlanColumnEstimate")),Is.EqualTo("見積 h を表示"));
-            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanColumnUpTitle")),Is.EqualTo("タスク名 を上へ"));
-            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanColumnDownTitle")),Is.EqualTo("タスク名 を下へ"));
+            Assert.That(Ui.Tree(view).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b).StartsWith("PlanColumnUp") || AutomationProperties.GetAutomationId(b).StartsWith("PlanColumnDown")), Is.False, "Reordering has one way: drag or Alt+arrow.");
             Assert.That(Ui.Find<TextBlock>("PlanColumnTypeEstimate").Text,Is.EqualTo("数値"));
             Assert.That(Ui.Find<TextBlock>("PlanColumnModeIndicator").Text,Is.EqualTo("計算"));
             Assert.That(Ui.Find<TextBlock>("PlanColumnModeRepository").Text,Is.EqualTo("読み取りのみ"));
@@ -126,10 +127,13 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             var back = Ui.Find<Button>("PlanSettingsBack");
             Assert.That(back.IsLoaded && back.IsEnabled, Is.True);
+            Assert.That(back.Content, Is.EqualTo("計画に戻る"));
             backY = back.TransformToVisual(view).TransformPoint(new()).Y;
             var viewport = Ui.Find<ScrollViewer>("PlanSettingsScroll");
             Assert.That(backY, Is.GreaterThanOrEqualTo(0));
-            Assert.That(backY + back.ActualHeight, Is.LessThanOrEqualTo(viewport.TransformToVisual(view).TransformPoint(new()).Y));
+            Assert.That(back.TransformToVisual(view).TransformPoint(new(back.ActualWidth, 0)).X, Is.LessThanOrEqualTo(viewport.TransformToVisual(view).TransformPoint(new()).X),
+                "計画に戻る sits in the section list beside the scrolling content.");
+            Assert.That(((NavigationViewItem)((NavigationView)Ui.Find<FrameworkElement>("PlanSettingsSections")).SelectedItem).Tag, Is.EqualTo("columns"), "The list marks the opened section.");
             Ui.Find<TextBox>("PlanColumnNameRepository").Focus(FocusState.Keyboard);
             Ui.Find<TextBox>("PlanColumnNameRepository").StartBringIntoView(new() { AnimationDesired = false });
         });
@@ -149,7 +153,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<TextBlock>("PlanHeaderTitle");
     }
     [Test]
-    public async Task ColumnSettingsNavigateRenameMoveHideResetAndUndoRenderedHeaders()
+    public async Task ColumnSettingsNavigateRenameHideResetAndUndoRenderedHeaders()
     {
         await Open();
         var session=workspace.Session!;
@@ -158,24 +162,13 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<TextBox>("PlanColumnNameTitle");
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<CheckBox>().Any(c => AutomationProperties.GetAutomationId(c) is "PlanColumnId" or "PlanColumnTitle"),Is.False);
-            Assert.That(Ui.Find<TextBox>("PlanColumnNameTitle").PlaceholderText,Is.EqualTo("タスク名"));
+            Assert.That(Ui.Find<TextBox>("PlanColumnNameTitle").Text,Is.EqualTo("タスク名"));
         });
         await CommitText("PlanColumnNameTitle","作業名");
         await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c=>c.Key==PlanField.Title && c.DisplayName=="作業名"));
         Assert.That(session.UndoCount,Is.EqualTo(undo+1));
-        await Ui.Run(() => Ui.Click("PlanColumnUpTitle"));
-        await Ui.Until(() => session.Document.State.Settings.SheetColumns[1].Key==PlanField.Title);
-        // The move re-renders the settings table. Wait until the rendered rows show the new order, not for
-        // a control that the old render happened to leave in the tree, before driving one of the new rows.
-        // タスク名 moves above 状態, which it swaps with; the ID column stays first.
-        bool MovedRowRendered()
-        {
-            double Top(string id) => Ui.Tree(view).OfType<FrameworkElement>()
-                .Where(e => AutomationProperties.GetAutomationId(e) == id && e.IsLoaded)
-                .Select(e => e.TransformToVisual(view).TransformPoint(new()).Y).DefaultIfEmpty(double.NaN).Min();
-            return Top("PlanColumnNameTitle") < Top("PlanColumnNameIndicator");
-        }
-        await Ui.Until(MovedRowRendered, () => "the moved title row is not rendered above the 状態 row");
+        // Reordering has one way in this page: drag the handle or Alt+↑/↓ on the focused row (native case), so
+        // there is no up/down button to press here; the toggle below drives the re-rendered table.
         await Ui.Ready<CheckBox>("PlanColumnEstimate");
         await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("PlanColumnEstimate")));
         await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c=>c.Key==PlanField.Estimate && !c.Visible));
@@ -187,8 +180,6 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Text,Is.EqualTo("作業名"));
             Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBlock>("PlanHeaderTitle")),Does.Contain("Title"));
             Assert.That(Ui.Tree(view).OfType<TextBlock>().Any(t=>AutomationProperties.GetAutomationId(t)=="PlanHeaderEstimate"),Is.False);
-            var title=Ui.Find<TextBox>("PlanCell1_Title");
-            Assert.That(title.TransformToVisual(view).TransformPoint(new()).X,Is.LessThan(Ui.Find<FontIcon>("PlanIndicator1").TransformToVisual(view).TransformPoint(new()).X));
         });
         await OpenColumnSettingsThroughOverflow();
         await Ui.Ready<Button>("PlanColumnReset");
@@ -228,6 +219,48 @@ internal sealed partial class PlanWorkspaceHostedTests
         await CommitText("PlanCell1_Remaining", original);
         Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+    }
+
+    [Test]
+    public async Task ColumnDisplayNameShowsTheCurrentNameAndTheDefaultNameOrEmptyRestoresTheDefault()
+    {
+        await Open();
+        var session = workspace.Session!;
+        await OpenColumnSettingsThroughOverflow();
+        await Ui.Ready<TextBox>("PlanColumnNameTitle");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameTitle").Text == "タスク名");
+        await CommitText("PlanColumnNameTitle", "作業名");
+        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c => c.Key == PlanField.Title && c.DisplayName == "作業名"));
+        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameTitle").Text == "作業名");
+        await CommitText("PlanColumnNameTitle", "タスク名");
+        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Single(c => c.Key == PlanField.Title).DisplayName is null);
+        await CommitText("PlanColumnNameTitle", "");
+        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Single(c => c.Key == PlanField.Title).DisplayName is null);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameTitle").Text == "タスク名");
+    }
+
+    [Test, Category("PlanSheetNative")]
+    public async Task AltArrowMovesTheFocusedColumnRowAndKeepsFocusOnIt()
+    {
+        await Open();
+        var session = workspace.Session!;
+        var undo = session.UndoCount;
+        await OpenColumnSettingsThroughOverflow();
+        await Ui.Ready<TextBox>("PlanColumnNameTitle");
+        await SheetNativeInput.ActivateWindow();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanColumnNameTitle").Focus(FocusState.Keyboard), Is.True));
+        string[] Order() => PlanSheetColumns.All(session.Document).Select(c => c.Key).ToArray();
+        var before = Order();
+        var index = Array.IndexOf(before, PlanField.Title);
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Up, Windows.System.VirtualKey.Menu);
+        await Ui.Until(() => Array.IndexOf(Order(), PlanField.Title) == index - 1);
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
+        await Ui.Idle();
+        // Focus stays on the moved row, so a second Alt+↓ moves the same column back.
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Down, Windows.System.VirtualKey.Menu);
+        await Ui.Until(() => Array.IndexOf(Order(), PlanField.Title) == index);
+        Assert.That(Order(), Is.EqualTo(before));
+        Assert.That(GhProjectsBoards.Tests.FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 }
 

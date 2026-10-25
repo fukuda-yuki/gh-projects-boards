@@ -22,6 +22,7 @@ internal sealed record PersonLoad(string Identity, string Name, decimal? Rate, d
     public decimal? Forecast => Actual + Remaining;
     public decimal? Difference => Allowance - Forecast;
 }
+internal sealed record PersonWork(PlanResource Person, int Tasks, decimal? Remaining);
 internal sealed record PeoplePlan(IReadOnlyList<PlanPeriod> Periods, IReadOnlyList<PersonLoad> People);
 internal static class PlanPeople
 {
@@ -41,6 +42,19 @@ internal static class PlanPeople
         return stored.Concat(order.Where(id => !known.Contains(id))
             .Select(id => new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null)))
             .ToImmutableArray();
+    }
+    // #251: the settings table's read-only context per assigned person. A task counts for each of its assignees
+    // while it is an open leaf task (not completed, 中止 or この版から外す); 残 is null when one of those tasks
+    // has no 見込み残存工数.
+    internal static ImmutableArray<PersonWork> Work(PlanDocument document, IReadOnlyList<ScheduledTask> schedule)
+    {
+        var rows = document.State.Rows.ToDictionary(r => r.Identity);
+        var open = schedule.Where(t => !t.IsSummary && !t.Input.IsComplete
+            && !(rows.TryGetValue(t.Input.Identity, out var row) && (row.Cancelled || row.Removed))).ToArray();
+        return Assigned(document).Select(person => {
+            var tasks = open.Where(t => t.Input.Assignees.Contains(person.Identity, StringComparer.Ordinal)).ToArray();
+            return new PersonWork(person, tasks.Length, tasks.Any(t => t.Remaining is null) ? null : tasks.Sum(t => t.Remaining!.Value));
+        }).ToImmutableArray();
     }
     internal static PeoplePlan Calculate(PlanDocument document, DateOnly today, DateOnly anchor, PlanPeriodScale scale, int count)
         => Calculate(document, PlanOperations.Schedule(document, today), anchor, scale, count);

@@ -103,8 +103,7 @@ internal sealed partial class PlanWorkspaceView
     private Task OpenAssistSettings()
     {
         if (currentPage != "settings") settingsReturnPage = currentPage;
-        RenderSettings(); Show("settings"); settingsScroll.UpdateLayout();
-        assistSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 });
+        OpenSettingsPage("assist");
         return Task.CompletedTask;
     }
     private void UpdateAssistVisibility()

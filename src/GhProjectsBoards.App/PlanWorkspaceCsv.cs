@@ -12,9 +12,9 @@ internal sealed partial class PlanWorkspaceView
         var token = OperationToken;
         token.ThrowIfCancellationRequested();
         var document = session.Document;
-        var today = Today;
+        var today = Today; var marks = workspace.Display.Marks;
         csvExportResult.IsOpen = false;
-        try { await Task.Run(async () => await File.WriteAllBytesAsync(path, PlanCsvExport.Create(document, today), token), token); }
+        try { await Task.Run(async () => await File.WriteAllBytesAsync(path, PlanCsvExport.Create(document, today, marks), token), token); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // An export failure must not offer recovery for the plan's own durable save.
