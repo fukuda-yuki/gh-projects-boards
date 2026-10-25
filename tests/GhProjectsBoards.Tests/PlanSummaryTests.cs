@@ -107,7 +107,52 @@ internal sealed class PlanSummaryTests
         Assert.That(month.Planned, Is.EqualTo(16));
         Assert.That(month.DailyOverloads.Single().Percent, Is.EqualTo(400));
         Assert.That(month.MaxDailyPercent, Is.EqualTo(400));
+        Assert.That(month.MaxDailyDate, Is.EqualTo(Day));
         Assert.That(month.Tasks, Is.EquivalentTo(new[] { "A", "B" }));
+        // #230 D1: the cell names the load rate and the days over the cap; the maximum lives beside them
+        // for the drill-down and tooltip. October has 21 working days at 50%, so 84 h of capacity.
+        var cell = result.MonthCells!.Single(p => p.Identity == "U1").Cells[0];
+        Assert.That((cell.Kind, cell.Percent, cell.DaysOverCap, cell.MaxDailyPercent, cell.MaxDate),
+            Is.EqualTo((SummaryMonthKind.Work, 16m / 84m * 100m, 1, 400m, (DateOnly?)Day)));
+        Assert.That(cell.Overloaded, Is.True);
+        Assert.That(cell.Tasks, Is.EquivalentTo(new[] { "A", "B" }));
+    }
+
+    [Test]
+    public void MonthCellsReadFinishedNoWorkAndWorkFromThePlanWithoutInventingWarnings()
+    {
+        // A past month that held only closed work reads 完了; a past month without work reads —; an open
+        // task keeps its month a load month. The month interval, not the allocation, decides that a month
+        // held work, so a closed task's retained dates still finish its month (#230 D1).
+        var closed = new PlanRow("C", "Done", "a/b") { Assignees = ["U1"], Start = new(2026, 8, 3), End = new(2026, 8, 7), Closed = true, CloseDate = new(2026, 8, 7) };
+        var open = new PlanRow("O", "Ongoing", "a/b") { Assignees = ["U1"], Remaining = 16, Start = Day };
+        var d = Document(closed, open) with { State = Document(closed, open).State with { Settings = new() {
+            ProjectStart = new(2026, 8, 3), ProjectEnd = Day, StatusDate = Day,
+            Columns = [new(PlanField.Phase, "F", "工程", "SINGLE_SELECT")], People = [new("U1", "Alice", 50, null)] } } };
+        var result = Calculate(d);
+        var cells = result.MonthCells!.Single(p => p.Identity == "U1").Cells;
+        Assert.That(result.Months!.Periods.Select(p => p.Start.Month), Is.EqualTo(new[] { 8, 9, 10 }));
+        Assert.That(cells.Select(c => c.Kind), Is.EqualTo(new[] { SummaryMonthKind.Finished, SummaryMonthKind.NoWork, SummaryMonthKind.Work }));
+        Assert.That(cells[0].Tasks, Is.Empty, "A finished month holds no current allocation.");
+        Assert.That((cells[0].DaysOverCap, cells[0].MaxDailyPercent), Is.EqualTo((0, (decimal?)0)));
+        Assert.That(cells[2].Percent, Is.EqualTo(16m / 84m * 100m));
+        Assert.That(cells[2].DaysOverCap, Is.Zero, "A month under the cap carries no warning data.");
+        var noPeriod = Calculate(Document(new PlanRow("X", "X", "a/b")) with { State = Document(new PlanRow("X", "X", "a/b")).State with { Settings = new() { StatusDate = Day, People = [new("U1", "Alice", 50, null)] } } });
+        Assert.That((noPeriod.Months, noPeriod.MonthCells), Is.EqualTo(((PeoplePlan?)null, (IReadOnlyList<SummaryMonthPerson>?)null)));
+    }
+
+    [Test]
+    public void FinishedSetsDriveTheSummaryDashInsteadOfZero()
+    {
+        // The summary reads — where the only work is finished: this is the domain rule behind the
+        // person × phase cell and 工程別 rendering, not a colour choice.
+        var done = new PlanRow("A", "Done", "a/b") { Phase = "SA", Start = Day.AddDays(-2), End = Day, Closed = true, CloseDate = Day };
+        var open = new PlanRow("B", "Open", "a/b") { Phase = "UI", Remaining = 8, Start = Day };
+        var result = Calculate(Document(done, open));
+        Assert.That(result.Phases.Single(p => p.Phase == "SA").Tasks.Finished, Is.True);
+        Assert.That(result.Phases.Single(p => p.Phase == "UI").Tasks.Finished, Is.False);
+        Assert.That(result.Phases.Single(p => p.IsTotal).Tasks.Finished, Is.False);
+        Assert.That(Calculate(Document()).Total.Finished, Is.False, "An empty set is not a finished phase.");
     }
 
     [Test]
@@ -274,3 +319,4 @@ internal sealed class PlanSummaryTests
         Assert.That(person.Periods[1].DailyOverloads.First().Tasks, Is.EqualTo(new[] { "K", "K2" }));
     }
 }
+

@@ -261,6 +261,9 @@ internal static class Ui
         } else if (control is SplitButton split) {
             Assert.That(split.IsLoaded && split.IsEnabled, Is.True);
             ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(split).GetPattern(PatternInterface.Invoke)).Invoke();
+        } else if (control is HyperlinkButton link) {
+            Assert.That(link.IsLoaded && link.IsEnabled, Is.True);
+            ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(link).GetPattern(PatternInterface.Invoke)).Invoke();
         } else Click((Button)control);
     }
     public static void Toggle(CheckBox checkbox)

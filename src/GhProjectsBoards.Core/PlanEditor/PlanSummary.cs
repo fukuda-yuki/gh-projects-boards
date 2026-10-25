@@ -6,6 +6,9 @@ internal sealed record SummaryTasks(IReadOnlyList<string> Identities, int Closed
     SummaryValue Variance, SummaryValue Progress, DateOnly? Start, DateOnly? Finish, int Overdue, int OverEstimate)
 {
     public int Count => Identities.Count;
+    // The summary's finished set: work that exists and whose tasks are all closed. It reads — rather
+    // than 0 — wherever a measure would otherwise describe work that is already behind the PMO.
+    public bool Finished => Count > 0 && Closed == Count;
     public decimal? ProgressActual { get; init; }
     public decimal? VarianceEstimate { get; init; }
     public decimal? VarianceForecast { get; init; }
@@ -20,11 +23,23 @@ internal sealed record SummaryPerson(string Identity, string Name, IReadOnlyList
 internal sealed record SummaryAttention(IReadOnlyList<string> Overdue, IReadOnlyList<string> Later, IReadOnlyList<string> Cause,
     IReadOnlyList<string> OverEstimate, IReadOnlyList<string> ZeroRemainingOpen, IReadOnlyList<string> Unassigned, SummaryValue UnassignedRemaining,
     IReadOnlyList<string> UnknownEffort);
+// #230 D1: the month cell shows the load rate and the days over the person's cap; a finished month before
+// the 基準日 reads 完了 and a month without work reads —. The maximum daily load moved to the drill-down.
+internal enum SummaryMonthKind { Work, Finished, NoWork }
+internal sealed record SummaryMonthCell(SummaryMonthKind Kind, decimal? Percent, int DaysOverCap, decimal? MaxDailyPercent, DateOnly? MaxDate,
+    IReadOnlyList<string> Tasks)
+{
+    public bool Overloaded => DaysOverCap > 0;
+}
+internal sealed record SummaryMonthPerson(string Identity, IReadOnlyList<SummaryMonthCell> Cells);
 internal sealed record SummaryPlan(int? WorkingDays, int? ElapsedDays, int? RemainingDays,
     DateOnly? ForecastFinish, int? FinishDifference, SummaryTasks Total, decimal? Capacity, decimal? RequiredLoad,
     IReadOnlyList<SummaryPhase> Phases, IReadOnlyList<SummaryPerson> People, SummaryPerson PeopleTotal,
     PeoplePlan? Months, SummaryAttention Attention)
-{ public IReadOnlyList<SummaryMilestone> Milestones { get; init; } = []; }
+{
+    public IReadOnlyList<SummaryMilestone> Milestones { get; init; } = [];
+    public IReadOnlyList<SummaryMonthPerson>? MonthCells { get; init; }
+}
 
 internal static class PlanSummary
 {
@@ -152,6 +167,21 @@ internal static class PlanSummary
             var count = (monthEnd.Year - monthStart.Year) * 12 + monthEnd.Month - monthStart.Month + 1;
             if (count > 0) months = PlanPeople.Calculate(document, scheduled, monthStart, PlanPeriodScale.Month, count);
         }
+        // #230 D1: a month cell reads 完了 for a finished month before the 基準日, — for a month without
+        // work, and otherwise the load rate with the days over the person's cap. A task's plan interval
+        // is what shows a month that held work, including closed work, so a past month is not blank.
+        var monthCells = months is null ? null : months.People.Select(load => {
+            var personTasks = personGroups[load.Identity].ToArray();
+            return new SummaryMonthPerson(load.Identity, months.Periods.Select((period, index) => {
+                var bucket = load.Periods[index];
+                var overlapping = personTasks.Where(t => t.Start.Value is { } start && t.End.Value is { } end
+                    && start <= period.End && end >= period.Start).ToArray();
+                var kind = overlapping.Length == 0 ? SummaryMonthKind.NoWork
+                    : period.End < statusDate && overlapping.All(t => t.Input.Closed) ? SummaryMonthKind.Finished
+                    : SummaryMonthKind.Work;
+                return new SummaryMonthCell(kind, bucket.Percent, bucket.DailyOverloads.Count, bucket.MaxDailyPercent, bucket.MaxDailyDate, bucket.Tasks);
+            }).ToArray());
+        }).ToArray();
         string[] Ids(Func<ScheduledTask, bool> predicate) => tasks.Where(predicate).Select(t => t.Input.Identity).ToArray();
         var unassigned = Sum(personGroups[PlanPeople.Unassigned].ToArray());
         return new(working, elapsed, remaining, finish, difference, total, projectCapacity, load,
@@ -159,6 +189,6 @@ internal static class PlanSummary
             new(Ids(Overdue), Ids(t => lateness.Tasks[t.Input.Identity].Level == PlanLatenessLevel.Later),
                 Ids(t => lateness.Tasks[t.Input.Identity].IsCause && !t.Input.Closed),
                 Ids(t => t.IsOverEstimate), Ids(t => t.IsZeroRemainingOpen), unassigned.Identities, unassigned.Remaining,
-                Ids(t => t.Remaining is null || t.Forecast is null))) { Milestones = milestones };
+                Ids(t => t.Remaining is null || t.Forecast is null))) { Milestones = milestones, MonthCells = monthCells };
     }
 }

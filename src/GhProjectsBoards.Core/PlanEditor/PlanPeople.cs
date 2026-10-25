@@ -13,7 +13,10 @@ internal sealed record PersonPeriod(decimal? Planned, decimal? Capacity, IReadOn
     public decimal? Percent => Capacity > 0 ? Planned / Capacity * 100 : null;
     public bool Overloaded => Planned > Capacity;
     public IReadOnlyList<PersonDayOverload> DailyOverloads { get; init; } = [];
+    // Every day with allocated work, so the summary can draw the load against the cap line.
+    public IReadOnlyList<PersonDayOverload> Days { get; init; } = [];
     public decimal? MaxDailyPercent { get; init; }
+    public DateOnly? MaxDailyDate { get; init; }
 }
 internal sealed record PersonLoad(string Identity, string Name, decimal? Rate, decimal? Allowance,
     decimal? Estimate, decimal? Actual, decimal? Remaining, IReadOnlyList<string> Missing,
@@ -105,10 +108,14 @@ internal static class PlanPeople
                 decimal? load = unknown ? null : contributing.Sum(a => a.Value.Where(d => d.Key >= period.Start && d.Key <= period.End).Sum(d => d.Value));
                 decimal? capacity = person is null ? null : Days(period.Start, period.End).Count(Working) * 8m * person.Rate / 100m;
                 var daily = dailyLoads.Where(d => d.Date >= period.Start && d.Date <= period.End).ToArray();
+                var maxKnown = !unknown && capacity is not null and not 0 && daily.All(d => d.Capacity > 0);
+                var maxPercent = !maxKnown ? null : daily.Length == 0 ? 0 : daily.Max(d => d.Percent);
                 return new PersonPeriod(load, capacity, contributing.Select(a => a.Key).ToArray()) {
                     DailyOverloads = daily.Where(d => d.Planned > d.Capacity).ToArray(),
-                    MaxDailyPercent = unknown || capacity is null or 0 || daily.Any(d => d.Capacity == 0) ? null
-                        : daily.Length == 0 ? 0 : daily.Max(d => d.Percent)
+                    Days = daily,
+                    MaxDailyPercent = maxPercent,
+                    // The date follows the same known set as the maximum; the earliest day wins a tie.
+                    MaxDailyDate = maxPercent is null or 0 ? null : daily.OrderByDescending(d => d.Percent).ThenBy(d => d.Date).First().Date
                 };
             }).ToArray();
             output.Add(new(id, id == Unassigned ? "担当者なし" : id == Multiple ? "担当者が複数" : document.Sync.PeopleNames.GetValueOrDefault(id, person!.Name),

@@ -59,7 +59,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             foreach (var measure in Enumerable.Range(0, 4)) {
                 Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = measure;
-                Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U2_0")), Does.EndWith(" –"));
+                Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U2_0")), Does.EndWith(" —"));
             }
         });
         await Settings(); await CommitText("PlanProjectEnd", "2026-11-30");
@@ -67,7 +67,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryStatusDate" && t.Text.Contains("11/30")));
         await Ui.Run(() => {
             Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1;
-            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryMonth_U1_1")), Does.EndWith(" –"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryMonth_U1_1")), Does.EndWith(" —"));
         });
     }
     [Test]
@@ -79,7 +79,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             var table = Ui.Find<FrameworkElement>("SummaryPhaseTable");
             var timeline = Ui.Find<FrameworkElement>("SummaryTimeline");
             Assert.That(timeline.ActualWidth, Is.GreaterThan(650));
-            Assert.That(timeline.TransformToVisual(summary).TransformPoint(new()).X - (table.TransformToVisual(summary).TransformPoint(new()).X + table.ActualWidth), Is.InRange(15, 17));
+            // #230: the timeline sits below the phase table in the left column, not beside it.
+            Assert.That(timeline.TransformToVisual(summary).TransformPoint(new()).Y,
+                Is.GreaterThan(table.TransformToVisual(summary).TransformPoint(new()).Y + table.ActualHeight));
             Assert.That(Ui.Find<TextBlock>("SummaryTimelineStatusDate").Text, Does.StartWith("基準日"));
             Assert.That(Ui.Find<TextBlock>("SummaryTimelineEndDate").Text, Does.StartWith("終了日"));
             Assert.That(Ui.Tree(timeline).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryMonthLabel_")), Is.GreaterThanOrEqualTo(6));
@@ -196,3 +198,4 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + (commit ? 1 : 0)));
     }
 }
+
