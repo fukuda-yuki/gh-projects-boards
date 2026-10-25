@@ -40,6 +40,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     // #260 D3: no attention counts in the status bar; while a filter is active it carries the chase list.
     private readonly Button copyByAssignee;
     private readonly SelectorBarItem tasksTab = Id(new SelectorBarItem { Text = "計画" }, "PlanShowTasks");
+    private readonly PointerEventHandler tasksTabReleased;
     private readonly SelectorBarItem summaryTab = Id(new SelectorBarItem { Text = "サマリー" }, "PlanShowSummary");
     private readonly SelectorBar tabs = new();
     private bool syncingTabs;
@@ -177,11 +178,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
         };
         // #224 keeps the 計画 tab selected while the review is open, so clicking it changes no selection and raises
         // no SelectionChanged. #233 still leaves the review from that click and returns focus to the selected cell.
-        tasksTab.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((_, args) => {
+        // The handler is attached only while loaded (below): left on the loaded tab, it keeps this view alive (#289).
+        tasksTabReleased = new PointerEventHandler((_, args) => {
             if (syncingTabs || currentPage != "publish" || closing || busyKind is not null) return;
             args.Handled = true;
             _ = Run(() => { Show("tasks"); return Task.CompletedTask; });
-        }), handledEventsToo: true);
+        });
         commandButtons.Children.Add(new TextBlock { Text = "基準日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
         commandButtons.Children.Add(statusDateHost);
         commandButtons.Children.Add(CommandDivider());
@@ -310,8 +312,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
         root.Children.Add(statusBar); Grid.SetRow(statusBar, 4);
         // A TitleBar that has been loaded keeps its header elements after it unloads, and their
         // handlers would keep this whole view and its native tree alive. Attach them only while loaded.
-        Loaded += (_, _) => { WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = titleCommands; };
+        Loaded += (_, _) => {
+            WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = titleCommands;
+            tasksTab.RemoveHandler(UIElement.PointerReleasedEvent, tasksTabReleased);
+            tasksTab.AddHandler(UIElement.PointerReleasedEvent, tasksTabReleased, handledEventsToo: true);
+        };
         Unloaded += (_, _) => {
+            tasksTab.RemoveHandler(UIElement.PointerReleasedEvent, tasksTabReleased);
             chooser.Cancel(); CancelDetail(clearCache: true); detailNavigationStarted?.TrySetCanceled(); detailWeb?.Close();
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
