@@ -146,7 +146,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 5);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PlanSheetFilterCount").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Tree(Ui.Root).OfType<TextBlock>().SingleOrDefault(element =>
+                AutomationProperties.GetAutomationId(element) == "PlanSheetFilterCount")?.Visibility ?? Visibility.Collapsed,
+                Is.EqualTo(Visibility.Collapsed));
             Assert.That(Text("PlanStatusCounts"), Is.EqualTo("要求事項 1 · タスク 3"));
         });
     }
