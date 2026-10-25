@@ -295,9 +295,9 @@ internal sealed partial class PlanSheetHostedTests
                 "The current empty append item exposes its native editor after filtering.");
             Assert.That(currentRows.SelectMany(row => Ui.Tree(row).OfType<Polyline>()).Select(AutomationProperties.GetAutomationId),
                 Is.EquivalentTo(expectedArrows), "Every active dependency belongs to the current filtered topology.");
-            var forwardX = Ui.Find<Polygon>("PlanArrowHead1_3_90", CurrentDependencyRow("I90")!)
+            var forwardX = Ui.Find<Polygon>($"PlanArrowHead{forwardFrom}_{forwardTo}_90", CurrentDependencyRow("I90")!)
                 .TransformToVisual(sheet).TransformPoint(new(3, 6)).X;
-            var reverseX = Ui.Find<Polygon>("PlanArrowHead4_2_3", CurrentDependencyRow("I3")!)
+            var reverseX = Ui.Find<Polygon>($"PlanArrowHead{reverseFrom}_{reverseTo}_3", CurrentDependencyRow("I3")!)
                 .TransformToVisual(sheet).TransformPoint(new(3, 0)).X;
             foreach (var row in currentRows)
                 AssertCrossingGeometry(row, row.Identity switch { "I3" => [forwardX], "I90" => [reverseX], _ => [] });

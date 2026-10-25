@@ -519,7 +519,15 @@ internal sealed partial class PlanSheetView
         var deleting = Minus(key);
         var rows = key is VirtualKey.C or VirtualKey.Delete || deleting ? RowIds.Skip(range.Row).Take(range.RowCount).ToArray() : [];
         var fields = key is VirtualKey.C or VirtualKey.Delete ? Fields.Skip(range.Column).Take(range.ColumnCount).ToArray() : [];
-        var visible = key == VirtualKey.V ? RowIds.Where(Rows.ContainsKey).ToArray() : [];
+        // A filtered view shows requirement rows as context, but they are not edit targets: paste walks the
+        // matching rows only and maps the selected range onto them (#260 / #227).
+        var visible = key == VirtualKey.V
+            ? RowIds.Where(identity => Rows.ContainsKey(identity) && (!FilterActive || filterResult.Matches.Contains(identity))).ToArray()
+            : [];
+        if (key == VirtualKey.V && FilterActive) {
+            var span = RowIds.Skip(range.Row).Take(range.RowCount).Where(visible.Contains).ToArray();
+            if (span.Length > 0) range = range with { Row = Array.IndexOf(visible, span[0]), RowCount = span.Length };
+        }
         var columns = key == VirtualKey.V ? Fields.ToArray() : [];
         return Run(async () => {
             switch (key)
