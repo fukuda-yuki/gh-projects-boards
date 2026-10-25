@@ -100,7 +100,6 @@ internal sealed partial class PlanSheetHostedTests
             // The forward link (1 → 90) draws nothing in this window: the successor shows the stub and no
             // visible route or head for that link. Geometry left in a recycled container by a scroll is not
             // on screen (its animation hides it) and must stay untraceable.
-            var row = CurrentDependencyRow("I90")!;
             Assert.That(Ui.Tree(row).OfType<Polyline>().Select(AutomationProperties.GetAutomationId)
                 .Where(id => id.StartsWith("PlanArrow1_90_", StringComparison.Ordinal)), Is.Empty);
             Assert.That(Ui.Tree(row).OfType<Polygon>().Select(AutomationProperties.GetAutomationId)
