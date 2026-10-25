@@ -264,11 +264,16 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var statusContent = new Grid();
         statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         statusContent.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        var statusLine = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 0, VerticalAlignment = VerticalAlignment.Center };
+        // #260: the counts take the free width and truncate with their full text in the tooltip, so the copy
+        // command stays reachable however many assignees the chase list names.
+        var statusLine = new Grid { ColumnSpacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        statusLine.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        statusLine.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         copyByAssignee = Button("担当者ごとにコピー", "PlanCopyByAssignee", CopyFilteredByAssignee, commitPending: false);
         copyByAssignee.Visibility = Visibility.Collapsed;
         ToolTipService.SetToolTip(copyByAssignee, "絞り込んだタスクを担当者ごとに、Issue のリンク付きでコピーします");
-        statusLine.Children.Add(statusCounts); statusLine.Children.Add(copyByAssignee);
+        statusLine.Children.Add(statusCounts);
+        statusLine.Children.Add(copyByAssignee); Grid.SetColumn(copyByAssignee, 1);
         statusContent.Children.Add(statusLine);
         foreach (var (caption, fill, stroke, dashed) in new[] {
             ("実績工数", "GanttTaskBrush", "GanttTaskBrush", false),
@@ -286,6 +291,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusContent.Children.Add(legend); Grid.SetColumn(legend, 1);
         statusBar.Child = statusContent;
         statusCounts.Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"];
+        // #260: the chase list can outgrow the window; it truncates with its full text in the tooltip.
+        statusCounts.TextTrimming = TextTrimming.CharacterEllipsis; statusCounts.TextWrapping = TextWrapping.NoWrap;
         root.Children.Add(statusBar); Grid.SetRow(statusBar, 4);
         // A TitleBar that has been loaded keeps its header elements after it unloads, and their
         // handlers would keep this whole view and its native tree alive. Attach them only while loaded.
@@ -356,9 +363,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var chase = sheet?.Session == session && sheet.FilterActive ? sheet.FilterChase : [];
         if (sheet?.Session == session && sheet.FilterActive) {
             statusCounts.Text = chase.Count == 0 ? "条件に一致するタスクはありません" : PlanChase.Line(chase);
+            ToolTipService.SetToolTip(statusCounts, statusCounts.Text); AutomationProperties.SetName(statusCounts, statusCounts.Text);
             copyByAssignee.Visibility = chase.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         } else {
             statusCounts.Text = string.Create(CultureInfo.GetCultureInfo("ja-JP"), $"要求事項 {requirements:N0} · タスク {rows.Length - requirements:N0}");
+            ToolTipService.SetToolTip(statusCounts, statusCounts.Text); AutomationProperties.SetName(statusCounts, statusCounts.Text);
             copyByAssignee.Visibility = Visibility.Collapsed;
         }
     }
