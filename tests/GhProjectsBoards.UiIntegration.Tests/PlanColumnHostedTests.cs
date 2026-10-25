@@ -123,7 +123,6 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanColumnModeIndicator").Text,Is.EqualTo("計算"));
             Assert.That(Ui.Find<TextBlock>("PlanColumnModeRepository").Text,Is.EqualTo("読み取りのみ"));
         });
-        double before = 0;
         double backY = 0;
         await Ui.Run(() => {
             var back = Ui.Find<Button>("PlanSettingsBack");
@@ -135,16 +134,17 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(back.TransformToVisual(view).TransformPoint(new(back.ActualWidth, 0)).X, Is.LessThanOrEqualTo(viewport.TransformToVisual(view).TransformPoint(new()).X),
                 "計画に戻る sits in the section list beside the scrolling content.");
             Assert.That(((NavigationViewItem)((NavigationView)Ui.Find<FrameworkElement>("PlanSettingsSections")).SelectedItem).Tag, Is.EqualTo("columns"), "The list marks the opened section.");
-            before = Ui.Find<ScrollViewer>("PlanSettingsScroll").VerticalOffset;
             Ui.Find<TextBox>("PlanColumnNameRepository").Focus(FocusState.Keyboard);
             Ui.Find<TextBox>("PlanColumnNameRepository").StartBringIntoView(new() { AnimationDesired = false });
         });
+        // The compact table's last row is reachable inside the scrolling page. Whether that takes a scroll
+        // depends on the window height, so assert reachability - and that the fixed 戻る button stays put.
         await Ui.Until(() => {
+            var input = Ui.Find<TextBox>("PlanColumnNameRepository");
             var viewport = Ui.Find<ScrollViewer>("PlanSettingsScroll");
-            var row = Ui.Find<TextBox>("PlanColumnNameRepository");
-            var top = row.TransformToVisual(viewport).TransformPoint(new()).Y;
-            return top >= 0 && top + row.ActualHeight <= viewport.ViewportHeight;
-        });
+            var top = input.TransformToVisual(viewport).TransformPoint(new()).Y;
+            return top >= 0 && top + input.ActualHeight <= viewport.ViewportHeight;
+        }, () => "the last column row is not inside the settings viewport");
         await Ui.Run(() => {
             var back = Ui.Find<Button>("PlanSettingsBack");
             Assert.That(back.TransformToVisual(view).TransformPoint(new()).Y, Is.EqualTo(backY).Within(1));
@@ -167,6 +167,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await CommitText("PlanColumnNameTitle","作業名");
         await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c=>c.Key==PlanField.Title && c.DisplayName=="作業名"));
         Assert.That(session.UndoCount,Is.EqualTo(undo+1));
+        // Reordering has one way in this page: drag the handle or Alt+↑/↓ on the focused row (native case), so
+        // there is no up/down button to press here; the toggle below drives the re-rendered table.
+        await Ui.Ready<CheckBox>("PlanColumnEstimate");
         await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("PlanColumnEstimate")));
         await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c=>c.Key==PlanField.Estimate && !c.Visible));
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
