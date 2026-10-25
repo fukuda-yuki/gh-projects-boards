@@ -694,10 +694,11 @@ internal sealed partial class PlanSheetHostedTests
                 Assert.That(slip, Is.EqualTo("終了日 10/2 を過ぎて未完了 · +1日"));
                 var text = Ui.Find<TextBlock>("PlanStartReason");
                 var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
-                // Measure the laid-out band: the pill is placed by a grid column after the reason text.
+                // Measure the laid-out band: the pillar sits after the reason and the typed-start notice column
+                // (#229), which keeps an empty grid column between them, so the agreed gap is two spacings.
                 sheet.UpdateLayout();
                 var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
-                Assert.That(gap, Is.InRange(8d, 12d), "The late pill follows the reason immediately.");
+                Assert.That(gap, Is.InRange(8d, 24d), "The late pill follows the reason immediately.");
                 Assert.That(pill.CornerRadius.TopLeft, Is.GreaterThan(0));
             }
             // A closed task has no forecast, so the delivered model shows no slip for it: the only thing the

@@ -98,8 +98,9 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(AutomationProperties.GetName(stub), Is.EqualTo("先行 新1（表示されていません）"));
             Assert.That(ToolTipService.GetToolTip(stub), Is.EqualTo(AutomationProperties.GetName(stub)));
             // The forward link (1 → 90) draws nothing in this window: no route and no crossing for it.
-            Assert.That(Ui.Tree(sheet).OfType<Polyline>().Any(line =>
-                AutomationProperties.GetAutomationId(line).StartsWith("PlanArrow1_90_", StringComparison.Ordinal)), Is.False);
+            var forwardRoutes = Ui.Tree(sheet).OfType<Polyline>().Select(AutomationProperties.GetAutomationId)
+                .Where(id => id.StartsWith("PlanArrow1_90_", StringComparison.Ordinal)).ToArray();
+            Assert.That(forwardRoutes, Is.Empty, "An off-screen predecessor must not draw a line: " + string.Join(",", forwardRoutes));
             // The reverse link's predecessor row 95 is visible, so that link still runs; its stroke is the only
             // crossing in this row — the suppressed forward link would have added a second.
             var reverseRoute = Ui.Find<Polyline>("PlanArrow95_3_95");
