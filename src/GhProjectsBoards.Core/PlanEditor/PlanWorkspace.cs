@@ -179,6 +179,8 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
                 using var lease = await Service.BeginOperationAsync(Context, token, mutation: false);
                 var read = await PlanSnapshot.ReadConsistentAsync(Service, lease, Context, choice.Id, token, progress);
                 token.ThrowIfCancellationRequested();
+                // #246: a read that never reached GitHub is a connection problem, not a failed open.
+                if (PlanSnapshot.IsConnectionLost(read)) throw new GhProjectsBoards.App.GitHub.ConnectionLostException();
                 if (read.Outcome != ProjectReadOutcome.Complete || read.Project is null) throw new InvalidOperationException("プロジェクトを取得できません。");
                 var project = read.Project;
                 // #258: an organization Issue Field matches by name like a Project field; a name shared by both

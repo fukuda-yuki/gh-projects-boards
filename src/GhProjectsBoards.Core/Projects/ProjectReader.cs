@@ -13,14 +13,15 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
     // #201: a publish reads only the items it is about to write. The identities are Issue node IDs; each is
     // resolved to its Project item in this Project and then read through the ordinary detail path, so the
     // result carries the same Issue fields, relationships and field values a complete read would deliver
-    // for those items — and nothing for the rest of the Project.
+    // for those items — and nothing for the rest of the Project. The first read of one publish hands its
+    // Project, field and option metadata to the later reads, so the metadata requests are not repeated.
     public Task<ProjectReadResult> ReadItemsAsync(ConnectionContext context, ScopedId project, IReadOnlyList<string> issueIds,
-        CancellationToken cancellationToken = default)
-        => new ReadSession(service, context, project, cancellationToken, null, lease, issueIds).RunAsync();
+        CancellationToken cancellationToken = default, ProjectReadModel? metadata = null)
+        => new ReadSession(service, context, project, cancellationToken, null, lease, issueIds, metadata).RunAsync();
 
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
         ScopedId projectId, CancellationToken cancellationToken, IProgress<RemoteProgress>? progress, GhConnectionService.OperationLease? lease = null,
-        IReadOnlyList<string>? itemScope = null)
+        IReadOnlyList<string>? itemScope = null, ProjectReadModel? metadata = null)
     {
         private readonly List<ReadProblem> problems = [];
         private readonly Dictionary<ScopedId, ProjectFieldDefinition> fields = [];
@@ -65,15 +66,21 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     [new(ReadProblemKind.ScopeMismatch, "project", FailureKind.IdentityChanged)]);
             try
             {
-                fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
-                    ReadProjectFields, value => { AddField(value); return Task.CompletedTask; });
+                if (metadata is null)
+                    fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
+                        ReadProjectFields, value => { AddField(value); return Task.CompletedTask; });
+                else AdoptMetadata(metadata);
                 if (!stopped)
                     itemsComplete = itemScope is null ? await ReadItemsAsync() : await ReadItemScopeAsync();
                 await ReadValuePages();
                 await ReadLabelPages();
+                // #201: a scoped read seeded with an earlier read's metadata reuses the catalogs of the
+                // repositories it already covered; only a repository this read sees for the first time is read.
+                var catalogued = metadata is null ? [] : metadata.Issues.Values.Select(i => i.Repository.Id).ToHashSet();
                 foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
                 {
                     if (stopped) { milestonesComplete = false; break; }
+                    if (metadata is not null && catalogued.Contains(repository)) continue;
                     milestonesComplete &= await WalkAsync("milestones", ProjectQueries.Milestones, repository.NodeId,
                         node => { MatchNode(node, repository.NodeId, "Repository"); return Property(node, "milestones"); },
                         node => { var milestone = ReadMilestone(node, repository);
@@ -81,9 +88,12 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                             return Task.CompletedTask; });
                 }
                 foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
+                {
+                    if (metadata is not null && catalogued.Contains(repository)) continue;
                     milestonesComplete &= await WalkAsync("labels", ProjectQueries.Labels, repository.NodeId,
                         node => { MatchNode(node, repository.NodeId, "Repository"); return Property(node, "labels"); },
                         node => { labels.Add(new(repository, Text(node, "id"), Text(node, "name"))); return Task.CompletedTask; });
+                }
                 if (milestonesComplete && !stopped)
                     foreach (var issue in issues.Values)
                         if (issue.Milestone.Value is { } member && (!milestones.TryGetValue(member.Id, out var catalog) || member != catalog))
@@ -158,57 +168,46 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             problems.Add(new(ReadProblemKind.Api, "items", response.Failure, response.Outcome, response.HttpStatus, response.RetryAfter));
         }
 
-        // #201: the scoped counterpart of ReadItemsAsync. It resolves the requested Issue identities to
-        // their items in this Project and reads those items through the same detail batches; a scope that
+        // #201: the scoped counterpart of ReadItemsAsync. Each request resolves the requested Issue
+        // identities to their items in this Project and reads those items in the same request — the same
+        // detail path the complete read uses, without walking the Project's item connection. A scope that
         // does not resolve to an item contributes no row, which is how an archived item stays absent.
         private async Task<bool> ReadItemScopeAsync()
         {
-            try
+            foreach (var slice in itemScope!.Distinct(StringComparer.Ordinal).Chunk(DetailBatchSize))
             {
-                foreach (var slice in itemScope!.Distinct(StringComparer.Ordinal).Chunk(DetailBatchSize))
+                if (stopped) return false;
+                cancellationToken.ThrowIfCancellationRequested();
+                var response = await SendAsync(ProjectQueries.PublishItemDetails, new { ids = slice });
+                if (!response.IsSuccess)
                 {
-                    if (stopped) return false;
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var response = await SendAsync(ProjectQueries.PublishItems, new { ids = slice });
-                    if (!response.IsSuccess)
+                    RecordItemFailure(response);
+                    return false;
+                }
+                var nodes = Array(Property(response.Data ?? default, "data"), "nodes");
+                if (nodes.GetArrayLength() != slice.Length) throw new ReadException(ReadProblemKind.IncompleteTraversal);
+                for (var i = 0; i < slice.Length; i++)
+                {
+                    var node = nodes[i];
+                    // A node the read cannot deliver is a concurrent change, exactly as a missing detail
+                    // node is for the complete read.
+                    if (node.ValueKind == JsonValueKind.Null)
                     {
-                        RecordItemFailure(response);
+                        problems.Add(new(ReadProblemKind.ConcurrentChange, "items"));
+                        stopped = true;
                         return false;
                     }
-                    var nodes = Array(Property(response.Data ?? default, "data"), "nodes");
-                    if (nodes.GetArrayLength() != slice.Length) throw new ReadException(ReadProblemKind.IncompleteTraversal);
-                    for (var i = 0; i < slice.Length; i++)
+                    MatchNode(node, slice[i], "Issue");
+                    var membership = Property(node, "projectItems");
+                    if (Boolean(Property(membership, "pageInfo"), "hasNextPage")) throw new ReadException(ReadProblemKind.IncompleteTraversal);
+                    foreach (var entry in Array(membership, "nodes").EnumerateArray())
                     {
-                        var node = nodes[i];
-                        // A node the read cannot deliver is a concurrent change, exactly as a missing detail
-                        // node is for the complete read.
-                        if (node.ValueKind == JsonValueKind.Null)
-                        {
-                            problems.Add(new(ReadProblemKind.ConcurrentChange, "items"));
-                            stopped = true;
-                            return false;
-                        }
-                        MatchNode(node, slice[i], "Issue");
-                        var membership = Property(node, "projectItems");
-                        if (Boolean(Property(membership, "pageInfo"), "hasNextPage")) throw new ReadException(ReadProblemKind.IncompleteTraversal);
-                        foreach (var entry in Array(membership, "nodes").EnumerateArray())
-                            if (Id(Property(entry, "project")) == projectId) detailIds.Add(Text(entry, "id"));
+                        if (Text(entry, "__typename") != "ProjectV2Item") throw new ReadException(ReadProblemKind.ScopeMismatch);
+                        if (Id(Property(entry, "project")) == projectId) await AddItemAsync(entry);
                     }
-                    await FlushDetailsAsync();
                 }
-                while (!stopped && pendingDetails.Count > 0)
-                {
-                    await DrainCompletedDetailsAsync();
-                    if (!stopped && pendingDetails.Count > 0) await WaitForDetailResponseAsync();
-                }
-                return !stopped;
             }
-            finally
-            {
-                // Even a validation failure or cancellation must not outlive this read's lease.
-                await Task.WhenAll(pendingDetails.Select(batch => batch.Response));
-                cancellationToken.ThrowIfCancellationRequested();
-            }
+            return !stopped;
         }
 
         private async Task ObserveDetailFailuresAsync()
@@ -325,6 +324,20 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 throw new ReadException(ReadProblemKind.IncompleteTraversal);
             project ??= metadata;
             return Property(node, "fields");
+        }
+
+        // #201: adopt the Project, field and option metadata a publish already read, so the verification
+        // read reuses it instead of repeating the requests. The catalogs of the covered repositories come
+        // with it; a repository this read does not know is still read below.
+        private void AdoptMetadata(ProjectReadModel source)
+        {
+            if (source.Id != projectId || !source.FieldsComplete) throw new ReadException(ReadProblemKind.ScopeMismatch);
+            project = source;
+            foreach (var field in source.Fields) fields.Add(field.Id, field);
+            foreach (var milestone in source.Milestones) milestones.TryAdd(milestone.Id, milestone);
+            labels.AddRange(source.Labels);
+            fieldsComplete = true;
+            milestonesComplete = source.MilestonesComplete;
         }
 
         private void AddField(JsonElement node)
