@@ -22,8 +22,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: '10.0.x'
-          dotnet-quality: 'ga'
+          # Exact version: the 10.0.x channel lookup redirects to a blob origin that returns HTTP 409.
+          dotnet-version: '10.0.401'
       - name: Test the TestResults cleanup rule
         shell: pwsh
         run: |
@@ -91,8 +91,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: '10.0.x'
-          dotnet-quality: 'ga'
+          # Exact version: the 10.0.x channel lookup redirects to a blob origin that returns HTTP 409.
+          dotnet-version: '10.0.401'
       - name: Set the PMO display size (1920x1080)
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force

@@ -31,8 +31,8 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: '10.0.x'
-          dotnet-quality: 'ga'
+          # Exact version: the 10.0.x channel lookup redirects to a blob origin that returns HTTP 409.
+          dotnet-version: '10.0.401'
       - name: Set display size
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
       - name: Prepare unchanged main baseline with identical measurement harness
