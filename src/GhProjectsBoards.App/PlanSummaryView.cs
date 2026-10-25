@@ -35,6 +35,7 @@ internal sealed class PlanSummaryView : UserControl
     private readonly Canvas loadDays;
     private readonly TextBlock loadDaysCaption;
     private readonly StackPanel loadTasks = new() { Spacing = 4 };
+    private readonly ScrollViewer loadTasksScroll;
     private readonly TextBlock loadTasksMore;
     private readonly Button loadPlanOpen;
     private readonly TextBlock unallocatedNote;
@@ -79,7 +80,7 @@ internal sealed class PlanSummaryView : UserControl
         loadPercent = Id(TableText(""), "SummaryLoadPercent");
         loadOverDays = Id(TableText(""), "SummaryLoadOverDays");
         loadMax = Id(TableText(""), "SummaryLoadMax");
-        loadDays = Id(new Canvas { Height = 88, HorizontalAlignment = HorizontalAlignment.Stretch }, "SummaryLoadDays");
+        loadDays = Id(new Canvas { Height = 72, HorizontalAlignment = HorizontalAlignment.Stretch }, "SummaryLoadDays");
         loadDaysCaption = Id(Text(""), "SummaryLoadDaysCaption");
         loadDaysCaption.Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush");
         loadTasksMore = Id(Text(""), "SummaryLoadTaskMore");
@@ -87,7 +88,9 @@ internal sealed class PlanSummaryView : UserControl
         loadPanelContent.Children.Add(loadTitle); loadPanelContent.Children.Add(loadPercent); loadPanelContent.Children.Add(loadOverDays);
         loadPanelContent.Children.Add(loadMax); loadPanelContent.Children.Add(loadDays); loadPanelContent.Children.Add(loadDaysCaption);
         loadPanelContent.Children.Add(Id(Text("この月のタスク"), "SummaryLoadTasksHeading"));
-        loadPanelContent.Children.Add(Id(loadTasks, "SummaryLoadTasks"));
+        loadTasksScroll = Id(new ScrollViewer { Content = Id(loadTasks, "SummaryLoadTasks"), VerticalScrollMode = ScrollMode.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollMode = ScrollMode.Disabled, MaxHeight = 220 }, "SummaryLoadTasksScroll");
+        loadPanelContent.Children.Add(loadTasksScroll);
         loadPanelContent.Children.Add(loadTasksMore);
         loadPlanOpen = Button("計画で表示", "SummaryPlanOpen", () => { if (panelIdentities.Count > 0) filter(panelIdentities); });
         loadPlanOpen.IsEnabled = false;
@@ -480,14 +483,16 @@ internal sealed class PlanSummaryView : UserControl
                 var monthCells = report.MonthCells?.SingleOrDefault(c => c.Identity == person.Identity)?.Cells;
                 for (var i = 0; i < count; i++) {
                     if (mode == 0) {
-                        var t = person.Phases[i].Tasks;
+                        var column = i;
+                        var t = person.Phases[column].Tasks;
+                        var phaseName = Phase(phases[column]);
                         var value = MeasureText(t);
-                        var description = $"{person.Name} · {Phase(phases[i])} · {Measures[measure]} {value}" + DetailSuffix(t);
-                        var button = TableCell(value, $"SummaryCell_{person.Identity}_{i}", () => Select($"{person.Name} · {Phase(phases[i])}", t.Identities));
+                        var description = $"{person.Name} · {phaseName} · {Measures[measure]} {value}" + DetailSuffix(t);
+                        var button = TableCell(value, $"SummaryCell_{person.Identity}_{column}", () => Select($"{person.Name} · {phaseName}", t.Identities));
                         AutomationProperties.SetName(button, description); ToolTipService.SetToolTip(button, description);
                         if (measure == 3 && t.Overdue > 0) button.Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush");
                         if (t.Finished || t.Count == 0) button.Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush");
-                        Cell(row, button, i + 1); rowButtons.Add(button);
+                        Cell(row, button, column + 1); rowButtons.Add(button);
                     } else {
                         var column = i;
                         var id = $"SummaryMonth_{person.Identity}_{column}";
@@ -581,7 +586,7 @@ internal sealed class PlanSummaryView : UserControl
         table.Children.Add(header);
         var lateness = PlanLateness.Classify(schedule.Values.ToArray(), Calendar(), day);
         var names = PlanTaskNames.Of(document!);
-        var selectedRows = document.State.Rows.Where(r => ids.Contains(r.Identity)).ToArray();
+        var selectedRows = document!.State.Rows.Where(r => ids.Contains(r.Identity)).ToArray();
         foreach (var row in selectedRows.Take(200)) {
             var task = schedule[row.Identity]; var states = States(row, task, lateness, unallocated?.Contains(row.Identity) == true);
             var item = Row(widths);
@@ -693,7 +698,7 @@ internal sealed class PlanSummaryView : UserControl
         loadDays.Children.Clear();
         var width = loadDays.ActualWidth;
         if (width <= 0 || barStart == default || barEnd == default) return;
-        const double baseline = 78, capLine = 54;
+        const double baseline = 62, capLine = 42;
         var span = barEnd.DayNumber - barStart.DayNumber + 1;
         var slot = width / span;
         var cap = new Border { Width = width, Height = 1, Background = PlanSheetView.Brush("TextFillColorSecondaryBrush") };
@@ -705,7 +710,7 @@ internal sealed class PlanSummaryView : UserControl
         for (var i = 0; i < span; i++) {
             var date = barStart.AddDays(i);
             if (!barLoads.TryGetValue(date, out var percent) || percent is not > 0) continue;
-            var height = Math.Min(baseline - 4, (double)percent.Value * 0.24);
+            var height = Math.Min(baseline - 4, (double)percent.Value * 0.20);
             var bar = new Border { Width = Math.Max(1, slot - 2), Height = height,
                 Background = PlanSheetView.Brush(percent > 100 ? "SystemFillColorCriticalBrush" : "GanttTaskBrush") };
             Canvas.SetLeft(bar, i * slot + 1); Canvas.SetTop(bar, baseline - height); loadDays.Children.Add(bar);
@@ -719,6 +724,10 @@ internal sealed class PlanSummaryView : UserControl
         Canvas.SetLeft(last, Math.Max(0, width - 30)); Canvas.SetTop(last, baseline + 2); loadDays.Children.Add(last);
     }
 }
+
+
+
+
 
 
 
