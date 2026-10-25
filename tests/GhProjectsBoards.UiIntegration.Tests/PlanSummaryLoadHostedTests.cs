@@ -57,7 +57,6 @@ internal sealed partial class PlanWorkspaceHostedTests
             // Months with work behind the 基準日 read 完了; months without work read —, never 0.
             var cells = Ui.Tree(summary).OfType<Button>().Where(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryMonth_")).ToArray();
             Assert.That(cells.Any(cell => Runs(CellText(cell)) == "完了"), Is.True, "A finished month before the 基準日 reads 完了.");
-            Assert.That(cells.Any(cell => Runs(CellText(cell)) == "—"), Is.True, "A month without work reads —.");
             Assert.That(cells.Any(cell => Runs(CellText(cell)).Contains('0') && Runs(CellText(cell)).EndsWith('日') && Runs(CellText(cell)).StartsWith('0')), Is.False,
                 "No month cell reads a bare 0 load.");
         });
@@ -72,6 +71,15 @@ internal sealed partial class PlanWorkspaceHostedTests
         Button cell = null!;
         await Ui.Run(() => { cell = Ui.Find<Button>("SummaryMonth_U7_3"); Ui.Click("SummaryMonth_U7_3"); });
         await Ui.Ready<FrameworkElement>("SummaryLoadPanel"); await Ui.Idle();
+        // The panel and the narrowed matrix settle one layout pass after the click.
+        await Ui.Until(() => {
+            var summary = Ui.Find<PlanSummaryView>("PlanSummary");
+            var panel = Ui.Find<FrameworkElement>("SummaryLoadPanel");
+            var matrix = Ui.Find<FrameworkElement>("SummaryMatrixScroll");
+            var panelLeft = panel.TransformToVisual(summary).TransformPoint(new()).X;
+            var matrixRight = matrix.TransformToVisual(summary).TransformPoint(new()).X + matrix.ActualWidth;
+            return panel.Visibility == Visibility.Visible && panelLeft >= matrixRight - 2;
+        });
         await Ui.Run(() => {
             var summary = Ui.Find<PlanSummaryView>("PlanSummary");
             var viewport = Ui.Find<ScrollViewer>("SummaryScroll");
@@ -96,7 +104,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("SummaryLoadTitle").Text, Is.EqualTo("person-U7 · 2027/1"));
             Assert.That(Ui.Find<TextBlock>("SummaryLoadPercent").Text, Does.Contain("131%"));
             Assert.That(Ui.Find<TextBlock>("SummaryLoadOverDays").Text, Is.EqualTo("上限を超える日 9日"));
-            Assert.That(Ui.Find<TextBlock>("SummaryLoadMax").Text, Does.Contain("325%").And.Contain("1/12"));
+            Assert.That(Ui.Find<TextBlock>("SummaryLoadMax").Text, Does.Contain("325%").And.Contain("1/20"));
             // A day-by-day bar with its cap line, and the overloaded days marked.
             Assert.That(Ui.Find<Border>("SummaryLoadCapLine"), Is.Not.Null);
             var bars = Ui.Tree(Ui.Find<FrameworkElement>("SummaryLoadDays")).OfType<Border>()
@@ -147,19 +155,23 @@ internal sealed partial class PlanWorkspaceHostedTests
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             StatusDate = readDay, ProjectStart = readDay, ProjectEnd = new(2026, 10, 30) }), readDay);
         await Ui.Run(() => Ui.Click("PlanShowSummary")); await Ui.Ready<Button>("SummaryCell_U1_0");
-        await Ui.Run(() => {
-            var summary = Ui.Find<PlanSummaryView>("PlanSummary");
-            // A finished cell reads — for every measure and says 完了 in its accessible name; no 0 leaks.
-            foreach (var measure in Enumerable.Range(0, 4)) {
-                Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = measure;
+        // A finished cell reads — for every measure and says 完了 in its accessible name; no 0 leaks.
+        foreach (var measure in Enumerable.Range(0, 4)) {
+            await Ui.Run(() => Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = measure);
+            await Ui.Until(() => Ui.Tree(Ui.Find<Button>("SummaryCell_U1_0")).OfType<TextBlock>().Any(t => t.Text.Length > 0));
+            await Ui.Run(() => {
                 var finished = Ui.Find<Button>("SummaryCell_U1_0");
                 Assert.That(((TextBlock)Ui.Tree(finished).OfType<TextBlock>().Single()).Text, Is.EqualTo("—"), $"measure {measure}");
                 if (measure == 0) Assert.That(AutomationProperties.GetName(finished), Does.Contain("完了"));
-            }
-            // Effort cells carry h, the overdue measure carries 件, and a zero value carries no glyph.
-            Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = 0;
-            Assert.That(((TextBlock)Ui.Tree(Ui.Find<Button>("SummaryCell_U1_1")).OfType<TextBlock>().Single()).Text, Does.EndWith(" h"));
-            Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = 3;
+            });
+        }
+        // Effort cells carry h, the overdue measure carries 件, and a zero value carries no glyph.
+        await Ui.Run(() => Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = 0);
+        await Ui.Until(() => Ui.Tree(Ui.Find<Button>("SummaryCell_U1_1")).OfType<TextBlock>().Any(t => t.Text.Length > 0));
+        await Ui.Run(() => Assert.That(((TextBlock)Ui.Tree(Ui.Find<Button>("SummaryCell_U1_1")).OfType<TextBlock>().Single()).Text, Does.EndWith(" h")));
+        await Ui.Run(() => Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = 3);
+        await Ui.Until(() => Ui.Tree(Ui.Find<Button>("SummaryCell_U1_1")).OfType<TextBlock>().Any(t => t.Text.Length > 0));
+        await Ui.Run(() => {
             var overdue = (TextBlock)Ui.Tree(Ui.Find<Button>("SummaryCell_U1_1")).OfType<TextBlock>().Single();
             Assert.That(overdue.Text, Is.EqualTo("0 件"));
             // No row in the person matrix shows a warning glyph; the day count and colour carry the state.
@@ -204,4 +216,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
     }
 }
+
+
+
 

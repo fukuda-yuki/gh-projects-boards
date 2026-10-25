@@ -247,7 +247,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Run(() => {
                 var summary = Ui.Find<PlanSummaryView>("PlanSummary");
                 var matrix = Ui.Find<FrameworkElement>("SummaryMatrixScroll");
-                var viewport = Ui.Find<ScrollViewer>("SummaryMatrixScroll");
+                var viewport = Ui.Find<ScrollView>("SummaryMatrixScroll");
                 Assert.That(viewport.ScrollableWidth, Is.Zero, "Every month column must fit at 1920 without horizontal scrolling.");
                 var headerCount = Ui.Tree(summary).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryMonthHeader_"));
                 Assert.That(headerCount, Is.GreaterThanOrEqualTo(7));
@@ -276,3 +276,4 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
 }
+

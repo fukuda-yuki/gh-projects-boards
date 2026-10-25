@@ -369,6 +369,12 @@ internal sealed class PlanSummaryView : UserControl
         var top = matrixArea.TransformToVisual(body).TransformPoint(new()).Y - scroll.VerticalOffset;
         var height = Math.Clamp(scroll.ActualHeight - top - 12, 240, MatrixMaxHeight);
         if (Math.Abs(matrixBody.MaxHeight - height) > 1) matrixBody.MaxHeight = height;
+        // A matrix that fits needs no inner viewport: disabling it lets the wheel scroll the page at
+        // the ordinary rate instead of being swallowed by a zero-range ScrollViewer.
+        var scrollable = matrixRows.ActualHeight > height + 1;
+        matrixBody.VerticalScrollMode = scrollable ? ScrollMode.Enabled : ScrollMode.Disabled;
+        matrixBody.VerticalScrollBarVisibility = scrollable ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+        if (!scrollable && matrixBody.VerticalOffset > 0) matrixBody.ChangeView(null, 0, null, true);
     }
     private void UpdateMonthWidth()
     {
@@ -520,6 +526,7 @@ internal sealed class PlanSummaryView : UserControl
                 };
             }
         } finally { renderingMatrix = false; }
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, FitMatrixHeight);
     }
     // A person name opens 計画 filtered to that person through the summary's exact-set route. The shared
     // person filter of #260/#227 replaces this once its model is on main.
@@ -724,6 +731,7 @@ internal sealed class PlanSummaryView : UserControl
         Canvas.SetLeft(last, Math.Max(0, width - 30)); Canvas.SetTop(last, baseline + 2); loadDays.Children.Add(last);
     }
 }
+
 
 
 
