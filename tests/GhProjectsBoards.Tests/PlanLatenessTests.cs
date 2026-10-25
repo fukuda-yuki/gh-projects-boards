@@ -60,7 +60,7 @@ internal sealed class PlanLatenessTests
     }
 
     [Test]
-    public void AnUnstartedPlanStartBeforeTheStatusDateIsStartOverdue()
+    public void AnUnstartedPlanStartBeforeTheStatusDateIsTheRedLateMark()
     {
         var document = Document(Row() with { Start = D("2026-10-01"), End = D("2026-10-20") });
 
@@ -68,7 +68,9 @@ internal sealed class PlanLatenessTests
 
         Assert.Multiple(() =>
         {
+            // #264: a passed plan date is red; the 状態 column marks a passed start like a passed end.
             Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Overdue));
+            Assert.That(late.IsLate, Is.True);
             Assert.That(late.OverdueKind, Is.EqualTo(PlanOverdueKind.Start));
             Assert.That(late.MissedDate, Is.EqualTo(D("2026-10-01")));
             Assert.That(Indicator(document), Is.EqualTo("開始日 10/1 を過ぎて未着手"));
@@ -85,7 +87,7 @@ internal sealed class PlanLatenessTests
     }
 
     [Test]
-    public void OwnRemainingWorkThatSlipsPastTheStatusDateIsLaterAndIsACause()
+    public void OwnRemainingWorkThatSlipsIsLateButNotACauseWithoutALateSuccessor()
     {
         // Started 10/1 with 8h done and 16h left: the plan finishes exactly on the 基準日, and the
         // remaining work now reaches 10/6. The PMO sees a yellow slip, not a red overdue.
@@ -127,6 +129,30 @@ internal sealed class PlanLatenessTests
         });
     }
 
+    [Test]
+    public void TheCauseIsTheRootOfAChainAndItsDelayedSuccessorsAreTransitive()
+    {
+        // A runs late on its own remaining work, B waits for A and C waits for B: only A is the cause,
+        // and 後続を表示 on A shows B and C.
+        var document = Document(
+            Row("a") with { Start = D("2026-10-01"), End = D("2026-10-05"), Estimate = 24, Actual = 8, Remaining = 16 },
+            Row("b") with { Start = D("2026-10-06"), End = D("2026-10-06"), Estimate = 8, Remaining = 8, Predecessors = ["a"] },
+            Row("c") with { Start = D("2026-10-07"), End = D("2026-10-07"), Estimate = 8, Remaining = 8, Predecessors = ["b"] },
+            Row("other") with { Start = D("2026-10-07"), End = D("2026-10-07"), Estimate = 8, Remaining = 8 });
+
+        var result = PlanLateness.Classify(Schedule(document), Calendar, Status);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Tasks.Where(pair => pair.Value.IsLate).Select(pair => pair.Key), Is.EquivalentTo(new[] { "a", "b", "c" }));
+            Assert.That(result.Tasks.Where(pair => pair.Value.IsCause).Select(pair => pair.Key), Is.EqualTo(new[] { "a" }));
+            Assert.That(result.CauseTasks, Is.EqualTo(1));
+            Assert.That(result.DelayedSuccessors("a"), Is.EqualTo(new[] { "b", "c" }));
+            Assert.That(result.DelayedSuccessors("b"), Is.EqualTo(new[] { "c" }), "B's own effect is still shown on B.");
+            Assert.That(result.DelayedSuccessors("other"), Is.Empty);
+        });
+    }
+
     [TestCase(true, TestName = "OverEstimateWithOverdue_RedWinsAndTheTooltipNamesBoth")]
     [TestCase(false, TestName = "OverEstimateWithoutOverdue_IsOverEstimateOnly")]
     public void OverEstimateIsReportedIndependentlyOfOverdue(bool overdue)
@@ -141,7 +167,7 @@ internal sealed class PlanLatenessTests
             Assert.That(late.OverEstimate, Is.True);
             Assert.That(result.OverEstimateTasks, Is.EqualTo(1));
             Assert.That(late.Level == PlanLatenessLevel.Overdue, Is.EqualTo(overdue));
-            Assert.That((result.OverdueTasks, result.LaterTasks), Is.EqualTo((overdue ? 1 : 0, 0)));
+            Assert.That(result.LateTasks, Is.EqualTo(overdue ? 1 : 0));
         });
     }
 
@@ -183,7 +209,7 @@ internal sealed class PlanLatenessTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Later), "A task whose plan end stays gets a forecast and can be 予定より遅れ.");
+            Assert.That(late.Level, Is.EqualTo(PlanLatenessLevel.Later), "A task whose plan end stays gets a forecast and can be late through it.");
             Assert.That(late.Cause, Is.EqualTo(PlanLateCause.OwnRemaining));
         });
     }
@@ -198,8 +224,8 @@ internal sealed class PlanLatenessTests
         Assert.Multiple(() =>
         {
             Assert.That(scheduled.ForecastEnd, Is.Null);
-            Assert.That(late.DaysLater, Is.Null, "A task without effort is not 予定より遅れ.");
-            Assert.That(late.OverdueKind, Is.EqualTo(PlanOverdueKind.Start), "期限超過 still applies from its dates.");
+            Assert.That(late.DaysLater, Is.Null, "A task without effort has no forecast slip.");
+            Assert.That(late.OverdueKind, Is.EqualTo(PlanOverdueKind.Start), "It is still late from its dates.");
         });
     }
 
@@ -254,10 +280,10 @@ internal sealed class PlanLatenessTests
             Assert.That(result.Tasks["root"].OverdueDescendantTasks, Is.EqualTo(1));
             Assert.That(result.Tasks["root"].LaterDescendantTasks, Is.EqualTo(1));
             Assert.That(result.Tasks["root"].OverEstimateDescendantTasks, Is.EqualTo(1));
-            Assert.That(result.OverdueTasks, Is.EqualTo(1));
-            Assert.That(result.LaterTasks, Is.EqualTo(1));
+            Assert.That(result.LateTasks, Is.EqualTo(2), "One 遅れ count; the summary is not counted.");
             Assert.That(result.OverEstimateTasks, Is.EqualTo(1));
-            Assert.That(result.CauseTasks, Is.EqualTo(2), "The overdue task and the one late through its own remaining work.");
+            // #264: 遅れの原因 contains 期限超過 and the tasks late through their own remaining work.
+            Assert.That(result.CauseTasks, Is.EqualTo(2));
         });
     }
 

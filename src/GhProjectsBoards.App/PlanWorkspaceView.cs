@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Globalization;
 using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
@@ -37,7 +37,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly StackPanel legend = Id(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 20, Margin = new(0, 0, 20, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanGanttLegend");
     private readonly Border statusBar = new() { Height = 28 };
     private readonly TextBlock statusCounts = Id(new TextBlock { Margin = new(20, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanStatusCounts");
-    private readonly StackPanel statusMarks = Id(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center }, "PlanStatusMarks");
+    // #260 D3: no attention counts in the status bar; while a filter is active it carries the chase list.
+    private readonly Button copyByAssignee;
     private readonly SelectorBarItem tasksTab = Id(new SelectorBarItem { Text = "計画" }, "PlanShowTasks");
     private readonly SelectorBarItem summaryTab = Id(new SelectorBarItem { Text = "サマリー" }, "PlanShowSummary");
     private readonly SelectorBar tabs = new();
@@ -219,7 +220,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
         saveFailure.Content = conflictAction;
         refreshFailure.ActionButton = Button("再試行", "PlanRetryRefresh", RefreshRemote);
         publishFailure.ActionButton = Button("再試行", "PlanRetryPublish", () => { RenderReview(); Show("publish"); return Task.CompletedTask; });
-        refreshResult.Closed += (_, _) => sheet?.ClearIdentityFilter();
         AutomationProperties.SetLiveSetting(refreshResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         failures.Children.Add(refreshResult);
         AutomationProperties.SetLiveSetting(csvExportResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
@@ -278,8 +278,16 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var statusContent = new Grid();
         statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         statusContent.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        var statusLine = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 0, VerticalAlignment = VerticalAlignment.Center };
-        statusLine.Children.Add(statusCounts); statusLine.Children.Add(statusMarks);
+        // #260: the counts take the free width and truncate with their full text in the tooltip, so the copy
+        // command stays reachable however many assignees the chase list names.
+        var statusLine = new Grid { ColumnSpacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        statusLine.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        statusLine.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        copyByAssignee = Button("担当者ごとにコピー", "PlanCopyByAssignee", CopyFilteredByAssignee, commitPending: false);
+        copyByAssignee.Visibility = Visibility.Collapsed;
+        ToolTipService.SetToolTip(copyByAssignee, "絞り込んだタスクを担当者ごとに、Issue のリンク付きでコピーします");
+        statusLine.Children.Add(statusCounts);
+        statusLine.Children.Add(copyByAssignee); Grid.SetColumn(copyByAssignee, 1);
         statusContent.Children.Add(statusLine);
         foreach (var (caption, fill, stroke, dashed) in new[] {
             ("実績工数", "GanttTaskBrush", "GanttTaskBrush", false),
@@ -297,6 +305,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusContent.Children.Add(legend); Grid.SetColumn(legend, 1);
         statusBar.Child = statusContent;
         statusCounts.Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"];
+        // #260: the chase list can outgrow the window; it truncates with its full text in the tooltip.
+        statusCounts.TextTrimming = TextTrimming.CharacterEllipsis; statusCounts.TextWrapping = TextWrapping.NoWrap;
         root.Children.Add(statusBar); Grid.SetRow(statusBar, 4);
         // A TitleBar that has been loaded keeps its header elements after it unloads, and their
         // handlers would keep this whole view and its native tree alive. Attach them only while loaded.
@@ -365,9 +375,25 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var rows = session.Document.State.Rows;
         var parents = rows.Where(r => r.Parent is not null).Select(r => r.Parent).ToHashSet();
         var requirements = rows.Count(r => parents.Contains(r.Identity));
-        statusCounts.Text = string.Create(CultureInfo.GetCultureInfo("ja-JP"), $"要求事項 {requirements:N0} · タスク {rows.Length - requirements:N0}");
-        // RenderTasks creates and refreshes the session's sheet before updating shell counts.
-        UpdateStatusMarks(session);
+        // #260 D3 / #238: while a filter is on, the status bar is the chase list; without one it is the two
+        // counts and nothing else. The attention counts live on the strip and the summary verdict only.
+        var chase = sheet?.Session == session && sheet.FilterActive ? sheet.FilterChase : [];
+        if (sheet?.Session == session && sheet.FilterActive) {
+            statusCounts.Text = chase.Count == 0 ? "条件に一致するタスクはありません" : PlanChase.Line(chase);
+            ToolTipService.SetToolTip(statusCounts, statusCounts.Text); AutomationProperties.SetName(statusCounts, statusCounts.Text);
+            copyByAssignee.Visibility = chase.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        } else {
+            statusCounts.Text = string.Create(CultureInfo.GetCultureInfo("ja-JP"), $"要求事項 {requirements:N0} · タスク {rows.Length - requirements:N0}");
+            ToolTipService.SetToolTip(statusCounts, statusCounts.Text); AutomationProperties.SetName(statusCounts, statusCounts.Text);
+            copyByAssignee.Visibility = Visibility.Collapsed;
+        }
+    }
+    // 担当者ごとにコピー (#260 / #238 D7): the chase list goes through the sheet's clipboard path, and its
+    // failure rule leaves the status bar unchanged on error.
+    private async Task CopyFilteredByAssignee()
+    {
+        if (sheet is not { FilterActive: true } current || !await current.CopyFilteredByAssignee()) return;
+        statusCounts.Text = "担当者ごとにコピーしました";
     }
     private static Button CommandButton(string text, string id, Symbol icon)
     {
@@ -459,12 +485,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         ClearPublishResult();
         var reporter = BeginBusy(reset ? "reset" : "refresh", reset ? "GitHub の状態に戻しています" : "最新の情報を取得しています");
         var outcome = reset ? "GitHub の状態に戻す操作を中止しました" : "更新を中止しました";
-        PlanRefreshResult? refreshed = null;
         try {
+            // #238: a complete read reports itself at the right end of the attention strip only; no result bar
+            // opens, so the rows keep their height and position.
             var result = reset ? await workspace.Reset(OperationToken, reporter) : await workspace.Refresh(OperationToken, reporter);
-            if (result is not null) {
-                if (reset) ShowResetResult(result.StatusDate); else refreshed = result;
-            }
+            if (result is not null && reset) ShowResetResult(result.StatusDate);
             outcome = reset ? "GitHub の状態に戻しました" : "最新の情報に更新しました";
             refreshFailure.IsOpen = false; ClearSaveFailures();
             if (workspace.Session is { } session && session.Document.Sync.Failures.IsEmpty && session.Document.Sync.Unverified.IsEmpty)
@@ -484,95 +509,30 @@ internal sealed partial class PlanWorkspaceView : UserControl
         finally {
             EndBusy(outcome);
             RenderTasks(); RenderSettings();
-            // The bar's lateness counts come from the rendered sheet, so they are read after the sheet has taken
-            // in the read and its 基準日; before that they were the previous week's counts.
-            if (refreshed is not null) ShowRefreshResult(refreshed);
         }
     }
     private bool showingRecalculation;
-    private void ShowRefreshResult(PlanRefreshResult result, bool recalculation = false)
+    // A settings change reschedules the plan, so it keeps its own bar and reports the moved tasks. A refresh
+    // opens no bar: its result is the strip's right end (#238).
+    private void ShowRecalculationResult(PlanRefreshResult result)
     {
-        showingRecalculation = recalculation;
+        showingRecalculation = true;
         var culture = CultureInfo.GetCultureInfo("ja-JP");
         refreshResult.ActionButton = null; refreshResult.Content = null;
-        if (recalculation)
-        {
-            // A settings change reschedules the plan, so it keeps its own bar and reports the moved tasks.
-            refreshResult.Title = "日程を再計算しました";
-            refreshResult.Message = result.ChangedTasks.Count > 0
-                ? "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture) + "。発行すると GitHub に反映します。"
-                : "日程は変わっていません。";
-            if (result.ChangedTasks.Count > 0)
-                refreshResult.ActionButton = Button("変更したタスクだけ表示", "PlanRefreshChangedFilter", () => {
-                    Show("tasks"); sheet?.FilterTasks(result.ChangedTasks, "日程変更"); return Task.CompletedTask;
-                });
-        }
-        else
-        {
-            // #236: a refresh reads and moves no date. The status bar already counts the lateness it found, so
-            // the bar only offers the one route worth taking now; with nothing late or added it is the title alone.
-            refreshResult.Title = "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
-            var counts = LatenessCounts();
-            refreshResult.Message = "";
-            if (counts.Length > 0 && sheet?.CauseTasks > 0)
-                refreshResult.ActionButton = Button("遅れの原因を表示", "PlanRefreshCauseFilter", () => {
-                    Show("tasks"); sheet?.FilterTasks(sheet.CauseSet, "遅れの原因 " + sheet.CauseTasks.ToString("N0", culture), dimAncestors: true); return Task.CompletedTask;
-                });
-            else if (counts.Length > 0 && sheet is { OverdueTasks: > 0 })
-                refreshResult.ActionButton = CountFilter("期限超過", "PlanRefreshOverdueFilter", sheet.OverdueSet, sheet.OverdueTasks);
-        }
-        if (!result.AddedTasks.IsEmpty && workspace.Session is { } session)
-        {
-            string Name(string id) {
-                var number = session.Document.Sync.IssueLinks.TryGetValue(id, out var link) ? link.Caption[link.Caption.LastIndexOf('#')..] + " " : "";
-                return number + session.Document.State.Rows.FirstOrDefault(r => r.Identity == id)?.Title;
-            }
-            var added = result.AddedTasks;
-            refreshResult.Message += (refreshResult.Message.Length == 0 || refreshResult.Message.EndsWith('。') ? "" : "。") + "GitHub で追加された Issue " + added.Length.ToString("N0", culture) + ": "
-                + string.Join("、", added.Take(3).Select(Name)) + (added.Length > 3 ? " ほか " + (added.Length - 3).ToString("N0", culture) + " 件" : "");
-            var ids = added.ToHashSet();
-            // Both filters sit on one line under the message instead of stacking an action button over content.
-            var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new(0, 0, 0, 12) };
-            if (refreshResult.ActionButton is { } changed) { refreshResult.ActionButton = null; buttons.Children.Add(changed); }
-            buttons.Children.Add(Button("追加された Issue を表示", "PlanRefreshAddedFilter", () => {
-                Show("tasks"); sheet?.FilterTasks(ids, "追加された Issue", includeSummaries: true); return Task.CompletedTask;
-            }));
-            refreshResult.Content = buttons;
-        }
+        refreshResult.Title = "日程を再計算しました";
+        refreshResult.Message = result.ChangedTasks.Count > 0
+            ? "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture) + "。発行すると GitHub に反映します。"
+            : "日程は変わっていません。";
+        if (result.ChangedTasks.Count > 0)
+            refreshResult.ActionButton = Button("変更したタスクだけ表示", "PlanRefreshChangedFilter", () => {
+                Show("tasks"); sheet?.FilterTasks(result.ChangedTasks, "日程変更"); return Task.CompletedTask;
+            });
         refreshResult.IsOpen = true;
-    }
-    private string LatenessCounts()
-    {
-        if (sheet is null) return "";
-        var culture = CultureInfo.GetCultureInfo("ja-JP");
-        var parts = new List<string>();
-        if (sheet.OverdueTasks > 0) parts.Add($"期限超過 {sheet.OverdueTasks.ToString("N0", culture)}");
-        if (sheet.LaterTasks > 0) parts.Add($"予定より遅れ {sheet.LaterTasks.ToString("N0", culture)}");
-        if (sheet.CauseTasks > 0) parts.Add($"遅れの原因 {sheet.CauseTasks.ToString("N0", culture)}");
-        if (sheet.OverEstimateTasks > 0) parts.Add($"見積超過 {sheet.OverEstimateTasks.ToString("N0", culture)}");
-        return string.Join(" · ", parts);
-    }
-    private Button CountFilter(string label, string id, IReadOnlySet<string> identities, int count)
-    {
-        var text = label + " " + count.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"));
-        return Button(text, id, () => {
-            Show("tasks"); sheet?.FilterTasks(identities, text, dimAncestors: true); return Task.CompletedTask;
-        });
-    }
-    private void UpdateStatusMarks(PlanSession session)
-    {
-        statusMarks.Children.Clear();
-        if (sheet?.Session != session) return;
-        if (sheet.OverdueTasks > 0) statusMarks.Children.Add(CountFilter("期限超過", "PlanStatusOverdueFilter", sheet.OverdueSet, sheet.OverdueTasks));
-        if (sheet.LaterTasks > 0) statusMarks.Children.Add(CountFilter("予定より遅れ", "PlanStatusLaterFilter", sheet.LaterSet, sheet.LaterTasks));
-        if (sheet.CauseTasks > 0) statusMarks.Children.Add(CountFilter("遅れの原因", "PlanStatusCauseFilter", sheet.CauseSet, sheet.CauseTasks));
-        if (sheet.OverEstimateTasks > 0) statusMarks.Children.Add(CountFilter("見積超過", "PlanStatusOverEstimateFilter", sheet.OverEstimateSet, sheet.OverEstimateTasks));
     }
     private void CloseRefreshResult()
     {
         showingRecalculation = false;
         refreshResult.IsOpen = false;
-        sheet?.ClearIdentityFilter();
     }
     private void UpdateCommandAvailability()
     {
@@ -799,10 +759,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
         if (workspace.Session is not { } session || sheet is null) return;
         sheet.Refresh();
         if (summaryView?.Session != session) {
-            summaryView = new(session, ids => {
-                sheet.FilterTasks(ids, "サマリーのタスク"); Show("tasks");
+            summaryView = new(session, (ids, name) => {
+                sheet.FilterTasks(ids, name); Show("tasks");
                 if (sheet.RowIds.Count > 0) sheet.SelectAndFocus(sheet.RowIds[0], PlanField.Title, false);
-            }, section => OpenSettingsPage(section, "summary"));
+            }, section => OpenSettingsPage(section, "summary"), toggle => {
+                // The verdict's count buttons press the strip toggle and nothing else (#260 3).
+                Show("tasks"); sheet.FilterToggle(toggle);
+            });
             summaryArea.Children.Clear(); summaryArea.Children.Add(summaryView);
         }
         summaryView.Refresh(sheet.Schedule, sheet.StatusDate);
@@ -818,7 +781,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void ShowPlanningResult(PlanSaveResult save)
     {
-        if (save.Recalculation is { } result) ShowRefreshResult(result, recalculation: true);
+        if (save.Recalculation is { } result) ShowRecalculationResult(result);
     }
     private void Check(PlanSaveResult save)
     {

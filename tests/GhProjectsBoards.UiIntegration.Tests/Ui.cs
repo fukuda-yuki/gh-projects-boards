@@ -263,10 +263,26 @@ internal static class Ui
             ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(split).GetPattern(PatternInterface.Invoke)).Invoke();
         } else Click((Button)control);
     }
+    // HyperlinkButton and other button-like controls are not Button: invoke the control the PMO presses.
+    public static void Invoke(string id)
+    {
+        var control = Find<Control>(id);
+        Assert.That(control.IsLoaded && control.IsEnabled, Is.True,
+            $"The control {id} must be loaded and enabled (loaded={control.IsLoaded}, enabled={control.IsEnabled})");
+        ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(control).GetPattern(PatternInterface.Invoke)).Invoke();
+    }
     public static void Toggle(CheckBox checkbox)
     {
         Assert.That(checkbox.IsLoaded && checkbox.IsEnabled, Is.True);
         ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(checkbox).GetPattern(PatternInterface.Toggle)).Toggle();
+    }
+    // The attention strip's toggles are ToggleButtons, not CheckBoxes: a test presses them the way a user does.
+    public static void ToggleToggleButton(string id)
+    {
+        var toggle = Find<Microsoft.UI.Xaml.Controls.Primitives.ToggleButton>(id);
+        Assert.That(toggle.IsLoaded && toggle.IsEnabled, Is.True,
+            $"The toggle {id} must be loaded and enabled (loaded={toggle.IsLoaded}, enabled={toggle.IsEnabled})");
+        ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(toggle).GetPattern(PatternInterface.Toggle)).Toggle();
     }
     public static void Click(Button button)
     {

@@ -236,7 +236,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Where(id => id.Length > 0), Is.EquivalentTo(Enumerable.Range(1, 12).Select(i => $"I{i}")));
             Assert.That(Ui.Find<Border>("PlanAssistPane").Visibility, Is.EqualTo(Visibility.Visible));
-            Assert.That(Ui.Tree(view).OfType<TextBox>().Any(t => t.Text == "アシストの参照タスク"), Is.True);
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionNamedSet")), Is.EqualTo("アシストの参照タスク"));
             Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("12 件"));
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);

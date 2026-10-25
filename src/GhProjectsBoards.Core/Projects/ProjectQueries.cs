@@ -18,7 +18,7 @@ internal static class ProjectQueries
     private const string Values = """
         nodes {
           __typename
-          ... on ProjectV2ItemFieldValueCommon { id FIELD_REFERENCE }
+          ... on ProjectV2ItemFieldValueCommon { id updatedAt FIELD_REFERENCE }
           ... on ProjectV2ItemFieldSingleSelectValue { optionId }
           ... on ProjectV2ItemFieldTextValue { text }
           ... on ProjectV2ItemFieldIterationValue { title }

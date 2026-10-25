@@ -31,7 +31,7 @@ All interaction uses `scripts/Invoke-EvaluationUi.ps1` (`click`, `invoke`, `type
 | `05-selection.png` | Set `PlanSheetFilter` to R09 SS-003; select that row's Title cell; read the reason line | 画面の見方 / シートとガント |
 | `06-states.png` | After the Actual/Remaining edit and refresh, filter R09; selected row, state markers, changed dates and Gantt lateness | 画面の見方 / シートとガント |
 | `07-effort-edit.png` | On R09 SS-003, set Actual 24 and Remaining 32 using F2, ValuePattern and Enter (independent of IME mode); retain the selection | 毎週の更新 |
-| `08-refresh.png` | Invoke `PlanRefresh`; wait for `PlanRefreshResult` and the completed next-day refresh | 最新の情報に更新 |
+| `08-refresh.png` | Invoke `PlanRefresh`; wait for the completed next-day refresh and `PlanReadResult` on the attention strip | 最新の情報に更新 |
 | `09-publish.png` | Invoke `PlanPublish`; wait for `PlanPublishLines` and `PlanPublishConfirm`; capture, then `PlanPublishClose` | 発行と競合の確認 |
 | `10-summary.png` | Clear the filter, select `PlanShowSummary`, wait for `SummaryFinish` | サマリーと担当者の確認 |
 | `11-people.png` | Wheel-scroll the summary until `SummaryMode` is near the top; choose 月別 using Home, Down, Enter | サマリーと担当者の確認 / 担当者ごとに見る |

@@ -22,7 +22,7 @@ internal sealed class PlanPartBMarksTests
         Assert.That(PlanSheetText.Mark(PlanTaskNames.Of(document), row, task, late.Tasks["I1"], "").Text, Does.Contain("終了日"));
         Assert.That(PlanSheetText.Mark(PlanTaskNames.Of(document), row, task, late.Tasks["I1"], "", new PlanMarkVisibility(Overdue: false)).Text,
             Does.Not.Contain("終了日"), "A hidden mark leaves the indicator tooltip.");
-        Assert.That(late.OverdueTasks, Is.EqualTo(1), "The set and its count are unaffected by a hidden mark.");
+        Assert.That(late.LateTasks, Is.EqualTo(1), "The set and its count are unaffected by a hidden mark.");
     }
 
     [Test]
@@ -53,7 +53,7 @@ internal sealed class PlanPartBMarksTests
         Assert.That(PlanSheetText.EstimateOverrun(tasks["I3"]), Does.EndWith("h"), "The row's own over-estimate figure is shown by default.");
         Assert.That(PlanSheetText.EstimateOverrun(tasks["I3"], new PlanMarkVisibility(OverEstimate: false)), Is.Null,
             "A hidden 見積超過 mark leaves the effort cell.");
-        Assert.That(lateClassification.OverdueTasks + lateClassification.OverEstimateTasks, Is.GreaterThan(0), "The sets stay complete.");
+        Assert.That(lateClassification.LateTasks + lateClassification.OverEstimateTasks, Is.GreaterThan(0), "The sets stay complete.");
     }
 
     [Test]
@@ -66,8 +66,8 @@ internal sealed class PlanPartBMarksTests
         Assert.That(task.ForecastEnd, Is.Not.Null);
         Assert.That(PlanSheetText.ForecastEnd(task, late.Tasks["I1"]),
             Is.EqualTo(PlanSheetText.Date(task.ForecastEnd!.Value) + " +" + late.Tasks["I1"].DaysLater + "日"));
-        // The plan end is before the 基準日, so the red 期限超過 mark wins; the slip still shows the forecast.
-        Assert.That(late.OverdueTasks, Is.EqualTo(1));
+        // The plan end is before the 基準日, so the mark is red; the slip still shows the forecast.
+        Assert.That(late.Tasks["I1"].Level, Is.EqualTo(PlanLatenessLevel.Overdue));
         Assert.That(late.Tasks["I1"].DaysLater, Is.GreaterThan(0));
     }
 }

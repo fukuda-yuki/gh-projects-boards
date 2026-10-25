@@ -628,7 +628,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanDetailReload"));
         await Ui.Until(() => DetailReads().Length == 3); await DetailReady("確認");
         await Ui.Run(() => Ui.Click("PlanRefresh"));
-        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
         await Ui.Until(() => DetailReads().Length == 4); await DetailReady("確認");
         Assert.That(DetailReads().Last(), Is.EqualTo("I3"));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -683,7 +683,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         try {
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
-            await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+            await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
         }
         finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
         await DetailReady();

@@ -18,7 +18,12 @@ internal static class EvaluationFixture
     internal sealed record VersionMilestone(string Phase, string Title, DateOnly Due);
     internal sealed record VersionPlan(string Title, DateOnly ProjectStart, DateOnly ProjectEnd, DateOnly StatusDate,
         DateOnly[] StatusDates, string[] Phases, VersionMilestone[] Milestones, VersionPerson[] People, VersionRow[] Rows);
-    internal sealed record Snapshot(DateOnly StatusDate, ImmutableArray<PlanRow> Rows, PlanDocument Document);
+    internal sealed record Snapshot(DateOnly StatusDate, ImmutableArray<PlanRow> Rows, PlanDocument Document)
+    {
+        // #238: the day each task's 実績 and 残 last changed, as GitHub would report it; a task never
+        // changed after the initial publication dates from the Project start.
+        public ImmutableDictionary<string, DateOnly> ProgressChanged { get; init; } = ImmutableDictionary.Create<string, DateOnly>(StringComparer.Ordinal);
+    }
 
     internal static VersionPlan ReadPlan(string version = DefaultVersion)
     {
@@ -72,6 +77,7 @@ internal static class EvaluationFixture
                 day, source.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal));
         }
         var snapshots = new List<Snapshot>();
+        var progressChanged = new Dictionary<string, DateOnly>(StringComparer.Ordinal);
         var last = statusDates.Max();
         for (var day = plan.ProjectStart; day <= last; day = day.AddDays(1))
         {
@@ -98,6 +104,7 @@ internal static class EvaluationFixture
                 var actual = Math.Min(work, row.Actual!.Value + hours);
                 var remaining = actual == work ? 0 : work <= estimate || actual * 2 < estimate ? estimate - actual : work - actual;
                 var done = remaining == 0;
+                if (actual != row.Actual || remaining != row.Remaining) progressChanged[identity] = day;
                 updated[identity] = row with { Actual = actual, Remaining = remaining, Start = row.Start ?? day, End = done ? day : row.End,
                     Closed = done && !task.OpenAtZero, CloseDate = done && !task.OpenAtZero ? day : null, Status = done && !task.OpenAtZero ? "Done" : "In progress" };
             }
@@ -109,7 +116,7 @@ internal static class EvaluationFixture
         {
             var scheduled = Layout(rows, statusDate).ToDictionary(t => t.Input.Identity);
             var published = rows.Select(r => r with { Start = scheduled[r.Identity].Start.Value, End = scheduled[r.Identity].End.Value }).ToImmutableArray();
-            return new(statusDate, published, Document(plan, published, statusDate));
+            return new(statusDate, published, Document(plan, published, statusDate)) { ProgressChanged = progressChanged.ToImmutableDictionary(StringComparer.Ordinal) };
         }
     }
 
@@ -124,15 +131,25 @@ internal static class EvaluationFixture
         var current = snapshots.Single(s => s.StatusDate == selected);
         var rows = current.Rows;
         var orders = rows.ToImmutableDictionary(r => r.Identity, r => rows.Where(c => c.Parent == r.Identity).Select(c => c.Identity).ToImmutableArray());
+        // The prepared plan stands for a complete read at the status date: it carries the read time, the
+        // Issues it placed (none: this read placed the whole plan) and each task's last 実績/残 change, so the
+        // attention strip and 未更新 describe the PMO's real scenario before the first manual refresh.
+        var lastRead = new DateTimeOffset(selected.ToDateTime(new TimeOnly(9, 0)), TimeSpan.FromHours(9));
+        var progress = rows.ToImmutableDictionary(r => r.Identity,
+            r => (DateTimeOffset?)new DateTimeOffset(current.ProgressChanged.GetValueOrDefault(r.Identity, plan.ProjectStart)
+                .ToDateTime(new TimeOnly(18, 0)), TimeSpan.FromHours(9)), StringComparer.Ordinal);
         var document = current.Document with { Sync = new() {
             NativeOrders = orders,
             IssueLinks = rows.ToImmutableDictionary(r => r.Identity,
-                r => new PlanIssueLink($"{r.Repository}#{r.Identity[1..]}", $"https://github.com/{r.Repository}/issues/{r.Identity[1..]}"))
+                r => new PlanIssueLink($"{r.Repository}#{r.Identity[1..]}", $"https://github.com/{r.Repository}/issues/{r.Identity[1..]}")),
+            ProgressUpdatedAt = progress,
+            LastRead = new(lastRead, [])
         } };
         var identities = Identities(plan);
         var phases = plan.Rows.Where(r => r.Phase is not null).ToDictionary(r => identities[r.Key], r => r.Phase!);
         var fake = Path.Combine(root, "fake-gh"); Directory.CreateDirectory(fake);
-        FakePlanEditor.Save(fake, new(rows.Select(r => new PlanFakeIssue(r, "", true) { Phase = phases.GetValueOrDefault(r.Identity) }).ToImmutableArray(), rows.Length + 1) {
+        FakePlanEditor.Save(fake, new(rows.Select(r => new PlanFakeIssue(r, "", true) {
+            Phase = phases.GetValueOrDefault(r.Identity), ProgressUpdatedAt = progress[r.Identity] }).ToImmutableArray(), rows.Length + 1) {
             Milestones = plan.Milestones.Select((m, i) => new PlanFakeMilestone("M" + i, "acme/repo", m.Title, m.Due)).ToImmutableArray(),
             SubOrders = orders, Phases = [.. plan.Phases]
         });

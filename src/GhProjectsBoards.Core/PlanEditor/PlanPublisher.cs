@@ -55,7 +55,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             await Reconcile(session, lease, today, token, progressReporter, refresh: true, reset: reset).ConfigureAwait(false);
             return new(true, null, null) { Refresh = new(before.State.Settings.StatusDate ?? today, today,
                 reset ? [] : PlanOperations.ChangedTaskDates(before, session.Document, today))
-                { AddedTasks = reset ? [] : PlanRefreshResult.FindAdded(before, session.Document) } };
+                { AddedTasks = reset ? [] : session.Document.Sync.LastRead?.Added ?? [] } };
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) when (Expected(ex)) {

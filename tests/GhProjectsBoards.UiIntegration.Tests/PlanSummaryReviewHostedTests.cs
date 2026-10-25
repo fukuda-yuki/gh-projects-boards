@@ -98,9 +98,10 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(text.TextWrapping, Is.EqualTo(TextWrapping.NoWrap));
                 Assert.That(text.IsTextTrimmed, Is.False, text.Text);
             }
-            var attention = Ui.Find<Button>("SummaryOverEstimate");
+            // #260 R6-4: the same counts are buttons under the verdict, pressing the strip's toggle.
+            var attention = Ui.Tree(summary).OfType<Button>()
+                .First(button => AutomationProperties.GetAutomationId(button).StartsWith("SummaryVerdict", StringComparison.Ordinal));
             Assert.That(attention.HorizontalAlignment, Is.EqualTo(HorizontalAlignment.Left));
-            Assert.That(Ui.Tree(attention).OfType<FontIcon>().Single().Glyph, Is.EqualTo("\uE7BA"));
             Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1;
             foreach (var text in Ui.Tree(summary).OfType<TextBlock>()) Assert.That(text.Text, Does.Not.Match(@"\d+\.\d+%"));
         });

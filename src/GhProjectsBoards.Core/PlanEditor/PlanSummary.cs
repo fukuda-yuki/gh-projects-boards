@@ -3,7 +3,7 @@ namespace GhProjectsBoards.Core.PlanEditor;
 internal sealed record SummaryValue(decimal? Value, int Excluded);
 internal sealed record SummaryTasks(IReadOnlyList<string> Identities, int Closed,
     SummaryValue Estimate, SummaryValue Actual, SummaryValue Remaining, SummaryValue Forecast,
-    SummaryValue Variance, SummaryValue Progress, DateOnly? Start, DateOnly? Finish, int Overdue, int OverEstimate)
+    SummaryValue Variance, SummaryValue Progress, DateOnly? Start, DateOnly? Finish, int Late, int OverEstimate)
 {
     public int Count => Identities.Count;
     public decimal? ProgressActual { get; init; }
@@ -17,9 +17,12 @@ internal sealed record SummaryMilestone(PlanMilestone Milestone, IReadOnlyList<s
     int? Difference, IReadOnlyList<string> LateTasks);
 internal sealed record SummaryPerson(string Identity, string Name, IReadOnlyList<SummaryPhase> Phases,
     SummaryTasks Tasks, decimal? Capacity, decimal? RequiredLoad);
-internal sealed record SummaryAttention(IReadOnlyList<string> Overdue, IReadOnlyList<string> Later, IReadOnlyList<string> Cause,
-    IReadOnlyList<string> OverEstimate, IReadOnlyList<string> ZeroRemainingOpen, IReadOnlyList<string> Unassigned, SummaryValue UnassignedRemaining,
+// The attention sets in the strip's order (#260), then the summary-only 要注意 sets.
+internal sealed record SummaryAttention(IReadOnlyList<string> Late, IReadOnlyList<string> Cause, IReadOnlyList<string> OverEstimate,
+    IReadOnlyList<string> NotUpdated, IReadOnlyList<string> ZeroRemainingOpen, IReadOnlyList<string> Unassigned, SummaryValue UnassignedRemaining,
     IReadOnlyList<string> UnknownEffort);
+// The summary's opening verdict (#260 R6-4): the worst slip in plain words, then what slips.
+internal sealed record SummaryVerdict(string Headline, bool Slipping, IReadOnlyList<(string Phase, int Days)> SlippingPhases);
 internal sealed record SummaryPlan(int? WorkingDays, int? ElapsedDays, int? RemainingDays,
     DateOnly? ForecastFinish, int? FinishDifference, SummaryTasks Total, decimal? Capacity, decimal? RequiredLoad,
     IReadOnlyList<SummaryPhase> Phases, IReadOnlyList<SummaryPerson> People, SummaryPerson PeopleTotal,
@@ -70,6 +73,19 @@ internal static class PlanSummary
             }).ToArray();
     }
 
+    internal static SummaryVerdict Verdict(SummaryPlan plan, ProjectPlanSettings settings)
+    {
+        var phases = plan.Phases.Where(p => !p.IsTotal && p.Phase is not null && p.Target is not null && p.Difference > 0)
+            .OrderByDescending(p => p.Difference).Select(p => (p.Phase!, p.Difference!.Value)).ToArray();
+        var version = plan.FinishDifference > 0 && settings.ProjectEnd is not null && plan.ForecastFinish is not null ? plan.FinishDifference.Value : 0;
+        if (phases.Length == 0 && version == 0) return new("目標日と終了日に遅れはありません", false, []);
+        var worstPhase = phases.FirstOrDefault();
+        var headline = version >= worstPhase.Item2 && version > 0
+            ? $"完了見込 {PlanSheetText.Date(plan.ForecastFinish!.Value)} が終了日 {PlanSheetText.Date(settings.ProjectEnd!.Value)} より {version} 稼働日遅れ"
+            : $"{worstPhase.Item1} が目標日 {plan.Phases.First(p => p.Phase == worstPhase.Item1).Target!.Value.ToString("M/d", System.Globalization.CultureInfo.InvariantCulture)} より {worstPhase.Item2} 稼働日遅れ";
+        return new(headline, true, phases);
+    }
+
     internal static SummaryPlan Calculate(PlanDocument document, IReadOnlyList<ScheduledTask> scheduled, DateOnly statusDate)
     {
         var settings = document.State.Settings;
@@ -80,7 +96,7 @@ internal static class PlanSummary
         int? remaining = settings.ProjectEnd is { } until ? days(statusDate.DayNumber, until.DayNumber) : null;
         var tasks = scheduled.Where(t => !t.IsSummary).ToArray();
         var lateness = PlanLateness.Classify(scheduled, calendar, statusDate);
-        bool Overdue(ScheduledTask task) => lateness.Tasks[task.Input.Identity].Level == PlanLatenessLevel.Overdue;
+        bool Late(ScheduledTask task) => lateness.Tasks[task.Input.Identity].IsLate;
         SummaryTasks Sum(IReadOnlyList<ScheduledTask> source)
         {
             SummaryValue Total(Func<ScheduledTask, decimal?> select)
@@ -96,7 +112,7 @@ internal static class PlanSummary
                 Total(t => t.Estimate), Total(t => t.Actual ?? 0), Total(t => t.Remaining), forecast,
                 Total(t => t.Variance), new(forecast.Value > 0 ? progressActual.Value / forecast.Value : null, forecast.Excluded),
                 source.Min(t => t.Start.Value), source.Max(Finish),
-                source.Count(Overdue), source.Count(t => t.IsOverEstimate)) {
+                source.Count(Late), source.Count(t => t.IsOverEstimate)) {
                     ProgressActual = progressActual.Value,
                     VarianceEstimate = Total(t => t.Variance.HasValue ? t.Estimate : null).Value,
                     VarianceForecast = Total(t => t.Variance.HasValue ? t.Forecast : null).Value,
@@ -153,12 +169,12 @@ internal static class PlanSummary
             if (count > 0) months = PlanPeople.Calculate(document, scheduled, monthStart, PlanPeriodScale.Month, count);
         }
         string[] Ids(Func<ScheduledTask, bool> predicate) => tasks.Where(predicate).Select(t => t.Input.Identity).ToArray();
+        var attention = PlanAttention.From(document, scheduled, lateness, statusDate);
         var unassigned = Sum(personGroups[PlanPeople.Unassigned].ToArray());
         return new(working, elapsed, remaining, finish, difference, total, projectCapacity, load,
             phaseTotals.Append(new("全体", total, true)).ToArray(), people, new("total", "合計", phaseTotals, total, projectCapacity, load), months,
-            new(Ids(Overdue), Ids(t => lateness.Tasks[t.Input.Identity].Level == PlanLatenessLevel.Later),
-                Ids(t => lateness.Tasks[t.Input.Identity].IsCause && !t.Input.Closed),
-                Ids(t => t.IsOverEstimate), Ids(t => t.IsZeroRemainingOpen), unassigned.Identities, unassigned.Remaining,
+            new(Ids(Late), Ids(t => lateness.Tasks[t.Input.Identity].IsCause),
+                Ids(t => t.IsOverEstimate), Ids(t => attention.NotUpdated.Contains(t.Input.Identity)), Ids(t => t.IsZeroRemainingOpen), unassigned.Identities, unassigned.Remaining,
                 Ids(t => t.Remaining is null || t.Forecast is null))) { Milestones = milestones };
     }
 }

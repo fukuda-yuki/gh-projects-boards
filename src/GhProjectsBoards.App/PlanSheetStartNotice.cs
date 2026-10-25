@@ -59,7 +59,7 @@ internal sealed partial class PlanSheetView
         startNoticeAction.Content = notice.PredecessorName + " とのリンクを解除";
         AutomationProperties.SetName(startNoticeAction, startNoticeAction.Content?.ToString() ?? "");
         ToolTipService.SetToolTip(startNoticeAction, startNoticeAction.Content);
-        startNoticePanel.Visibility = Visibility.Visible;
+        startNoticePanel.Visibility = Visibility.Visible; slipPill.Margin = new(0);
         if (announce && startNotice.IsLoaded)
             FrameworkElementAutomationPeer.CreatePeerForElement(startNotice)?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
     }
@@ -70,7 +70,7 @@ internal sealed partial class PlanSheetView
     {
         var notice = shownStartNotice;
         shownStartNotice = null; startNoticeDocument = null;
-        startNoticePanel.Visibility = Visibility.Collapsed;
+        startNoticePanel.Visibility = Visibility.Collapsed; slipPill.Margin = new(-10, 0, 0, 0);
         startNotice.Text = "";
         AutomationProperties.SetName(startNotice, "");
         ToolTipService.SetToolTip(startNotice, null);

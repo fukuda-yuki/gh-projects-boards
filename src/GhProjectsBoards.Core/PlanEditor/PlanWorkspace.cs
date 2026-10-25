@@ -209,7 +209,8 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
                 var remote = PlanSnapshot.From(read, settings);
                 settings = PlanInitialSettings.From(remote.Baseline, settings);
                 var document = new PlanDocument(choice.Id, remote.Baseline, new(remote.Baseline.Rows, settings))
-                { Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names.ToImmutable() } };
+                { Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names.ToImmutable(),
+                    ProgressUpdatedAt = remote.ProgressUpdatedAt, LastRead = new(PlanSession.ReadTime(today()), []) } };
                 progress?.Report(new("日程を計算"));
                 token.ThrowIfCancellationRequested();
                 adoptionStarted = true;

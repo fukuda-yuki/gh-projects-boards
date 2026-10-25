@@ -736,7 +736,7 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Ready<TextBlock>("PlanRowId2");
         await Ui.Ready<TextBlock>("PlanRowId5");
         await Ui.Run(() => {
-            Assert.That(VisibleRows(), Is.EqualTo(new[] { "I2", "I5", "" }), "Ancestor context must not become a bulk-edit target.");
+            Assert.That(VisibleRows(), Is.EqualTo(new[] { "I1", "I2", "I4", "I5", "" }), "Ancestor context stays visible; only the matches are bulk-edit targets.");
             Assert.That(Ui.Find<TextBlock>("PlanRowId2").Text, Is.EqualTo("#102"));
             Assert.That(Ui.Find<TextBlock>("PlanRowId5").Text, Is.EqualTo("#105"));
         });
@@ -979,14 +979,20 @@ internal sealed class PlanOverviewHostedTests
     private bool RowIsFocused(int number) => Ui.Tree(sheet).OfType<Control>().Any(cell =>
         Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(cell).StartsWith($"PlanCell{number}_", StringComparison.Ordinal)
         && cell.FocusState != FocusState.Unfocused);
-    private static async Task Filter(string text, string[] visible)
+    private async Task Filter(string text, string[] visible)
     {
         await Ui.Run(() => {
             var filter = Ui.Find<TextBox>("PlanSheetFilter");
             Assert.That(filter.Focus(FocusState.Keyboard), Is.True);
             filter.Text = text;
         });
-        await Ui.Until(() => VisibleRows().SequenceEqual(visible));
+        if (text.Length == 0) {
+            await Ui.Until(() => !sheet.FilterActive && VisibleRows().SequenceEqual(visible));
+        } else {
+            // The matching rows in plan order: a match's requirement rows stay as dimmed context between them.
+            await Ui.Until(() => VisibleRows().Where(identity => visible.Contains(identity) || identity.Length == 0)
+                .SequenceEqual(visible));
+        }
         await Ui.Idle();
     }
     private static async Task SelectCell(int number, string field, bool extend = false)

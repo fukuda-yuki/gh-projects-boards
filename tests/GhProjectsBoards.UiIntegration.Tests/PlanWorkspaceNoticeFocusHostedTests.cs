@@ -21,8 +21,11 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
             before = Ui.Find<FrameworkElement>("PlanCell1_Title").TransformToVisual(view).TransformPoint(new()).Y;
-            Ui.Click("PlanRefresh");
         });
+        // A successful refresh reports on the attention strip (#238) and opens no bar; reset keeps its own
+        // result bar, which is the notice this case needs.
+        await OpenResetDialog();
+        await Ui.Run(() => Ui.DialogButton("PlanResetConfirm", "PrimaryButton"));
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
         // The notice opens in its own row under the surface; lay it out before reading geometry.
         await Ui.Run(() => {
