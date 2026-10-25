@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 namespace GhProjectsBoards.Core.PlanEditor;
 
 // The tasks whose recalculated dates one edit caused. Cause is null when no edited task reaches them,
-// which happens when a 基準日 or settings change, not a task edit, moved them.
+// which happens when a 基準日, settings or GitHub-side change, not a task edit, moved them.
 internal sealed record PlanRecalculationGroup(string? Cause, ImmutableArray<string> CauseFields, ImmutableArray<string> Tasks);
 // The part of a parent's child order a publish rewrites: which children caused it and their neighbourhoods
 // in the new order. Added names a new task; any other cause is a moved child (#224).

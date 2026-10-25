@@ -348,7 +348,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private static string CauseCaption(PlanDocument document, PlanTaskNames names, PlanRecalculationGroup group, int count)
     {
-        if (group.Cause is null) return $"基準日や設定による再計算で {count} タスク";
+        if (group.Cause is null) return $"入力した変更によらない再計算で {count} タスク";
         var name = names[group.Cause];
         if (group.CauseFields.Contains(PlanField.NewTask)) return $"{name} の追加で {count} タスク";
         var columns = PlanSheetColumns.All(document);

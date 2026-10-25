@@ -80,15 +80,16 @@ internal sealed partial class PlanPublishReviewHostedTests
             await workspace.Session!.Execute(new MovePlanRows(["I1", "I2"], null), Today);
             Ui.Click("PlanPublish");
         });
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true });
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(2) is ListViewItem { IsLoaded: true });
         await Ui.Run(() => {
             var list = Ui.Find<ListView>("PlanPublishLines");
-            Assert.That(list.Items.Count, Is.EqualTo(2));
-            var names = Enumerable.Range(0, 2).Select(i =>
+            // The あなたの変更 heading, then one group per moved row.
+            Assert.That(list.Items.Count, Is.EqualTo(3));
+            var names = Enumerable.Range(1, 2).Select(i =>
                 new Microsoft.UI.Xaml.Automation.Peers.ListViewItemAutomationPeer((ListViewItem)list.ContainerFromIndex(i)).GetName()).ToArray();
             Assert.That(names[0], Does.Contain("要求タスク 1").And.Contain("表示順  1 → 5"));
             Assert.That(names[1], Does.Contain("要求タスク 2").And.Contain("表示順  2 → 6"));
-            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain("に 2 タスクを発行します"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Is.EqualTo("2 タスクを発行"));
         });
         Assert.That(workspace.Session!.Changes(Today).TaskCount, Is.EqualTo(2));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -103,13 +104,16 @@ internal sealed partial class PlanPublishReviewHostedTests
                 [new("I1", PlanField.Title, "変更したタスク"), new("I1", PlanField.Actual, 3m), new("I2", PlanField.Actual, 2m)]), Today);
             Ui.Click("PlanPublish");
         });
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true });
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(2) is ListViewItem { IsLoaded: true });
         await Ui.Run(() => {
             var project = workspace.Selected!;
-            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Is.EqualTo($"{project.Title}（{project.OwnerLogin} / プロジェクト {project.Number}）に 2 タスクを発行します"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Is.EqualTo("2 タスクを発行"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishDestination").Text, Is.EqualTo($"{project.Title} → {project.OwnerLogin} / プロジェクト {project.Number}、acme/repo"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishCounts").Text, Is.EqualTo("書き込む値 3 · 新しい Issue 0"));
+            Assert.That(Ui.Find<Button>("PlanPublishConfirm").Content, Is.EqualTo("2 タスクを発行"));
             var list = Ui.Find<ListView>("PlanPublishLines");
-            Assert.That(list.Items.Count, Is.EqualTo(2));
-            var name = new Microsoft.UI.Xaml.Automation.Peers.ListViewItemAutomationPeer((ListViewItem)list.ContainerFromIndex(0)).GetName();
+            Assert.That(list.Items.Count, Is.EqualTo(3));
+            var name = new Microsoft.UI.Xaml.Automation.Peers.ListViewItemAutomationPeer((ListViewItem)list.ContainerFromIndex(1)).GetName();
             Assert.That(name, Does.Contain("変更したタスク").And.Contain("要求タスク 1 → 変更したタスク").And.Contain("実績工数  0h → 3h").And.Not.Contain("PlanPublishReviewGroup"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").Style, Is.SameAs(Application.Current.Resources["AccentButtonStyle"]));
             Assert.That(Ui.Find<Button>("PlanPublish").Style, Is.Not.SameAs(Application.Current.Resources["AccentButtonStyle"]));
@@ -221,7 +225,7 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI2");
         await Ui.Run(() => {
             var expectedTasks = datesAlreadyPublished ? (edit ? 1 : 0) : 2;
-            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain($"に {expectedTasks} タスクを発行します"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Is.EqualTo($"{expectedTasks} タスクを発行"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.EqualTo(expectedTasks > 0));
             var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI2")).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("GitHub で削除されたフィールド"));
@@ -244,13 +248,16 @@ internal sealed partial class PlanPublishReviewHostedTests
             await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Title, "別の変更")]), Today);
             Ui.Click("PlanPublish");
         });
-        await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI1");
+        // GitHub closed I1, so its Remaining 0 is a recalculated value no task edit caused (#224).
+        await Ui.Ready<Button>("PlanPublishCauseOther");
+        await Ui.Run(() => Ui.Click("PlanPublishCauseOther"));
+        await Ui.Ready<PlanPublishGroupView>("PlanPublishRecalculatedI1");
         var expected = workspace.Session!.Changes(Today).TaskCount;
         Assert.That(expected, Is.EqualTo(2), "Precondition: Core publishes the closed task's Remaining 0.");
         await Ui.Run(() => {
-            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI1")).OfType<TextBlock>().Select(t => t.Text));
+            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishRecalculatedI1")).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("見込み残存工数  8h → 0h"));
-            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain($"に {expected} タスクを発行します"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Is.EqualTo($"{expected} タスクを発行"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
@@ -426,8 +433,8 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Ready<Button>("PlanResolveI1_End_True");
         await Ui.Run(async () => {
-            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI1")).OfType<TextBlock>().Select(t => t.Text));
-            Assert.That(text, Does.Contain("終了日  2038/10/5 (火) → 2032/10/5 (火)").And.Contain("GitHub: 2038/10/5 (火)"));
+            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishConflictI1")).OfType<TextBlock>().Select(t => t.Text));
+            Assert.That(text, Does.Contain("終了日").And.Contain("この PC  2032/10/5 (火)").And.Contain("GitHub  2038/10/5 (火)"));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
             await RenderedEvidence.Capture(view, "followup-review-years");
         });
@@ -443,11 +450,11 @@ internal sealed partial class PlanPublishReviewHostedTests
                 new("I2", PlanField.Actual, 2m)]), Today);
             Ui.Click("PlanPublish");
         });
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(0) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
         await Ui.Run(async () => {
             var list = Ui.Find<ListView>("PlanPublishLines");
-            Assert.That(list.Items.Count, Is.EqualTo(2), "One review group must contain every difference for its Issue.");
-            var first = (ListViewItem)list.ContainerFromIndex(0);
+            Assert.That(list.Items.Count, Is.EqualTo(3), "One review group must contain every difference for its Issue.");
+            var first = (ListViewItem)list.ContainerFromIndex(1);
             var text = string.Join("\n", Ui.Tree(first).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("acme/repo#1").And.Contain("要求タスク 1 → " + longTitle)
                 .And.Contain("実績工数  0h → 3h").And.Contain("見込み残存工数  8h → 5h"));
@@ -471,22 +478,22 @@ internal sealed partial class PlanPublishReviewHostedTests
                     new PlanCellChange(r.Identity, PlanField.Actual, 3m), new PlanCellChange(r.Identity, PlanField.Remaining, 13m) }).ToImmutableArray()), Today);
             Ui.Click("PlanPublish");
         });
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(0) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
         await Ui.Run(async () => {
             var list = Ui.Find<ListView>("PlanPublishLines");
-            Assert.That(list.Items.Count, Is.EqualTo(1040));
+            Assert.That(list.Items.Count, Is.EqualTo(1041));
             Assert.That(list.ItemsSource, Is.Not.Null);
-            Assert.That(list.ContainerFromIndex(1039), Is.Null, "Offscreen groups must remain virtualized.");
-            var first = (ListViewItem)list.ContainerFromIndex(0);
+            Assert.That(list.ContainerFromIndex(1040), Is.Null, "Offscreen groups must remain virtualized.");
+            var first = (ListViewItem)list.ContainerFromIndex(1);
             Assert.That(first.ActualHeight, Is.LessThan(100), "Three short differences must not consume three repeated Issue rows.");
             await RenderedEvidence.Capture(view, "publish-grouped-version-start");
-            list.ScrollIntoView(list.Items[1039], ScrollIntoViewAlignment.Leading);
+            list.ScrollIntoView(list.Items[1040], ScrollIntoViewAlignment.Leading);
         });
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1039) is ListViewItem { IsLoaded: true } item &&
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1040) is ListViewItem { IsLoaded: true } item &&
             Ui.Tree(item).OfType<TextBlock>().Any(t => t.Text == "#1040 要求タスク 1040"));
         await Ui.Run(async () => {
             var list = Ui.Find<ListView>("PlanPublishLines");
-            var last = (ListViewItem)list.ContainerFromIndex(1039);
+            var last = (ListViewItem)list.ContainerFromIndex(1040);
             var text = string.Join("\n", Ui.Tree(last).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(AutomationProperties.GetName(last), Does.Contain("要求タスク 1040").And.Contain("見積工数  8h → 16h").And.Not.Contain("1 要求タスク 1\n"));
             Assert.That(text, Does.Contain("要求タスク 1040").And.Contain("見積工数  8h → 16h")
@@ -505,7 +512,7 @@ internal sealed partial class PlanPublishReviewHostedTests
         PlanPublishGroupView? RealizedGroup(string id) => Ui.Tree(view).OfType<PlanPublishGroupView>()
             .FirstOrDefault(g => AutomationProperties.GetAutomationId(g) == id && g.IsLoaded && g.ActualHeight > 0);
         bool RealizedResolve() =>
-            RealizedGroup("PlanPublishGroupI60") is { } group &&
+            RealizedGroup("PlanPublishConflictI60") is { } group &&
             Ui.Tree(group).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanResolveI60_Actual_True" && b.IsLoaded);
         await Open(60);
         await Ui.Run(async () => await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Paste,
@@ -520,20 +527,20 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(0) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
         await Ui.Run(() => {
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.False);
-            var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[59], ScrollIntoViewAlignment.Leading);
+            Assert.That(Ui.Find<TextBlock>("PlanPublishConflictTag").Text, Is.EqualTo("競合 1 件を選んでください"));
         });
         await Ui.Until(RealizedResolve);
+        await Ui.Run(() => {
+            var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[^1], ScrollIntoViewAlignment.Leading);
+        });
+        await Ui.Until(() => RealizedGroup("PlanPublishGroupI60") is not null);
         await Ui.Run(() => {
             var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[0], ScrollIntoViewAlignment.Leading);
         });
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(0) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
-        await Ui.Run(() => {
-            var list = Ui.Find<ListView>("PlanPublishLines"); list.ScrollIntoView(list.Items[59], ScrollIntoViewAlignment.Leading);
-        });
         await Ui.Until(RealizedResolve);
         await Ui.Run(() => {
-            var group = RealizedGroup("PlanPublishGroupI60")!;
-            Assert.That(string.Join(" ", Ui.Tree(group).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("要求タスク 60").And.Contain("競合  GitHub: 2"));
+            var group = RealizedGroup("PlanPublishConflictI60")!;
+            Assert.That(string.Join(" ", Ui.Tree(group).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("要求タスク 60").And.Contain("この PC  3h").And.Contain("GitHub  2h"));
             Ui.Click("PlanResolveI60_Actual_True");
         });
         await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.IsEmpty && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
