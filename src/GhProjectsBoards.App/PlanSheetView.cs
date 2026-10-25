@@ -891,7 +891,7 @@ internal sealed partial class PlanSheetView : Grid
         // This template is populated from Item, with no DataContext bindings.
         if (args.Phase == 0) args.Handled = true;
         if (args.ItemContainer.ContentTemplateRoot is PlanSheetRow row)
-            row.SetOwner(args.InRecycleQueue ? null : this, args.InRecycleQueue ? null : (string)args.Item);
+            row.SetOwner(args.InRecycleQueue ? null : this, args.InRecycleQueue ? null : (string)args.Item, (ListViewItem)args.ItemContainer);
         else if (!args.InRecycleQueue && args.Phase == 0)
             args.RegisterUpdateCallback(1, RowContentChanging);
     }
