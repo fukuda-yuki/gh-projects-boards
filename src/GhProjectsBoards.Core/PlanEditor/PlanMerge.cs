@@ -16,6 +16,7 @@ internal sealed record PlanPublishFailure(string Identity, string Field, string 
     public string? Value { get; init; }
 }
 internal sealed record PlanIssueLink(string Caption, string Url);
+internal sealed record PlanLastRead(DateTimeOffset At, ImmutableArray<string> Added);
 internal sealed record PlanSync
 {
     public ImmutableArray<string> Unverified { get; init; } = [];
@@ -30,6 +31,11 @@ internal sealed record PlanSync
     // #231: identities the last read observed without Issue update permission. A read observation, not a
     // plan value, so it disables commands and never becomes a difference, a write or a conflict.
     public ImmutableArray<string> CannotUpdate { get; init; } = [];
+    // #238: when GitHub last changed each row's 実績 or 残, from the latest read; null when GitHub holds
+    // neither value, absent when unknown. Only the latest observation is kept, never a read history.
+    public ImmutableDictionary<string, DateTimeOffset?> ProgressUpdatedAt { get; init; } = ImmutableDictionary<string, DateTimeOffset?>.Empty;
+    // #238: the latest complete read of the Project and the Issues it placed in the plan for the first time.
+    public PlanLastRead? LastRead { get; init; }
     public int InaccessibleCount { get; init; }
     public int DraftCount { get; init; }
     public int PullRequestCount { get; init; }

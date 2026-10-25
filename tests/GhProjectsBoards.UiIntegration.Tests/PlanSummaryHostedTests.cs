@@ -125,7 +125,10 @@ internal sealed partial class PlanWorkspaceHostedTests
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
             Assert.That(sheet.RowIds.Where(id => id.Length > 0), Is.EqualTo(new[] { "I1", "I2" }));
             Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("2 件"));
-            Ui.Find<TextBox>("PlanSheetFilter").Text = "";
+            // A named set from the summary is a chip on the strip, not title text (#260 4): clear it there.
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionNamedSet")), Does.Contain("SA"));
+            Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.Empty);
+            Ui.Click("PlanAttentionClearNamed");
         });
         await Ui.Until(() => Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Count(id => id.Length > 0) == 3);
         await Ui.Run(() => {
@@ -169,7 +172,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await SummaryPlan();
         var before = PlanJson.Text(workspace.Session!.Document); var undo = workspace.Session.UndoCount;
         var calls = File.ReadAllText(Path.Combine(root, "calls.jsonl"));
-        await Ui.Run(() => Ui.Click("SummaryOverEstimate")); await Ui.Idle();
+        await Ui.Run(() => Ui.Click("SummaryVerdictOverEstimate")); await Ui.Idle();
         await Ui.Run(() => {
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
             Assert.That(sheet.RowIds.Where(id => id.Length > 0), Is.EqualTo(new[] { "I1" }));

@@ -110,7 +110,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(AutomationProperties.GetHelpText(Ui.CommandButton("PlanSheetArrangeOutline")), Does.Contain("すでに"));
             Ui.Find<TextBox>("PlanSheetFilter").Text = "First";
         });
-        await Ui.Until(() => sheet.RowIds.SequenceEqual(new[] { "A", "" }));
+        await Ui.Until(() => sheet.RowIds.SequenceEqual(new[] { "P", "A", "" }));
         await Ui.Run(() => {
             Ui.Click("PlanSheetMore");
         });

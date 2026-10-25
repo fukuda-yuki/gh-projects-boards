@@ -8,6 +8,7 @@ using Microsoft.UI.Dispatching;
 using DispatcherQueueController = Microsoft.UI.Dispatching.DispatcherQueueController;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
@@ -22,6 +23,7 @@ internal sealed record PlanClipboardContent(string Text, string? Metadata);
 internal sealed partial class PlanSheetView
 {
     private string selected = "", anchor = "";
+    internal string Selected => selected;
     private string selectedField = PlanField.Title, anchorField = PlanField.Title;
     // #240: a whole-row selection must be distinguishable from a rectangle that happens to cover every
     // column, so it is explicit state set by the ID cells or Shift+Space, never inferred from the range.
@@ -154,54 +156,95 @@ internal sealed partial class PlanSheetView
         var late = LatenessOf(selected);
         slip.Text = "";
         latenessDetail.Text = "";
+        progressLine.Text = "";
+        estimateDetail.Text = "";
         if (late is not null && task is not null) {
-            if (task.IsSummary) {
-                var counts = LatenessCounts(late.OverdueDescendantTasks, late.LaterDescendantTasks);
-                latenessDetail.Text = counts.Length > 0 ? "配下: " + counts : "";
-            }
+            // The tag keeps the red/ochre distinction while the strip counts one 遅れ set (#260 D0). A
+            // requirement row states only the forecast form, because its dates are its children's.
             if (!task.IsSummary && late.OverdueKind is { } kind && late.MissedDate is { } missed) {
                 var missedDate = missed.ToString("M/d", CultureInfo.InvariantCulture);
                 slip.Text = kind == PlanOverdueKind.Finish ? $"終了日 {missedDate} を過ぎて未完了" : $"開始日 {missedDate} を過ぎて未着手";
                 if (late.DaysLater is { } days) slip.Text += $" · +{days}日";
             } else if (late.DaysLater is { } days && task.End.Value is { } planned) {
-                // The plan end and the forecast end are what the lateness compares (#236); publishing no
-                // longer defines it, so the earlier "発行済み" wording is retired.
                 slip.Text = $"見込終了 {ForecastLabel(selected)} · {planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days}日";
             }
-            if (!task.IsSummary && task.End.Value is { } end && ForecastEndOf(selected) is { } forecast && forecast > end) {
-                var delayed = LaterDescendantsOf(selected).Length;
-                if (delayed > 0) {
-                    successorLink.Content = $"この遅れで後続 {delayed} タスクが予定より遅れ · 後続を表示";
+            if (task.IsSummary) {
+                // A requirement row's dates are its children's: it answers with the sets below it instead.
+                var counts = LatenessCounts(late);
+                latenessDetail.Text = counts.Length > 0 ? "配下: " + counts : "";
+            } else {
+                // The effect or the cause, with its link (#260 2).
+                var delayed = late.IsLate ? DelayedSuccessorsOf(selected) : [];
+                if (delayed.Length > 0) {
+                    successorLink.Content = $"後続 {delayed.Length} タスクが遅れ · 後続を表示";
                     successorLink.Visibility = Visibility.Visible;
-                    AutomationProperties.SetName(successorLink, $"後続を表示（{delayed} タスク）");
+                    AutomationProperties.SetName(successorLink, $"後続を表示（{delayed.Length} タスク）");
                 }
-            }
-            if (late.CausePredecessorRowId is { } cause) {
-                var name = TaskNames.AtPosition(cause);
-                predecessorLink.Content = $"先行 {name} の遅れによる · {name} へ移動";
-                predecessorLink.Visibility = Visibility.Visible;
-                AutomationProperties.SetName(predecessorLink, $"先行 {name} へ移動");
+                if (late.CausePredecessorRowId is { } cause) {
+                    var name = TaskNames.AtPosition(cause);
+                    predecessorLink.Content = $"先行 {name} の遅れ · {name} へ移動";
+                    predecessorLink.Visibility = Visibility.Visible;
+                    AutomationProperties.SetName(predecessorLink, $"先行 {name} へ移動");
+                }
+                if (late.IsLate && delayed.Length == 0 && late.CausePredecessorRowId is null) latenessDetail.Text = "自分の残による";
+                // #238: the last change of 実績 and 残 on GitHub for this open task, from the latest read.
+                if (!task.Input.Closed && Session.Document.Sync.IssueLinks.ContainsKey(selected))
+                    progressLine.Text = PlanAttention.ProgressLine(Session.Document, selected, StatusDate) ?? "";
+                if (late.OverEstimate && task.Estimate is { } estimate && task.Forecast is { } forecastEffort)
+                    estimateDetail.Text = $"見積超過 見込 {forecastEffort.ToString(CultureInfo.CurrentCulture)}h / 見積 {estimate.ToString(CultureInfo.CurrentCulture)}h";
             }
         }
-        slipPill.Background = late?.Level == PlanLatenessLevel.Overdue ? Brush("GanttLateTintBrush") : null;
-        slipPill.BorderBrush = Brush("SystemFillColorCriticalBrush");
-        slipPill.BorderThickness = new(late?.Level == PlanLatenessLevel.Overdue ? 0 : 1);
+        // #230: while reassigning, name the selected task's assignee load for the task's weeks, so the
+        // effect of an assignee change is visible without opening サマリー. The days over the cap are text.
+        assignmentLoad.Inlines.Clear();
+        var loadParts = new List<string>();
+        if (task is { IsSummary: false } && PlanLoad.ForTask(Session.Document, Schedule.Values.ToArray(), selected) is { } load) {
+            var loadSecondary = Brush("TextFillColorSecondaryBrush"); var loadCritical = Brush("SystemFillColorCriticalBrush");
+            assignmentLoad.Inlines.Add(new Run { Text = "負荷 ", Foreground = loadSecondary });
+            for (var i = 0; i < Math.Min(3, load.Periods.Count); i++) {
+                var period = load.Periods[i];
+                var label = $"{(i == 0 ? "" : " · ")}{load.Name} {period.Start.ToString("M/d", CultureInfo.InvariantCulture)}週 {PlanSummaryPresentation.Percent(period.Percent / 100)}";
+                assignmentLoad.Inlines.Add(new Run { Text = label, Foreground = loadSecondary }); loadParts.Add(label);
+                if (period.Overloaded) {
+                    var days = $" {period.DaysOverCap.ToString("N0", CultureInfo.InvariantCulture)}日";
+                    assignmentLoad.Inlines.Add(new Run { Text = days, Foreground = loadCritical }); loadParts.Add(days);
+                }
+            }
+            if (load.Periods.Count > 3) {
+                var more = $" ほか {load.Periods.Count - 3}週";
+                assignmentLoad.Inlines.Add(new Run { Text = more, Foreground = loadSecondary }); loadParts.Add(more);
+            }
+        }
+        var overdue = late?.Level == PlanLatenessLevel.Overdue;
+        slipPill.Background = overdue ? Brush("GanttLateTintBrush") : null;
+        slipPill.BorderBrush = Brush(overdue ? "SystemFillColorCriticalBrush" : "SystemFillColorCautionBrush");
+        slipPill.BorderThickness = new(overdue ? 0 : 1);
+        slip.Foreground = Brush(overdue ? "SystemFillColorCriticalBrush" : "SystemFillColorCautionBrush");
         slipPill.Visibility = slip.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         latenessDetail.Visibility = latenessDetail.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        progressLine.Visibility = progressLine.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        estimateDetail.Visibility = estimateDetail.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        assignmentLoad.Visibility = loadParts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetName(slip, slip.Text);
         AutomationProperties.SetName(slipPill, slip.Text);
         AutomationProperties.SetName(latenessDetail, latenessDetail.Text);
+        AutomationProperties.SetName(progressLine, progressLine.Text);
+        AutomationProperties.SetName(estimateDetail, estimateDetail.Text);
+        AutomationProperties.SetName(assignmentLoad, string.Join(" ", loadParts));
         AutomationProperties.SetName(selectedTitle, selectedTitle.Text);
         if (Session.Document.Sync.IssueLinks.TryGetValue(selected, out var link) && Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.Host == Session.Document.Project.Scope.Host) {
             issueLink.Content = link.Caption; issueLink.NavigateUri = uri; issueLink.Visibility = Visibility.Visible;
         } else { issueLink.Content = ""; issueLink.NavigateUri = null; issueLink.Visibility = Visibility.Collapsed; }
         AutomationProperties.SetName(issueLink, issueLink.Content?.ToString() ?? "");
-        // A requirement row's dates are its children's: naming that adds nothing, so its line leaves room for
-        // the 配下 lateness summary instead.
+        // The plan dates and the scheduler's reasons in secondary text; a requirement row's dates are its
+        // children's, so it leaves the line to the 配下 summary instead.
         var reasons = new List<string>();
-        if (task is { IsSummary: false })
+        if (task is { IsSummary: false }) {
+            if (task.Start.Value is { } start && task.End.Value is { } end)
+                reasons.Add($"{DateText(start)} – {DateText(end)}");
             reasons.Add(task.StartReason is "完了" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + TaskNames.StartReason(task.StartReason));
-        if (task is not null && PlanLateness.EndReason(task) is { } endReason) reasons.Add(endReason);
+        }
+        if (task is { IsSummary: false } && PlanLateness.EndReason(task) is { } endReason) reasons.Add(endReason);
         if (task?.Warnings.Count > 0) reasons.Add(string.Join(" / ", task.Warnings));
         var remoteProblem = RemoteProblem(selected);
         if (remoteProblem.Length > 0) reasons.Add(remoteProblem);
@@ -217,8 +260,14 @@ internal sealed partial class PlanSheetView
         AutomationProperties.SetName(reason, reason.Text);
         ToolTipService.SetToolTip(reason, reason.Text);
     }
-    private static string LatenessCounts(int overdue, int later) =>
-        overdue > 0 ? $"期限超過 {overdue}" + (later > 0 ? $" · 予定より遅れ {later}" : "") : later > 0 ? $"予定より遅れ {later}" : "";
+    private static string LatenessCounts(PlanTaskLateness late)
+    {
+        var parts = new List<string>();
+        var lateCount = late.OverdueDescendantTasks + late.LaterDescendantTasks;
+        if (lateCount > 0) parts.Add($"遅れ {lateCount}");
+        if (late.OverEstimateDescendantTasks > 0) parts.Add($"見積超過 {late.OverEstimateDescendantTasks}");
+        return string.Join(" · ", parts);
+    }
     private string ForecastLabel(string identity) => ForecastEndOf(identity) is { } day
         ? PlanSheetView.DateText(day) : "—";
     internal void MoveSelection(VirtualKey key, bool extend)
@@ -409,14 +458,7 @@ internal sealed partial class PlanSheetView
     // rather than refused: the accepted filter is cleared and the folded ancestors are expanded.
     private void RevealTask(string identity)
     {
-        if (!RowIds.Contains(identity) && (acceptedFilter.Length > 0 || filterPredicate is not null))
-        {
-            CancelPendingFilter();
-            acceptedFilter = ""; filterPredicate = null; filterContext = [];
-            rendering = true;
-            try { filter.Text = ""; } finally { rendering = false; }
-            Refresh();
-        }
+        if (!RowIds.Contains(identity) && FilterActive) ClearFilters();
         if (RowIds.Contains(identity)) return;
         var revealed = false;
         var visited = new HashSet<string>();
@@ -509,7 +551,15 @@ internal sealed partial class PlanSheetView
         var deleting = Minus(key);
         var rows = key is VirtualKey.C or VirtualKey.Delete || deleting ? RowIds.Skip(range.Row).Take(range.RowCount).ToArray() : [];
         var fields = key is VirtualKey.C or VirtualKey.Delete ? Fields.Skip(range.Column).Take(range.ColumnCount).ToArray() : [];
-        var visible = key == VirtualKey.V ? RowIds.Where(Rows.ContainsKey).ToArray() : [];
+        // A filtered view shows requirement rows as context, but they are not edit targets: paste walks the
+        // matching rows only and maps the selected range onto them (#260 / #227).
+        var visible = key == VirtualKey.V
+            ? RowIds.Where(identity => Rows.ContainsKey(identity) && (!FilterActive || filterResult.Matches.Contains(identity))).ToArray()
+            : [];
+        if (key == VirtualKey.V && FilterActive) {
+            var span = RowIds.Skip(range.Row).Take(range.RowCount).Where(visible.Contains).ToArray();
+            if (span.Length > 0) range = range with { Row = Array.IndexOf(visible, span[0]), RowCount = span.Length };
+        }
         var columns = key == VirtualKey.V ? Fields.ToArray() : [];
         return Run(async () => {
             switch (key)
@@ -728,7 +778,7 @@ internal sealed partial class PlanSheetView
     }
     internal void RevealAddedRow(string identity)
     {
-        acceptedFilter = "";
+        activeFilter = PlanFilter.None; filterContext = [];
         rendering = true;
         try { filter.Text = ""; }
         finally { rendering = false; }
@@ -765,12 +815,12 @@ internal sealed partial class PlanSheetView
         // predecessor that caused the delay.
         successorLink.Click += (_, _) => {
             if (selected.Length == 0) return;
-            var ids = LaterDescendantsOf(selected).ToHashSet(StringComparer.Ordinal);
-            if (ids.Count > 0) FilterTasks(ids, $"後続 {ids.Count}", dimAncestors: true);
+            var ids = DelayedSuccessorsOf(selected).ToHashSet(StringComparer.Ordinal);
+            if (ids.Count > 0) FilterTasks(ids, $"後続 {ids.Count}");
         };
         predecessorLink.Click += (_, _) => {
             if (LatenessOf(selected)?.CausePredecessorRowId is not { } rowId || IdentityOfRow(rowId) is not { Length: > 0 } identity) return;
-            ClearIdentityFilter();
+            ClearFilters();
             SelectAndFocus(identity, PlanField.Title, false);
         };
         AddHandler(PointerMovedEvent, new PointerEventHandler((_, args) => {
@@ -890,3 +940,5 @@ internal sealed partial class PlanSheetView
         if (operation.Fill && !disposed) Select(operation.Source, operation.Field, false);
     }
 }
+
+

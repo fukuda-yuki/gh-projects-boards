@@ -64,7 +64,7 @@ internal sealed record ProgressSnapshot(string Schema, DateTimeOffset ReadAt, Da
         var tasks = scheduled.Where(t => !t.IsSummary).ToArray();
         var order = tasks.Select((t, n) => (t.Input.Identity, n)).ToDictionary(p => p.Identity, p => p.n, StringComparer.Ordinal);
         // #260 (owner): 期限超過 and 予定より遅れ are one 遅れ count; each task keeps which case applies.
-        var late = summary.Attention.Overdue.Concat(summary.Attention.Later).ToHashSet(StringComparer.Ordinal);
+        var late = summary.Attention.Late.ToHashSet(StringComparer.Ordinal);
         var cause = summary.Attention.Cause.ToHashSet(StringComparer.Ordinal);
         var overEstimate = summary.Attention.OverEstimate.ToHashSet(StringComparer.Ordinal);
         var unknown = summary.Attention.UnknownEffort.ToHashSet(StringComparer.Ordinal);
@@ -75,12 +75,9 @@ internal sealed record ProgressSnapshot(string Schema, DateTimeOffset ReadAt, Da
         ProgressLate? Late(ScheduledTask task)
         {
             var state = lateness.Tasks[task.Input.Identity];
-            return state.Level switch
-            {
-                PlanLatenessLevel.Overdue => new(state.OverdueKind == PlanOverdueKind.Start ? "start" : "finish", state.MissedDate!.Value, state.DaysLater),
-                PlanLatenessLevel.Later => new("forecast", task.ForecastEnd!.Value, state.DaysLater),
-                _ => null
-            };
+            // A passed plan date names the case; otherwise the forecast end is later than the plan end.
+            return state.OverdueKind is { } kind ? new(kind == PlanOverdueKind.Start ? "start" : "finish", state.MissedDate!.Value, state.DaysLater)
+                : state.IsLate ? new("forecast", task.ForecastEnd!.Value, state.DaysLater) : null;
         }
         string Login(string person) => document.Sync.PeopleNames.GetValueOrDefault(person)
             ?? settings.People.FirstOrDefault(p => p.Identity == person)?.Name ?? person;

@@ -24,7 +24,7 @@ internal sealed partial class PlanSheetView
         }
     }
     private ImmutableArray<string> MoveTargets => [.. RowIds.Skip(Range.Row).Take(Range.RowCount)];
-    private string? MoveUnavailable => remoteBusy ? "更新または発行中は移動できません" : acceptedFilter.Length > 0 ? "絞り込み中は移動できません" : null;
+    private string? MoveUnavailable => remoteBusy ? "更新または発行中は移動できません" : FilterActive ? "絞り込み中は移動できません" : null;
     private string? StepReason(bool down)
     {
         if (MoveUnavailable is { } reason) return reason;

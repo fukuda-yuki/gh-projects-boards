@@ -143,11 +143,12 @@ internal sealed partial class PlanSheetHostedTests
             Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic);
             Ui.Find<TextBox>("PlanSheetFilter").Text = "Task 100";
         });
-        await Ui.Until(() => sheet.List.Items.Count == 2);
+        // I99 is I100's requirement row and stays as its dimmed context.
+        await Ui.Until(() => sheet.List.Items.Count == 3);
         await Ui.Ready<TextBox>("PlanCell100_End");
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
-            Assert.That(sheet.List.Items.Cast<string>(), Is.EqualTo(new[] { "I100", "" }));
+            Assert.That(sheet.List.Items.Cast<string>(), Is.EqualTo(new[] { "I99", "I100", "" }));
             // #236: the fixture's predecessor end (10/5) is a stored plan day, and a successor may start on its
             // predecessor's end day, so I100's one day of work ends 10/5. The filtered row shows the plan's own
             // dates rather than a recycled row's.

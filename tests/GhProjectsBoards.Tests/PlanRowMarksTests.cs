@@ -213,7 +213,7 @@ internal sealed class PlanRowMarksTests
         {
             Assert.That(hidden.Mark, Is.EqualTo(PlanRowMark.None));
             Assert.That(hidden.Text, Is.Empty);
-            Assert.That(PlanLateness.Classify(PlanOperations.Schedule(document, D("2026-10-06")).ToArray(), new PlanCalendar(), D("2026-10-06")).OverdueTasks,
+            Assert.That(PlanLateness.Classify(PlanOperations.Schedule(document, D("2026-10-06")).ToArray(), new PlanCalendar(), D("2026-10-06")).LateTasks,
                 Is.EqualTo(1), "The set and its count are unaffected by a hidden mark.");
         });
     }

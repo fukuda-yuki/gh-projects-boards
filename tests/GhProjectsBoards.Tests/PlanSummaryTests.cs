@@ -234,10 +234,10 @@ internal sealed class PlanSummaryTests
     [Test]
     public void AttentionUsesPlanDatesAndExistingEffortFlags()
     {
-        // 期限超過 compares the plan end with the 基準日 (#236), so the row needs the plan dates it is judged on.
+        // 遅れ compares the plan end with the 基準日 (#236), so the row needs the plan dates it is judged on.
         var d = Document(new PlanRow("I", "Overdue", "a/b") { Start = Day.AddDays(-2), End = Day.AddDays(-1), Estimate = 8, Actual = 10, Remaining = 0 });
         var result = Calculate(d);
-        Assert.That(result.Attention.Overdue, Is.EqualTo(new[] { "I" }));
+        Assert.That(result.Attention.Late, Is.EqualTo(new[] { "I" }));
         Assert.That(result.Attention.ZeroRemainingOpen, Is.EqualTo(new[] { "I" }));
         Assert.That(result.Attention.OverEstimate, Is.EqualTo(new[] { "I" }));
         Assert.That(result.Attention.UnassignedRemaining.Value, Is.Zero);

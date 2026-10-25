@@ -25,7 +25,11 @@ internal sealed partial class PlanSheetHostedTests
             && Ui.CommandButton("PlanSheetExpandAll").IsInOverflow);
         foreach (var filtered in new[] { true, false }) {
             await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = filtered ? "Task" : "");
-            await Ui.Until(() => sheet.RowIds.Count == (filtered ? 2 : 3));
+            // The unfiltered tree already holds 3 rows, so wait for the count the filter reports.
+            await Ui.Until(() => filtered
+                ? Ui.Find<TextBlock>("PlanSheetFilterCount").Visibility == Visibility.Visible
+                    && Ui.Find<TextBlock>("PlanSheetFilterCount").Text == "1 件"
+                : Ui.Find<TextBlock>("PlanSheetFilterCount").Visibility == Visibility.Collapsed);
             await Ui.Run(() => {
                 foreach (var id in new[] { "PlanSheetCollapseAll", "PlanSheetExpandAll" })
                     AssertFolding(Ui.CommandButton(id), filtered);
@@ -460,12 +464,28 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task OverflowPredecessorCommandOpensItsSearchWithKeyboardFocus()
     {
-        await Ui.Run(() => sheetHost.Width = 760);
-        await Ui.Until(() => Ui.CommandButton("PlanSheetPredecessorAdd").IsInOverflow);
+        // The title filter moved off this row onto the attention strip (#260), so the row keeps more
+        // commands at 760; the overflow case uses a width where 先行タスクを追加… must overflow.
+        await Ui.Run(() => sheetHost.Width = 640);
+        var overflowState = "";
+        await Ui.Until(() => {
+            var button = Ui.CommandButton("PlanSheetPredecessorAdd");
+            var bar = Ui.Tree(Ui.Root).OfType<CommandBar>().Single();
+            overflowState = "bar=" + bar.ActualWidth + " sheet=" + sheet.ActualWidth + " primary=" + string.Join(",", bar.PrimaryCommands.OfType<AppBarButton>().Select(command =>
+                AutomationProperties.GetAutomationId(command) + ":" + command.IsInOverflow));
+            return button.IsInOverflow;
+        }, () => overflowState);
         await Select(2, PlanField.Title);
         await Ui.ClickCommand("PlanSheetPredecessorAdd");
         await Ui.Ready<TextBox>("PlanPredecessorSearch");
-        await Ui.Until(() => Ui.Find<TextBox>("PlanPredecessorSearch").FocusState != FocusState.Unfocused);
+        var focusedState = "";
+        await Ui.Until(() => {
+            var query = Ui.Find<TextBox>("PlanPredecessorSearch");
+            var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot) as FrameworkElement;
+            focusedState = "queryFocus=" + query.FocusState + " loaded=" + query.IsLoaded + " enabled=" + query.IsEnabled
+                + " focused=" + (focused is null ? "<null>" : focused.GetType().Name + "/" + AutomationProperties.GetAutomationId(focused));
+            return query.FocusState != FocusState.Unfocused;
+        }, () => focusedState);
         await Ui.Run(() => {
             Assert.That(Ui.Popup<MenuFlyoutItem>("PlanSheetCopy"), Is.Null);
             Assert.That(Ui.Find<TextBox>("PlanPredecessorSearch").FocusState, Is.Not.EqualTo(FocusState.Unfocused));

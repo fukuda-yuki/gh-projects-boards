@@ -190,6 +190,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(ToolTipService.GetToolTip(item), Is.EqualTo(refusal));
             Ui.Find<AppBarButton>("PlanSheetMore").Flyout.Hide();
         });
+        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("PlanSheetDeleteOverflow") is null);
         await Ui.Idle();
         // A local row can be deleted from the same menu, as one Undo step, like the primary command.
         await Ui.Run(async () => { await session.Execute(new InsertPlanRows([PlanRow.New("Local", "acme/repo")]), Today); sheet.Refresh(); });

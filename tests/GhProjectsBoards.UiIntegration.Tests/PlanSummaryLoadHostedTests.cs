@@ -23,9 +23,11 @@ internal sealed partial class PlanWorkspaceHostedTests
         await OpenVersionSummary();
         await Ui.Run(() => {
             var summary = Ui.Find<PlanSummaryView>("PlanSummary");
-            var verdict = Ui.Find<Grid>("SummaryVerdict");
+            var verdict = Ui.Find<FrameworkElement>("SummaryVerdict");
+            var headline = Ui.Find<TextBlock>("SummaryVerdictHeadline");
             var band = Ui.Find<TextBlock>("SummaryProgress");
             var load = Ui.Find<TextBlock>("SummaryLoadHeading");
+            Assert.That(headline.Text, Is.Not.Empty, "#260 fills the reserved verdict slot.");
             Assert.That(verdict.TransformToVisual(summary).TransformPoint(new()).Y,
                 Is.LessThan(band.TransformToVisual(summary).TransformPoint(new()).Y), "The verdict line comes before the Project band (#260 slot).");
             Assert.That(load.TransformToVisual(summary).TransformPoint(new()).Y,
@@ -136,6 +138,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("SummaryPerson_U1"));
         await Ui.Idle();
         await Ui.Run(() => {
+            // The link uses #260's shared person filter, not an exact-set chip.
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionAssignees")), Does.Contain("担当者: person-U1"));
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
             Assert.That(sheet.RowIds.Where(id => id.Length > 0), Is.EqualTo(new[] { "I1", "I2" }));
             Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("2 件"));
@@ -216,6 +220,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
     }
 }
+
 
 
 

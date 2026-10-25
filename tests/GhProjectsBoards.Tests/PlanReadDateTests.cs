@@ -130,8 +130,7 @@ internal sealed class PlanReadDateTests
         var document = Document();
         var scheduled = PlanOperations.Schedule(document, Day.AddDays(30));
         var lateness = PlanLateness.Classify(scheduled, new(), Day);
-        Assert.That(lateness.OverdueTasks, Is.Zero);
-        Assert.That(lateness.LaterTasks, Is.Zero);
+        Assert.That(lateness.LateTasks, Is.Zero);
         Assert.That(scheduled[1].StartReason, Is.EqualTo("開始日を維持"), "The plan keeps its own start.");
         Assert.That(PlanLateness.EndReason(scheduled[1]), Is.EqualTo("終了: 開始から 16h"));
         var load = PlanPeople.Calculate(document, Day, Day, PlanPeriodScale.Day, 3).People.Single(p => p.Identity == "U1");

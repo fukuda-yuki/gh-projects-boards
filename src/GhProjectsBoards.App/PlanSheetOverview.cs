@@ -11,7 +11,7 @@ internal sealed partial class PlanSheetView
 {
     private readonly HashSet<string> folded = [];
     internal IReadOnlySet<string> SummaryIds { get; private set; } = new HashSet<string>();
-    internal bool FoldingEnabled => !remoteBusy && acceptedFilter.Length == 0;
+    internal bool FoldingEnabled => !remoteBusy && !FilterActive;
     internal bool IsFolded(string identity) => folded.Contains(identity);
     private AppBarButton collapseAll = null!, expandAll = null!, goToDate = null!, predecessorAdd = null!;
     private AppBarButton linkTasks = null!, unlinkTasks = null!;
@@ -44,7 +44,7 @@ internal sealed partial class PlanSheetView
     {
         RefreshOutlineCommands();
         collapseAll.IsEnabled = expandAll.IsEnabled = FoldingEnabled && SummaryIds.Count > 0;
-        var reason = acceptedFilter.Length > 0 ? "絞り込み中は折りたためません" : "";
+        var reason = FilterActive ? "絞り込み中は折りたためません" : "";
         foreach (var button in new[] { collapseAll, expandAll }) {
             button.AllowFocusWhenDisabled = reason.Length > 0;
             AutomationProperties.SetHelpText(button, reason);
@@ -78,7 +78,7 @@ internal sealed partial class PlanSheetView
     }
 
     private string? TaskLinkUnavailable(bool unlink) => remoteBusy ? "更新または発行が進行中です。"
-        : acceptedFilter.Length > 0 ? unlink ? "絞り込み中はリンクを解除できません" : "絞り込み中はリンクできません" : null;
+        : FilterActive ? unlink ? "絞り込み中はリンクを解除できません" : "絞り込み中はリンクできません" : null;
 
     internal Task LinkSelectedTasks(bool unlink)
     {
@@ -251,7 +251,17 @@ internal sealed partial class PlanSheetView
         };
         cancel.Click += (_, _) => flyout.Hide();
         content.KeyDown += (_, args) => { if (args.Key == VirtualKey.Escape) { flyout.Hide(); args.Handled = true; } };
-        flyout.Opened += (_, _) => query.Focus(FocusState.Programmatic);
+        // A menu opening this flyout restores its own focus after the flyout has opened; claim keyboard focus
+        // again on the next two dispatcher turns so the search is ready to type into.
+        void FocusQuery() {
+            if (ReferenceEquals(predecessorFlyout, flyout) && flyout.IsOpen && query.IsLoaded) query.Focus(FocusState.Programmatic);
+        }
+        query.Loaded += (_, _) => FocusQuery();
+        flyout.Opened += (_, _) => {
+            FocusQuery();
+            DispatcherQueue.TryEnqueue(FocusQuery);
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, FocusQuery);
+        };
         flyout.Closed += (_, _) => { if (ReferenceEquals(predecessorFlyout, flyout)) predecessorFlyout = null; };
         Search();
         // The whole sheet leaves no useful space above or below its placement bounds.

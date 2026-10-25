@@ -1,4 +1,4 @@
-using GhProjectsBoards.App;
+﻿using GhProjectsBoards.App;
 using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -254,16 +254,20 @@ internal sealed partial class PlanSheetHostedTests
             .Any(id => id.StartsWith("PlanArrow", StringComparison.Ordinal) && id.Contains("_90_", StringComparison.Ordinal)), Is.False));
 
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Edge");
-        await Ui.Until(() => sheet.List.Items.Count == 5);
+        // I89 becomes I90's requirement row, so it stays as the match's context (+1 row).
+        await Ui.Until(() => sheet.List.Items.Count == 6);
         await Ui.Ready<TextBox>("PlanCell95_Title");
         await SheetNativeInput.Rendered();
         await Ui.Until(() => sheet.List.Items.Cast<string>().All(identity => CurrentDependencyRow(identity) is not null));
-        // Filtered to five rows every endpoint is on screen, so the links between them are drawn again.
-        await WaitForDependencyPresentation(1, 3, 90);
-        await WaitForDependencyPresentation(4, 2, 3);
+        // Edge ids carry the visible row positions, so the context row shifts them.
+        var index = sheet.RowIds.Select((identity, position) => (identity, position)).ToDictionary(pair => pair.identity, pair => pair.position + 1);
+        int forwardFrom = index["I1"], forwardTo = index["I90"], reverseFrom = index["I95"], reverseTo = index["I3"];
+        await WaitForDependencyPresentation(forwardFrom, forwardTo, 90);
+        await WaitForDependencyPresentation(reverseFrom, reverseTo, 3);
         await Ui.Run(() => {
             string[] expectedArrows = [
-                "PlanArrow1_3_1", "PlanArrow1_3_90", "PlanArrow4_2_3", "PlanArrow4_2_95" ];
+                $"PlanArrow{forwardFrom}_{forwardTo}_1", $"PlanArrow{forwardFrom}_{forwardTo}_90",
+                $"PlanArrow{reverseFrom}_{reverseTo}_3", $"PlanArrow{reverseFrom}_{reverseTo}_95" ];
             var currentRows = sheet.List.Items.Cast<string>().Select(identity => {
                 var row = (sheet.List.ContainerFromItem(identity) as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
                 Assert.That(row, Is.Not.Null, $"Current filtered row {identity}");
@@ -276,12 +280,12 @@ internal sealed partial class PlanSheetHostedTests
                 "The current empty append item exposes its native editor after filtering.");
             Assert.That(currentRows.SelectMany(row => Ui.Tree(row).OfType<Polyline>()).Select(AutomationProperties.GetAutomationId),
                 Is.EquivalentTo(expectedArrows), "Every active dependency belongs to the current filtered topology.");
-            var forwardX = Ui.Find<Polygon>("PlanArrowHead1_3_90", CurrentDependencyRow("I90")!)
+            var forwardX = Ui.Find<Polygon>($"PlanArrowHead{forwardFrom}_{forwardTo}_90", CurrentDependencyRow("I90")!)
                 .TransformToVisual(sheet).TransformPoint(new(3, 6)).X;
-            var reverseX = Ui.Find<Polygon>("PlanArrowHead4_2_3", CurrentDependencyRow("I3")!)
+            var reverseX = Ui.Find<Polygon>($"PlanArrowHead{reverseFrom}_{reverseTo}_3", CurrentDependencyRow("I3")!)
                 .TransformToVisual(sheet).TransformPoint(new(3, 0)).X;
             foreach (var row in currentRows)
-                AssertCrossingGeometry(row, row.Identity switch { "I3" => [forwardX], "I90" => [reverseX], _ => [] });
+                AssertCrossingGeometry(row, row.Identity switch { "I3" => [forwardX], "I89" => [forwardX, reverseX], "I90" => [reverseX], _ => [] });
             var allPaths = Ui.Tree(sheet).OfType<PlanSheetRow>().SelectMany(row => Ui.Tree(row).OfType<NativePath>()).ToArray();
             Assert.That(allPaths.Select(AutomationProperties.GetAutomationId).Where(id => id.Length > 0),
                 Is.EquivalentTo(currentRows.SelectMany(row => Ui.Tree(row).OfType<NativePath>())
@@ -292,7 +296,7 @@ internal sealed partial class PlanSheetHostedTests
                 Is.EquivalentTo(expectedArrows), "Recycled rows must not expose old dependency identities.");
             Assert.That(Ui.Tree(sheet).OfType<Polygon>().Select(AutomationProperties.GetAutomationId)
                 .Where(id => id.StartsWith("PlanArrowHead", StringComparison.Ordinal)),
-                Is.EquivalentTo(new[] { "PlanArrowHead1_3_90", "PlanArrowHead4_2_3" }));
+                Is.EquivalentTo(new[] { $"PlanArrowHead{forwardFrom}_{forwardTo}_90", $"PlanArrowHead{reverseFrom}_{reverseTo}_3" }));
             var retainedCounts = new Dictionary<PlanSheetRow, int>();
             foreach (var line in allArrows.Where(line => AutomationProperties.GetAutomationId(line).Length == 0)) {
                 PlanSheetRow? retainedRow = null;
@@ -314,8 +318,8 @@ internal sealed partial class PlanSheetHostedTests
                     if (parent is UIElement element && (element.Visibility == Visibility.Collapsed || element.Opacity == 0)) hidden = true;
                 Assert.That(hidden, Is.True, "Unidentified retained crossing paths must not paint old geometry.");
             }
-            AssertDependencyEntersBar(1, 3, 90, true);
-            AssertDependencyEntersBar(4, 2, 3, false);
+            AssertDependencyEntersBar(forwardFrom, forwardTo, 90, true);
+            AssertDependencyEntersBar(reverseFrom, reverseTo, 3, false);
         });
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "");
         await Ui.Until(() => sheet.List.Items.Count == 100);

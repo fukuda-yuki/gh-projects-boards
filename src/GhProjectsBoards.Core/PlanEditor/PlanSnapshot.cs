@@ -17,7 +17,9 @@ internal sealed record PlanRemoteSnapshot(PlanBaseline Baseline, ImmutableDictio
   // #231: rows whose Issue the viewer cannot update, observed by this read.
   public ImmutableArray<string> CannotUpdate { get; init; } = [];
   // #258: rows whose Issue Field values the viewer cannot set, observed by this read.
-  public ImmutableArray<string> CannotSetFields { get; init; } = []; }
+  public ImmutableArray<string> CannotSetFields { get; init; } = [];
+  // #238: when GitHub last changed each row's 実績 or 残; null when GitHub holds neither value.
+  public ImmutableDictionary<string, DateTimeOffset?> ProgressUpdatedAt { get; init; } = ImmutableDictionary<string, DateTimeOffset?>.Empty; }
 internal static class PlanSnapshot
 {
     internal static string ReadDiagnostic(ProjectReadResult result) => $"{result.Outcome}: " + string.Join("; ",
@@ -49,7 +51,7 @@ internal static class PlanSnapshot
     internal static PlanRemoteSnapshot From(ProjectReadResult result, ProjectPlanSettings settings, TimeZoneInfo? timeZone = null)
     {
         var p = RequireComplete(result, "プロジェクト全体を取得できませんでした。計画は変更していません。再試行してください。 ");
-        var (rows, items) = ObservedRows(p, settings, timeZone);
+        var (rows, items, progress) = ObservedRows(p, settings, timeZone);
         return new(new(rows, Columns(p)) {
                 RepositoryMilestones = p.Milestones.Select(m => new PlanRepositoryOption(Repository(p, m.RepositoryId), m.Id.NodeId, m.Title)).ToImmutableArray(),
                 RepositoryLabels = p.Labels.Select(l => new PlanRepositoryOption(Repository(p, l.RepositoryId), l.Id, l.Name)).ToImmutableArray(),
@@ -62,7 +64,8 @@ internal static class PlanSnapshot
           // #231: only a definite false observation disables a command; an unavailable capability is not treated
           // as a denial, so a read that could not see permission leaves the observation alone.
           CannotUpdate = DeniedUpdates(p, items),
-          CannotSetFields = DeniedFieldWrites(p, items) };
+          CannotSetFields = DeniedFieldWrites(p, items),
+          ProgressUpdatedAt = progress };
     }
     // #201: assembles the scoped observation into the whole-Project snapshot shape the merge, verification
     // and adoption paths expect. The written rows and their items come from the read; a row outside the
@@ -75,7 +78,7 @@ internal static class PlanSnapshot
     {
         var p = RequireComplete(result, "発行対象の項目を取得できませんでした。計画は変更していません。再試行してください。 ");
         var settings = document.State.Settings;
-        var (observed, items) = ObservedRows(p, settings, timeZone);
+        var (observed, items, progress) = ObservedRows(p, settings, timeZone);
         var covered = scope.ToHashSet(StringComparer.Ordinal);
         var known = document.Baseline.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
         var absent = document.Sync.Unavailable.ToHashSet(StringComparer.Ordinal);
@@ -105,7 +108,10 @@ internal static class PlanSnapshot
           // the read covered but did not deliver is gone, so its entry goes too.
           CannotUpdate = document.Sync.CannotUpdate.Where(id => !observed.Any(r => r.Identity == id) && rows.Any(r => r.Identity == id))
               .Concat(DeniedUpdates(p, items)).Distinct(StringComparer.Ordinal).ToImmutableArray(),
-          CannotSetFields = DeniedFieldWrites(p, items) };
+          CannotSetFields = DeniedFieldWrites(p, items),
+          // #238: like the Issue links, a row outside the scope keeps its last observed change time.
+          ProgressUpdatedAt = document.Sync.ProgressUpdatedAt.Where(pair => !covered.Contains(pair.Key) && rows.Any(r => r.Identity == pair.Key))
+              .ToImmutableDictionary(StringComparer.Ordinal).SetItems(progress) };
     }
     // #231: the identities this read observed with a definite inability to update, keyed the way the rows are.
     private static ImmutableArray<string> DeniedUpdates(ProjectReadModel p, ImmutableDictionary<string, string> items)
@@ -139,9 +145,15 @@ internal static class PlanSnapshot
         => p.Issues.Values.SelectMany(i => i.Native?.Assignees ?? []).DistinctBy(a => a.Id).ToImmutableDictionary(a => a.Id.NodeId, a => a.Login);
     private static string Repository(ProjectReadModel p, ScopedId repositoryId)
         => p.Issues.Values.FirstOrDefault(i => i.Repository.Id == repositoryId)?.Repository.NameWithOwner ?? "";
-    private static (ImmutableArray<PlanRow> Rows, ImmutableDictionary<string, string> Items) ObservedRows(
+    private static (ImmutableArray<PlanRow> Rows, ImmutableDictionary<string, string> Items, ImmutableDictionary<string, DateTimeOffset?> Progress) ObservedRows(
         ProjectReadModel p, ProjectPlanSettings settings, TimeZoneInfo? timeZone)
     {
+        // #238: GitHub reports a change time only for Project field values, so the progress change time is
+        // observed only while both 実績 and 残 are mapped to Project fields.
+        var progressFields = settings.Columns.Where(c => c.Role is PlanField.Actual or PlanField.Remaining)
+            .Select(c => p.Fields.SingleOrDefault(f => f.Id.NodeId == c.FieldId)).ToArray();
+        var observeProgress = progressFields.Length == 2 && progressFields.All(f => f is { ValueOwner: FieldOwner.ProjectItem, IssueFieldId: null });
+        var progress = ImmutableDictionary.CreateBuilder<string, DateTimeOffset?>(StringComparer.Ordinal);
         var statusField = p.Fields.SingleOrDefault(f => f.Name == "Status" && f.DataType == "SINGLE_SELECT" && f.ValueOwner == FieldOwner.ProjectItem);
         var rows = ImmutableArray.CreateBuilder<PlanRow>(); var items = ImmutableDictionary.CreateBuilder<string, string>();
         foreach (var item in p.Items.Where(i => i.Kind == ProjectItemKind.Issue && !i.IsArchived))
@@ -225,7 +237,15 @@ internal static class PlanSnapshot
                 row = row with { ExtraValues = row.ExtraValues.SetItem(key, new(availability,json)) };
             }
             rows.Add(row); items.Add(row.Identity, item.Id.NodeId);
+            if (observeProgress)
+            {
+                // An item with neither 実績 nor 残 holds no change time: 未更新 judges that task as stale. A present
+                // value GitHub sends no change time for leaves the observation unknown instead of guessing.
+                var values = item.Values.Where(v => progressFields.Any(f => f!.Id == v.FieldId) && v.Availability == ValueAvailability.Present).ToArray();
+                if (values.Length == 0) progress[row.Identity] = null;
+                else if (values.All(v => v.UpdatedAt is not null)) progress[row.Identity] = values.Max(v => v.UpdatedAt);
+            }
         }
-        return (rows.ToImmutable(), items.ToImmutable());
+        return (rows.ToImmutable(), items.ToImmutable(), progress.ToImmutable());
     }
 }

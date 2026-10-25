@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Globalization;
 using System.Text.Json;
 using GhProjectsBoards.App;
@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Input;
 using Rectangle = Microsoft.UI.Xaml.Shapes.Rectangle;
@@ -423,11 +424,14 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(insert.TransformToVisual(sheet).TransformPoint(new()).X, Is.LessThan(12), "Commands start at the card left edge.");
             var commands = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<CommandBar>("PlanSheetCommands"));
             var header = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanHeaderId"));
+            // The attention strip is the top row of the sheet (#260), above the command row.
+            var strip = Ui.Find<Grid>("PlanAttentionStrip");
+            var commandsBottom = strip.ActualHeight + commands.ActualHeight;
             headerBefore = header.TransformToVisual(sheet).TransformPoint(new()).Y;
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.Empty);
             Assert.That(band.ActualHeight, Is.EqualTo(36).Within(1));
-            Assert.That(band.TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(commands.ActualHeight).Within(1));
-            Assert.That(headerBefore, Is.EqualTo(commands.ActualHeight + 36).Within(1));
+            Assert.That(band.TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(commandsBottom).Within(1));
+            Assert.That(headerBefore, Is.EqualTo(commandsBottom + 36).Within(1));
             await RenderedEvidence.Capture(sheetHost, "followup-unselected-band");
         });
         await Select(1, PlanField.Title); await Ui.Idle();
@@ -687,7 +691,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("#1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, state == "summary" ? Is.Empty : Is.Not.Empty);
-            if (state == "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日を維持 · 終了: 開始から 8h"));
+            if (state == "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("開始: 開始日を維持").And.Contain("終了: 開始から 8h"));
             Assert.That(Ui.Find<HyperlinkButton>("PlanSheetIssue").Content, Is.EqualTo("acme/repo#1"));
             var slip = Ui.Find<TextBlock>("PlanSheetSlip").Text;
             if (state == "late") {
@@ -771,18 +775,18 @@ internal sealed partial class PlanSheetHostedTests
     // #236 part B: the pill compares the plan with the forecast (「見込終了 M/d (曜) · M/d から +N 日」) and
     // the published-end basis is retired. Each state states the plan's own dates, because a task with no dates
     // has no forecast and no pill.
-    [TestCase("finish", "終了日 10/2 を過ぎて未完了 · +1日", true, "")]
-    [TestCase("start", "開始日 10/2 を過ぎて未着手", true, "")]
-    [TestCase("moved", "終了日 10/2 を過ぎて未完了 · +1日", true, "")]
-    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1日", false, "")]
+    [TestCase("finish", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
+    [TestCase("start", "開始日 10/2 を過ぎて未着手", false, "自分の残による")]
+    [TestCase("moved", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
+    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1日", false, "自分の残による")]
     // The predecessor state names its cause through the selection line's link, not the pill's detail line.
     // The plan follows the predecessor's kept 10/7 end, while the forecast starts once its 10/7 work is
     // used up, so the successor does not share that day.
     [TestCase("predecessor", "見込終了 10/8 (木) · 10/7 から +1日", false, "")]
-    [TestCase("long", "見込終了 10/6 (火) · 10/5 から +1日", false, "")]
-    [TestCase("summary-overdue", "見込終了 10/5 (月) · 10/2 から +1日", true, "配下: 期限超過 1")]
-    [TestCase("summary-later", "見込終了 10/6 (火) · 10/5 から +1日", false, "配下: 予定より遅れ 1")]
-    [TestCase("summary-counts", "見込終了 10/6 (火) · 10/5 から +1日", true, "配下: 期限超過 1 · 予定より遅れ 1")]
+    [TestCase("long", "見込終了 10/6 (火) · 10/5 から +1日", false, "自分の残による")]
+    [TestCase("summary-overdue", "見込終了 10/5 (月) · 10/2 から +1日", true, "配下: 遅れ 1")]
+    [TestCase("summary-later", "見込終了 10/6 (火) · 10/5 から +1日", false, "配下: 遅れ 1 · 見積超過 1")]
+    [TestCase("summary-counts", "見込終了 10/6 (火) · 10/5 から +1日", true, "配下: 遅れ 2 · 見積超過 1")]
     [TestCase("none", "", false, "")]
     [Category("SelectionLine")]
     public async Task SelectionPresentsLatenessAndKeepsIssueAtRight(string state, string expected, bool tinted, string detail)
@@ -832,7 +836,8 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(pill.Visibility, Is.EqualTo(expected.Length == 0 ? Visibility.Collapsed : Visibility.Visible));
             if (expected.Length > 0) {
                 Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(pill), Is.EqualTo(expected));
-                Assert.That(((SolidColorBrush)slip.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
+                Assert.That(((SolidColorBrush)slip.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush(
+                    tinted ? "SystemFillColorCriticalBrush" : "SystemFillColorCautionBrush")).Color));
                 if (tinted) Assert.That(((SolidColorBrush)pill.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("GanttLateTintBrush")).Color));
                 else {
                     Assert.That(pill.Background is null || pill.Background is SolidColorBrush { Color.A: 0 }, Is.True);
@@ -844,15 +849,20 @@ internal sealed partial class PlanSheetHostedTests
             // #236 part B: a predecessor-caused lateness names its cause with a link to that row.
             Assert.That(Ui.Find<HyperlinkButton>("PlanSelectionPredecessorLink").Visibility,
                 Is.EqualTo(state == "predecessor" ? Visibility.Visible : Visibility.Collapsed));
+            // #260: the Issue reference sits next to the title it belongs to; 詳細 stays at the right end.
             var issue = Ui.Find<HyperlinkButton>("PlanSheetIssue");
             Assert.That(issue.Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(issue.Content, Is.EqualTo("acme/repo#1"));
             var issueX = issue.TransformToVisual(sheet).TransformPoint(new()).X;
-            Assert.That(sheet.ActualWidth - issueX - issue.ActualWidth, Is.InRange(7d, 10d));
             var reason = Ui.Find<TextBlock>("PlanStartReason");
             Assert.That(reason.TextTrimming, Is.EqualTo(TextTrimming.CharacterEllipsis));
-            Assert.That(reason.TransformToVisual(sheet).TransformPoint(new()).X + reason.ActualWidth, Is.LessThan(issueX));
-            if (expected.Length > 0) Assert.That(pill.TransformToVisual(sheet).TransformPoint(new()).X + pill.ActualWidth, Is.LessThan(issueX));
+            Assert.That(issueX, Is.LessThan(reason.TransformToVisual(sheet).TransformPoint(new()).X),
+                "The Issue reference follows the task name, before the explanation.");
+            var detailToggle = Ui.Find<ToggleButton>("PlanSheetDetail");
+            var detailX = detailToggle.TransformToVisual(sheet).TransformPoint(new()).X;
+            Assert.That(sheet.ActualWidth - detailX - detailToggle.ActualWidth, Is.InRange(0d, 20d),
+                "詳細 is the right-most control of the selection line.");
+            if (expected.Length > 0) Assert.That(pill.TransformToVisual(sheet).TransformPoint(new()).X + pill.ActualWidth, Is.LessThan(detailX));
         });
         if (state is "moved" or "predecessor" or "long") await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-" + state));
     }
