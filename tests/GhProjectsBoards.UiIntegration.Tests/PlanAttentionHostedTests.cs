@@ -121,8 +121,17 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanAttentionPhases"));
         await Ui.Until(() => Ui.Tree(Ui.Root).Concat(OpenPopups()).Any(e => AutomationProperties.GetAutomationId(e) == "PlanAttentionPhase_PS"));
         await Ui.Run(() => Ui.ToggleToggleButton("PlanAttentionPhase_PS"));
-        await Ui.Until(() => FilterCount() == "1 件", () => "phase=" + AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionPhases"))
-            + " assignee=" + AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionAssignees")) + " count=" + FilterCount());
+        await Ui.Until(() => FilterCount() == "1 件", () => DumpFilterState());
+        static string DumpFilterState() {
+            var sheet = Ui.Tree(Ui.Root).OfType<PlanSheetView>().Single();
+            var cells = string.Join(",", Ui.Find<ListView>("PlanTasks").Items.Cast<string>());
+            var phases = string.Join(",", sheet.RowIds.Select(identity => {
+                var row = sheet.Session.Document.State.Rows.FirstOrDefault(candidate => candidate.Identity == identity);
+                return identity + "=" + (row?.Phase ?? "<null>") + "/" + string.Join("+", row?.Assignees ?? []);
+            }));
+            return "phase=" + AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionPhases")) + " assignee=" + AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionAssignees"))
+                + " count=" + FilterCount() + " rows=[" + cells + "] data=[" + phases + "]";
+        }
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I4", "" }));
