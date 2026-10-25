@@ -23,15 +23,16 @@ internal sealed partial class PlanWorkspaceHostedTests
         readDay = day;
         FakePlanEditor.Save(root, new([
             new(new("I1", "R01 要求事項", "acme/repo"), "", true),
+            // The fake read takes the phase from the fake issue, so it is set there as well as on the row.
             new(new("I2", "R01 遅れている設計", "acme/repo") {
                 Parent = "I1", Phase = "SS", Assignees = ["U1"],
                 Start = day.AddDays(-4), End = day.AddDays(-3), Estimate = 24, Actual = 8, Remaining = 16 }, "", true) {
-                ProgressUpdatedAt = new(day.AddDays(-22).ToDateTime(new TimeOnly(9, 0)), TimeSpan.FromHours(9)) },
+                ProgressUpdatedAt = new(day.AddDays(-22).ToDateTime(new TimeOnly(9, 0)), TimeSpan.FromHours(9)), Phase = "SS" },
             new(new("I3", "R01 後続の実装", "acme/repo") {
                 Parent = "I1", Phase = "SS", Assignees = ["U2"], Predecessors = ["I2"],
-                Start = day.AddDays(-1), End = day.AddDays(-1), Estimate = 8, Remaining = 8 }, "", true),
+                Start = day.AddDays(-1), End = day.AddDays(-1), Estimate = 8, Remaining = 8 }, "", true) { Phase = "SS" },
             new(new("I4", "R02 見積超過の試験", "acme/repo") {
-                Phase = "PS", Assignees = ["U1"], Start = day, End = day.AddDays(5), Estimate = 8, Actual = 6, Remaining = 6 }, "", true)
+                Phase = "PS", Assignees = ["U1"], Start = day, End = day.AddDays(5), Estimate = 8, Actual = 6, Remaining = 6 }, "", true) { Phase = "PS" }
         ], 7) { Phases = ["SS", "PS"] });
     }
     private static PlanSheetView Sheet() => Ui.Tree(Ui.Root).OfType<PlanSheetView>().Single();
@@ -121,17 +122,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanAttentionPhases"));
         await Ui.Until(() => Ui.Tree(Ui.Root).Concat(OpenPopups()).Any(e => AutomationProperties.GetAutomationId(e) == "PlanAttentionPhase_PS"));
         await Ui.Run(() => Ui.ToggleToggleButton("PlanAttentionPhase_PS"));
-        await Ui.Until(() => FilterCount() == "1 件", () => DumpFilterState());
-        static string DumpFilterState() {
-            var sheet = Ui.Tree(Ui.Root).OfType<PlanSheetView>().Single();
-            var cells = string.Join(",", Ui.Find<ListView>("PlanTasks").Items.Cast<string>());
-            var phases = string.Join(",", sheet.RowIds.Select(identity => {
-                var row = sheet.Session.Document.State.Rows.FirstOrDefault(candidate => candidate.Identity == identity);
-                return identity + "=" + (row?.Phase ?? "<null>") + "/" + string.Join("+", row?.Assignees ?? []);
-            }));
-            return "phase=" + AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionPhases")) + " assignee=" + AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionAssignees"))
-                + " count=" + FilterCount() + " rows=[" + cells + "] data=[" + phases + "]";
-        }
+        await Ui.Until(() => FilterCount() == "1 件", () => "phase=" + AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionPhases"))
+            + " assignee=" + AutomationProperties.GetName(Ui.Find<Button>("PlanAttentionAssignees")) + " count=" + FilterCount());
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I4", "" }));

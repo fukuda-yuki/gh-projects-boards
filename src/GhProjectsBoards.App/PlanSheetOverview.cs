@@ -241,7 +241,13 @@ internal sealed partial class PlanSheetView
         };
         cancel.Click += (_, _) => flyout.Hide();
         content.KeyDown += (_, args) => { if (args.Key == VirtualKey.Escape) { flyout.Hide(); args.Handled = true; } };
-        flyout.Opened += (_, _) => query.Focus(FocusState.Programmatic);
+        // The overflow menu restores its own focus after this flyout opens; focus again once that settles.
+        flyout.Opened += (_, _) => {
+            query.Focus(FocusState.Programmatic);
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
+                if (ReferenceEquals(predecessorFlyout, flyout) && flyout.IsOpen && query.IsLoaded) query.Focus(FocusState.Programmatic);
+            });
+        };
         flyout.Closed += (_, _) => { if (ReferenceEquals(predecessorFlyout, flyout)) predecessorFlyout = null; };
         Search();
         // The whole sheet leaves no useful space above or below its placement bounds.
