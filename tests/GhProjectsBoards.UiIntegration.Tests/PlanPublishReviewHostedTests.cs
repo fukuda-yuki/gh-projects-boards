@@ -52,26 +52,14 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Run(() => Ui.Click("PlanConnect"));
         await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Run(() => { Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty); Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0; });
-        // A hosted runner reads, schedules and renders the 1,040-row version far slower than the owner's desktop,
-        // so that case alone gets a budget proportional to the version rather than the routine 20-second wait.
-        if (count >= 1040) await UntilWithBudget(() => workspace.Session is not null, 180, "The 1,040-row Project must finish opening.");
-        else await Ui.Until(() => workspace.Session is not null);
-        if (count >= 1040) await UntilWithBudget(() => Ui.Tree(view).OfType<PlanSheetCell>()
-            .Any(c => AutomationProperties.GetAutomationId(c) == "PlanCell1_Title" && c.IsLoaded), 120, "The 1,040-row sheet must render its first row.");
-        else await Ui.Ready<PlanSheetCell>("PlanCell1_Title");
+        // The version-scale case opens 1,040 rows; the hosted runner needs longer than the default
+        // observation deadline to read and render them, and the case is about the review, not open speed.
+        var versionScale = count >= 1040;
+        await Ui.Until(() => workspace.Session is not null, timeout: TimeSpan.FromSeconds(versionScale ? 120 : 20));
+        await Ui.Until(() => Ui.Tree(view).OfType<PlanSheetCell>()
+            .Any(c => AutomationProperties.GetAutomationId(c) == "PlanCell1_Title" && c.IsLoaded),
+            timeout: TimeSpan.FromSeconds(versionScale ? 120 : 20));
         await Ui.Idle();
-    }
-    private static async Task UntilWithBudget(Func<bool> predicate, int seconds, string describe)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(seconds);
-        while (true)
-        {
-            var ready = false;
-            await Ui.Run(() => ready = predicate());
-            if (ready) return;
-            Assert.That(DateTime.UtcNow, Is.LessThan(deadline), describe);
-            await Task.Delay(100);
-        }
     }
     [TearDown]
     public async Task Cleanup()

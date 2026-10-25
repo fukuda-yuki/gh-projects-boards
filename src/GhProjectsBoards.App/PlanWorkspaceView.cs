@@ -251,9 +251,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         };
         foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, summaryArea, settingsArea, publishReview }) { surfaces.Children.Add(surface); }
         var cardContent = new Grid();
-        cardContent.RowDefinitions.Add(new() { Height = GridLength.Auto });
+        // Notices sit below the surface: opening or closing one shortens the visible rows from the bottom
+        // instead of pushing every row down under the pointer (#233, DESIGN M1).
         cardContent.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
-        cardContent.Children.Add(failures); cardContent.Children.Add(surfaceHost); Grid.SetRow(surfaceHost, 1);
+        cardContent.RowDefinitions.Add(new() { Height = GridLength.Auto });
+        cardContent.Children.Add(surfaceHost); cardContent.Children.Add(failures); Grid.SetRow(failures, 1);
         InitializeBusy(cardContent);
         var card = Id(new Border { Style = (Style)Application.Current.Resources["WorkspaceCardStyle"], Child = cardContent }, "PlanWorkCard");
         var work = new Grid();
@@ -708,6 +710,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private void Show(string page)
     {
         if (page != "tasks") sheet?.CancelPendingFilter();
+        // The review replaced the sheet and took its focused cell with it; every way back to the plan gives the
+        // keyboard back to the selected cell, as a closing dialog does (#233, DESIGN A2).
+        if (currentPage == "publish" && page == "tasks") sheet?.FocusSelected();
         currentPage = page; SyncTabs(); UpdateAssistVisibility(); UpdateDetailVisibility(); SetRemotePresentation();
         openPublish.Style = page == "publish" ? null : (Style)Application.Current.Resources["AccentButtonStyle"];
         legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
