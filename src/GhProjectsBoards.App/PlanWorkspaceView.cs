@@ -332,7 +332,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         };
         Unloaded += (_, _) => {
             tasksTab.RemoveHandler(UIElement.PointerReleasedEvent, tasksTabReleased);
-            chooser.Cancel(); CancelDetail(clearCache: true); detailNavigationStarted?.TrySetCanceled(); detailWeb?.Close();
+            chooser.Cancel(); CancelDetail(clearCache: true); detailNavigationStarted?.TrySetCanceled(); detailWeb?.Close(); CloseHelp();
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
             captionRoot = null;
@@ -678,7 +678,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         await detailWork;
         await EndAssist();
         closing = true; await operation;
-        try { await CommitPending(); await workspace.Flush(); return true; }
+        try { await CommitPending(); await workspace.Flush(); CloseHelp(); return true; }
         catch (Exception ex)
         {
             closing = false;

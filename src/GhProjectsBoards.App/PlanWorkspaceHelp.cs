@@ -36,29 +36,44 @@ internal sealed partial class PlanWorkspaceView
     private async Task OpenManual()
     {
         if (closing || !IsLoaded) return;
+        // #172: F1 again brings the open manual forward instead of opening another copy.
+        if (HelpWindow is { IsClosed: false } open) { open.Activate(); return; }
+        if (helpOpening) return;
         var path = Path.Combine(AppContext.BaseDirectory, "マニュアル.md");
-        var launch = OpenDocument ?? LaunchDocument;
+        helpOpening = true;
         try {
-            var found = await Task.Run(() => {
-                if (!File.Exists(path)) return false;
-                var rendered = path;
+            var rendered = await Task.Run(() => {
+                if (!File.Exists(path)) return null;
+                string document;
                 try {
                     var html = PlanManualHtml.Render(File.ReadAllText(path), AppContext.BaseDirectory);
-                    // Separate invocations cannot overwrite a document the browser is still opening.
+                    // Separate invocations cannot overwrite a document that is still being opened.
                     var folder = Path.Combine(Path.GetTempPath(), "GhProjectsBoards", Guid.NewGuid().ToString("N"));
                     Directory.CreateDirectory(folder);
-                    rendered = Path.Combine(folder, "マニュアル.html");
-                    File.WriteAllText(rendered, html);
+                    document = Path.Combine(folder, "マニュアル.html");
+                    File.WriteAllText(document, html);
                 }
-                catch (Exception ex) when (ex is not OutOfMemoryException) { rendered = path; }
-                launch(rendered); return true;
+                catch (Exception ex) when (ex is not OutOfMemoryException) { document = path; }
+                OpenDocument?.Invoke(document);
+                return document;
             });
-            if (!found && !closing) error.Text = "マニュアルが見つかりません: " + path;
+            if (rendered is null) { if (!closing) error.Text = "マニュアルが見つかりません: " + path; return; }
+            if (OpenDocument is not null || closing) return;
+            if (Path.GetExtension(rendered) == ".html"
+                && await PlanHelpWindow.OpenAsync(rendered, Path.Combine(assistDataRoot, "PlanningEditor", "v1", "webview2"), XamlRoot.RasterizationScale) is { } window) {
+                if (closing) window.Close(); else HelpWindow = window;
+                return;
+            }
+            await Task.Run(() => LaunchDocument(rendered));
         }
         catch (Exception ex) when (ex is not OutOfMemoryException) {
             if (!closing) error.Text = ex.Message;
         }
+        finally { helpOpening = false; }
     }
+    private bool helpOpening;
+    internal PlanHelpWindow? HelpWindow { get; private set; }
+    private void CloseHelp() { HelpWindow?.Close(); HelpWindow = null; }
 
     private static void LaunchDocument(string path)
     {

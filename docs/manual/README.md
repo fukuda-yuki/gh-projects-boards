@@ -25,7 +25,7 @@ All interaction uses `scripts/Invoke-EvaluationUi.ps1` (`click`, `invoke`, `type
 | Image | State and UI operation | Manual section |
 | --- | --- | --- |
 | `01-help.png` | Fresh opened plan; open `PlanProjectPicker`, Escape, then Tab to the adjacent `PlanHelp` question button; capture without invoking the external viewer | はじめに |
-| `02-connection.png` | Initial `PlanGhPath`, `PlanHost`, `PlanConnect` before connecting | 起動と接続 |
+| `02-connection.png` | Initial `PlanHost` and `PlanConnect` before connecting; the fake gh is on PATH, so no `PlanGhPath` box is shown | 起動と接続 |
 | `03-project-chooser.png` | Invoke `PlanConnect`; wait for `AvailableProjects` and 第2027.04版 | プロジェクトを開く |
 | `04-plan.png` | Click the exact 第2027.04版 title; wait for `PlanTasks`, zero unpublished tasks and the Gantt | 画面の見方 |
 | `05-selection.png` | Set `PlanSheetFilter` to R09 SS-003; select that row's Title cell; read the reason line | 画面の見方 / シートとガント |
