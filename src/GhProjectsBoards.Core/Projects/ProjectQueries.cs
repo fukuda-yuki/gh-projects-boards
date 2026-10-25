@@ -76,8 +76,10 @@ internal static class ProjectQueries
         .Replace("NATIVE", Native).Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values)
         .Replace("FIELD_REFERENCE", FieldReference).Replace("ISSUE_FIELD_VALUE", IssueFieldValue);
     // #201: a publication read substitutes the native sub-issue connection into the same detail request,
-    // because its lease also carries the sibling order that a child-order write needs.
-    public static readonly string PublishItemDetails = ("query PlanPublishItemDetails($ids:[ID!]!) { nodes(ids:$ids) { __typename id ... on Issue { projectItems(first: 100) { " + PageInfo + " nodes { __typename id ... on ProjectV2Item { " + ItemDetail + " } } } } } }")
+    // because its lease also carries the sibling order that a child-order write needs. Each membership costs
+    // about 500 possible nodes, so ten per Issue keep a batch of 25 near 125,000 of GitHub's 500,000-node
+    // limit and at 13 rate-limit points; `after` continues one Issue's memberships.
+    public static readonly string PublishItemDetails = ("query PlanPublishItemDetails($ids:[ID!]!,$after:String) { nodes(ids:$ids) { __typename id ... on Issue { projectItems(first: 10, after: $after) { " + PageInfo + " nodes { __typename id ... on ProjectV2Item { " + ItemDetail + " } } } } } }")
         .Replace("NATIVE", Native).Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values)
         .Replace("FIELD_REFERENCE", FieldReference).Replace("ISSUE_FIELD_VALUE", IssueFieldValue)
         .Replace("parent { id }", "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}");
