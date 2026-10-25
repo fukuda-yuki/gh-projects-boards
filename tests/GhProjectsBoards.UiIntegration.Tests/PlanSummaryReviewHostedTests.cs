@@ -160,9 +160,10 @@ internal sealed partial class PlanWorkspaceHostedTests
             if (navigation == "tab") Ui.Click("PlanShowSummary");
             else {
                 var scroll = Ui.Find<ScrollViewer>("PlanSettingsScroll");
-                var input = Ui.Find<TextBox>("PlanAllowanceU1");
-                Assert.That(scroll.VerticalOffset + input.TransformToVisual(scroll).TransformPoint(new()).Y, Is.GreaterThan(scroll.ActualHeight), "Scrolling to the top must move this field outside the viewport.");
-                Assert.That(scroll.ChangeView(null, 0, null, true), Is.True);
+                // #251: the content column is the only thing that scrolls, so moving it to the end carries the
+                // dirty field out of the viewport and the page must bring it back for its message.
+                Assert.That(scroll.ScrollableHeight, Is.GreaterThan(scroll.ActualHeight), "The content column scrolls on its own.");
+                Assert.That(scroll.ChangeView(null, scroll.ScrollableHeight, null, true), Is.True);
             }
         });
         await Ui.Until(() => {

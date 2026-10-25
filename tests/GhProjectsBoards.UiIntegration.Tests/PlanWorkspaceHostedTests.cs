@@ -2785,7 +2785,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open(); await Settings();
         var day = new DateOnly(2026, 10, 7);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<Button>(id + "Add").IsEnabled, Is.False);
+            // #251: 追加 stays available without a chosen date (it opens the calendar instead of being a dead end).
+            Assert.That(Ui.Find<Button>(id + "Add").IsEnabled, Is.True);
             Assert.That(Ui.Tree(view).OfType<FrameworkElement>().Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e).StartsWith("PlanDaysOff") || e is TextBlock { Text: "個人休日" }), Is.False);
             Ui.Find<CalendarDatePicker>(id + "Date").Date = new DateTimeOffset(2026, 10, 7, 0, 0, 0, TimeSpan.Zero);
         });
@@ -2794,8 +2795,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(1));
         await Ui.Run(() => {
             var dates = Ui.Find<ListView>(id + "Dates");
-            Assert.That(dates.Items.Count, Is.EqualTo(1)); dates.SelectedIndex = 0;
-            Ui.Click(id + "Remove");
+            Assert.That(dates.Items.Count, Is.EqualTo(1));
+            // Each day carries its own 削除, so removing one needs no list selection.
+            Ui.Click(id + "Remove" + day.ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture));
         }); await Ui.Idle();
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(2));
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
