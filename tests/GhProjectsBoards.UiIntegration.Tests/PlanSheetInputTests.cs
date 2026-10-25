@@ -460,7 +460,9 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task OverflowPredecessorCommandOpensItsSearchWithKeyboardFocus()
     {
-        await Ui.Run(() => sheetHost.Width = 760);
+        // The title filter moved off this row onto the attention strip (#260), so the row keeps more
+        // commands at 760; the overflow case uses a width where 先行タスクを追加… must overflow.
+        await Ui.Run(() => sheetHost.Width = 640);
         var overflowState = "";
         await Ui.Until(() => {
             var button = Ui.CommandButton("PlanSheetPredecessorAdd");
