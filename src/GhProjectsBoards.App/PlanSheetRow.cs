@@ -384,7 +384,8 @@ public sealed class PlanSheetRow : Grid
             if (cell.TitleDisplay is { } titleDisplay) AutomationProperties.SetAutomationId(titleDisplay, "PlanTitleDisplay" + number);
             if (cell.ForecastDisplay is { } forecastDisplay) AutomationProperties.SetAutomationId(forecastDisplay, "PlanForecastDisplay" + number);
             // #264: the 見積 h cell carries the overrun figure; the sentence travels with the cell's name.
-            var overrunWording = field == PlanField.Estimate ? PlanSheetText.EstimateOverrunWording(owner.Schedule.GetValueOrDefault(Identity), owner.Marks) : null;
+            var overrunWording = field == PlanField.Estimate && owner.Schedule.GetValueOrDefault(Identity) is { } estimateTask
+                ? PlanSheetText.EstimateOverrunWording(estimateTask, owner.Marks) : null;
             if (cell.EstimateDisplay is { } estimateDisplay) {
                 AutomationProperties.SetAutomationId(estimateDisplay, summary ? "" : "PlanEstimateDisplay" + number);
                 estimateDisplay.Visibility = summary ? Visibility.Collapsed : Visibility.Visible;
