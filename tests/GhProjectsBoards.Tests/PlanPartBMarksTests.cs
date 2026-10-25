@@ -38,11 +38,12 @@ internal sealed class PlanPartBMarksTests
         string Indicator(string identity, PlanMarkVisibility? marks = null) => PlanSheetText.Indicator(PlanTaskNames.Of(document),
             document.State.Rows.Single(r => r.Identity == identity), tasks[identity], lateClassification.Tasks[identity], "", false, marks);
 
-        Assert.That(Indicator("I1"), Does.Contain("配下に期限超過 1").And.Contain("予定より遅れ 1").And.Contain("見積超過 1"));
-        Assert.That(Indicator("I1", new PlanMarkVisibility(Overdue: false)), Does.Not.Contain("期限超過").And.Contain("予定より遅れ 1").And.Contain("見積超過 1"),
+        // #260 D0: one 遅れ set; a hidden mark removes that part from the requirement row's roll-up.
+        Assert.That(Indicator("I1"), Does.Contain("配下に遅れ 2").And.Contain("見積超過 1"));
+        Assert.That(Indicator("I1", new PlanMarkVisibility(Overdue: false)), Does.Not.Contain("期限超過").And.Contain("配下に遅れ 1").And.Contain("見積超過 1"),
             "Hiding 期限超過 leaves the requirement row's other marks alone.");
-        Assert.That(Indicator("I1", new PlanMarkVisibility(Later: false)), Does.Not.Contain("予定より遅れ").And.Contain("期限超過 1").And.Contain("見積超過 1"));
-        Assert.That(Indicator("I1", new PlanMarkVisibility(OverEstimate: false)), Does.Not.Contain("見積超過").And.Contain("期限超過 1").And.Contain("予定より遅れ 1"));
+        Assert.That(Indicator("I1", new PlanMarkVisibility(Later: false)), Does.Not.Contain("予定より遅れ").And.Contain("配下に遅れ 1").And.Contain("見積超過 1"));
+        Assert.That(Indicator("I1", new PlanMarkVisibility(OverEstimate: false)), Does.Not.Contain("見積超過").And.Contain("配下に遅れ 2"));
         Assert.That(Indicator("I3"), Does.Contain("見積超過"), "The row's own over-estimate mark is shown by default.");
         Assert.That(Indicator("I3", new PlanMarkVisibility(OverEstimate: false)), Does.Not.Contain("見積超過"), "A hidden 見積超過 mark leaves the row tooltip.");
         Assert.That(lateClassification.LateTasks + lateClassification.OverEstimateTasks, Is.GreaterThan(0), "The sets stay complete.");
