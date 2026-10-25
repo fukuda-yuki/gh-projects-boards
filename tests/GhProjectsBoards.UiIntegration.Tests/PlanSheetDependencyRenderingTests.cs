@@ -90,6 +90,10 @@ internal sealed partial class PlanSheetHostedTests
         await ShowDependencyRow(90);
         await Ui.Until(() => Ui.Tree(sheet).OfType<TextBlock>().Any(element =>
             AutomationProperties.GetAutomationId(element) == "PlanPredStub90"));
+        // The settled scroll clears the route the predecessor drew before it left the window.
+        await Ui.Until(() => !Ui.Tree(sheet).OfType<Polyline>().Where(Visible)
+            .Select(AutomationProperties.GetAutomationId)
+            .Any(id => id.StartsWith("PlanArrow1_90_", StringComparison.Ordinal)));
         await Ui.Run(() => {
             var row = CurrentDependencyRow("I90")!;
             var stub = Ui.Find<TextBlock>("PlanPredStub90");

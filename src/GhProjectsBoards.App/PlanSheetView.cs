@@ -958,8 +958,8 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (!args.IsIntermediate) pageOffset = null;
         if (Problems.Count > 0) UpdateInputProblem();
-        if (!args.IsIntermediate && !disposed)
-            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, RefreshDependencyLinks);
+        // The visible window decides which links are drawn (#264); redraw once the gesture settles.
+        if (!args.IsIntermediate && !disposed) RefreshDependencyLinks();
     }
     private bool InputProblemCellIsVisible(PlanSheetCell cell)
     {
