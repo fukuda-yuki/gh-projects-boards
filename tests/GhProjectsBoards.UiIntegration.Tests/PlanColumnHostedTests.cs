@@ -165,7 +165,16 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(session.UndoCount,Is.EqualTo(undo+1));
         await Ui.Run(() => Ui.Click("PlanColumnUpTitle"));
         await Ui.Until(() => session.Document.State.Settings.SheetColumns[1].Key==PlanField.Title);
-        // The move re-renders the table; wait for the re-created row before driving its controls.
+        // The move re-renders the settings table. Wait until the rendered rows show the new order, not for
+        // a control that the old render happened to leave in the tree, before driving one of the new rows.
+        bool MovedRowRendered()
+        {
+            double Top(string id) => Ui.Tree(view).OfType<FrameworkElement>()
+                .Where(e => AutomationProperties.GetAutomationId(e) == id && e.IsLoaded)
+                .Select(e => e.TransformToVisual(view).TransformPoint(new()).Y).DefaultIfEmpty(double.NaN).Min();
+            return Top("PlanColumnNameTitle") < Top("PlanColumnNameId");
+        }
+        await Ui.Until(MovedRowRendered, () => "the moved title row is not rendered above the ID row");
         await Ui.Ready<CheckBox>("PlanColumnEstimate");
         await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("PlanColumnEstimate")));
         await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c=>c.Key==PlanField.Estimate && !c.Visible));
