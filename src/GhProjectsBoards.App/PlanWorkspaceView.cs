@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Globalization;
 using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
@@ -299,6 +299,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusLine.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         statusLine.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         copyByAssignee = Button("担当者ごとにコピー", "PlanCopyByAssignee", CopyFilteredByAssignee, commitPending: false);
+        // The status bar is 28 pixels high; a standard button's padding would cut the caption off at the bottom.
+        copyByAssignee.MinHeight = 0; copyByAssignee.Height = 24; copyByAssignee.Padding = new(8, 0, 8, 0); copyByAssignee.FontSize = 12;
         copyByAssignee.Visibility = Visibility.Collapsed;
         ToolTipService.SetToolTip(copyByAssignee, "絞り込んだタスクを担当者ごとに、Issue のリンク付きでコピーします");
         statusLine.Children.Add(statusCounts);

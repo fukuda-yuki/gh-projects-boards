@@ -33,7 +33,12 @@ function Ui {
         if ($PSBoundParameters.ContainsKey($key)) { $parameters[$key] = $PSBoundParameters[$key] }
     }
     if ($All) { $parameters.All = $true }
-    & $automation @parameters
+    # UI Automation now and then fails a whole-tree search while the 1,000-row sheet re-renders; the search runs
+    # before any input, so repeating it cannot repeat an action.
+    for ($attempt = 1; ; $attempt++) {
+        try { return & $automation @parameters }
+        catch { if ($attempt -ge 3 -or $_.Exception.Message -notmatch 'FindAll') { throw }; Start-Sleep -Milliseconds 500 }
+    }
 }
 function Tree { (Ui tree) -join "`n" }
 function Wait-State([string]$Pattern, [int]$Seconds = 90) {
@@ -81,7 +86,8 @@ function Reveal([string[]]$Ids) {
     # Wheel the page until the first control sits in the upper part of the window; no value changes.
     Wait-Control $Ids[0]
     $pattern = '#' + [regex]::Escape($Ids[0]) + '(?: [^\n]*)? @(-?\d+),(-?\d+) '
-    $low = [int](180 * $record.dpi / 96); $high = [int](360 * $record.dpi / 96)
+    # A section jump puts its heading at the top of the page, so the first control can sit above 180 DIP.
+    $low = [int](120 * $record.dpi / 96); $high = [int](360 * $record.dpi / 96)
     for ($step = 0; $step -lt 120; $step++) {
         $top = if ((Tree) -match $pattern) { [int]$Matches[2] } else { [int]::MaxValue }
         if ($top -ge $low -and $top -le $high) { Start-Sleep -Milliseconds 300; return }
@@ -173,7 +179,8 @@ public static class ManualCaptureWindow {
     Wait-State '未発行 0 タスク' | Out-Null
     Capture '04-plan' 'PlanSheetFilter'
     Ui click -Id PlanProjectPicker | Out-Null
-    Ui key -Keys '{ESC}{TAB}' | Out-Null
+    # アシスト sits between the Project and the help button in the title bar (#275).
+    Ui key -Keys '{ESC}{TAB}{TAB}' | Out-Null
     Capture '01-help' 'PlanHelp'
 
     # This fixture task is intentionally open at Remaining 0, so both effort fields are editable.
