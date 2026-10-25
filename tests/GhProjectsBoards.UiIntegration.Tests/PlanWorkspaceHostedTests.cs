@@ -1650,7 +1650,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("OperationStates")]
-    public async Task SheetSaveFailureAppearsAboveWorkspaceAndKeepsOneRetry()
+    public async Task SheetSaveFailureSitsBelowTheSurfaceAndKeepsOneRetry()
     {
         await Open();
         using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
@@ -1682,9 +1682,13 @@ internal sealed partial class PlanWorkspaceHostedTests
         var bounds = bar.TransformToVisual(card).TransformBounds(new Rect(0, 0, bar.ActualWidth, bar.ActualHeight));
         Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0));
         Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(card.ActualHeight));
+        // #233: a notice sits below the surface, so opening one shortens the visible rows from the bottom
+        // instead of pushing them down under the pointer.
         var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
-        if (sheet.Visibility == Visibility.Visible && sheet.ActualHeight > 0)
-            Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(sheet.TransformToVisual(card).TransformPoint(new Point()).Y + 1));
+        if (sheet.Visibility == Visibility.Visible && sheet.ActualHeight > 0) {
+            var sheetBottom = sheet.TransformToVisual(card).TransformPoint(new Point(0, sheet.ActualHeight)).Y;
+            Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(sheetBottom - 1), "The notice sits below the sheet, not above it.");
+        }
         Assert.That(Ui.Find<TextBlock>("PlanError").Visibility, Is.EqualTo(Visibility.Collapsed));
         Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
         Assert.That(AutomationProperties.GetName(Ui.Find<SplitButton>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
@@ -2526,6 +2530,9 @@ internal sealed partial class PlanWorkspaceHostedTests
 
     private async Task AddDay(string id, DateOnly day)
     {
+        // The settings page is rendered in the surface under the sheet; wait for the controls this case drives.
+        await Ui.Ready<CalendarDatePicker>(id + "Date");
+        await Ui.Ready<Button>(id + "Add");
         await Ui.Run(() => {
             Ui.Find<CalendarDatePicker>(id + "Date").Date = new DateTimeOffset(day.Year, day.Month, day.Day, 0, 0, 0, TimeSpan.Zero);
             Ui.Click(id + "Add");

@@ -24,17 +24,20 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Click("PlanRefresh");
         });
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
-        await Ui.Idle();
+        // The notice opens in its own row under the surface; lay it out before reading geometry.
         await Ui.Run(() => {
+            Ui.Root.UpdateLayout();
             var cell = Ui.Find<FrameworkElement>("PlanCell1_Title");
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
-            Assert.That(cell.TransformToVisual(view).TransformPoint(new()).Y, Is.EqualTo(before).Within(0.5), "The notice must not push the rows down.");
+            var rows = Ui.Find<ListView>("PlanTasks");
             Assert.That(bar.ActualHeight, Is.GreaterThan(0), "The notice is rendered.");
-            Assert.That(bar.TransformToVisual(view).TransformPoint(new()).Y, Is.GreaterThan(Ui.Find<ListView>("PlanTasks").TransformToVisual(view).TransformPoint(new()).Y),
-                "The notice sits below the rows, not above them.");
+            Assert.That(cell.TransformToVisual(view).TransformPoint(new()).Y, Is.EqualTo(before).Within(0.5), "The notice must not push the rows down.");
+            var rowsBottom = rows.TransformToVisual(view).TransformPoint(new(0, rows.ActualHeight)).Y;
+            Assert.That(bar.TransformToVisual(view).TransformPoint(new()).Y, Is.GreaterThanOrEqualTo(rowsBottom - 1),
+                "The notice sits below the row area, not above it.");
             bar.IsOpen = false;
+            Ui.Root.UpdateLayout();
         });
-        await Ui.Idle();
         await Ui.Run(() => Assert.That(Ui.Find<FrameworkElement>("PlanCell1_Title").TransformToVisual(view).TransformPoint(new()).Y, Is.EqualTo(before).Within(0.5),
             "Closing the notice must not move the rows either."));
     }
@@ -60,6 +63,11 @@ internal sealed partial class PlanWorkspaceHostedTests
         // Ctrl+Z works at once, without a click back into the sheet.
         await SheetNativeInput.Press(VirtualKey.Z, VirtualKey.Control);
         await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Remaining == 8m);
+        // So does Ctrl+Home: the first row's title cell takes the selection and the keyboard.
+        await SheetNativeInput.Press(VirtualKey.Home, VirtualKey.Control);
+        await Ui.Until(() => FocusManager.GetFocusedElement(view.XamlRoot) == Ui.Find<Control>("PlanCell1_Title"),
+            () => "focus=" + (FocusManager.GetFocusedElement(view.XamlRoot) as FrameworkElement)?.Name + "/" + FocusManager.GetFocusedElement(view.XamlRoot)?.GetType().Name);
+        Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().IsSelected("I1", PlanField.Title), Is.True);
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 }
