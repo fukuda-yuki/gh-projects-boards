@@ -62,7 +62,8 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U2_0")), Does.EndWith(" –"));
             }
         });
-        await Settings(); await CommitText("PlanProjectEnd", "2026-11-30");
+        await Settings(); await PickDate("PlanProjectEnd", new(2026, 11, 30));
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.ProjectEnd == new DateOnly(2026, 11, 30));
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryStatusDate" && t.Text.Contains("11/30")));
         await Ui.Run(() => {
