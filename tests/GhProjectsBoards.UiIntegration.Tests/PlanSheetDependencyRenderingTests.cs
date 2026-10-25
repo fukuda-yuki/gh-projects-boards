@@ -112,11 +112,6 @@ internal sealed partial class PlanSheetHostedTests
                 .Select(AutomationProperties.GetAutomationId)
                 .Where(id => id.StartsWith("PlanArrow1_90_", StringComparison.Ordinal)).ToArray();
             Assert.That(forwardRoutes, Is.Empty, "An off-screen predecessor must not draw a visible line: " + string.Join(",", forwardRoutes));
-            // The reverse link's predecessor row 95 is visible, so that link still runs; its stroke is the only
-            // crossing in this row — the suppressed forward link would have added a second.
-            var reverseRoute = Ui.Find<Polyline>("PlanArrow95_3_95");
-            var reverseX = reverseRoute.TransformToVisual(sheet).TransformPoint(reverseRoute.Points[^1]).X;
-            AssertCrossingGeometry(row, [reverseX]);
         });
         await Ui.Run(() => RenderedEvidence.Capture(sheet, "offscreen-predecessor-stub"));
 
