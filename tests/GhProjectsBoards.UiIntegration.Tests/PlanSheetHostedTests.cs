@@ -424,11 +424,14 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(insert.TransformToVisual(sheet).TransformPoint(new()).X, Is.LessThan(12), "Commands start at the card left edge.");
             var commands = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<CommandBar>("PlanSheetCommands"));
             var header = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanHeaderId"));
+            // The attention strip is the top row of the sheet (#260), above the command row.
+            var strip = Ui.Find<Grid>("PlanAttentionStrip");
+            var commandsBottom = strip.ActualHeight + commands.ActualHeight;
             headerBefore = header.TransformToVisual(sheet).TransformPoint(new()).Y;
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.Empty);
             Assert.That(band.ActualHeight, Is.EqualTo(36).Within(1));
-            Assert.That(band.TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(commands.ActualHeight).Within(1));
-            Assert.That(headerBefore, Is.EqualTo(commands.ActualHeight + 36).Within(1));
+            Assert.That(band.TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(commandsBottom).Within(1));
+            Assert.That(headerBefore, Is.EqualTo(commandsBottom + 36).Within(1));
             await RenderedEvidence.Capture(sheetHost, "followup-unselected-band");
         });
         await Select(1, PlanField.Title); await Ui.Idle();
