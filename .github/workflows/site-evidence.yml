@@ -5,6 +5,8 @@ on:
   push:
     branches: [feature/271-management-site]
     paths:
+      - 'src/GhProjectsBoards.Core/Reports/**'
+      - 'src/GhProjectsBoards.Report/**'
       - '.github/scripts/site-evidence.mjs'
       - '.github/workflows/site-evidence.yml'
 permissions:

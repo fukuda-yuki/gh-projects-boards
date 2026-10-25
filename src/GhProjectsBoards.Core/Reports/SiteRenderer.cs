@@ -91,7 +91,7 @@ internal static class SiteRenderer
         page.Append($"<div><dt>完了</dt><dd><span class=\"done-count\">{SiteAnalysis.Number(project.ClosedCount)} / {SiteAnalysis.Number(project.TaskCount)}</span>");
         page.Append($"<span class=\"percent\">{SiteAnalysis.Percent(project.ClosedCount, project.TaskCount)}%</span></dd></div>");
         page.Append($"<div><dt>最終記録日</dt><dd>{SiteAnalysis.Date(project.LatestDay)}</dd></div>");
-        page.Append($"<div><dt>CSV</dt><dd><a href=\"items.csv\" download=\"{Attr(CsvName(project))}\">CSV</a></dd></div>");
+        page.Append($"<div><dt>CSV</dt><dd><a href=\"items.csv\" download=\"{Attr(CsvName(project))}\">ダウンロード</a></dd></div>");
         page.Append("</dl>");
         page.Append("</header>");
         page.Append("<section class=\"panel chart-panel\">");
@@ -165,16 +165,18 @@ internal static class SiteRenderer
     }
 
     // The weekly stacked bars: one bar per drawn week, stacked bottom-up in the state's option order, an empty slot
-    // for a week without a record, and the x axis labelled with each week's Monday.
+    // for a week without a record, and the x axis labelled with each week's Monday. Dense charts rotate the week
+    // labels so every week stays readable instead of dropping weeks from the axis.
     private static string Chart(ProjectProgress project)
     {
         const double width = 1840, left = 76, top = 8, plotHeight = 238;
         var plotWidth = width - left - 20;
         var weeks = project.Weeks;
         var slot = plotWidth / weeks.Count;
+        var rotate = slot < 36;
         var (max, step) = NiceScale(weeks.Max(w => w.Total));
         var sb = new StringBuilder();
-        sb.Append($"<svg class=\"chart\" viewBox=\"0 0 {F(width)} {F(top + plotHeight + 54)}\" role=\"img\" aria-label=\"週ごとの状態の積み上げ棒グラフ\">");
+        sb.Append($"<svg class=\"chart\" viewBox=\"0 0 {F(width)} {F(top + plotHeight + (rotate ? 62 : 54))}\" role=\"img\" aria-label=\"週ごとの状態の積み上げ棒グラフ\">");
         for (var value = 0.0; value <= max + 0.001; value += step)
         {
             var y = top + plotHeight - value / max * plotHeight;
@@ -182,7 +184,7 @@ internal static class SiteRenderer
             sb.Append($"<text class=\"axis\" x=\"{F(left - 10)}\" y=\"{F(y + 4)}\" text-anchor=\"end\">{SiteAnalysis.Number((int)Math.Round(value))}</text>");
         }
         var bar = Math.Min(48.0, slot * 0.72);
-        var labelStep = Math.Max(1, (int)Math.Ceiling(30.0 / slot));
+        var labelStep = rotate ? 1 : Math.Max(1, (int)Math.Ceiling(30.0 / slot));
         int? year = null;
         for (var n = 0; n < weeks.Count; n++)
         {
@@ -201,10 +203,21 @@ internal static class SiteRenderer
                     sb.Append($"<title>{Esc(SiteAnalysis.Date(day) + " の週 · " + project.States[state] + " · " + SiteAnalysis.Number(count))}</title></rect>");
                 }
             }
-            if (n % labelStep == 0)
+            if (n % labelStep != 0) continue;
+            var center = left + n * slot + slot / 2;
+            var label = week.Monday.Month + "/" + week.Monday.Day;
+            if (rotate)
             {
-                var center = left + n * slot + slot / 2;
-                sb.Append($"<text class=\"axis\" x=\"{F(center)}\" y=\"{F(top + plotHeight + 22)}\" text-anchor=\"middle\">{week.Monday.Month}/{week.Monday.Day}</text>");
+                sb.Append($"<text class=\"axis\" transform=\"translate({F(center)} {F(top + plotHeight + 12)}) rotate(-45)\" text-anchor=\"end\">{label}</text>");
+                if (year != week.Monday.Year)
+                {
+                    year = week.Monday.Year;
+                    sb.Append($"<text class=\"axis-year\" x=\"{F(center)}\" y=\"{F(top + plotHeight + 48)}\" text-anchor=\"middle\">{year}</text>");
+                }
+            }
+            else
+            {
+                sb.Append($"<text class=\"axis\" x=\"{F(center)}\" y=\"{F(top + plotHeight + 22)}\" text-anchor=\"middle\">{label}</text>");
                 if (year != week.Monday.Year)
                 {
                     year = week.Monday.Year;
@@ -216,6 +229,7 @@ internal static class SiteRenderer
         return sb.ToString();
     }
 
+    // Integer ticks only: task counts are integers, so half-step labels (2.5, 7.5) would read as wrong numbers.
     private static (double Max, double Step) NiceScale(int maximum)
     {
         var target = Math.Max(maximum, 1);
@@ -223,10 +237,13 @@ internal static class SiteRenderer
         var raw = target / 4.0;
         var magnitude = Math.Pow(10, Math.Floor(Math.Log10(raw)));
         var normalized = raw / magnitude;
-        var nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10;
-        var step = nice * magnitude;
-        if (step < 1) step = 1;
-        return (Math.Ceiling(target / step) * step, step);
+        foreach (var candidate in new[] { 1.0, 2.0, 2.5, 5.0, 10.0 })
+        {
+            if (candidate < normalized - 1e-9) continue;
+            var step = candidate * magnitude;
+            if (step >= 1 && step == Math.Floor(step)) return (Math.Ceiling(target / step) * step, step);
+        }
+        return (target, 1);
     }
 
     private static string StateColor(IReadOnlyList<string> states, int index)
@@ -328,7 +345,7 @@ internal static class SiteRenderer
         .cell-csv a { display: inline-block; padding: 3px 10px; border: 1px solid var(--border); border-radius: 4px; background: #fff; font-size: 13px; }
         .cell-csv a:hover { background: #eef4fb; text-decoration: none; }
         .composition { display: block; width: 100%; max-width: 360px; height: 16px; border-radius: 2px; overflow: hidden; }
-        .legend { display: flex; flex-wrap: wrap; gap: 4px 28px; margin-top: 8px; }
+        .legend { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
         .legend-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; margin: 0; padding: 0; list-style: none; }
         .legend li { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
         .swatch { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
