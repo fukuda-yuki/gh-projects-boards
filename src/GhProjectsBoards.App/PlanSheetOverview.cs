@@ -66,7 +66,7 @@ internal sealed partial class PlanSheetView
         foreach (var button in new[] { deletePrimary, deleteOverflow }) {
             button.IsEnabled = deleteReason is null; button.AllowFocusWhenDisabled = true;
             AutomationProperties.SetHelpText(button, deleteReason ?? "");
-            ToolTipService.SetToolTip(button, deleteReason ?? button.Label);
+            ToolTipService.SetToolTip(button, deleteReason ?? WithShortcut(button));
         }
         predecessorAdd.IsEnabled = Rows.ContainsKey(selected);
         foreach (var (button, unlink) in new[] { (linkTasks, false), (unlinkTasks, true) }) {

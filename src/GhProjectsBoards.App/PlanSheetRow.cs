@@ -144,6 +144,7 @@ public sealed class PlanSheetRow : Grid
             else if (PlanSheetView.Down(VirtualKey.Control) && PlanSheetView.Minus(args.Key)) { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
             else if (args.Key == VirtualKey.F10 && PlanSheetView.Down(VirtualKey.Shift) || (int)args.Key == 93) { args.Handled = true; owner.ShowRowMenu(Identity, owner.FirstField, this); }
             else if (owner.HandleOutlineShortcut(args.Key)) args.Handled = true;
+            else if (args.Key == VirtualKey.Insert && !PlanSheetView.Down(VirtualKey.Control)) { args.Handled = true; _ = owner.InsertFromKeyboard(); }
         };
         // #231 slice B: the row menu opens from the parts of a row that are not a cell, from a cell that is
         // not being edited (with its clipboard items), and from Shift+F10 or the menu key inside any cell.
@@ -356,7 +357,7 @@ public sealed class PlanSheetRow : Grid
             if (showHandle && handles[i] is null) {
                 var handle = new PlanFillHandle(this, field) { Width = 8, Height = 8, MinHeight = 0, MinWidth = 0, Padding = new(0),
                     HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, IsTabStop = false };
-                AutomationProperties.SetName(handle, "選択範囲へコピー"); ToolTipService.SetToolTip(handle, "上下にドラッグしてコピー");
+                AutomationProperties.SetName(handle, "下へコピー"); ToolTipService.SetToolTip(handle, "下へコピー（Ctrl+D）: 下にドラッグしてコピー");
                 handle.Click += async (_, _) => { if (Owner is { } current) await current.Run(() => current.Fill(PlanOperationKind.Fill)); };
                 handles[i] = handle; ((Grid)frames[i].Child).Children.Add(handle);
             }
@@ -1054,12 +1055,19 @@ internal sealed class PlanSheetCell : TextBox
         // list does not use falls through so the cell keeps its ordinary editing behavior.
         if (Field == PlanField.Assignees && owner.AssigneePickerKey(this, args.Key)) { args.Handled = true; return; }
         var control = PlanSheetView.Down(VirtualKey.Control); var shift = PlanSheetView.Down(VirtualKey.Shift);
-        if (owner.HandleOutlineShortcut(args.Key)) { args.Handled = true; }
+        if (owner.HandleOutlineShortcut(args.Key, Editing)) { args.Handled = true; }
         else if (!Editing && owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
         else if (args.Key == VirtualKey.Escape)
         {
             args.Handled = true; CancelOrClose();
         }
+        else if (control && args.Key == VirtualKey.Enter)
+        {
+            // #275: Ctrl+Enter writes the typed text into every selected cell; a cell not being edited stays put.
+            args.Handled = true;
+            if (Editing) CommitIntoSelection(owner, row.Identity, Text);
+        }
+        else if (!Editing && !control && args.Key == VirtualKey.Insert) { args.Handled = true; _ = owner.InsertFromKeyboard(); }
         else if (args.Key is VirtualKey.Enter or VirtualKey.Tab)
         {
             args.Handled = true;
@@ -1105,6 +1113,16 @@ internal sealed class PlanSheetCell : TextBox
         else if (!Editing && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right)
         { args.Handled = true; owner.MoveSelection(args.Key, shift); }
         base.OnPreviewKeyDown(args);
+    }
+    private async void CommitIntoSelection(PlanSheetView owner, string identity, string text)
+    {
+        committing = true;
+        var input = owner.Pending.GetValueOrDefault((identity, Field));
+        try { await owner.Run(async () => {
+            await owner.CommitCellIntoSelection(identity, Field, text, input?.Generation ?? 0, input?.OriginalText ?? "");
+            if (row.Owner == owner && row.Identity == identity && !owner.Pending.ContainsKey((identity, Field))) EndEditing();
+        }); }
+        finally { committing = false; }
     }
     private async void CommitAndNavigate(PlanSheetView owner, string identity, string text, bool across, bool reverse)
     {
@@ -1188,6 +1206,7 @@ internal sealed class PlanSummaryCell : ContentControl
         else if (!control && args.Key is VirtualKey.Tab or VirtualKey.Enter) {
             args.Handled = true; owner.NavigateCell(field, args.Key == VirtualKey.Tab, shift);
         }
+        else if (!control && args.Key == VirtualKey.Insert) { args.Handled = true; _ = owner.InsertFromKeyboard(); }
         else if (!control && args.Key == VirtualKey.Delete || control && (args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y || PlanSheetView.Minus(args.Key))) {
             args.Handled = true; _ = owner.KeyboardCommand(args.Key);
         }

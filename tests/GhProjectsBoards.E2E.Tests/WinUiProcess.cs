@@ -7,6 +7,14 @@ namespace GhProjectsBoards.E2E.Tests;
 
 internal static class WinUiProcess
 {
+    // #275: the gh.exe path is this PC's connection setting, so a test selects its fake gh the way the
+    // settings page stores it, before the app starts.
+    public static void UseGh(string dataRoot, string gh)
+    {
+        var folder = Path.Combine(dataRoot, "PlanningEditor", "v1");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "connection.json"), JsonSerializer.Serialize(new { version = 1, ghPath = gh }));
+    }
     public static void AssertRuntime(Process process)
     {
         process.Refresh();

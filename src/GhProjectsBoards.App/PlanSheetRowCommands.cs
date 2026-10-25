@@ -36,36 +36,37 @@ internal sealed partial class PlanSheetView
         if (clipboard) {
             // A right click on a cell that is not being edited is a sheet gesture, as in Excel and MS Project:
             // the clipboard items act on the selected cells, not on the text box's characters (#231).
-            AddClipboardItem("コピー", "PlanRowCopy", "Ctrl+C", Windows.System.VirtualKey.C);
-            AddClipboardItem("貼り付け", "PlanRowPaste", "Ctrl+V", Windows.System.VirtualKey.V);
+            AddClipboardItem("コピー", "PlanRowCopy", "Ctrl+C", Windows.System.VirtualKey.C, new SymbolIcon(Symbol.Copy));
+            AddClipboardItem("貼り付け", "PlanRowPaste", "Ctrl+V", Windows.System.VirtualKey.V, new SymbolIcon(Symbol.Paste));
             rowMenu.Items.Add(new MenuFlyoutSeparator());
         }
         var deleteReason = DeleteReason(targets);
-        AddRowItem("行を削除", "PlanRowDelete", "Ctrl+-", deleteReason, () => DeleteRows(targets));
+        // #275: each item carries the icon the same command has in the overflow.
+        AddRowItem("行を削除", "PlanRowDelete", "Ctrl+-", new SymbolIcon(Symbol.Delete), deleteReason, () => DeleteRows(targets));
         // The refusal is the whole message: it already names the commands to use instead.
         if (deleteReason is not null) ToolTipService.SetToolTip(rowMenu.Items[^1], deleteReason);
-        AddRowItem("完了にする", "PlanRowComplete", "", targets, PlanRowAction.Complete, () => RowStateReport(targets, PlanRowAction.Complete));
-        AddRowItem("中止にする", "PlanRowCancel", "", targets, PlanRowAction.Cancel, () => RowStateReport(targets, PlanRowAction.Cancel));
-        AddRowItem("この版から外す", "PlanRowRemove", "", targets, PlanRowAction.Remove, () => RowStateReport(targets, PlanRowAction.Remove));
-        AddRowItem("未完了に戻す", "PlanRowReopen", "", targets, PlanRowAction.Reopen, () => RowStateReport(targets, PlanRowAction.Reopen));
+        AddRowItem("完了にする", "PlanRowComplete", new SymbolIcon(Symbol.Accept), targets, PlanRowAction.Complete, () => RowStateReport(targets, PlanRowAction.Complete));
+        AddRowItem("中止にする", "PlanRowCancel", GlyphIcon(SetAsideGlyph), targets, PlanRowAction.Cancel, () => RowStateReport(targets, PlanRowAction.Cancel));
+        AddRowItem("この版から外す", "PlanRowRemove", new SymbolIcon(Symbol.Remove), targets, PlanRowAction.Remove, () => RowStateReport(targets, PlanRowAction.Remove));
+        AddRowItem("未完了に戻す", "PlanRowReopen", new SymbolIcon(Symbol.Refresh), targets, PlanRowAction.Reopen, () => RowStateReport(targets, PlanRowAction.Reopen));
         rowMenu.Closed += (_, _) => { rowMenuIdentity = null; };
         if (position is { } point) rowMenu.ShowAt(target, new FlyoutShowOptions { Position = point });
         else rowMenu.ShowAt(target, new FlyoutShowOptions { Position = new Point(target.ActualWidth / 2, target.ActualHeight / 2) });
     }
 
-    private void AddClipboardItem(string label, string id, string shortcut, Windows.System.VirtualKey key)
+    private void AddClipboardItem(string label, string id, string shortcut, Windows.System.VirtualKey key, IconElement icon)
     {
-        var item = Id(new MenuFlyoutItem { Text = label, KeyboardAcceleratorTextOverride = shortcut }, id);
+        var item = Id(new MenuFlyoutItem { Text = label, KeyboardAcceleratorTextOverride = shortcut, Icon = icon }, id);
         AutomationProperties.SetName(item, label);
         item.Click += (_, _) => _ = KeyboardCommand(key);
         rowMenu!.Items.Add(item);
     }
-    private void AddRowItem(string label, string id, string shortcut, string? refusal, Func<Task> run)
-        => Add(label, id, shortcut, refusal is null, refusal, run);
-    private void AddRowItem(string label, string id, string shortcut, ImmutableArray<string> targets, PlanRowAction action, Func<Task> run)
+    private void AddRowItem(string label, string id, string shortcut, IconElement icon, string? refusal, Func<Task> run)
+        => Add(label, id, shortcut, icon, refusal is null, refusal, run);
+    private void AddRowItem(string label, string id, IconElement icon, ImmutableArray<string> targets, PlanRowAction action, Func<Task> run)
     {
         var (enabled, hint) = RowCommandState(targets, action);
-        Add(label, id, shortcut, enabled, hint, run);
+        Add(label, id, "", icon, enabled, hint, run);
     }
     // One place decides whether a row command applies and what it will leave alone, so the row context menu
     // and the overflow never disagree.
@@ -90,10 +91,10 @@ internal sealed partial class PlanSheetView
     }
     // One item shape for every command: a disabled item keeps focus and explains itself, so its refusal is
     // never silent, and an enabled item explains what it will leave alone.
-    private void Add(string label, string id, string shortcut, bool enabled, string? hint, Func<Task> run)
+    private void Add(string label, string id, string shortcut, IconElement icon, bool enabled, string? hint, Func<Task> run)
     {
         var item = Id(new MenuFlyoutItem { Text = label, IsEnabled = enabled, AllowFocusWhenDisabled = true,
-            KeyboardAcceleratorTextOverride = shortcut }, id);
+            KeyboardAcceleratorTextOverride = shortcut, Icon = icon }, id);
         AutomationProperties.SetName(item, label);
         if (hint is not null) { AutomationProperties.SetHelpText(item, hint); ToolTipService.SetToolTip(item, label + ": " + hint); }
         else ToolTipService.SetToolTip(item, label);

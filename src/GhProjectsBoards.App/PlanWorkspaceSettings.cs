@@ -147,6 +147,11 @@ internal sealed partial class PlanWorkspaceView
                 text => ChangeSettings(s => s with { DefaultRepository = string.IsNullOrWhiteSpace(text) ? null : text.Trim() })));
 
             SettingsGroup("この PC（すべてのプロジェクト）", "pc");
+            // #275 / #286: gh.exe belongs to this PC. Empty uses the PATH lookup; the next 接続 binds the path.
+            var ghPath = TextSetting("gh.exe の場所", "PlanSettingsGhPath", workspace.GhPath ?? "", workspace.SaveGhPath, () => workspace.GhPath ?? "");
+            ghPath.PlaceholderText = ConnectionViewModel.FindGh();
+            ghPath.Description = "空欄のときは PATH の gh.exe を使います。次の接続から使います。";
+            SettingsSection("connection", "接続").Children.Add(ghPath);
             var display = SettingsSection("display", "表示");
             // #236 part B / #251 D1: each lateness mark can be hidden on this PC. The sets, the counts and the filters stay.
             display.Children.Add(MarkSwitch("期限超過の印", "PlanShowOverdueMark", m => m.Overdue, (m, on) => m with { Overdue = on }));

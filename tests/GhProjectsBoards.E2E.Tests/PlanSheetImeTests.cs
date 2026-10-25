@@ -34,6 +34,7 @@ public sealed class PlanSheetImeTests
         var executable = Environment.GetEnvironmentVariable("GHPB_E2E_APP_PATH")!;
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)!, WindowStyle = ProcessWindowStyle.Hidden };
         start.Environment["GHPB_DATA_ROOT"] = Path.Combine(root, "data"); start.Environment["GH_CONFIG_DIR"] = root;
+        WinUiProcess.UseGh(Path.Combine(root, "data"), Environment.GetEnvironmentVariable("GHPB_E2E_FAKE_GH_PATH")!);
         using var process = Process.Start(start)!;
         using var app = Application.Attach(process.Id);
         Window? window = null;
@@ -43,7 +44,6 @@ public sealed class PlanSheetImeTests
             Assert.That(window, Is.Not.Null); WinUiProcess.AssertRuntime(process);
             AutomationElement Find(string id) => window!.FindFirstDescendant(c => c.ByAutomationId(id)) ?? throw new AssertionException("Missing control: " + id);
             string Count() => Find("PlanUnpublished").Properties.Name.ValueOrDefault ?? "";
-            Find("PlanGhPath").AsTextBox().Text = Environment.GetEnvironmentVariable("GHPB_E2E_FAKE_GH_PATH")!;
             Find("PlanConnect").AsButton().Invoke();
             Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 1);
             Find("AvailableProjects").AsListBox().Select(0);

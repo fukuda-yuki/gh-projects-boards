@@ -15,7 +15,7 @@ internal sealed class PlanProjectChooser : Grid
     private readonly ListView recent = List("PlanRecentProjects", "最近開いたプロジェクト", 0);
     private readonly ListView owners = List("PlanProjectOwners", "組織", 1);
     private readonly ListView repositories = List("PlanProjectRepositories", "リポジトリ", 2);
-    private readonly ListView projects = List("AvailableProjects", "プロジェクト", 6);
+    private readonly ListView projects = List("AvailableProjects", "プロジェクト", 7);
     private readonly TextBox search = Named(new TextBox { PlaceholderText = "名前または番号で絞り込み", TabIndex = 3, Width = 320 }, "PlanProjectSearch", "名前または番号で絞り込み");
     private readonly CheckBox closed = Named(new CheckBox { Content = "終了済みも表示（0）", TabIndex = 4, MinWidth = 0 }, "PlanProjectShowClosed", "終了済みも表示（0）");
     private readonly Button reload = Named(new Button { Content = new SymbolIcon(Symbol.Refresh), TabIndex = 5 }, "PlanProjectsReload", "一覧を更新");
@@ -30,14 +30,13 @@ internal sealed class PlanProjectChooser : Grid
     private bool syncing, loaded;
     private int generation;
 
-    internal PlanProjectChooser(PlanWorkspace workspace, Func<ProjectChoice, Task> open, Expander address)
+    internal PlanProjectChooser(PlanWorkspace workspace, Func<ProjectChoice, Task> open, Button address)
     {
         this.workspace = workspace; this.open = open;
         RowSpacing = 12;
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
-        RowDefinitions.Add(new() { Height = GridLength.Auto });
         Children.Add(new TextBlock { Text = "プロジェクトを開く", Style = (Style)Application.Current.Resources["TitleTextBlockStyle"] });
         recentPanel.Children.Add(Heading("最近開いたプロジェクト")); recentPanel.Children.Add(recent);
         recent.ItemsPanel = (ItemsPanelTemplate)XamlReader.Load("""<ItemsPanelTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"><ItemsStackPanel Orientation="Horizontal"/></ItemsPanelTemplate>""");
@@ -46,7 +45,8 @@ internal sealed class PlanProjectChooser : Grid
         ScrollViewer.SetVerticalScrollBarVisibility(recent, ScrollBarVisibility.Disabled);
         ScrollViewer.SetVerticalScrollMode(recent, ScrollMode.Disabled);
         Children.Add(recentPanel); SetRow(recentPanel, 1);
-        var columns = new Grid { ColumnSpacing = 16 };
+        // #275: the columns take their content height; a list longer than the window still scrolls inside itself.
+        var columns = new Grid { ColumnSpacing = 16, VerticalAlignment = VerticalAlignment.Top };
         columns.ColumnDefinitions.Add(new() { Width = new(220) }); columns.ColumnDefinitions.Add(new() { Width = new(300) });
         columns.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         var ownerColumn = Column("組織", owners); var repositoryColumn = Column("リポジトリ", repositories);
@@ -56,6 +56,7 @@ internal sealed class PlanProjectChooser : Grid
         projectColumn.Children.Add(Heading("プロジェクト"));
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 16 };
         commands.Children.Add(search); commands.Children.Add(closed); commands.Children.Add(reload); reload.VerticalAlignment = VerticalAlignment.Center;
+        address.TabIndex = 6; commands.Children.Add(address);
         ToolTipService.SetToolTip(reload, "一覧を更新"); projectColumn.Children.Add(commands); SetRow(commands, 1);
         var feedback = new StackPanel { Spacing = 8 }; feedback.Children.Add(progress); feedback.Children.Add(status); feedback.Children.Add(retry);
         projectColumn.Children.Add(feedback); SetRow(feedback, 2);
@@ -65,7 +66,6 @@ internal sealed class PlanProjectChooser : Grid
         columns.Children.Add(ownerColumn); columns.Children.Add(repositoryColumn); SetColumn(repositoryColumn, 1);
         columns.Children.Add(projectColumn); SetColumn(projectColumn, 2);
         Children.Add(columns); SetRow(columns, 2);
-        address.TabIndex = 7; AutomationProperties.SetName(address, "URLで開く"); Children.Add(address); SetRow(address, 3);
         repositories.SingleSelectionFollowsFocus = true;
         owners.ContainerContentChanging += (_, e) => Row(e, item => Text(((OwnerChoice)item).Login + (((OwnerChoice)item).Type == "User" ? "（個人）" : "")));
         repositories.ContainerContentChanging += (_, e) => Row(e, item => {

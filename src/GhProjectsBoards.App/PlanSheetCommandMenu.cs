@@ -66,6 +66,7 @@ internal sealed partial class PlanSheetView
                 AllowFocusWhenDisabled = button.AllowFocusWhenDisabled,
                 KeyboardAcceleratorTextOverride = button.KeyboardAcceleratorTextOverride, Icon = button.Icon switch {
                     SymbolIcon icon => new SymbolIcon(icon.Symbol),
+                    FontIcon glyph => GlyphIcon(glyph.Glyph),
                     PathIcon { Tag: string path } => CommandIcon(path),
                     _ => null
                 } }, AutomationProperties.GetAutomationId(button));

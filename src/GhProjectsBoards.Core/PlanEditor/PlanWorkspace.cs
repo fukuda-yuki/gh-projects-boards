@@ -46,6 +46,18 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         await displayStore.SaveAsync(display);
         Display = display; displayLoaded = true;
     }
+    private readonly PlanConnectionSettingsStore connectionStore = new(store);
+    // #275: this PC's gh.exe path, null for the PATH lookup. It is read before any connection, because the
+    // connection screen needs it to decide whether to ask for the path at all.
+    public string? GhPath { get; private set; } = new PlanConnectionSettingsStore(store).Load().GhPath;
+    public string GhExecutable => GhPath ?? GhProjectsBoards.App.ConnectionViewModel.FindGh();
+    public async Task SaveGhPath(string? path)
+    {
+        path = string.IsNullOrWhiteSpace(path) ? null : path.Trim().Trim('"');
+        if (path is not null && !File.Exists(path)) throw new ArgumentException("gh.exe が見つかりません: " + path);
+        await connectionStore.SaveAsync(new(1, path));
+        GhPath = path;
+    }
     public IReadOnlyList<PlanResource> People
     {
         get
@@ -143,7 +155,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         Service = null; Context = null; Selected = null; Session = null; Owners = []; listings.Clear();
         var connection = await service.ConnectAsync(token);
         token.ThrowIfCancellationRequested();
-        if (!connection.IsConnected) throw new InvalidOperationException(GhProjectsBoards.App.ConnectionViewModel.FailureText(connection.Result.Failure));
+        if (!connection.IsConnected) throw new PlanConnectionFailedException(connection.Result.Failure);
         Service = service; Context = connection.Context!;
         var path = Path.Combine(store.Root, "workspace.json");
         if (File.Exists(path))
@@ -278,4 +290,11 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
+}
+
+// #275: the connection screen asks for the gh.exe path only when gh itself could not be found or started.
+internal sealed class PlanConnectionFailedException(GhProjectsBoards.App.GitHub.FailureKind failure)
+    : InvalidOperationException(GhProjectsBoards.App.ConnectionViewModel.FailureText(failure))
+{
+    public bool Executable { get; } = failure is GhProjectsBoards.App.GitHub.FailureKind.MissingExecutable or GhProjectsBoards.App.GitHub.FailureKind.StartFailed;
 }

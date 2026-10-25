@@ -1,5 +1,6 @@
 using System.Globalization;
 using GhProjectsBoards.App.GitHub;
+using GhProjectsBoards.Core.Assist;
 using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -195,7 +196,7 @@ internal sealed partial class PlanWorkspaceView
     private void SyncDetailToggles(bool value)
     {
         settingDetailToggles = true;
-        try { detailToggle.IsChecked = value; sheet?.SetDetailChecked(value); }
+        try { detailShown = value; sheet?.SetDetailChecked(value); }
         finally { settingDetailToggles = false; }
     }
     private async Task RequestDetailToggle(bool value)
@@ -216,6 +217,9 @@ internal sealed partial class PlanWorkspaceView
             if (!await DiscardDetailEdit()) return;
             assistToggle.IsChecked = true; return;
         }
-        await RequestDetailToggle(false); await assistLoaded; UpdateAssistVisibility();
+        await assistLoaded;
+        // #275: with AI assist off, アシスト opens settings at AI アシスト; no pane takes the width for one sentence.
+        if (assistSettings.Mode == AssistMode.None) { assistToggle.IsChecked = false; await OpenAssistSettings(); return; }
+        await RequestDetailToggle(false); UpdateAssistVisibility();
     }
 }

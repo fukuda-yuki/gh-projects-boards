@@ -52,7 +52,8 @@ public sealed class PlanningWorkspaceJourneyTests
                 Assert.That(window, Is.Not.Null);
                 WinUiProcess.AssertRuntime(process);
                 window!.Patterns.Transform.Pattern.Resize(1600, 960);
-                Assert.That(Find(window!, "PlanGhPath").AsTextBox().Text, Is.EqualTo(isolatedGh));
+                // gh is on PATH, so the connection screen does not ask for its path (#275).
+                Assert.That(window!.FindFirstDescendant(c => c.ByAutomationId("PlanGhPath")), Is.Null);
                 Find(window!, "PlanHost").AsTextBox().Text = "github.com";
                 Find(window!, "PlanConnect").AsButton().Invoke();
                 if (launch == 0)
