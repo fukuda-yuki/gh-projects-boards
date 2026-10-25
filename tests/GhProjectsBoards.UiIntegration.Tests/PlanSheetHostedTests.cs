@@ -2205,7 +2205,7 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Until(() => File.Exists(metricsPath) && File.ReadAllLines(metricsPath!).Count(line => line.Contains("\"boundary\":\"rendered\"")) == i + 1);
             await Ui.Run(() => {
                 Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo(i % 2 == 0 ? "10/6 (火)" : "10/5 (月)"));
-                Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(i % 2 == 0 ? 48 : 24));
+                Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(i % 2 == 0 ? 2 * PlanSheetView.DayScaleWidth : PlanSheetView.DayScaleWidth));
             });
         }
         var records = File.ReadAllLines(metricsPath!).Select(line => JsonDocument.Parse(line).RootElement.Clone()).ToArray();
@@ -2240,7 +2240,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => {
             Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(16));
             Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("10/6 (火)"));
-            Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(48));
+            Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(2 * PlanSheetView.DayScaleWidth));
             Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
         });
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
