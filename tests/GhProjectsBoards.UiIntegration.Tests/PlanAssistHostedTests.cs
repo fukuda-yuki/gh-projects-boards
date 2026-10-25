@@ -521,7 +521,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("Assist")]
-    public async Task AssistDockKeepsDefaultSheetColumnsVisibleAt1920AndAlsoOpensOnSummary()
+    public async Task AssistDockKeepsTheGanttMinimumAt1920AndAlsoOpensOnSummary()
     {
         await EnableAssist();
         await Ui.Run(() => ResizeWorkspace(1920, 1032));
@@ -529,9 +529,12 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             var pane = Ui.Find<Border>("PlanAssistPane");
             Assert.That(pane.ActualWidth, Is.EqualTo(380).Within(1));
+            // #265: an open side pane keeps the Gantt at its minimum and the sheet scrolls instead of
+            // shrinking the chart. The 380 px pane leaves the Gantt exactly its 640 px minimum at 1920.
             var horizontal = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
-            Assert.That(horizontal.ScrollableWidth, Is.Zero);
-            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ViewportWidth, Is.GreaterThanOrEqualTo(320));
+            Assert.That(horizontal.ScrollableWidth, Is.GreaterThan(0), "The sheet scrolls horizontally instead.");
+            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ViewportWidth,
+                Is.GreaterThanOrEqualTo(PlanSheetView.SidePaneChartMinimum));
             Assert.That(AutomationProperties.GetName(Ui.Find<ToggleButton>("PlanAssist")), Is.EqualTo("アシスト"));
         });
         await AskAssist();

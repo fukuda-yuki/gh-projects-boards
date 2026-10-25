@@ -1431,6 +1431,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Run(async () => await RenderedEvidence.Capture(view, publish ? "t6-publishing" : "t6-refreshing"));
         } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
         await Ui.Idle();
+        // #224: the review reopens with the publication result and holds Undo until it closes.
+        if (publish) { await Ui.Run(() => Ui.Click("PlanPublishClose")); await Ui.Idle(); }
         await Ui.Run(() => {
             Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
             Assert.That(AutomationProperties.GetName(Ui.Find<Control>(publish ? "PlanPublish" : "PlanRefresh")), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
@@ -1641,6 +1643,9 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "変更"; Ui.Click("PlanPublish"); });
+        await Ui.Idle();
+        // #224: the open review holds Undo until it closes, so this local Undo starts from the plan again.
+        await Ui.Run(() => Ui.Click("PlanPublishClose"));
         await Ui.Idle();
         var shown = false;
         long callback = 0;

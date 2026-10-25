@@ -65,7 +65,14 @@ internal sealed partial class PlanSheetView
     private void ReconcileSelection()
     {
         var previous = selected;
-        if (!RowIds.Contains(selected)) selected = VisibleAncestor(selected) ?? RowIds.FirstOrDefault() ?? "";
+        if (!RowIds.Contains(selected))
+        {
+            selected = VisibleAncestor(selected) ?? RowIds.FirstOrDefault() ?? "";
+            // A filter or fold hid the row the PMO had selected, so the sheet picked this row by itself. That
+            // pick is not a PMO selection: until the PMO selects a row, a scale change keeps the 基準日 in
+            // place instead of jumping to dates the PMO never chose (#265).
+            automaticSelection = selected.Length > 0 ? selected : null;
+        }
         if (!RowIds.Contains(anchor)) anchor = selected;
         if (!Fields.Contains(selectedField)) selectedField = Fields.FirstOrDefault() ?? PlanField.Title;
         if (!Fields.Contains(anchorField)) anchorField = selectedField;
@@ -98,6 +105,7 @@ internal sealed partial class PlanSheetView
         if (!RowIds.Contains(identity) || !Fields.Contains(field)) return;
         var previousRange = Range;
         wholeRowSelection = false;
+        if (identity != automaticSelection) automaticSelection = null;
         selected = identity; selectedField = field;
         if (!extend) { anchor = identity; anchorField = field; }
         // A refusal explains the operation it refused; choosing a row or cell dismisses it (#241).

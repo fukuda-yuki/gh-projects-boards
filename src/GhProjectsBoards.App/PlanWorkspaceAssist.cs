@@ -111,6 +111,7 @@ internal sealed partial class PlanWorkspaceView
         assistToggle.IsEnabled = workspace.Session is not null;
         assistPane.Visibility = assistToggle.IsChecked == true && workspace.Session is not null && currentPage is "tasks" or "summary"
             ? Visibility.Visible : Visibility.Collapsed;
+        UpdateSheetSidePane();
         UpdateAssistSelection(); UpdateAssistProposals();
     }
     private void RenderAssist()

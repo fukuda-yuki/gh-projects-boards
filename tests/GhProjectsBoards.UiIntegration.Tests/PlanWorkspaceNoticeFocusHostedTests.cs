@@ -56,8 +56,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<Button>("PlanPublishClose") is { IsLoaded: true, ActualWidth: > 0 });
         await Ui.Run(() => {
             if (route == "close") { Ui.Find<Button>("PlanPublishClose").Focus(FocusState.Pointer); Ui.Click("PlanPublishClose"); }
-            else { Ui.Find<SelectorBarItem>("PlanShowTasks").Focus(FocusState.Pointer); Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected = true; }
         });
+        // #224 keeps the 計画 tab selected while the review is open, so leaving by the tab is a pointer click on
+        // the already-selected tab rather than a selection change.
+        if (route == "tab") await SheetNativeInput.Click("PlanShowTasks");
         await Ui.Until(() => FocusManager.GetFocusedElement(view.XamlRoot) == Ui.Find<Control>("PlanCell1_Remaining"),
             () => "focus=" + (FocusManager.GetFocusedElement(view.XamlRoot) as FrameworkElement)?.Name + "/" + FocusManager.GetFocusedElement(view.XamlRoot)?.GetType().Name);
         // Ctrl+Z works at once, without a click back into the sheet.
