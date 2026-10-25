@@ -72,6 +72,26 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(BodyWrites(), Is.Empty);
     }
 
+    // #265: an open side pane takes about 380 px from the plan; the Gantt keeps 640 and the sheet scrolls instead,
+    // and closing the pane returns the ordinary split.
+    [Test, Category("IssueDetail")]
+    public async Task OpenDetailPaneKeepsTheGanttMinimumAndTheSheetScrollsInstead()
+    {
+        await Open(); await DetailFallback();
+        double sheetBefore = 0;
+        await Ui.Run(() => { sheetBefore = DetailSheet.SheetViewport; SelectDetail("I1"); ToggleDetail(); });
+        await Ui.Until(() => Ui.Find<Border>("PlanDetailPane").ActualWidth > 0 && DetailSheet.ChartViewport >= PlanSheetView.SidePaneChartMinimum
+            && Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth > 0);
+        await Ui.Run(() => {
+            Assert.That(DetailSheet.ChartViewport, Is.GreaterThanOrEqualTo(PlanSheetView.SidePaneChartMinimum));
+            Assert.That(DetailSheet.SheetViewport, Is.LessThan(sheetBefore));
+            Assert.That(Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth, Is.GreaterThan(0), "The sheet scrolls horizontally instead.");
+            ToggleDetail();
+        });
+        await Ui.Until(() => Math.Abs(DetailSheet.SheetViewport - sheetBefore) < .5);
+        Assert.That(BodyWrites(), Is.Empty);
+    }
+
     [Test, Category("IssueDetail")]
     public async Task BodyPublishChangesOnlyBodyAndPreservesPlanHistoryAndPendingInput()
     {

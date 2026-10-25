@@ -21,7 +21,7 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (value) { CancelPendingFilter(); pendingMenuAction = null; commandMenu.Hide(); }
         remoteBusy = value;
-        commandBar.IsEnabled = moreCommands.IsEnabled = filter.IsEnabled = zoom.IsEnabled = statusDate.IsEnabled = !value;
+        commandBar.IsEnabled = moreCommands.IsEnabled = filter.IsEnabled = zoom.IsEnabled = goToStatusDate.IsEnabled = statusDate.IsEnabled = !value;
         RefreshOverviewCommands();
         RefreshRealized();
     }
@@ -119,6 +119,16 @@ internal sealed partial class PlanSheetView : Grid
     private readonly TextBlock filterCount = Id(new TextBlock { Visibility = Visibility.Collapsed,
         Foreground = Brush("TextFillColorSecondaryBrush"), VerticalAlignment = VerticalAlignment.Center }, "PlanSheetFilterCount");
     private int acceptedZoom = 1;
+    // Wide enough for a day number with its weekday initial (「13水」) at the secondary text size (#265).
+    internal const double DayScaleWidth = 28;
+    // While 詳細 or アシスト takes the right of the window, the Gantt keeps this much and the sheet scrolls (#265).
+    internal const double SidePaneChartMinimum = 640;
+    private bool sidePaneOpen;
+    internal void SetSidePaneOpen(bool value)
+    {
+        if (sidePaneOpen == value) return;
+        sidePaneOpen = value; RefreshLayout();
+    }
     private bool initialChartPositioned;
     internal bool ShowLatenessLabels => acceptedZoom is 0 or 1;
     // Reserve the widest fixed mark (10 px) plus 2 px clearance, independent of the date span.
@@ -138,6 +148,7 @@ internal sealed partial class PlanSheetView : Grid
     private readonly HyperlinkButton issueLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0 }, "PlanSheetIssue");
     internal readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 170, Language = "ja-JP", DateFormat = "{year.full}/{month.integer(2)}/{day.integer(2)} ({dayofweek.abbreviated})" }, "PlanStatusDate");
     private readonly ComboBox zoom = Id(new ComboBox { ItemsSource = new[] { "日", "週", "月", "全期間" }, SelectedIndex = 1, MinWidth = 80 }, "PlanGanttZoom");
+    private readonly Button goToStatusDate = Id(new Button { Padding = new(10, 4, 10, 5) }, "PlanGanttGoToStatusDate");
     private readonly TextBox filter = Id(new TextBox { PlaceholderText = "タイトルで絞り込み", Width = 170 }, "PlanSheetFilter");
     private readonly PlanFrameMetrics metrics = new();
     private int pendingFrame;
@@ -168,6 +179,15 @@ internal sealed partial class PlanSheetView : Grid
         controls.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         var scales = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+        // Beside the scale, like a calendar's 今日: one action back to the week the PMO decides about (#265).
+        // No shortcut: Ctrl+T would surprise sheet users who know it as Excel's "create table".
+        var goToStatusCaption = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        goToStatusCaption.Children.Add(new SymbolIcon(Symbol.GoToToday)); goToStatusCaption.Children.Add(new TextBlock { Text = "基準日へ移動" });
+        goToStatusDate.Content = goToStatusCaption;
+        AutomationProperties.SetName(goToStatusDate, "基準日へ移動");
+        ToolTipService.SetToolTip(goToStatusDate, "基準日をガントの左から約5分の1の位置に表示します");
+        goToStatusDate.Click += async (_, _) => await Run(GoToStatusDate, "Go to status date");
+        scales.Children.Add(goToStatusDate);
         scales.Children.Add(new TextBlock { Text = "表示単位", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom);
         var filterBox = new Grid();
         filter.Padding = new(30, 4, 24, 4);
@@ -326,7 +346,7 @@ internal sealed partial class PlanSheetView : Grid
                     throw;
                 }
                 acceptedZoom = proposed;
-                DayWidth = acceptedZoom switch { 1 => 8, 2 => 2, _ => 24 };
+                DayWidth = acceptedZoom switch { 1 => 8, 2 => 2, _ => DayScaleWidth };
                 RefreshLayout(preserveDateViewport: false);
                 PositionTimelineAnchor();
             }, "Zoom");
@@ -922,7 +942,7 @@ internal sealed partial class PlanSheetView : Grid
         if (disposed) return;
         var previousOffset = ChartOffset;
         var width = Math.Max(320, ActualWidth - 20);
-        var minimumChartWidth = dividerWidth.HasValue ? 230 : 320;
+        var minimumChartWidth = sidePaneOpen ? SidePaneChartMinimum : dividerWidth.HasValue ? 230 : 320;
         SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - minimumChartWidth));
         ChartViewport = width - SheetViewport;
         metrics.Mark("timeline-range-start");
@@ -1027,7 +1047,9 @@ internal sealed partial class PlanSheetView : Grid
             var next = g + 1 < groups.Length ? X(groups[g + 1].Key) : ChartViewport;
             var difference = late ? $"+{group.Max(value => value.Item.Difference)}日" : "";
             var title = string.Join(" / ", group.Select(value => value.Item.Milestone.Title));
-            var label = Id(new TextBlock { Text = (late ? difference + " " : "") + title, FontSize = 11, Foreground = brush,
+            // Name first, then the target and how late it is (#265): 「PS 1/27 +3日」.
+            var text = $"{title} {due.Month}/{due.Day}" + (late ? " " + difference : "");
+            var label = Id(new TextBlock { Text = text, FontSize = 11, Foreground = brush,
                 TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, IsHitTestVisible = false }, "PlanMilestoneLabel_" + i);
             // Measure in the header's inherited text context, then constrain the rendered extent.
             chartHead.Children.Add(label);
@@ -1076,12 +1098,20 @@ internal sealed partial class PlanSheetView : Grid
         var last = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber,
             FirstDay.DayNumber + Math.Min(DayCount - 1, (int)((ChartOffset + ChartViewport - ChartDateInset) / DayWidth))));
         var upperBounds = new List<(double Left, double Right)>();
-        bool AddLabel(string label, double x, double end, bool upper, string id) {
+        bool AddLabel(string label, double x, double end, bool upper, string id, bool centred = false) {
             var text = Id(new TextBlock { Text = label, FontSize = 11,
                 FontWeight = upper ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
                 Foreground = Brush("TextFillColorSecondaryBrush") }, id);
             chartHead.Children.Add(text);
             text.Measure(new Size(double.PositiveInfinity, 24));
+            if (centred) {
+                // A 日 label fills its own day, so it is centred over the day instead of padded from its start;
+                // a day cut by either edge of the chart has no label.
+                var centredLeft = x + (end - x - text.DesiredSize.Width) / 2;
+                if (centredLeft < 0 || centredLeft + text.DesiredSize.Width > Math.Min(ChartViewport, end)) { chartHead.Children.Remove(text); return false; }
+                Canvas.SetLeft(text, centredLeft); Canvas.SetTop(text, 27);
+                return true;
+            }
             var left = Math.Max(0, x) + 3;
             var availableEnd = Math.Min(ChartViewport, end);
             if (upper && upperBounds.Count == 0) { left = 3; availableEnd = ChartViewport; }
@@ -1114,8 +1144,9 @@ internal sealed partial class PlanSheetView : Grid
             ? DateOnly.FromDayNumber(Math.Max(0, first.DayNumber - ((int)first.DayOfWeek + 6) % 7)) : first;
         while (day <= last) {
             var endDay = day.DayNumber + (monthScale ? DateTime.DaysInMonth(day.Year, day.Month) : acceptedZoom == 1 ? 7 : 1);
-            AddLabel(monthScale ? $"{day.Month}月" : acceptedZoom == 1 ? day.ToString("M/d") : day.Day.ToString(CultureInfo.InvariantCulture),
-                X(day), ChartDateInset + (endDay - FirstDay.DayNumber) * DayWidth - ChartOffset, false, "PlanTimelineLabel" + day.DayNumber);
+            AddLabel(monthScale ? $"{day.Month}月" : acceptedZoom == 1 ? day.ToString("M/d")
+                    : day.Day.ToString(CultureInfo.InvariantCulture) + "日月火水木金土"[(int)day.DayOfWeek],
+                X(day), ChartDateInset + (endDay - FirstDay.DayNumber) * DayWidth - ChartOffset, false, "PlanTimelineLabel" + day.DayNumber, centred: acceptedZoom == 0);
             if (endDay > DateOnly.MaxValue.DayNumber) break;
             day = DateOnly.FromDayNumber(endDay);
         }

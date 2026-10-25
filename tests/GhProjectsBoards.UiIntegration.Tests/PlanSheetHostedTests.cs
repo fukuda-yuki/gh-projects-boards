@@ -1518,7 +1518,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => sheet.Run(() => Task.CompletedTask)); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex, Is.Zero);
-            Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(24));
+            Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(PlanSheetView.DayScaleWidth));
             Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true);
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset > 0);
@@ -1527,7 +1527,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(string.Join(" ", Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineUpper", StringComparison.Ordinal)).Select(t => t.Text)), Does.Contain("2026"));
             var labels = Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineLabel", StringComparison.Ordinal)).ToArray();
             Assert.That(labels, Is.Not.Empty);
-            Assert.That(labels.All(t => t.Text.Length is 1 or 2 && t.Text.All(char.IsDigit)), Is.True);
+            Assert.That(labels.Select(t => t.Text), Is.All.Match(@"^\d{1,2}[日月火水木金土]$"));
         });
     }
     [Test, Category("PlanSheetReview4")]
@@ -2387,7 +2387,7 @@ internal sealed partial class PlanSheetHostedTests
             Is.EqualTo("循環参照: 新1, 新2")));
         Assert.That(session.Document.State.Rows[0].Predecessors, Is.Empty);
     }
-    [TestCase("日", 24d), TestCase("週", 8d), TestCase("月", 2d)]
+    [TestCase("日", PlanSheetView.DayScaleWidth), TestCase("週", 8d), TestCase("月", 2d)]
     public async Task ZoomAndVerticalScrollKeepSheetAndGanttOnTheSameRows(string zoom, double width)
     {
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = zoom);

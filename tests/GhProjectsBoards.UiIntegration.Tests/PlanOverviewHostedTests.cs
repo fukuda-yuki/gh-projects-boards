@@ -92,9 +92,51 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(sheet.DayWidth, Is.EqualTo(8));
             if (earlierTask) Assert.That(sheet.ChartOffset, Is.GreaterThan(0));
             // The range starts a short margin before the earliest date, so a 基準日 on the plan's first day sits
-            // at that margin rather than a quarter in; with earlier work there is room for the quarter.
-            Assert.That(sheet.X(Today), Is.EqualTo(earlierTask ? sheet.ChartViewport / 4 : PlanSheetView.TimelineMarginDays * sheet.DayWidth).Within(1));
+            // at that margin rather than a fifth in; with earlier work there is room for the fifth (#265). The first row the
+            // sheet selects by itself is not a PMO selection, so it does not move the opening place.
+            Assert.That(sheet.X(Today), Is.EqualTo(earlierTask ? sheet.ChartViewport / 5 : PlanSheetView.TimelineMarginDays * sheet.DayWidth).Within(1));
             Assert.That(Ui.Find<Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)).Within(.1));
+        });
+        Assert.That(session.UndoCount, Is.Zero);
+    }
+
+    // #265: the first row is selected by the sheet itself on open. Its dates lie months before the 基準日 here,
+    // yet opening, a scale change and 基準日へ移動 all keep the 基準日 a fifth from the Gantt's left edge, and
+    // none of them edits the plan.
+    [Test, Category("GanttPhase3")]
+    public async Task OpeningScaleChangeAndGoToStatusDateKeepTheStatusDateAFifthInWhileOnlyTheAutomaticRowIsSelected()
+    {
+        await Ui.Unmount(sheetHost); await session.FlushAsync();
+        var early = Today.AddDays(-90);
+        var rows = session.Document.State.Rows.Select(r => r.Parent == "I1" ? r with { Start = early, End = early } : r).ToImmutableArray();
+        session = await PlanSession.CreateAsync(new(Path.Combine(root, "automatic")),
+            new(session.Document.Project, new(rows, []), new(rows, session.Document.State.Settings)), Today);
+        await Ui.Run(() => { sheetHost.Children.Clear(); sheet = new(session); sheetHost.Children.Add(sheet); });
+        await Ui.Mount(sheetHost); await Ui.Idle();
+        void AssertStatusAtFifth(string step) {
+            sheet.UpdateLayout();
+            Assert.That(sheet.X(Today), Is.EqualTo(sheet.ChartViewport / 5).Within(2), step);
+            Assert.That(Ui.Find<Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)).Within(.1), step);
+        }
+        await Ui.Run(() => {
+            Assert.That(sheet.IsSelectedRow("I1"), Is.True, "The sheet selects its first row by itself.");
+            AssertStatusAtFifth("open");
+        });
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            Assert.That(sheet.DayWidth, Is.EqualTo(PlanSheetView.DayScaleWidth));
+            AssertStatusAtFifth("日");
+            Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(0, null, null, true);
+        });
+        await Ui.Until(() => sheet.ChartOffset < 1);
+        await Ui.Run(() => Assert.That(sheet.X(Today), Is.GreaterThan(sheet.ChartViewport), "Scrolled away from the 基準日."));
+        await Ui.Run(() => Ui.Click("PlanGanttGoToStatusDate")); await Ui.Idle();
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<Button>("PlanGanttGoToStatusDate")), Is.EqualTo("基準日へ移動"));
+            Assert.That(Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem, Is.EqualTo("日"), "Going to the 基準日 keeps the scale.");
+            AssertStatusAtFifth("基準日へ移動");
         });
         Assert.That(session.UndoCount, Is.Zero);
     }
@@ -133,7 +175,13 @@ internal sealed class PlanOverviewHostedTests
                         Assert.That(parts, Has.Length.EqualTo(2));
                         var year = first.Year + (int.Parse(parts[0]) < first.Month ? 1 : 0);
                         Assert.That(new DateOnly(year, int.Parse(parts[0]), int.Parse(parts[1])).DayOfWeek, Is.EqualTo(DayOfWeek.Monday));
-                    } else Assert.That(label.Text, Does.Match(scale == "日" ? @"^\d{1,2}$" : @"^\d{1,2}月$"));
+                    } else if (scale == "日") {
+                        // 日 carries the weekday initial of its own date (#265).
+                        var number = int.Parse(label.Text[..^1]);
+                        var labelDay = DateOnly.FromDayNumber(int.Parse(Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(label)["PlanTimelineLabel".Length..]));
+                        Assert.That(number, Is.EqualTo(labelDay.Day));
+                        Assert.That(label.Text[^1], Is.EqualTo("日月火水木金土"[(int)labelDay.DayOfWeek]));
+                    } else Assert.That(label.Text, Does.Match(@"^\d{1,2}月$"));
                 }
                 AssertNoOverlap(upper.Cast<FrameworkElement>().Concat(Ui.Tree(sheet).OfType<Border>().Where(e =>
                     Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PlanStatusDateLabel")).ToArray());
@@ -295,7 +343,7 @@ internal sealed class PlanOverviewHostedTests
     }
 
     [TestCase(false), TestCase(true)]
-    public async Task ScaleChangesPlaceTheSelectedDateOrStatusAtQuarterViewport(bool selectTask)
+    public async Task ScaleChangesPlaceTheSelectedDateOrStatusAtFifthViewport(bool selectTask)
     {
         if (selectTask) await SelectCell(5, PlanField.Title);
         foreach (var scale in new[] { "日", "月", "週" }) {
@@ -308,7 +356,7 @@ internal sealed class PlanOverviewHostedTests
                 sheet.UpdateLayout();
                 var x = selectTask ? BarXInChart(5) : Ui.Find<Line>("PlanStatusLine").X1;
                 TestContext.Out.WriteLine($"After frame: scale={scale}; offset={sheet.ChartOffset}; anchorX={x}");
-                // The range ends at the version, so an anchor near either end sits as close to a quarter as the
+                // The range ends at the version, so an anchor near either end sits as close to a fifth as the
                 // range allows; it is always in view.
                 var anchor = selectTask ? new DateOnly(2027, 4, 12) : Today;
                 var wanted = PlanSheetView.AnchorOffset(anchor, sheet.FirstDay, sheet.DayWidth, sheet.ChartViewport);
@@ -560,8 +608,8 @@ internal sealed class PlanOverviewHostedTests
         });
     }
 
-    [TestCase(0, 24, 400, 0), TestCase(10, 24, 400, 140), TestCase(100, 2, 400, 100)]
-    public void AnchorGeometryReservesQuarterViewportAndClampsAtRangeStart(int days, double dayWidth, double viewport, double expected)
+    [TestCase(0, 24, 400, 0), TestCase(10, 24, 400, 160), TestCase(100, 2, 400, 120), TestCase(3, 24, 400, 0)]
+    public void AnchorGeometryReservesFifthViewportAndClampsAtRangeStart(int days, double dayWidth, double viewport, double expected)
     {
         Assert.That(PlanSheetView.AnchorOffset(Today.AddDays(days), Today, dayWidth, viewport), Is.EqualTo(expected));
     }

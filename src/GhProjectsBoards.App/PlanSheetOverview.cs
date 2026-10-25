@@ -152,16 +152,25 @@ internal sealed partial class PlanSheetView
     }
 
     internal const int TimelineMarginDays = 7;
-    private DateOnly TimelineAnchor => SelectedDate() ?? StatusDate;
+    // The first row the sheet selects by itself on open is not the PMO's choice: until the PMO selects
+    // another row, opening and scale changes keep the 基準日 in place instead of that row's dates (#265).
+    private string? automaticSelection;
+    private DateOnly TimelineAnchor => selected != automaticSelection ? SelectedDate() ?? StatusDate : StatusDate;
 
     internal static double AnchorOffset(DateOnly anchor, DateOnly first, double dayWidth, double viewport) =>
-        Math.Max(0, (anchor.DayNumber - first.DayNumber) * dayWidth - viewport / 4);
+        Math.Max(0, (anchor.DayNumber - first.DayNumber) * dayWidth - viewport / 5);
 
-    private void PositionTimelineAnchor()
+    private void PositionTimelineAnchor(DateOnly? anchor = null)
     {
         // ChangeView clamps against the arranged native extent, not the new content width alone.
         chartHorizontal.UpdateLayout();
-        ChangeTimelineOffset(acceptedZoom == 3 ? 0 : AnchorOffset(TimelineAnchor, FirstDay, DayWidth, ChartViewport));
+        ChangeTimelineOffset(acceptedZoom == 3 ? 0 : AnchorOffset(anchor ?? TimelineAnchor, FirstDay, DayWidth, ChartViewport));
+    }
+
+    private async Task GoToStatusDate()
+    {
+        await CommitPending();
+        PositionTimelineAnchor(StatusDate);
     }
 
     private DateOnly? SelectedDate() => Schedule.TryGetValue(selected, out var task) ? task.Start.Value ?? task.End.Value : null;
