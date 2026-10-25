@@ -4,7 +4,7 @@
 
 One UI-independent GhProjectsBoards.Core library and one GhProjectsBoards.App WinUI 3 application implement the [specification](spec.md). The GhProjectsBoards.Report console reuses Core for scheduled progress snapshots ([progress report tool](#progress-report-tool-262)). Core owns authentication orchestration, scoped identity, retrieval, validation, scheduling, local storage and publication. The app owns controls, presentation, window lifetime, file pickers, clipboard, shell document launching and UI Automation. No UI framework enters Core.
 
-PlanManualHtml in Core converts the shipped Markdown text to escaped, self-contained HTML markup and resolves relative resources against the supplied manual directory. The UI reads the source, writes a per-user temporary HTML file and opens it through the existing OpenDocument process-launch boundary. Conversion/write failures retain the Markdown launch path. The capture script is development tooling over Start-Evaluation and Invoke-EvaluationUi, not a product execution mode.
+PlanManualHtml in Core converts the shipped Markdown text to escaped, self-contained HTML markup and resolves relative resources against the supplied manual directory. The UI reads the source, writes a per-user temporary HTML file and shows it in a single PlanHelpWindow (WebView2) that F1 reactivates; when WebView2 cannot start it falls back to the process-launch boundary. OpenDocument is the test seam that replaces both. Conversion/write failures retain the Markdown launch path. The capture script is development tooling over Start-Evaluation and Invoke-EvaluationUi, not a product execution mode.
 
 ## Workspace and settings (#81)
 

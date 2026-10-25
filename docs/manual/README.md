@@ -20,24 +20,24 @@ After capture, inspect every image against its cited step, run the manual link t
 
 ## Capture plan
 
-All interaction uses `scripts/Invoke-EvaluationUi.ps1` (`click`, `invoke`, `type`, `key`, `scroll`, `select`, `setvalue`); state checks use its `tree` output, and every capture uses `shot -Out`. IDs come from `PlanWorkspaceView`, `PlanSheetView`, `PlanSheetRow`, `PlanSummaryView` and `PlanSheetCommandMenu`. Settings and summary are scrolled with the mouse wheel until the named control is near the top; no data-root files are changed. Popup menus are not captured because the window capture omits them.
+All interaction uses `scripts/Invoke-EvaluationUi.ps1` (`click`, `invoke`, `type`, `key`, `scroll`, `select`, `setvalue`); state checks use its `tree` output, and every capture uses `shot -Out`. IDs come from `PlanWorkspaceView`, `PlanSheetView`, `PlanSheetRow`, `PlanSummaryView` and `PlanSheetCommandMenu`. Settings sections are reached through the settings section list; settings and summary are then scrolled with the mouse wheel until the named control is near the top; no data-root files are changed. Popup menus are not captured because the window capture omits them.
 
 | Image | State and UI operation | Manual section |
 | --- | --- | --- |
-| `01-help.png` | Fresh opened plan; open `PlanProjectPicker`, Escape, then Tab to the adjacent `PlanHelp` question button; capture without invoking the external viewer | はじめに |
-| `02-connection.png` | Initial `PlanGhPath`, `PlanHost`, `PlanConnect` before connecting | 起動と接続 |
+| `01-help.png` | Fresh opened plan; open `PlanProjectPicker`, Escape, then Tab past `PlanAssist` to the `PlanHelp` question button; capture without invoking the external viewer | はじめに |
+| `02-connection.png` | Initial `PlanHost` and `PlanConnect` before connecting; the fake gh is on PATH, so no `PlanGhPath` box is shown | 起動と接続 |
 | `03-project-chooser.png` | Invoke `PlanConnect`; wait for `AvailableProjects` and 第2027.04版 | プロジェクトを開く |
 | `04-plan.png` | Click the exact 第2027.04版 title; wait for `PlanTasks`, zero unpublished tasks and the Gantt | 画面の見方 |
-| `05-selection.png` | Set `PlanSheetFilter` to R09 SS-003; select that row's Title cell; read the reason line | 画面の見方 / シートとガント |
+| `05-selection.png` | Set `PlanSheetFilter` to R09 SS-003; select the Title cell whose value is R09 SS-003 (the filter also keeps its requirement row); read the reason line | 画面の見方 / シートとガント |
 | `06-states.png` | After the Actual/Remaining edit and refresh, filter R09; selected row, state markers, changed dates and Gantt lateness | 画面の見方 / シートとガント |
 | `07-effort-edit.png` | On R09 SS-003, set Actual 24 and Remaining 32 using F2, ValuePattern and Enter (independent of IME mode); retain the selection | 毎週の更新 |
-| `08-refresh.png` | Invoke `PlanRefresh`; wait for the completed next-day refresh and `PlanReadResult` on the attention strip | 最新の情報に更新 |
+| `08-refresh.png` | Invoke `PlanRefresh`; wait for `PlanStatusDate` to move to the read day and capture `PlanReadResult` on the attention strip | 最新の情報に更新 |
 | `09-publish.png` | Invoke `PlanPublish`; wait for `PlanPublishLines` and `PlanPublishConfirm`; capture, then `PlanPublishClose` | 発行と競合の確認 |
 | `10-summary.png` | Clear the filter, select `PlanShowSummary`, wait for `SummaryFinish` | サマリーと担当者の確認 |
 | `11-people.png` | Wheel-scroll the summary until `SummaryMode` is near the top; choose 月別 using Home, Down, Enter | サマリーと担当者の確認 / 担当者ごとに見る |
-| `12-period.png` | Open `PlanShowSettings`; wheel-scroll until `PlanProjectStart` is near the top, showing start and end | 設定 / 期間 |
-| `13-milestones.png` | Wheel-scroll until `PlanPhaseMilestone_SA` is near the top, exposing the phase mappings | 設定 / 工程とマイルストーン |
-| `14-calendar.png` | Wheel-scroll settings until `PlanCompanyDaysOffDate` is near the top | 設定 / カレンダー |
-| `15-columns.png` | Reopen settings from the plan and wheel-scroll until `PlanColumnReset` is near the top (the overflow route opens a popup the window capture omits) | 設定 / 表示列 |
+| `12-period.png` | Open `PlanShowSettings`; select `PlanSettingsSection_period`, then wheel-scroll until `PlanProjectStart` is near the top, showing start and end | 設定 / 期間 |
+| `13-milestones.png` | Select `PlanSettingsSection_phases`, then wheel-scroll until `PlanPhaseMilestone_SA` is near the top, exposing the phase mappings | 設定 / 工程とマイルストーン |
+| `14-calendar.png` | Select `PlanSettingsSection_calendar`, then wheel-scroll until `PlanCompanyDaysOffDate` is near the top | 設定 / カレンダー |
+| `15-columns.png` | Reopen settings from the plan, select `PlanSettingsSection_columns` and wheel-scroll until `PlanColumnReset` is near the top (the overflow route opens a popup the window capture omits) | 設定 / 表示列 |
 
 The review capture illustrates real local differences, not a fabricated conflict. Conflict recovery remains documented; the offline fixture has no ordinary UI action for simulating a concurrent remote edit. UI integration tests own that wiring evidence. The initial period/milestone derivation is described from the first-open contract; the evaluation fixture already seeds its period.

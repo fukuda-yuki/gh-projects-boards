@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using GhProjectsBoards.App;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Tests;
@@ -334,7 +334,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await ProjectChooserTestActions.SelectOwner("acme");
         await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P2"); await Ui.Idle(); await DetailFallback();
-        await Ui.Run(() => { SelectDetail("I1"); ToggleDetail(); }); await DetailReady();
+        // The selection line's 詳細 appears with the selection, after the switched Project's sheet lays out.
+        await Ui.Run(() => SelectDetail("I1"));
+        await Ui.Until(() => Ui.Find<ToggleButton>("PlanSheetDetail") is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(ToggleDetail); await DetailReady();
         await Ui.Run(() => Ui.Click("PlanDetailEdit")); await Ui.Ready<TextBox>("PlanDetailEditor");
         await Ui.Run(() => Ui.Find<TextBox>("PlanDetailEditor").Text = "project draft");
         var session = workspace.Session;

@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text.Json;
 using GhProjectsBoards.Core.Projects;
@@ -295,7 +295,14 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<ToggleButton>("PlanAttentionLate").IsChecked, Is.True);
             Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.Empty, "The toggle filter is not text.");
             Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Does.Contain("担当者なし"), "The status bar becomes the chase list.");
-            Assert.That(Ui.Find<Button>("PlanCopyByAssignee").Visibility, Is.EqualTo(Visibility.Visible));
+            var copy = Ui.Find<Button>("PlanCopyByAssignee");
+            Assert.That(copy.Visibility, Is.EqualTo(Visibility.Visible));
+            // The 28-pixel status bar squeezes a standard button, which then cuts its caption off at the bottom.
+            var given = copy.ActualHeight;
+            copy.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            var needed = copy.DesiredSize.Height;
+            copy.InvalidateMeasure();
+            Assert.That(needed, Is.LessThanOrEqualTo(given), "The copy command shows its whole caption.");
         });
         await PressAttentionToggle("PlanAttentionLate");
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 4);
@@ -625,11 +632,11 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(X(dividers[1]), Is.GreaterThan(X(redo) + redo.ActualWidth - 1).And.LessThan(X(Ui.Find<TextBlock>("PlanUnpublished"))));
             var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
             Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
-                Is.EqualTo(new[] { "上へ移動", "下へ移動", "階層順に並べ替え", "|", "コピー", "貼り付け", "下へコピー", "クリア", "|",
-                    "行を削除", "完了にする", "中止にする", "この版から外す", "未完了に戻す", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
-            Assert.That(commands.OfType<AppBarButton>().Take(2).Select(b => b.KeyboardAcceleratorTextOverride), Is.EqualTo(new[] { "Alt+Shift+↑", "Alt+Shift+↓" }));
-            Assert.That(commands.OfType<AppBarButton>().Skip(3).Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
+                Is.EqualTo(new[] { "コピー", "貼り付け", "下へコピー", "クリア", "|", "行を削除", "完了にする", "中止にする", "この版から外す", "未完了に戻す", "|",
+                    "上へ移動", "下へ移動", "階層順に並べ替え", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
+            Assert.That(commands.OfType<AppBarButton>().Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
                 Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
+            Assert.That(commands.OfType<AppBarButton>().Skip(9).Take(2).Select(b => b.KeyboardAcceleratorTextOverride), Is.EqualTo(new[] { "Alt+Shift+↑", "Alt+Shift+↓" }));
         });
     }
 

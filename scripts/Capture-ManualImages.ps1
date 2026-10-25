@@ -33,7 +33,12 @@ function Ui {
         if ($PSBoundParameters.ContainsKey($key)) { $parameters[$key] = $PSBoundParameters[$key] }
     }
     if ($All) { $parameters.All = $true }
-    & $automation @parameters
+    # UI Automation now and then fails a whole-tree search while the 1,000-row sheet re-renders; the search runs
+    # before any input, so repeating it cannot repeat an action.
+    for ($attempt = 1; ; $attempt++) {
+        try { return & $automation @parameters }
+        catch { if ($attempt -ge 3 -or $_.Exception.Message -notmatch 'FindAll') { throw }; Start-Sleep -Milliseconds 500 }
+    }
 }
 function Tree { (Ui tree) -join "`n" }
 function Wait-State([string]$Pattern, [int]$Seconds = 90) {
@@ -70,12 +75,19 @@ function Edit-Cell([string]$Id, [string]$Text) {
     # Effort cells display the accepted value with its unit (24 -> 24h).
     Wait-State ('#' + [regex]::Escape($Id) + " val='" + [regex]::Escape($Text) + "h?'") | Out-Null
 }
+# The settings list jumps to a section; a control scrolled out above the page has no rectangle to steer the wheel by.
+function Show-Section([string]$Key) {
+    Wait-Control "PlanSettingsSection_$Key"
+    Ui click -Id "PlanSettingsSection_$Key" | Out-Null
+    Start-Sleep -Milliseconds 400
+}
 function Reveal([string[]]$Ids) {
     # The settings page keeps every control in the tree; controls never scrolled into view have no rectangle yet.
     # Wheel the page until the first control sits in the upper part of the window; no value changes.
     Wait-Control $Ids[0]
     $pattern = '#' + [regex]::Escape($Ids[0]) + '(?: [^\n]*)? @(-?\d+),(-?\d+) '
-    $low = [int](180 * $record.dpi / 96); $high = [int](360 * $record.dpi / 96)
+    # A section jump puts its heading at the top of the page, so the first control can sit above 180 DIP.
+    $low = [int](120 * $record.dpi / 96); $high = [int](360 * $record.dpi / 96)
     for ($step = 0; $step -lt 120; $step++) {
         $top = if ((Tree) -match $pattern) { [int]$Matches[2] } else { [int]::MaxValue }
         if ($top -ge $low -and $top -le $high) { Start-Sleep -Milliseconds 300; return }
@@ -83,6 +95,7 @@ function Reveal([string[]]$Ids) {
         Ui scroll -X ([int](800 * $record.dpi / 96)) -Y ([int](600 * $record.dpi / 96)) -Wheel $wheel | Out-Null
         Start-Sleep -Milliseconds 150
     }
+    Tree | Set-Content -LiteralPath (Join-Path $run 'last-tree.txt') -Encoding utf8
     throw "Scrolling did not reveal: $($Ids[0])"
 }
 
@@ -166,13 +179,15 @@ public static class ManualCaptureWindow {
     Wait-State '未発行 0 タスク' | Out-Null
     Capture '04-plan' 'PlanSheetFilter'
     Ui click -Id PlanProjectPicker | Out-Null
-    Ui key -Keys '{ESC}{TAB}' | Out-Null
+    # アシスト sits between the Project and the help button in the title bar (#275).
+    Ui key -Keys '{ESC}{TAB}{TAB}' | Out-Null
     Capture '01-help' 'PlanHelp'
 
     # This fixture task is intentionally open at Remaining 0, so both effort fields are editable.
     Set-TitleFilter 'R09 SS-003'
     $tree = Wait-State "#PlanCell[1-9]\d*_Title.*val='R09 SS-003"
-    $cells = @([regex]::Matches($tree, '#PlanCell([1-9]\d*)_Title(?:\s|$)') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+    # The filter keeps the matching task's requirement on screen as well, so match the task by its title.
+    $cells = @([regex]::Matches($tree, "#PlanCell([1-9]\d*)_Title val='R09 SS-003") | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
     if ($cells.Count -ne 1) { throw "Expected one filtered task, found $($cells.Count)." }
     $row = $cells[0]
     Ui click -Id "PlanCell${row}_Title" | Out-Null
@@ -182,8 +197,9 @@ public static class ManualCaptureWindow {
     Ui click -Id "PlanCell${row}_Remaining" | Out-Null
     Capture '07-effort-edit' "PlanCell${row}_Actual"
     Ui invoke -Id PlanRefresh | Out-Null
-    Wait-State '最新の情報に更新しました' | Out-Null
-    Capture '08-refresh' 'PlanRefreshResult'
+    # #238: a completed read opens no result bar; the status date moves to the read day and the strip shows the read time.
+    Wait-State "#PlanStatusDate val='2027/01/14" | Out-Null
+    Capture '08-refresh' 'PlanReadResult'
     Set-TitleFilter 'R09 '
     Wait-Control "PlanCell${row}_Title"
     Ui click -Id "PlanCell${row}_Title" | Out-Null
@@ -205,16 +221,20 @@ public static class ManualCaptureWindow {
     Wait-Control PlanMapEstimate
     Ui click -Id PlanMapEstimate | Out-Null
     Ui key -Keys '{ESC}' | Out-Null
+    Show-Section calendar
     Reveal @('PlanCompanyDaysOffDate')
     Capture '14-calendar' 'PlanCompanyDaysOffDate'
+    Show-Section period
     Reveal @('PlanProjectStart', 'PlanProjectEnd')
     Capture '12-period' 'PlanProjectStart'
+    Show-Section phases
     Reveal @('PlanPhaseMilestone_SA')
     Capture '13-milestones' 'PlanPhaseMilestone_SA'
     Ui invoke -Id PlanSettingsBack | Out-Null
     Ui select -Id PlanShowTasks | Out-Null
     # 表示列 opens the same settings section; reach it through settings so the capture does not depend on the overflow popup.
     Ui invoke -Id PlanShowSettings | Out-Null
+    Show-Section columns
     Reveal @('PlanColumnReset')
     Capture '15-columns' 'PlanColumnSettings'
     Ui invoke -Id PlanSettingsBack | Out-Null

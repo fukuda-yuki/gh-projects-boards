@@ -87,6 +87,25 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
+    // #172: a browser added a tab for every F1; the manual now has one window that F1 brings forward.
+    [Test, Category("Manual")]
+    public async Task RepeatedHelpBringsTheOneManualWindowForward()
+    {
+        await Ui.Ready<Button>("PlanHelp");
+        await Ui.Run(() => Ui.Click("PlanHelp"));
+        await Ui.Until(() => view.HelpWindow is not null, () => Ui.Find<TextBlock>("PlanError").Text);
+        var first = view.HelpWindow!;
+        try {
+            AssertRenderedManual(first.Document);
+            for (var press = 0; press < 2; press++) { await Ui.Run(() => Ui.Click("PlanHelp")); await Ui.Idle(); }
+            Assert.That(view.HelpWindow, Is.SameAs(first));
+            Assert.That(first.IsClosed, Is.False);
+            Assert.That(workspace.Session, Is.Null);
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { await Ui.Run(() => first.Close()); }
+    }
+
     private static void AssertRenderedManual(string path)
     {
         Assert.That(Path.IsPathFullyQualified(path), Is.True);

@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Globalization;
 using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
@@ -299,6 +299,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusLine.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         statusLine.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         copyByAssignee = Button("担当者ごとにコピー", "PlanCopyByAssignee", CopyFilteredByAssignee, commitPending: false);
+        // The status bar is 28 pixels high; a standard button's padding would cut the caption off at the bottom.
+        copyByAssignee.MinHeight = 0; copyByAssignee.Height = 24; copyByAssignee.Padding = new(8, 0, 8, 0); copyByAssignee.FontSize = 12;
         copyByAssignee.Visibility = Visibility.Collapsed;
         ToolTipService.SetToolTip(copyByAssignee, "絞り込んだタスクを担当者ごとに、Issue のリンク付きでコピーします");
         statusLine.Children.Add(statusCounts);
@@ -332,7 +334,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         };
         Unloaded += (_, _) => {
             tasksTab.RemoveHandler(UIElement.PointerReleasedEvent, tasksTabReleased);
-            chooser.Cancel(); CancelDetail(clearCache: true); detailNavigationStarted?.TrySetCanceled(); detailWeb?.Close();
+            chooser.Cancel(); CancelDetail(clearCache: true); detailNavigationStarted?.TrySetCanceled(); detailWeb?.Close(); CloseHelp();
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
             captionRoot = null;
@@ -678,7 +680,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         await detailWork;
         await EndAssist();
         closing = true; await operation;
-        try { await CommitPending(); await workspace.Flush(); return true; }
+        try { await CommitPending(); await workspace.Flush(); CloseHelp(); return true; }
         catch (Exception ex)
         {
             closing = false;
