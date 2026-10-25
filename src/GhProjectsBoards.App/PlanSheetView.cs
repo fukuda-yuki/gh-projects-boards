@@ -192,8 +192,11 @@ internal sealed partial class PlanSheetView : Grid
         this.resolveAssignee = resolveAssignee;
         this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
         this.writeClipboard = writeClipboard is null ? WriteClipboard : (content, _) => writeClipboard(content);
-        for (var r = 0; r < 4; r++) RowDefinitions.Add(new() { Height = GridLength.Auto });
+        // Rows: controls, selection line, headers, rows, scrollbars, then the message line. The message line is
+        // last so a message never pushes the rows down under the pointer (#233, DESIGN M1).
+        for (var r = 0; r < 3; r++) RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
+        RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         var controls = new Grid { ColumnSpacing = 8, BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
         controls.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -274,7 +277,7 @@ internal sealed partial class PlanSheetView : Grid
         InitializeDetailToggle(selectedLine);
         selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
-        Children.Add(selectedLine); SetRow(selectedLine, 2);
+        Children.Add(selectedLine); SetRow(selectedLine, 1);
         var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(untitledRows); feedback.Children.Add(error);
         SaveFailure.ActionButton = retrySave;
         conflictActions.Children.Add(reapplyStored); conflictActions.Children.Add(saveCopy);
@@ -285,7 +288,7 @@ internal sealed partial class PlanSheetView : Grid
         saveCopy.Click += async (_, _) => { if (savePlanCopy is { } copy) await Run(copy, "Save plan copy"); };
         error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = string.IsNullOrEmpty(error.Text) ? Visibility.Collapsed : Visibility.Visible);
         untitledRows.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => untitledRows.Visibility = string.IsNullOrEmpty(untitledRows.Text) ? Visibility.Collapsed : Visibility.Visible);
-        Children.Add(feedback); SetRow(feedback, 1);
+        Children.Add(feedback); SetRow(feedback, 5);
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions.Add(new()); grid.ColumnDefinitions.Add(new()); }
         sheetClip.Children.Add(sheetHead);
@@ -293,7 +296,7 @@ internal sealed partial class PlanSheetView : Grid
         headers.Children.Add(sheetClip); headers.Children.Add(chartHead); SetColumn(chartHead, 1);
         chartHead.Clip = new RectangleGeometry();
         chartHead.PointerWheelChanged += (_, args) => ScrollTimeline(args);
-        Children.Add(headers); SetRow(headers, 3);
+        Children.Add(headers); SetRow(headers, 2);
         List.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["PlanSheetRowsPanel"];
         List.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanSheetRowTemplate"];
         List.ContainerContentChanging += RowContentChanging;
@@ -308,11 +311,11 @@ internal sealed partial class PlanSheetView : Grid
             var point = args.GetCurrentPoint(List).Position;
             if (point.X >= SheetViewport && point.X < SheetViewport + ChartViewport) ScrollTimeline(args);
         };
-        Children.Add(chartBackground); SetRow(chartBackground, 4);
-        Children.Add(List); SetRow(List, 4);
-        Children.Add(chartStatus); SetRow(chartStatus, 4);
+        Children.Add(chartBackground); SetRow(chartBackground, 3);
+        Children.Add(List); SetRow(List, 3);
+        Children.Add(chartStatus); SetRow(chartStatus, 3);
         moveIndicator.Background = Brush("SheetSelectionStrokeBrush");
-        Children.Add(moveIndicator); SetRow(moveIndicator, 4);
+        Children.Add(moveIndicator); SetRow(moveIndicator, 3);
         List.SizeChanged += (_, _) => { RenderTimelineHeader(); if (Problems.Count > 0) UpdateInputProblem(); };
         List.Loaded += (_, _) => {
             var current = Descendants(List).OfType<ScrollViewer>().FirstOrDefault();
@@ -327,13 +330,13 @@ internal sealed partial class PlanSheetView : Grid
         };
         sheetHorizontal.Content = new Border { Height = 1 }; chartHorizontal.Content = new Border { Height = 1 };
         scrollbars.Children.Add(sheetHorizontal); scrollbars.Children.Add(chartHorizontal); SetColumn(chartHorizontal, 1);
-        Children.Add(scrollbars); SetRow(scrollbars, 5);
+        Children.Add(scrollbars); SetRow(scrollbars, 4);
         divider = Id(new PlanSheetDivider(() => SheetViewport, () => Math.Max(160, Math.Max(320, ActualWidth - 20) - 230), value => {
             dividerWidth = value; RefreshLayout();
         }) { Width = 6, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetDivider");
         AutomationProperties.SetName(divider, "シートとガントの幅");
         ToolTipService.SetToolTip(divider, "ドラッグまたは左右キーで幅を変更");
-        Children.Add(divider); SetRow(divider, 3); SetRowSpan(divider, 3);
+        Children.Add(divider); SetRow(divider, 2); SetRowSpan(divider, 3);
         sheetHorizontal.ViewChanged += (_, _) => RefreshScrolledRows(sheet: true, chart: false);
         chartHorizontal.ViewChanged += (_, args) => {
             if (!args.IsIntermediate) pendingWheelOffset = null;
