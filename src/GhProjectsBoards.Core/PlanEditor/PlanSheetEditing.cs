@@ -113,6 +113,40 @@ internal static class PlanSheetEditing
             }
         return new(PlanOperationKind.Paste, changes.ToImmutable());
     }
+    // #275: Ctrl+Enter writes the text being typed into every selected cell, as Excel does. Each cell parses the
+    // text for its own column, and one cell that cannot take it refuses the whole operation.
+    internal static EditPlanCells FillSelection(PlanDocument document, IReadOnlyList<string> rows,
+        IReadOnlyList<string> columns, CellRange selection, string text, DateOnly today, ImmutableArray<PlanResource> resolved = default)
+    {
+        var changes = ImmutableArray.CreateBuilder<PlanCellChange>();
+        foreach (var identity in SelectedRows(document, rows, selection))
+            for (var c = 0; c < selection.ColumnCount; c++)
+            {
+                var field = columns[selection.Column + c];
+                changes.Add(new(identity, field, Parse(document, field, text, today, identity, resolved)));
+            }
+        return new(PlanOperationKind.Fill, changes.ToImmutable());
+    }
+    // The logins Ctrl+Enter must verify first: the typed ones no known name resolves, once per repository of
+    // the selected rows.
+    internal static ImmutableArray<(string Repository, string Login)> FillSelectionAssignees(PlanDocument document, IReadOnlyList<string> rows,
+        IReadOnlyList<string> columns, CellRange selection, string text)
+    {
+        if (!columns.Skip(selection.Column).Take(selection.ColumnCount).Contains(PlanField.Assignees)) return [];
+        var logins = UnresolvedAssignees(document, text);
+        return [.. SelectedRows(document, rows, selection)
+            .Select(identity => document.State.Rows.Single(row => row.Identity == identity).Repository is { Length: > 0 } repository
+                ? repository : document.State.Settings.DefaultRepository ?? "")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .SelectMany(repository => logins.Select(login => (repository, login)))];
+    }
+    private static string[] SelectedRows(PlanDocument document, IReadOnlyList<string> rows, CellRange selection)
+    {
+        var targets = rows.Skip(selection.Row).Take(selection.RowCount).ToArray();
+        var existing = document.State.Rows.Select(row => row.Identity).ToHashSet();
+        if (targets.Any(id => !existing.Contains(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
+        return targets;
+    }
     // #253: the typed logins a text paste must verify against GitHub before it can parse the cells. A login
     // that exactly one known name resolves is local and sends no request, exactly as for a single cell.
     internal static ImmutableArray<(string Repository, string Login)> PendingAssignees(PlanDocument document, IReadOnlyList<string> rows,

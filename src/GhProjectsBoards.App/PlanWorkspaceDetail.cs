@@ -18,7 +18,9 @@ namespace GhProjectsBoards.App;
 
 internal sealed partial class PlanWorkspaceView
 {
-    private readonly ToggleButton detailToggle = Id(new ToggleButton { Height = 32, MinHeight = 0, Padding = new(8, 0, 8, 0) }, "PlanDetail");
+    // #275: 詳細 opens from the selection line next to its task (or Ctrl+I); the title bar has no button for it.
+    private bool detailShown;
+    private bool DetailAvailable => workspace.Session is not null && currentPage == "tasks";
     private readonly Border detailPane = Id(new Border { Width = 380, Visibility = Visibility.Collapsed,
         Style = (Style)Application.Current.Resources["WorkspaceCardStyle"], Padding = new(12),
         TabFocusNavigation = KeyboardNavigationMode.Cycle }, "PlanDetailPane");
@@ -57,16 +59,9 @@ internal sealed partial class PlanWorkspaceView
     internal Func<string, Task<CoreWebView2Environment>> DetailEnvironmentEdge { get; set; } = async folder =>
         await CoreWebView2Environment.CreateWithOptionsAsync(null, folder, null);
 
-    private void InitializeDetail(Grid work, StackPanel commands)
+    private void InitializeDetail(Grid work)
     {
-        var caption = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        caption.Children.Add(new FontIcon { Glyph = "\uE8A5", FontSize = 14 }); caption.Children.Add(Label("詳細"));
-        detailToggle.Content = caption;
-        AutomationProperties.SetName(detailToggle, "詳細"); ToolTipService.SetToolTip(detailToggle, "詳細（Ctrl+I）");
         AutomationProperties.SetName(detailPane, "Issue の詳細");
-        commands.Children.Insert(0, detailToggle);
-        detailToggle.Checked += async (_, _) => await RequestDetailToggle(true);
-        detailToggle.Unchecked += async (_, _) => await RequestDetailToggle(false);
         work.Children.Add(detailPane); Grid.SetColumn(detailPane, 1);
         var panel = new Grid { RowSpacing = 8 };
         panel.RowDefinitions.Add(new() { Height = GridLength.Auto });
@@ -115,9 +110,9 @@ internal sealed partial class PlanWorkspaceView
         };
         root.PreviewKeyDown += async (_, args) => {
             if (args.Key != VirtualKey.I || !PlanSheetView.Down(VirtualKey.Control) || PlanSheetView.Down(VirtualKey.Menu)
-                || PlanSheetView.Down(VirtualKey.Shift) || !detailToggle.IsEnabled || sheet?.HasActiveCellEdit == true) return;
-            args.Handled = true; await RequestDetailToggle(detailToggle.IsChecked != true);
-            if (detailToggle.IsChecked != true) sheet?.FocusSelected();
+                || PlanSheetView.Down(VirtualKey.Shift) || !DetailAvailable || sheet?.HasActiveCellEdit == true) return;
+            args.Handled = true; await RequestDetailToggle(!detailShown);
+            if (!detailShown) sheet?.FocusSelected();
         };
     }
     private bool DetailVisible => detailPane.Visibility == Visibility.Visible;
@@ -125,9 +120,8 @@ internal sealed partial class PlanWorkspaceView
     private void UpdateSheetSidePane() => sheet?.SetSidePaneOpen(DetailVisible || assistPane.Visibility == Visibility.Visible);
     private void UpdateDetailVisibility()
     {
-        detailToggle.IsEnabled = workspace.Session is not null && currentPage == "tasks";
-        sheet?.SetDetailChecked(detailToggle.IsChecked == true);
-        detailPane.Visibility = detailToggle.IsEnabled && detailToggle.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        sheet?.SetDetailChecked(detailShown);
+        detailPane.Visibility = DetailAvailable && detailShown ? Visibility.Visible : Visibility.Collapsed;
         UpdateSheetSidePane();
         if (DetailVisible) UpdateDetailSelection(); else CancelDetail();
     }
@@ -141,7 +135,7 @@ internal sealed partial class PlanWorkspaceView
     {
         detailLoadedIssue = null; UpdateDetailEditCommands();
         if (keepHeader && FocusManager.GetFocusedElement(XamlRoot) is DependencyObject focused && IsDetailFocus(focused)
-            && !ReferenceEquals(focused, detailOpen) && !ReferenceEquals(focused, detailReload) && !ReferenceEquals(focused, detailToggle)) {
+            && !ReferenceEquals(focused, detailOpen) && !ReferenceEquals(focused, detailReload)) {
             if (detailReload.IsEnabled) detailReload.Focus(FocusState.Programmatic); else FocusDetail();
         }
         foreach (var element in detailBody.Children.OfType<FrameworkElement>()) element.Visibility = Visibility.Collapsed;
@@ -371,7 +365,7 @@ internal sealed partial class PlanWorkspaceView
     private bool IsDetailFocus(DependencyObject? target)
     {
         for (var node = target; node is not null; node = VisualTreeHelper.GetParent(node))
-            if (ReferenceEquals(node, detailPane) || ReferenceEquals(node, detailToggle) || AutomationProperties.GetAutomationId(node) == "PlanSheetDetail") return true;
+            if (ReferenceEquals(node, detailPane) || AutomationProperties.GetAutomationId(node) == "PlanSheetDetail") return true;
         return false;
     }
     private void FocusCommandRow()

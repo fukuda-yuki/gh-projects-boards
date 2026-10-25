@@ -1096,6 +1096,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
         FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2) { Drafts = 2, PullRequests = 1, Redacted = 1, HiddenItems = 1 });
+        // #275: アシスト opens a pane only while AI assist is on, so the case that shares its dock with 詳細 turns it on.
+        if (TestContext.CurrentContext.Test.MethodName == nameof(DetailAvailabilitySessionStateAndAssistShareOneDock))
+            await new GhProjectsBoards.Core.Assist.AssistSettingsStore(root).SaveAsync(new() { Mode = GhProjectsBoards.Core.Assist.AssistMode.Copilot, Model = "auto" });
         workspace = new(new(root), () => readDay);
         await Ui.Run(() => view = new(workspace, (_, host) => new(FakeExecutable, host,
             new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }))));
@@ -1501,7 +1504,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         var previous = workspace.Session;
         var selected = workspace.Selected;
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "RegistrationResolve" }));
-        await Ui.Run(() => Ui.Tree(view).OfType<Expander>().Single(e => Equals(e.Header, "URLで開く")).IsExpanded = true);
+        await Ui.Run(() => Ui.Click("PlanOpenUrlMenu"));
         await Ui.Ready<Button>("PlanOpenUrl");
         await Ui.Run(() => {
             Ui.Find<TextBox>("PlanProjectUrl").Text = "https://github.com/users/fixture-user/projects/3";
@@ -1517,10 +1520,10 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(Ui.Find<ProgressRing>("PlanBusyRing").IsActive, Is.True);
                 Assert.That(Ui.Find<Button>("PlanBusyCancel").Visibility, Is.EqualTo(Visibility.Visible));
                 Assert.That(Ui.Find<Button>("PlanBusyCancel").IsEnabled, Is.True);
-                Assert.That(Ui.Find<Button>("PlanOpenUrl").IsEnabled, Is.False);
-                Assert.That(Ui.Find<TextBox>("PlanProjectUrl").IsEnabled, Is.False);
+                // 開く closes its flyout; the chooser behind the busy panel takes no input.
+                Assert.That(Ui.Find<Button>("PlanOpenUrlMenu").IsEnabled, Is.False);
                 Assert.That(Ui.Find<ListView>("AvailableProjects").IsEnabled, Is.False);
-                Assert.That(Ui.Find<TextBox>("PlanProjectUrl").Focus(FocusState.Programmatic), Is.False);
+                Assert.That(Ui.Find<Button>("PlanOpenUrlMenu").Focus(FocusState.Programmatic), Is.False);
                 Ui.Click("PlanBusyCancel");
             });
             await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Collapsed);
@@ -1529,8 +1532,8 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(workspace.Selected, Is.EqualTo(selected));
                 Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
                 Assert.That(Ui.Find<InfoBar>("PlanRefreshFailure").IsOpen, Is.False);
-                Assert.That(Ui.Find<Button>("PlanOpenUrl").IsEnabled, Is.True);
-                Assert.That(Ui.Find<TextBox>("PlanProjectUrl").Focus(FocusState.Programmatic), Is.True);
+                Assert.That(Ui.Find<Button>("PlanOpenUrlMenu").IsEnabled, Is.True);
+                Assert.That(Ui.Find<Button>("PlanOpenUrlMenu").Focus(FocusState.Programmatic), Is.True);
             });
         }
         finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }

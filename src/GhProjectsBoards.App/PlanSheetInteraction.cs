@@ -55,6 +55,8 @@ internal sealed partial class PlanSheetView
     // Ctrl+-: the numeric keypad reports Subtract, the main row reports the OEM minus code (Excel's
     // Ctrl+- accepts both), so 行を削除 must too (#247).
     internal static bool Minus(VirtualKey key) => key == VirtualKey.Subtract || (int)key == 189;
+    // VK_OEM_PLUS is the main keyboard's ＋ key on both US and Japanese layouts.
+    internal static bool Plus(VirtualKey key) => key == VirtualKey.Add || (int)key == 187;
     private CellRange Range
     {
         get
@@ -523,6 +525,35 @@ internal sealed partial class PlanSheetView
         requestedFocus = null;
         List.LayoutUpdated -= FocusAfterLayout;
     }
+    // #275: Excel's Ctrl+Enter. The typed text goes into every selected cell as one operation and the selection
+    // stays; with one selected cell it is an ordinary commit that does not move.
+    internal async Task CommitCellIntoSelection(string identity, string field, string text, long generation, string originalText)
+    {
+        var range = Range;
+        if (range.Single || identity.Length == 0) { await Commit(identity, field, text, generation, originalText); return; }
+        string[] rows = [.. RowIds], columns = [.. Fields];
+        var targets = rows.Skip(range.Row).Take(range.RowCount).ToHashSet(); var fields = columns.Skip(range.Column).Take(range.ColumnCount).ToHashSet();
+        try
+        {
+            if (Pending.Keys.Any(key => key != (identity, field) && targets.Contains(key.Identity) && fields.Contains(key.Field)))
+                throw new InvalidOperationException("未確定入力があります。確定または取消してください。");
+            var resolved = await ResolveAssignees(PlanSheetEditing.FillSelectionAssignees(Session.Document, rows, columns, range, text));
+            if (!resolved.IsEmpty) error.Text = "";
+            var command = PlanSheetEditing.FillSelection(Session.Document, rows, columns, range, text, Today, resolved);
+            if (!resolved.IsEmpty) command = command with { NewPeople = resolved };
+            var save = Session.Execute(command, Today);
+            if (Generation(identity, field) == generation) { Pending.Remove((identity, field)); Problems.Remove((identity, field)); }
+            Refresh();
+            Check(await save);
+        }
+        // Escape cancels an assignee lookup: nothing is written and the typed text stays in the cell.
+        catch (OperationCanceledException) when (!lifetime.IsCancellationRequested) { error.Text = ""; }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException && ex is not InputRejectedException)
+        {
+            Problems[(identity, field)] = ex.Message; RefreshRealized();
+            throw new InputRejectedException(ex.Message, ex);
+        }
+    }
     internal async Task CommitCellAndNavigate(string identity, string field, string text, long generation, string originalText, bool across, bool reverse)
     {
         await Commit(identity, field, text, generation, originalText);
@@ -890,7 +921,9 @@ internal sealed partial class PlanSheetView
         {
             selected = operation.End; anchor = operation.Source; selectedField = anchorField = operation.Field;
             wholeRowSelection = false;
-            selection.Text = $"{Range.RowCount}行へコピー"; RefreshRealized();
+            // #275: dragging down is the same 下へコピー as Ctrl+D, so it carries the same name.
+            var up = RowIndexes.GetValueOrDefault(operation.End) < RowIndexes.GetValueOrDefault(operation.Source);
+            selection.Text = $"{(up ? "上へコピー" : "下へコピー")} {Range.RowCount - 1} 行"; RefreshRealized();
         }
         else
         {

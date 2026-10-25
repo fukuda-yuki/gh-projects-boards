@@ -117,12 +117,8 @@ internal sealed partial class PlanWorkspaceView
     private void RenderAssist()
     {
         if (closing) return;
-        if (assistSettings.Mode == AssistMode.None) {
-            var disabled = new StackPanel { Spacing = 8 };
-            disabled.Children.Add(Label(assistSettingsError ?? "AI アシストは使わない設定です。"));
-            disabled.Children.Add(Button("設定を開く", "AssistOpenSettings", OpenAssistSettings));
-            assistPane.Child = disabled; UpdateAssistVisibility(); return;
-        }
+        // #275: with AI assist off there is no pane; アシスト opens its settings instead.
+        if (assistSettings.Mode == AssistMode.None) { assistToggle.IsChecked = false; assistPane.Child = null; UpdateAssistVisibility(); return; }
         assistConnection.Text = $"{(assistSettings.Mode == AssistMode.Copilot ? "GitHub Copilot" : new Uri(assistSettings.Endpoint).Host)} · {assistSettings.Model}";
         if (assistEnabledContent is not null) { assistPane.Child = assistEnabledContent; UpdateAssistVisibility(); return; }
         var panel = assistEnabledContent = new Grid { RowSpacing = 8 };

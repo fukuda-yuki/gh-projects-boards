@@ -27,7 +27,7 @@ public sealed class PlanningSummaryJourneyTests
                 predecessors = i % 10 == 1 ? Array.Empty<string>() : new[] { "I" + (i - 1) } }, phase = i <= 2 ? "SA" : "PG", body = "", added = true }), phases = new[] { "SA", "PG" }, nextId = 7 }));
         using var dpi = new DesktopDpiScope(); using var automation = new UIA3Automation();
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)!, WindowStyle = ProcessWindowStyle.Hidden };
-        start.Environment["GHPB_DATA_ROOT"] = Path.Combine(root, "data"); start.Environment["GH_CONFIG_DIR"] = root;
+        start.Environment["GHPB_DATA_ROOT"] = Path.Combine(root, "data"); start.Environment["GH_CONFIG_DIR"] = root; WinUiProcess.UseGh(Path.Combine(root, "data"), fake);
         using var process = Process.Start(start)!; using var app = Application.Attach(process.Id);
         Window? window = null;
         try {
@@ -35,7 +35,7 @@ public sealed class PlanningSummaryJourneyTests
             var handle = window!.Properties.NativeWindowHandle.Value; var factor = GetDpiForWindow(handle) / 96d;
             GetClientRect(handle, out var client); var outer = window.BoundingRectangle;
             window.Patterns.Transform.Pattern.Resize(1280 * factor + outer.Width - client.Right, 720 * factor + outer.Height - client.Bottom);
-            Find("PlanGhPath").AsTextBox().Text = fake; Find("PlanConnect").AsButton().Invoke();
+            Find("PlanConnect").AsButton().Invoke();
             Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 1); Find("AvailableProjects").AsListBox().Select(0);
             Wait(() => Find("PlanCell1_Title").AsTextBox().Text == "計画レビュー 1");
             Find("PlanShowSummary").Patterns.SelectionItem.Pattern.Select();

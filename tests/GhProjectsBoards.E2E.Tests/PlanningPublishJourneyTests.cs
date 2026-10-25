@@ -31,7 +31,7 @@ public sealed class PlanningPublishJourneyTests
         {
             if (launch > 0) Scenario(false);
             var start = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)!, WindowStyle = ProcessWindowStyle.Hidden };
-            start.Environment["GHPB_DATA_ROOT"] = Path.Combine(root, "data"); start.Environment["GH_CONFIG_DIR"] = root;
+            start.Environment["GHPB_DATA_ROOT"] = Path.Combine(root, "data"); start.Environment["GH_CONFIG_DIR"] = root; WinUiProcess.UseGh(Path.Combine(root, "data"), fake);
             using var process = Process.Start(start)!;
             using var app = Application.Attach(process.Id);
             Window? window = null;
@@ -40,7 +40,6 @@ public sealed class PlanningPublishJourneyTests
                 window = app.GetMainWindow(automation, TimeSpan.FromSeconds(20));
                 WinUiProcess.AssertRuntime(process);
                 window!.Patterns.Transform.Pattern.Resize(1600, 960);
-                Find("PlanGhPath").AsTextBox().Text = fake;
                 Find("PlanConnect").AsButton().Invoke();
                 if (launch == 0)
                 {

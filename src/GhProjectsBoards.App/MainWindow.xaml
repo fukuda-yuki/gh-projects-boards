@@ -2,6 +2,6 @@
     x:Class="GhProjectsBoards.App.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="GitHub Projects">
+    Title="計画エディタ">
     <Grid x:Name="WorkspaceRoot" RequestedTheme="Light" Background="{ThemeResource WorkspaceBackgroundBrush}"/>
 </Window>

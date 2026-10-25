@@ -234,35 +234,40 @@ internal sealed partial class PlanSheetView : Grid
         Children.Add(controls); SetRow(controls, 1);
         var commands = commandBar = Id(new SheetCommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
             OverflowButtonVisibility = CommandBarOverflowButtonVisibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetCommands");
-        AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
-        deletePrimary = AddCommand(commands, "行を削除", "PlanSheetDelete", Symbol.Delete, DeleteRows);
-        deletePrimary.KeyboardAcceleratorTextOverride = "Ctrl+-";
-        AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M2,5 L5,8 L2,11 L1,10 L3,8 L1,6 Z");
-        AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M4,5 L1,8 L4,11 L5,10 L3,8 L5,6 Z");
+        Shortcut(AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert), "Insert");
+        deletePrimary = Shortcut(AddCommand(commands, "行を削除", "PlanSheetDelete", Symbol.Delete, DeleteRows), "Ctrl+-");
+        Shortcut(AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false)), "Alt+Shift+→").Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M2,5 L5,8 L2,11 L1,10 L3,8 L1,6 Z");
+        Shortcut(AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true)), "Alt+Shift+←").Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M4,5 L1,8 L4,11 L5,10 L3,8 L5,6 Z");
+        // A primary command names its shortcut in its tooltip; in the overflow the menu shows it (#275).
+        static AppBarButton Shortcut(AppBarButton button, string keys) {
+            button.KeyboardAcceleratorTextOverride = keys; ToolTipService.SetToolTip(button, WithShortcut(button)); return button;
+        }
         InitializeOverview(commands);
         AppBarButton Overflow(string label, string id, Symbol icon, Func<Task> action, string shortcut = "", bool queued = true) {
             var button = AddCommand(commands, label, id, icon, action, queued);
             button.KeyboardAcceleratorTextOverride = shortcut;
             commands.PrimaryCommands.Remove(button); commands.SecondaryCommands.Add(button); return button;
         }
-        moveUp = Overflow("上へ移動", "PlanSheetMoveUp", Symbol.Up, () => MoveOneSibling(false), "Alt+Shift+↑");
-        moveDown = Overflow("下へ移動", "PlanSheetMoveDown", Symbol.Download, () => MoveOneSibling(true), "Alt+Shift+↓");
-        moveUp.Icon = CommandIcon("M7,15 V4 L3,8 L2,7 L8,1 L14,7 L13,8 L9,4 V15 Z");
-        moveDown.Icon = CommandIcon("M7,1 V12 L3,8 L2,9 L8,15 L14,9 L13,8 L9,12 V1 Z");
-        arrangeOutline = Overflow("階層順に並べ替え", "PlanSheetArrangeOutline", Symbol.Sort, ArrangeOutline);
-        commands.SecondaryCommands.Add(new AppBarSeparator());
+        // #275: the overflow groups its commands as クリップボード · 行の状態 · 並べ替え · ファイルと表示.
         Overflow("コピー", "PlanSheetCopy", Symbol.Copy, () => KeyboardCommand(VirtualKey.C), "Ctrl+C", queued: false);
         Overflow("貼り付け", "PlanSheetPaste", Symbol.Paste, () => KeyboardCommand(VirtualKey.V), "Ctrl+V", queued: false);
         Overflow("下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD), "Ctrl+D").Icon = CommandIcon("F0 M2,1 H14 V5 H2 Z M3,2 V4 H13 V2 Z M7,7 H9 V11 H12 L8,15 L4,11 H7 Z");
-        Overflow("クリア", "PlanSheetClear", Symbol.Clear, () => KeyboardCommand(VirtualKey.Delete), "Delete", queued: false);
+        Overflow("クリア", "PlanSheetClear", Symbol.Clear, () => KeyboardCommand(VirtualKey.Delete), "Delete", queued: false).Icon = GlyphIcon(ClearGlyph);
         commands.SecondaryCommands.Add(new AppBarSeparator());
         // #231: the row-state commands from the keyboard. The row context menu is the pointer route; both use
         // the same targets, eligibility and reasons.
         deleteOverflow = Overflow("行を削除", "PlanSheetDeleteOverflow", Symbol.Delete, DeleteRows, "Ctrl+-");
         completeRows = Overflow("完了にする", "PlanSheetCompleteRows", Symbol.Accept, () => RowStateReport(CommandTargets, PlanRowAction.Complete), queued: false);
         cancelRows = Overflow("中止にする", "PlanSheetCancelRows", Symbol.Cancel, () => RowStateReport(CommandTargets, PlanRowAction.Cancel), queued: false);
+        cancelRows.Icon = GlyphIcon(SetAsideGlyph);
         removeRows = Overflow("この版から外す", "PlanSheetRemoveRows", Symbol.Remove, () => RowStateReport(CommandTargets, PlanRowAction.Remove), queued: false);
         reopenRows = Overflow("未完了に戻す", "PlanSheetReopenRows", Symbol.Refresh, () => RowStateReport(CommandTargets, PlanRowAction.Reopen), queued: false);
+        commands.SecondaryCommands.Add(new AppBarSeparator());
+        moveUp = Overflow("上へ移動", "PlanSheetMoveUp", Symbol.Up, () => MoveOneSibling(false), "Alt+Shift+↑");
+        moveDown = Overflow("下へ移動", "PlanSheetMoveDown", Symbol.Download, () => MoveOneSibling(true), "Alt+Shift+↓");
+        moveUp.Icon = CommandIcon("M7,15 V4 L3,8 L2,7 L8,1 L14,7 L13,8 L9,4 V15 Z");
+        moveDown.Icon = CommandIcon("M7,1 V12 L3,8 L2,9 L8,15 L14,9 L13,8 L9,12 V1 Z");
+        arrangeOutline = Overflow("階層順に並べ替え", "PlanSheetArrangeOutline", Symbol.Sort, ArrangeOutline);
         commands.SecondaryCommands.Add(new AppBarSeparator());
         if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
         if (exportCsv is not null) Overflow("CSV に書き出し…", "PlanSheetCsvExport", Symbol.Save, exportCsv, queued: false);
@@ -455,6 +460,12 @@ internal sealed partial class PlanSheetView : Grid
         IsTabStop = false, Height = 18 }, id);
     internal static T Id<T>(T value, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(value, id); return value; }
     internal static Brush Brush(string key) => (Brush)Application.Current.Resources[key];
+    // Segoe Fluent glyphs: an eraser for クリア, and the ⊘ the sheet already uses for a set-aside row (#264), so
+    // クリア and 中止にする never share the × icon (#275).
+    internal const string ClearGlyph = "\uE75C", SetAsideGlyph = "\uE733";
+    internal static FontIcon GlyphIcon(string glyph) => new() { Glyph = glyph };
+    internal static string WithShortcut(AppBarButton button)
+        => button.KeyboardAcceleratorTextOverride is { Length: > 0 } keys ? $"{button.Label}（{keys}）" : button.Label;
     private static PathIcon CommandIcon(string data)
     {
         var icon = (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(

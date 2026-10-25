@@ -18,9 +18,33 @@ internal sealed partial class PlanWorkspaceHostedTests
         ("period", "期間", "PlanSettingsHeading_period"), ("phases", "工程と目標日", "PlanSettingsHeading_phases"),
         ("people", "担当者", "PlanSettingsHeading_people"), ("calendar", "カレンダー", "PlanSettingsHeading_calendar"),
         ("columns", "列", "PlanColumnSettings"), ("fields", "GitHub のフィールド", "PlanSettingsHeading_fields"),
-        ("issues", "新しい Issue", "PlanSettingsHeading_issues"), ("display", "表示", "PlanSettingsHeading_display"),
+        ("issues", "新しい Issue", "PlanSettingsHeading_issues"), ("connection", "接続", "PlanSettingsHeading_connection"), ("display", "表示", "PlanSettingsHeading_display"),
         ("assist", "AI アシスト", "AssistSettingsHeading"), ("files", "書き出し・読み込み", "PlanSettingsHeading_files")];
 
+    [Test]
+    public async Task SettingsGhPathIsKeptForThisPcAndAMissingFileIsRefused()
+    {
+        // #275: gh.exe is chosen once per PC under 設定 › この PC › 接続, not typed on every connect.
+        await Open(); await Settings();
+        var missing = Path.Combine(root, "missing", "gh.exe");
+        await Ui.Run(() => {
+            var input = Ui.Find<TextBox>("PlanSettingsGhPath");
+            Assert.That(input.Text, Is.Empty, "Empty uses gh.exe from PATH.");
+            input.Text = missing;
+            Ui.Click("PlanSettingsBack");
+        });
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Does.Contain("gh.exe が見つかりません"));
+            Assert.That(Ui.Find<TextBox>("PlanSettingsGhPath").IsLoaded, Is.True, "A refused path keeps the settings page open.");
+            Assert.That(workspace.GhPath, Is.Null);
+            Ui.Find<TextBox>("PlanSettingsGhPath").Text = FakeExecutable;
+            Ui.Click("PlanSettingsBack");
+        });
+        await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected, () => Ui.Find<TextBlock>("PlanError").Text);
+        Assert.That(workspace.GhPath, Is.EqualTo(FakeExecutable));
+        Assert.That(new PlanConnectionSettingsStore(new PlanStore(root)).Load().GhPath, Is.EqualTo(FakeExecutable));
+    }
     [Test]
     public async Task SettingsPageShowsTheTitleBackAndScopedSectionListBesideOneReadableContentColumn()
     {

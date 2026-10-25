@@ -58,7 +58,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(toggle.Visibility, Is.EqualTo(Visibility.Visible));
             toggle.Focus(FocusState.Programmatic);
             ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(toggle).GetPattern(PatternInterface.Toggle)).Toggle();
-            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.True);
+            Assert.That(Ui.Find<Border>("PlanDetailPane").Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(DetailSheet.Pending[("I1", PlanField.Title)].Text, Is.EqualTo("pending"));
             ToggleDetail(); Assert.That(toggle.IsChecked, Is.False);
             DetailSheet.CancelEdit("I1", PlanField.Title);
@@ -79,9 +79,14 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open(); await DetailFallback();
         double sheetBefore = 0;
+        // The default host window follows the display scale; at 125 % it cannot hold sheet, 640 px Gantt and pane.
+        // 1280 is narrow enough for the bar to overflow and wide enough for the Gantt minimum.
+        await Ui.Run(() => ResizeWorkspace(1280, 800));
+        await Ui.Until(() => view.ActualWidth >= 1270);
         await Ui.Run(() => { sheetBefore = DetailSheet.SheetViewport; SelectDetail("I1"); ToggleDetail(); });
         await Ui.Until(() => Ui.Find<Border>("PlanDetailPane").ActualWidth > 0 && DetailSheet.ChartViewport >= PlanSheetView.SidePaneChartMinimum
-            && Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth > 0);
+            && Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth > 0,
+            () => $"pane={Ui.Find<Border>("PlanDetailPane").ActualWidth} chart={DetailSheet.ChartViewport} sheet={DetailSheet.SheetViewport} scrollable={Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth}");
         await Ui.Run(() => {
             Assert.That(DetailSheet.ChartViewport, Is.GreaterThanOrEqualTo(PlanSheetView.SidePaneChartMinimum));
             Assert.That(DetailSheet.SheetViewport, Is.LessThan(sheetBefore));
@@ -219,7 +224,6 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(view.XamlRoot), Ui.Find<TextBox>("PlanDetailEditor")));
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("keep draft"));
-            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.True);
             Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").IsChecked, Is.True);
             Assert.That(Ui.Find<ToggleButton>("PlanAssist").IsChecked, Is.False);
             Assert.That(workspace.Session, Is.SameAs(session));
@@ -358,7 +362,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             ToggleDetail();
             Assert.That(Ui.Dialog("PlanDetailDiscard"), Is.Null);
-            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.True);
+            Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").IsChecked, Is.True);
             Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("modal draft"));
             Ui.DialogButton("PlanResetConfirm", "CloseButton");
         });
@@ -424,7 +428,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.DialogButton("PlanDetailDiscard", "CloseButton")); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("keep shortcut draft"));
-            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.True);
+            Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").IsChecked, Is.True);
             Assert.That(FocusManager.GetFocusedElement(view.XamlRoot), Is.SameAs(Ui.Find<TextBox>("PlanDetailEditor")));
         });
         Assert.That(BodyWrites().Length, Is.EqualTo(1));
@@ -432,7 +436,8 @@ internal sealed partial class PlanWorkspaceHostedTests
 
     private static void ToggleDetail()
     {
-        var toggle = Ui.Find<ToggleButton>("PlanDetail");
+        // #275: the selection line's 詳細 is the pane's only button.
+        var toggle = Ui.Find<ToggleButton>("PlanSheetDetail");
         Assert.That(toggle.IsLoaded && toggle.IsEnabled, Is.True);
         ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(toggle).GetPattern(PatternInterface.Toggle)).Toggle();
     }
@@ -549,14 +554,15 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test, Category("IssueDetail")]
     public async Task DetailAvailabilitySessionStateAndAssistShareOneDock()
     {
-        await Ui.Run(() => Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsEnabled, Is.False));
+        await Ui.Run(() => Assert.That(Ui.Find<Border>("PlanDetailPane").Visibility, Is.EqualTo(Visibility.Collapsed)));
         await Open(); await DetailFallback();
         await Ui.Run(() => {
-            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.False);
+            SelectDetail("I1");
+            Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").IsChecked, Is.False);
             ToggleDetail();
             Assert.That(Ui.Find<Border>("PlanDetailPane").Visibility, Is.EqualTo(Visibility.Visible));
             ToggleAssist();
-            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.False);
+            Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").IsChecked, Is.False);
             Assert.That(Ui.Find<Border>("PlanDetailPane").Visibility, Is.EqualTo(Visibility.Collapsed));
             ToggleDetail();
             Assert.That(Ui.Find<ToggleButton>("PlanAssist").IsChecked, Is.False);
@@ -565,14 +571,12 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowSummary").IsSelected);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsEnabled, Is.False);
             Assert.That(Ui.Find<Border>("PlanDetailPane").Visibility, Is.EqualTo(Visibility.Collapsed));
             Ui.Click("PlanShowTasks");
         });
         await Ui.Until(() => Ui.Find<Border>("PlanDetailPane").Visibility == Visibility.Visible);
         await Settings();
         await Ui.Run(() => {
-            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsEnabled, Is.False);
             Assert.That(Ui.Find<Border>("PlanDetailPane").Visibility, Is.EqualTo(Visibility.Collapsed));
             Ui.Click("PlanSettingsBack");
         });
@@ -588,7 +592,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             DetailSheet.Refresh(); SelectDetail("I1");
             Assert.That(Ui.Find<Border>("PlanDetailPane").Visibility, Is.EqualTo(Visibility.Collapsed));
-            SelectDetail(""); ToggleDetail();
+            ToggleDetail(); SelectDetail("");
         });
         await Ui.Until(() => DetailElement<TextBlock>("PlanDetailTitle") is not null);
         await Ui.Run(() => {
@@ -619,7 +623,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task DetailDebouncesSelectionCachesReloadsAndRefreshClears()
     {
         SeedDetailRows(); await Open(); await DetailFallback();
-        await Ui.Run(() => { ToggleDetail(); SelectDetail("I1"); SelectDetail("I2"); SelectDetail("I3"); });
+        await Ui.Run(() => { SelectDetail("I1"); ToggleDetail(); SelectDetail("I2"); SelectDetail("I3"); });
         await DetailReady("確認");
         Assert.That(DetailReads(), Is.EqualTo(new[] { "I3" }));
         await Ui.Run(() => SelectDetail("I2")); await DetailReady("実装");
@@ -694,7 +698,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task DetailLoadingIsDelayedAndObsoleteReadCannotReplaceNewSelection()
     {
         SeedDetailRows(); await Open(); await DetailFallback(); DetailScenario(hold: true);
-        await Ui.Run(() => { ToggleDetail(); SelectDetail("I1"); Assert.That(Ui.Find<TextBlock>("PlanDetailLoading").Visibility, Is.EqualTo(Visibility.Collapsed)); });
+        await Ui.Run(() => { SelectDetail("I1"); ToggleDetail(); Assert.That(Ui.Find<TextBlock>("PlanDetailLoading").Visibility, Is.EqualTo(Visibility.Collapsed)); });
         await Ui.Until(() => DetailReads().Length == 1);
         await Ui.Until(() => DetailElement<TextBlock>("PlanDetailLoading")?.Visibility == Visibility.Visible);
         await Ui.Run(() => {
@@ -712,7 +716,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task DetailFailureRetryAndFallbackKeepPlanningAvailable()
     {
         await Open(); await DetailFallback(); DetailScenario("missing");
-        await Ui.Run(() => { ToggleDetail(); SelectDetail("I1"); });
+        await Ui.Run(() => { SelectDetail("I1"); ToggleDetail(); });
         await Ui.Until(() => DetailElement<InfoBar>("PlanDetailFailure")?.IsOpen == true &&
             DetailElement<TextBlock>("PlanDetailFailureText") is not null && DetailElement<Button>("PlanDetailRetry")?.IsEnabled == true);
         await Ui.Run(() => {
@@ -923,10 +927,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         }
         await SheetNativeInput.Press(VirtualKey.F2, []);
         await SheetNativeInput.Press(VirtualKey.I, [VirtualKey.Control]);
-        await Ui.Run(() => Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.True));
+        await Ui.Run(() => Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").IsChecked, Is.True));
         await SheetNativeInput.Press(VirtualKey.Escape, []);
         await SheetNativeInput.Press(VirtualKey.I, [VirtualKey.Control]);
-        await Ui.Run(() => Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.False));
+        await Ui.Run(() => Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").IsChecked, Is.False));
     }
 
     [TestCase(false), TestCase(true), Category("IssueDetail"), Category("PlanSheetNative")]

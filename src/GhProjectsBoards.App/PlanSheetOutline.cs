@@ -56,11 +56,32 @@ internal sealed partial class PlanSheetView
         error.Text = "";
         UpdateReason(); RefreshOverviewCommands(); RefreshRealized(previous); if (focus) FocusSelected();
     }
-    internal bool HandleOutlineShortcut(VirtualKey key)
+    internal bool HandleOutlineShortcut(VirtualKey key, bool editing = false)
     {
-        if (!Down(VirtualKey.Menu) || !Down(VirtualKey.Shift) || key is not (VirtualKey.Up or VirtualKey.Down)) return false;
-        _ = Run(() => MoveOneSibling(key == VirtualKey.Down), "Move outline"); return true;
+        if (!Down(VirtualKey.Menu) || !Down(VirtualKey.Shift)) return false;
+        if (key is VirtualKey.Up or VirtualKey.Down) { _ = Run(() => MoveOneSibling(key == VirtualKey.Down), "Move outline"); return true; }
+        // #275: MS Project's outline keys. They act on the selection, so a cell being edited keeps them.
+        if (editing) return false;
+        if (key is VirtualKey.Right or VirtualKey.Left) {
+            _ = Run(async () => { await CommitPending(); await Indent(key == VirtualKey.Left); }, "PlanSheetIndent"); return true;
+        }
+        if (Minus(key) || Plus(key)) { _ = Run(() => FoldSelected(Minus(key)), "Fold requirement"); return true; }
+        return false;
     }
+    // On a task row, Alt+Shift+− folds the requirement it belongs to and selects that requirement, as MS Project's
+    // Hide Subtasks does; Alt+Shift+＋ on a task has nothing to show.
+    private async Task FoldSelected(bool collapse)
+    {
+        var target = SummaryIds.Contains(selected) ? selected
+            : collapse && Rows.TryGetValue(selected, out var row) && row.Parent is { } parent && SummaryIds.Contains(parent) ? parent : null;
+        if (target is null) return;
+        // Select the requirement before folding: a focused task cell removed by the fold hands keyboard focus to the
+        // ListView, which then gives it to the next row and the next Alt+Shift+＋ reaches no sheet cell.
+        if (target != selected) { Select(target, selectedField, false); FocusSelected(); }
+        await SetFold(target, collapse);
+        FocusSelected();
+    }
+    internal Task InsertFromKeyboard() => Run(async () => { await CommitPending(); await Insert(); }, "PlanSheetInsert");
     private async Task MoveOneSibling(bool down)
     {
         await CommitPending();

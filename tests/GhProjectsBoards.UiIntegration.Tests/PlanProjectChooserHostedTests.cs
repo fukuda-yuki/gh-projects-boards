@@ -37,7 +37,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Run(() => Assert.That(Ui.Find<ListView>("AvailableProjects").Items.Cast<ProjectChoice>().Single().Id.NodeId, Is.EqualTo("P1")));
             Assert.That(File.ReadAllLines(Path.Combine(root, "listing-requests.txt")), Is.EqualTo(new[] { "fixture-user" }), "Only the new connection's response completes.");
         } else if (action == "url") {
-            await Ui.Run(() => Ui.Tree(view).OfType<Expander>().Single(e => Equals(e.Header, "URLで開く")).IsExpanded = true);
+            await Ui.Run(() => Ui.Click("PlanOpenUrlMenu"));
             await Ui.Ready<Button>("PlanOpenUrl");
             await Ui.Run(() => { Ui.Find<TextBox>("PlanProjectUrl").Text = "https://github.com/users/fixture-user/projects/3"; Ui.Click("PlanOpenUrl"); });
             await Ui.Until(() => workspace.Selected?.Id.NodeId == "P1");

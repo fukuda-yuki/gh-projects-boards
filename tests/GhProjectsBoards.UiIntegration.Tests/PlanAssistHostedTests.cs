@@ -646,21 +646,23 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("Assist")]
-    public async Task DisabledAssistOpensSettingsAndReturnsToTheOpenPane()
+    public async Task DisabledAssistOpensItsSettingsInsteadOfAPane()
     {
         await Open();
         await Ui.Run(() => {
             Assert.That(Ui.Find<Border>("PlanAssistPane").Visibility, Is.EqualTo(Visibility.Collapsed));
             ToggleAssist();
         });
-        await Ui.Ready<Button>("AssistOpenSettings");
-        await Ui.Run(() => Ui.Click("AssistOpenSettings"));
+        // #275: with AI assist off, アシスト goes straight to AI アシスト settings; no pane takes the width.
         await Ui.Ready<ComboBox>("AssistMode");
         await Ui.Ready<Button>("PlanSettingsBack");
-        await Ui.Run(() => Ui.Click("PlanSettingsBack"));
-        await Ui.Until(() => Ui.Find<Border>("PlanAssistPane").Visibility == Visibility.Visible);
-        await Ui.Run(ToggleAssist);
-        await Ui.Until(() => Ui.Find<Border>("PlanAssistPane").Visibility == Visibility.Collapsed);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<ToggleButton>("PlanAssist").IsChecked, Is.False);
+            Assert.That(Ui.Find<Border>("PlanAssistPane").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Ui.Click("PlanSettingsBack");
+        });
+        await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected);
+        await Ui.Run(() => Assert.That(Ui.Find<Border>("PlanAssistPane").Visibility, Is.EqualTo(Visibility.Collapsed)));
         Assert.That(workspace.Session!.UndoCount, Is.Zero);
     }
 }

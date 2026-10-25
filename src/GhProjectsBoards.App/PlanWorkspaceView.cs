@@ -69,8 +69,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Border unpublishedBar = new() { Width = 3, CornerRadius = new(1.5), Background = PlanSheetView.Brush("SheetChangedMarkBrush"), Visibility = Visibility.Collapsed };
     private readonly TextBlock unpublished = Id(new TextBlock(), "PlanUnpublished");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanError");
-    private readonly TextBox executable = Id(new TextBox { Header = "gh.exe", Text = ConnectionViewModel.FindGh(), MinWidth = 400 }, "PlanGhPath");
-    private readonly TextBox host = Id(new TextBox { Header = "接続先", Text = "github.com" }, "PlanHost");
+    // #275: the path box appears only when gh cannot be found or started; the reason is its description.
+    private readonly TextBox executable = Id(new TextBox { Header = "gh.exe の場所", MinWidth = 400, Visibility = Visibility.Collapsed,
+        Description = ConnectionViewModel.FailureText(GhProjectsBoards.App.GitHub.FailureKind.MissingExecutable) }, "PlanGhPath");
+    private readonly TextBox host = Id(new TextBox { Header = "接続先", Text = "github.com", MinWidth = 400 }, "PlanHost");
     private readonly TextBox url = Id(new TextBox { Header = "プロジェクト URL" }, "PlanProjectUrl");
     private readonly Grid toolbar = new() { Height = 36, Margin = new(12, 0, 12, 0) };
     private readonly Border statusDateHost = new();
@@ -230,17 +232,28 @@ internal sealed partial class PlanWorkspaceView : UserControl
         failures.Children.Add(refreshFailure); failures.Children.Add(publishFailure); failures.Children.Add(openFailure); failures.Children.Add(saveFailure); failures.Children.Add(sheetFailureHost);
         root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
-        var address = new Expander { Header = "URLで開く", HorizontalAlignment = HorizontalAlignment.Stretch };
-        var addressPanel = new StackPanel { Spacing = 8 }; addressPanel.Children.Add(url);
-        addressPanel.Children.Add(Button("開く", "PlanOpenUrl", () => OpenProject(null, url.Text)));
-        address.Content = addressPanel; chooser = new(workspace, choice => Run(() => OpenProject(choice)), address);
+        if (workspace.GhExecutable.Length == 0) AskForExecutable(null);
+        // #275: opening by URL is the chooser's alternative, so it sits beside the search box as a flyout.
+        var addressFlyout = new Flyout { AreOpenCloseAnimationsEnabled = false, Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.BottomEdgeAlignedRight };
+        var address = Id(new Button { Content = "URLで開く…", Flyout = addressFlyout, VerticalAlignment = VerticalAlignment.Center }, "PlanOpenUrlMenu");
+        AutomationProperties.SetName(address, "URLで開く");
+        var addressPanel = new StackPanel { Spacing = 8, Width = 420 }; addressPanel.Children.Add(url);
+        Task OpenAddress() { addressFlyout.Hide(); return OpenProject(null, url.Text); }
+        addressPanel.Children.Add(Button("開く", "PlanOpenUrl", OpenAddress));
+        url.KeyDown += (_, args) => { if (args.Key == Windows.System.VirtualKey.Enter) { args.Handled = true; _ = Run(OpenAddress); } };
+        addressFlyout.Content = addressPanel; chooser = new(workspace, choice => Run(() => OpenProject(choice)), address);
         connection.Children.Add(Button("接続", "PlanConnect", async () => {
             if (!await DiscardDetailEdit()) return;
             await chooser.Stop(); CancelDetail(clearCache: true); detailConnecting = true;
             try {
                 await EndAssist(); ClearAssistMessages();
                 openFailure.IsOpen = false;
-                await workspace.Connect(this.factory(executable.Text, host.Text), OperationToken);
+                var asked = executable.Visibility == Visibility.Visible;
+                var path = asked && executable.Text.Trim().Trim('"') is { Length: > 0 } typed ? typed : workspace.GhExecutable;
+                try { await workspace.Connect(this.factory(path, host.Text), OperationToken); }
+                catch (PlanConnectionFailedException failure) when (failure.Executable) { AskForExecutable(failure.Message); return; }
+                // A path typed here is this PC's setting from now on; an emptied box returns to the PATH lookup.
+                if (asked) { await workspace.SaveGhPath(executable.Text); executable.Visibility = Visibility.Collapsed; }
                 RefreshLists(); RenderTasks();
                 Show(workspace.Session is null ? "chooser" : "tasks");
             }
@@ -275,7 +288,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var work = new Grid();
         work.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         work.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        work.Children.Add(card); InitializeAssist(work, titleCommands); InitializeDetail(work, titleCommands);
+        work.Children.Add(card); InitializeAssist(work, titleCommands); InitializeDetail(work);
         root.Children.Add(work); Grid.SetRow(work, 3);
         var statusContent = new Grid();
         statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -701,6 +714,17 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusBar.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
         projectMetadata.Text = workspace.Selected is { } project ? $"{project.OwnerLogin} · プロジェクト {project.Number}" : "";
         title.Text = workspace.Selected?.Title ?? "GitHub Projects";
+        // #275: the window title names the document and the app, as Windows apps do.
+        SetWindowTitle?.Invoke(workspace.Selected is { } open ? $"{open.Title} – 計画エディタ" : "計画エディタ");
+    }
+    internal Action<string>? SetWindowTitle { get; set; }
+    private void AskForExecutable(string? reason)
+    {
+        if (reason is not null) executable.Description = reason;
+        executable.Text = workspace.GhPath ?? "";
+        AutomationProperties.SetHelpText(executable, (string)executable.Description);
+        executable.Visibility = Visibility.Visible;
+        if (executable.IsLoaded) executable.Focus(FocusState.Programmatic);
     }
     private void Opened() { ClearPublishResult(); ClearSaveFailures(); refreshFailure.IsOpen = publishFailure.IsOpen = false; settingsGeneration++; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); RefreshLists(); RenderTasks(); Show("tasks"); }
     private void RefreshLists()
@@ -743,7 +767,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                     if (DetailVisible && PlanSheetView.Down(Windows.System.VirtualKey.Shift)) FocusDetail(); else FocusCommandRow();
                 };
                 next.PreservePendingFocus = IsDetailFocus;
-                next.SetDetailChecked(detailToggle.IsChecked == true);
+                next.SetDetailChecked(detailShown);
                 next.DetailToggleRequested += async value => { if (ReferenceEquals(sheet, next)) await RequestDetailToggle(value); };
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
                 next.SelectionChanged += () => { if (ReferenceEquals(sheet, next)) { UpdateAssistSelection(); UpdateDetailSelection(); } };

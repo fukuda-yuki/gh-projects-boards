@@ -229,4 +229,41 @@ internal sealed class PlanSheetEditingTests
         Assert.That(command.Cells.Single(c => c.Identity == "I1").Value, Is.EqualTo(new[] { "U1" }));
         Assert.That(command.Cells.Single(c => c.Identity == "I2").Value, Is.EqualTo(new[] { "U101" }));
     }
+    // #275: Ctrl+Enter writes the typed text into every selected cell as one operation.
+    [Test]
+    public void FillSelectionWritesTheTypedTextIntoEverySelectedCellOfEveryColumn()
+    {
+        var command = PlanSheetEditing.FillSelection(Document, ["I1", "I2", "I3"], [PlanField.Title, PlanField.Estimate, PlanField.Remaining],
+            new(1, 1, 2, 2), "8h", Day);
+        Assert.That(command.Kind, Is.EqualTo(PlanOperationKind.Fill));
+        Assert.That(command.Cells, Is.EqualTo(new PlanCellChange[] {
+            new("I2", PlanField.Estimate, 8m), new("I2", PlanField.Remaining, 8m),
+            new("I3", PlanField.Estimate, 8m), new("I3", PlanField.Remaining, 8m) }));
+        var published = Document with { Baseline = Document.Baseline with { Rows = Document.State.Rows } };
+        var applied = PlanOperations.Apply(published, command, Day).State.Rows;
+        Assert.That(applied.Select(r => (r.Identity, r.Estimate, r.Remaining)), Is.EqualTo(new (string, decimal?, decimal?)[] {
+            ("I1", null, null), ("I2", 8m, 8m), ("I3", 8m, 8m) }), "Cells outside the selection stay as they were.");
+    }
+    [Test]
+    public void FillSelectionRefusesTheWholeRangeWhenOneCellCannotTakeTheText()
+    {
+        Assert.That(() => PlanSheetEditing.FillSelection(Document, ["I1", "I2"], [PlanField.Title, PlanField.Estimate],
+            new(0, 0, 2, 2), "設計", Day), Throws.ArgumentException.With.Message.EqualTo("工数は0以上の数値で入力してください。"));
+        Assert.That(() => PlanSheetEditing.FillSelection(Document, ["I1", ""], [PlanField.Estimate],
+            new(0, 0, 2, 1), "8", Day), Throws.ArgumentException.With.Message.EqualTo("空行を除いて範囲を選択してください。"));
+    }
+    [Test]
+    public void FillSelectionVerifiesUnknownLoginsOncePerRepository()
+    {
+        string[] rows = ["I1", "I2"], columns = [PlanField.Assignees];
+        var selection = new CellRange(0, 0, 2, 1);
+        Assert.That(PlanSheetEditing.FillSelectionAssignees(Document, rows, columns, selection, "alice"), Is.Empty);
+        Assert.That(PlanSheetEditing.FillSelectionAssignees(Document, rows, columns, selection, "alice, late-user"),
+            Is.EqualTo(new[] { ("acme/repo", "late-user") }));
+        Assert.That(PlanSheetEditing.FillSelectionAssignees(Document, rows, [PlanField.Title], new(0, 0, 2, 1), "late-user"), Is.Empty,
+            "Only a selection that reaches 担当者 needs a lookup.");
+        var resolved = ImmutableArray.Create(new PlanResource("U101", "late-user", 100, null));
+        var command = PlanSheetEditing.FillSelection(Document, rows, columns, selection, "late-user", Day, resolved);
+        Assert.That(command.Cells.Select(c => c.Value), Is.All.EqualTo(new[] { "U101" }));
+    }
 }
