@@ -269,7 +269,8 @@ internal sealed partial class PlanSheetHostedTests
             .Any(id => id.StartsWith("PlanArrow1_90_", StringComparison.Ordinal)), Is.False));
 
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Edge");
-        await Ui.Until(() => sheet.List.Items.Count == 5);
+        // I89 becomes I90's requirement row, so it stays as the match's context (+1 row).
+        await Ui.Until(() => sheet.List.Items.Count == 6);
         await Ui.Ready<TextBox>("PlanCell95_Title");
         await SheetNativeInput.Rendered();
         await Ui.Until(() => sheet.List.Items.Cast<string>().All(identity => CurrentDependencyRow(identity) is not null));

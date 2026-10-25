@@ -566,7 +566,8 @@ internal sealed partial class PlanWorkspaceHostedTests
                 // With 見積 h / 残 h at 72 px and 見込終了 at 108 px the sheet takes its 993 px of columns plus the
                 // 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation) - 993 = 865.
                 Assert.That(chart.ViewportWidth, Is.EqualTo(865).Within(2), "Default-column budget, allowing pixel rounding.");
-                Assert.That(fullRows, Is.EqualTo(29).Within(2));
+                Assert.That(fullRows, Is.EqualTo(29).Within(2),
+                    $"rowViewport={sheet.List.ActualHeight}, rowHeight={sheet.RowHeight}, strip={Ui.Find<Grid>("PlanAttentionStrip").ActualHeight}, fullRows={fullRows}");
             }
         });
         await Ui.Run(async () => await RenderedEvidence.Capture(view, $"default-divider-{width}x{height}"));

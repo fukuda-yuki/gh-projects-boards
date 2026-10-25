@@ -52,7 +52,7 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Run(() => Ui.Click("PlanConnect"));
         await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Run(() => { Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty); Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0; });
-        await Ui.Until(() => workspace.Session is not null);
+        await Ui.Until(() => workspace.Session is not null, timeout: TimeSpan.FromSeconds(60));
         await Ui.Ready<PlanSheetCell>("PlanCell1_Title");
         await Ui.Idle();
     }

@@ -25,7 +25,8 @@ internal sealed partial class PlanSheetHostedTests
             && Ui.CommandButton("PlanSheetExpandAll").IsInOverflow);
         foreach (var filtered in new[] { true, false }) {
             await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = filtered ? "Task" : "");
-            await Ui.Until(() => sheet.RowIds.Count == (filtered ? 2 : 3));
+            // The filtered match (Task) keeps its requirement row as context, so both states show 3 rows.
+            await Ui.Until(() => sheet.RowIds.Count == 3);
             await Ui.Run(() => {
                 foreach (var id in new[] { "PlanSheetCollapseAll", "PlanSheetExpandAll" })
                     AssertFolding(Ui.CommandButton(id), filtered);

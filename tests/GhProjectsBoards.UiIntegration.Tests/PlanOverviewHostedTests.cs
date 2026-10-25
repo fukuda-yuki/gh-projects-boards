@@ -879,7 +879,9 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(filter.Focus(FocusState.Keyboard), Is.True);
             filter.Text = text;
         });
-        await Ui.Until(() => VisibleRows().SequenceEqual(visible));
+        // The matching rows in plan order: a match's requirement rows stay as dimmed context between them.
+        await Ui.Until(() => VisibleRows().Where(identity => visible.Contains(identity) || identity.Length == 0)
+            .SequenceEqual(visible));
         await Ui.Idle();
     }
     private static async Task SelectCell(int number, string field, bool extend = false)

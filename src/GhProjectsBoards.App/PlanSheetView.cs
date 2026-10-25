@@ -216,7 +216,7 @@ internal sealed partial class PlanSheetView : Grid
         var titleGroup = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
         titleGroup.Children.Add(selectedTitle); titleGroup.Children.Add(issueLink);
         selectedLine.Children.Add(titleGroup); SetColumn(titleGroup, 1);
-        var explanation = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Left };
+        var explanation = new Grid { ColumnSpacing = 0, HorizontalAlignment = HorizontalAlignment.Left };
         // 0 dates and scheduler reasons, 1 typed-start notice (#229), 2 lateness tag, 3 effect/cause links,
         // 4 progress change, 5 見積超過, 6 requirement-row set counts or 自分の残による.
         explanation.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -234,6 +234,9 @@ internal sealed partial class PlanSheetView : Grid
         explanation.Children.Add(progressLine); SetColumn(progressLine, 4);
         explanation.Children.Add(estimateDetail); SetColumn(estimateDetail, 5);
         explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 6);
+        // The gap belongs to each visible part, not the columns: an empty start notice must not widen it.
+        foreach (var part in explanation.Children.OfType<FrameworkElement>().Where(part => !ReferenceEquals(part, reason)))
+            part.Margin = new(part.Margin.Left + 10, part.Margin.Top, part.Margin.Right, part.Margin.Bottom);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
         InitializeDetailToggle(selectedLine);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
@@ -689,10 +692,11 @@ internal sealed partial class PlanSheetView : Grid
             .Concat(Realized.Where(r => r.Cells.Any(c => c.Composing)).Select(r => r.Identity)).ToHashSet();
         UpdateFilterResult(document);
         var next = new List<string>(document.State.Rows.Length + 1);
-        var matched = filterResult.Matches.Length > 0 ? filterResult.Matches.ToHashSet(StringComparer.Ordinal) : null;
+        // A filter can match nothing: the empty result still keeps the pending editors, not a null set.
+        var matched = filterResult.Matches.ToHashSet(StringComparer.Ordinal);
         foreach (var row in document.State.Rows)
         {
-            var shown = FilterActive ? matched!.Contains(row.Identity) || filterContext.Contains(row.Identity) : !HiddenByFold(row);
+            var shown = FilterActive ? matched.Contains(row.Identity) || filterContext.Contains(row.Identity) : !HiddenByFold(row);
             if (pendingRows.Contains(row.Identity) || shown) next.Add(row.Identity);
         }
         next.Add("");
