@@ -452,7 +452,7 @@ internal sealed partial class PlanWorkspaceView
         var captions = new[] { "表示", "表示名", "幅", "GitHub", "種類", "計画シートで" };
         for (var i = 0; i < captions.Length; i++) Cell(headings, Label(captions[i]), i + 1);
         var table = new StackPanel(); table.Children.Add(headings);
-        var list = columnList = Id(new ListView { CanDragItems = true, AllowDrop = true, CanReorderItems = true,
+        var list = columnList = Id(new ListView {
             SelectionMode = ListViewSelectionMode.Single, Padding = new(0),
             ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
                 new Setter(Control.PaddingProperty, new Thickness(0)), new Setter(FrameworkElement.MinHeightProperty, 40d),
@@ -464,12 +464,44 @@ internal sealed partial class PlanWorkspaceView
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
         AutomationProperties.SetName(list, "計画シートの列の順序");
         AutomationProperties.SetHelpText(list, "ハンドルをドラッグするか、行で Alt+↑ / Alt+↓ を押して順序を変更します。");
+        // The handle owns the drag: pressing it and moving the pointer picks the row up, releasing it over another
+        // row moves the column there. The list itself stays a plain ListView so the drop target is the row under
+        // the pointer instead of the platform's reorder gesture.
+        uint dragPointer = 0;
+        string? dragKey = null;
+        int IndexAt(double y) {
+            for (var i = 0; i < list.Items.Count; i++)
+                if (list.ContainerFromIndex(i) is ListViewItem container
+                    && y < container.TransformToVisual(list).TransformPoint(new()).Y + container.ActualHeight) return i;
+            return list.Items.Count - 1;
+        }
+        async Task Drop(string key, int target) {
+            var from = PlanSheetColumns.All(session.Document).Select(c => c.Key).ToList().IndexOf(key);
+            if (target < 0 || target == from || generation != settingsGeneration) return;
+            await Run(async () => {
+                await ChangeSettings(_ => PlanSheetColumns.Move(session.Document, key, target));
+                RenderSettings();
+            });
+        }
         foreach (var column in columns)
         {
             var line = Line(); line.Tag = column.Key;
-            var handle = new FontIcon { Glyph = "", FontSize = 14, IsTabStop = false };
+            var handle = new FontIcon { Glyph = "\uE784", FontSize = 14, IsTabStop = false };
             ToolTipService.SetToolTip(handle, "ドラッグまたは Alt+↑ / Alt+↓ で順序を変更");
             AutomationProperties.SetName(handle, column.Name + " の順序"); Cell(line, handle, 0);
+            var key = column.Key;
+            handle.PointerPressed += (_, e) => {
+                if (rendering || generation != settingsGeneration || !e.GetCurrentPoint(list).Properties.IsLeftButtonPressed) return;
+                dragPointer = e.Pointer.PointerId; dragKey = key; line.Opacity = 0.6;
+                handle.CapturePointer(e.Pointer); e.Handled = true;
+            };
+            handle.PointerMoved += (_, e) => { if (dragKey == key && e.Pointer.PointerId == dragPointer) e.Handled = true; };
+            handle.PointerReleased += async (_, e) => {
+                if (dragKey != key || e.Pointer.PointerId != dragPointer) return;
+                handle.ReleasePointerCapture(e.Pointer); line.Opacity = 1; dragKey = null; e.Handled = true;
+                await Drop(key, IndexAt(e.GetCurrentPoint(list).Position.Y));
+            };
+            handle.PointerCaptureLost += (_, _) => { line.Opacity = 1; dragKey = null; };
             CheckBox? toggle = null;
             if (!column.Required)
             {
@@ -528,14 +560,6 @@ internal sealed partial class PlanWorkspaceView
             if (focused is not ListViewItem { Content: Grid { Tag: string key } }) return;
             args.Handled = true;
             await MoveColumn(session, generation, key, args.Key == Windows.System.VirtualKey.Up ? -1 : 1);
-        };
-        list.DragItemsCompleted += async (_, _) => {
-            if (rendering || generation != settingsGeneration) return;
-            var order = list.Items.Cast<Grid>().Select(g => (string)g.Tag).ToArray();
-            await Run(async () => {
-                await ChangeSettings(_ => PlanSheetColumns.Reorder(session.Document, order));
-                RenderSettings();
-            });
         };
         table.Children.Add(list); section.Children.Add(table);
     }
