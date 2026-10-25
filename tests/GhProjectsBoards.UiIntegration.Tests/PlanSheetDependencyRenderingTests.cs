@@ -97,10 +97,18 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(stub.Text, Does.StartWith("新1").And.EndWith("→"));
             Assert.That(AutomationProperties.GetName(stub), Is.EqualTo("先行 新1（表示されていません）"));
             Assert.That(ToolTipService.GetToolTip(stub), Is.EqualTo(AutomationProperties.GetName(stub)));
-            // The forward link (1 → 90) draws nothing in this window: no route and no crossing for it.
-            var forwardRoutes = Ui.Tree(sheet).OfType<Polyline>().Select(AutomationProperties.GetAutomationId)
+            // The forward link (1 → 90) draws nothing in this window: the successor shows the stub and no
+            // visible route or head for that link. Geometry left in a recycled container by a scroll is not
+            // on screen (its animation hides it) and must stay untraceable.
+            var row = CurrentDependencyRow("I90")!;
+            Assert.That(Ui.Tree(row).OfType<Polyline>().Select(AutomationProperties.GetAutomationId)
+                .Where(id => id.StartsWith("PlanArrow1_90_", StringComparison.Ordinal)), Is.Empty);
+            Assert.That(Ui.Tree(row).OfType<Polygon>().Select(AutomationProperties.GetAutomationId)
+                .Where(id => id.StartsWith("PlanArrowHead1_90_", StringComparison.Ordinal)), Is.Empty);
+            var forwardRoutes = Ui.Tree(sheet).OfType<Polyline>().Where(Visible)
+                .Select(AutomationProperties.GetAutomationId)
                 .Where(id => id.StartsWith("PlanArrow1_90_", StringComparison.Ordinal)).ToArray();
-            Assert.That(forwardRoutes, Is.Empty, "An off-screen predecessor must not draw a line: " + string.Join(",", forwardRoutes));
+            Assert.That(forwardRoutes, Is.Empty, "An off-screen predecessor must not draw a visible line: " + string.Join(",", forwardRoutes));
             // The reverse link's predecessor row 95 is visible, so that link still runs; its stroke is the only
             // crossing in this row — the suppressed forward link would have added a second.
             var reverseRoute = Ui.Find<Polyline>("PlanArrow95_3_95");
@@ -157,6 +165,14 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => RenderedEvidence.Capture(sheet, "visible-predecessor-arrow"));
     }
 
+    // Whether the rendered slice shows this element: a container the scroller kept but hides must not count
+    // as a drawn line.
+    private bool Visible(DependencyObject element)
+    {
+        for (var parent = element; parent is not null && !ReferenceEquals(parent, sheet); parent = VisualTreeHelper.GetParent(parent))
+            if (parent is UIElement ui && (ui.Visibility != Visibility.Visible || ui.Opacity == 0)) return false;
+        return true;
+    }
     private async Task<double> DependencyEntryX(int from, int to, int number, bool down)
     {
         await ShowDependencyRow(number);
