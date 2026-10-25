@@ -274,6 +274,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await PublishBodyDraft("completed");
         if (fault is not null) {
             await Ui.Until(() => DetailElement<InfoBar>("PlanDetailPublishFailure")?.IsOpen == true);
+            // The retry action is part of the failure bar; wait for the bar's control before clicking it.
+            await Ui.Ready<Button>("PlanDetailPublishRetry");
             DetailScenario(); await Ui.Run(() => Ui.Click("PlanDetailPublishRetry"));
         }
         await Ui.Until(() => DetailElement<TextBlock>("PlanDetailPublished")?.Visibility == Visibility.Visible);

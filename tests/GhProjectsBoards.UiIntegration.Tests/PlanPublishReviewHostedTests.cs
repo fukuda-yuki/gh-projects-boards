@@ -52,7 +52,9 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Run(() => Ui.Click("PlanConnect"));
         await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Run(() => { Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty); Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0; });
-        await Ui.Until(() => workspace.Session is not null);
+        // The version-scale case opens 1,040 rows; the hosted runner needs longer than the default
+        // observation deadline to read and render them, and the case is about the review, not open speed.
+        await Ui.Until(() => workspace.Session is not null, timeout: TimeSpan.FromSeconds(120));
         await Ui.Ready<PlanSheetCell>("PlanCell1_Title");
         await Ui.Idle();
     }
