@@ -24,19 +24,38 @@ internal static class PlanJson
             Converters = { new JsonStringEnumConverter(allowIntegerValues: false) } };
     }
     internal static string Text<T>(T value) => JsonSerializer.Serialize(value, Options);
-    internal static T Read<T>(byte[] bytes) => (WithoutRemovedFields(bytes) is { } upgraded ? upgraded.Deserialize<T>(Options) : JsonSerializer.Deserialize<T>(bytes, Options))
+    internal static T Read<T>(byte[] bytes) => (Upgrade(bytes) is { } upgraded ? upgraded.Deserialize<T>(Options) : JsonSerializer.Deserialize<T>(bytes, Options))
         ?? throw new ArgumentException("保存内容が空です。");
     // #268 removed the start-constraint and fixed-date fields. A plan or settings file the previous version saved still holds
     // them as row values, column mappings, sheet columns, conflicts, failures and publish writes; dropping
     // exactly those keeps every other stored value, including unpublished edits and the history.
     private static readonly string[] RemovedFields = ["StartNoEarlierThan", "Fixed"];
-    private static JsonNode? WithoutRemovedFields(byte[] bytes)
+    // #238 stores read observations with the plan. A plan saved before them opens with no read result and no
+    // judged 未更新 instead of failing the strict format; opening rewrites nothing.
+    private static JsonNode? Upgrade(byte[] bytes)
     {
         var span = bytes.AsSpan();
-        if (span.IndexOf("\"startNoEarlierThan\""u8) < 0 && span.IndexOf("\"StartNoEarlierThan\""u8) < 0 && span.IndexOf("\"Fixed\""u8) < 0) return null;
+        var removed = span.IndexOf("\"startNoEarlierThan\""u8) >= 0 || span.IndexOf("\"StartNoEarlierThan\""u8) >= 0 || span.IndexOf("\"Fixed\""u8) >= 0;
+        var readObservations = span.IndexOf("\"progressUpdatedAt\""u8) < 0;
+        if (!removed && !readObservations) return null;
         var root = JsonNode.Parse(bytes);
-        Strip(root);
+        if (readObservations) AddReadObservations(root);
+        if (removed) Strip(root);
         return root;
+        static void AddReadObservations(JsonNode? node)
+        {
+            if (node is JsonObject item)
+            {
+                if (item["sync"] is JsonObject sync)
+                {
+                    sync["progressUpdatedAt"] ??= new JsonObject();
+                    if (!sync.ContainsKey("lastRead")) sync["lastRead"] = null;
+                }
+                foreach (var (_, child) in item.ToArray()) AddReadObservations(child);
+            }
+            else if (node is JsonArray list)
+                foreach (var child in list.ToArray()) AddReadObservations(child);
+        }
         static void Strip(JsonNode? node)
         {
             if (node is JsonObject item)
@@ -65,7 +84,10 @@ internal static class PlanJson
         PlanOperations.Require(!sync.Unverified.IsDefault && sync.Unverified.Distinct().Count() == sync.Unverified.Length &&
             (sync.Unverified.IsEmpty || sync.Publish is not null) && sync.Unverified.All(id => checkpoint.Document.State.Rows.Any(r => r.Identity == id)) && !sync.Failures.IsDefault && sync.Failures.All(f => PlanField.IsDefined(f.Field) && !string.IsNullOrWhiteSpace(f.Reason)) && !sync.Conflicts.IsDefault && !sync.Unavailable.IsDefault && sync.InaccessibleCount >= 0 && sync.DraftCount >= 0 && sync.PullRequestCount >= 0 &&
             sync.Unavailable.Distinct().Count() == sync.Unavailable.Length && sync.Unavailable.All(id => checkpoint.Document.Baseline.Rows.Any(r => r.Identity == id)) &&
-            !sync.CannotUpdate.IsDefault && sync.CannotUpdate.Distinct().Count() == sync.CannotUpdate.Length, "更新状態が不正です。");
+            !sync.CannotUpdate.IsDefault && sync.CannotUpdate.Distinct().Count() == sync.CannotUpdate.Length &&
+            // #238: observations belong to rows the plan holds, and the placed Issues stay a set.
+            sync.ProgressUpdatedAt.All(pair => checkpoint.Document.State.Rows.Any(r => r.Identity == pair.Key)) &&
+            (sync.LastRead is not { } lastRead || lastRead.Added.Distinct().Count() == lastRead.Added.Length && lastRead.Added.All(id => checkpoint.Document.State.Rows.Any(r => r.Identity == id))), "更新状態が不正です。");
         PlanOperations.Require(sync.Conflicts.Select(c => (c.Identity, c.Field)).Distinct().Count() == sync.Conflicts.Length &&
             sync.Conflicts.All(c => PlanField.IsDefined(c.Field) && c.Field != PlanField.NewTask && c.Baseline is not null && c.Local is not null && c.Remote is not null &&
                 (c.DeletedFieldName is null || PlanSheetColumns.IsExtra(c.Field) && c.Remote == "null" && !checkpoint.Document.Baseline.Columns.Any(f => "Project:" + f.Id == c.Field)) &&

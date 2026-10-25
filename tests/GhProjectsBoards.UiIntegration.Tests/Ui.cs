@@ -268,6 +268,14 @@ internal static class Ui
         Assert.That(checkbox.IsLoaded && checkbox.IsEnabled, Is.True);
         ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(checkbox).GetPattern(PatternInterface.Toggle)).Toggle();
     }
+    // The attention strip's toggles are ToggleButtons, not CheckBoxes: a test presses them the way a user does.
+    public static void ToggleToggleButton(string id)
+    {
+        var toggle = Find<Microsoft.UI.Xaml.Controls.Primitives.ToggleButton>(id);
+        Assert.That(toggle.IsLoaded && toggle.IsEnabled, Is.True,
+            $"The toggle {id} must be loaded and enabled (loaded={toggle.IsLoaded}, enabled={toggle.IsEnabled})");
+        ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(toggle).GetPattern(PatternInterface.Toggle)).Toggle();
+    }
     public static void Click(Button button)
     {
         Assert.That(button.IsLoaded && button.IsEnabled, Is.True,

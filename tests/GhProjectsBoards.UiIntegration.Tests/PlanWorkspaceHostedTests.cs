@@ -9,6 +9,7 @@ using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
@@ -107,6 +108,22 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.DialogReady("PlanResetConfirm");
     }
 
+    // #238: a successful refresh opens no result bar, so the toolbar's own enabled state is the completion
+    // signal; the read result itself settles on the attention strip.
+    private async Task RefreshFromToolbar()
+    {
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        await Ui.Idle();
+    }
+    private static string AttentionLabel(string id) => AutomationProperties.GetName(Ui.Find<ToggleButton>(id));
+    private async Task PressAttentionToggle(string id)
+    {
+        await Ui.Ready<ToggleButton>(id);
+        await Ui.Run(() => Ui.ToggleToggleButton(id));
+        await Ui.Idle();
+    }
+
     [TestCase(false), TestCase(true), Category("PlanReadDate")]
     public async Task SettingsRecalculationNoticeFollowsTheSettingsPathAndUndoClosesItWithoutRedoNotice(bool reset)
     {
@@ -152,17 +169,17 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Idle();
         // Undo restores the date; the filter is a view, not an edit, so it stays until the PMO clears it.
         Assert.That(workspace.Session!.Document.State.Rows.Single(r => r.Identity == "I2").End, Is.EqualTo(readDay.AddDays(1)));
-        // #236 part B: the recalculation notice is not closed by Undo - it is replaced when the next
-        // operation starts (PlanWorkspaceBusy closes it before running one). The subject survives as the
-        // notice not outliving its recalculation: a refresh replaces it, and Redo never brings it back.
-        await Ui.Run(() => Ui.Click("PlanRefresh"));
-        await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && Ui.Find<InfoBar>("PlanRefreshResult").IsOpen);
+        // #236 part B / #238: the recalculation notice is not closed by Undo - it is replaced when the next
+        // operation starts (PlanWorkspaceBusy closes it before running one). A refresh opens no result bar of
+        // its own, so the bar stays closed and Redo never brings the notice back.
+        await RefreshFromToolbar();
         await Ui.Run(() => {
-            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Title, Does.StartWith("最新の情報に更新しました（"));
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
+            Assert.That(Ui.Find<TextBlock>("PlanReadResult").Text, Does.EndWith(" に GitHub から読み込み"));
             Ui.Click("PlanRedo");
         });
         await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Title, Does.Not.StartWith("日程を再計算しました")));
+        await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
@@ -250,8 +267,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
-    [TestCase(false, true), TestCase(true, true), TestCase(false, false), Category("PlanReadDate")]
-    public async Task RefreshResultNamesTheReadTimeWithoutDateChangesAndItsFilterCanBeCleared(bool closeBar, bool advanceDate)
+    [TestCase(false), TestCase(true), Category("PlanReadDate")]
+    public async Task ReadResultAppearsOnTheAttentionStripAndItsFiltersClearWithoutAResultBar(bool advanceDate)
     {
         readDay = new(2026, 10, 6);
         FakePlanEditor.Save(root, new([
@@ -261,73 +278,42 @@ internal sealed partial class PlanWorkspaceHostedTests
         ], 4));
         await Open();
         if (advanceDate) readDay = new(2026, 10, 7);
-        await Ui.Run(() => Ui.Click("PlanRefresh"));
-        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
-        var filtered = false;
-        string? offeredId = null, offeredLabel = null;
+        await RefreshFromToolbar();
         await Ui.Run(() => {
-            var bar = Ui.Find<InfoBar>("PlanRefreshResult");
-            Assert.That(bar.Severity, Is.EqualTo(InfoBarSeverity.Informational));
-            Assert.That(bar.IsClosable, Is.True);
-            Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            // #236 part B: a refresh reads and moves no date. The status bar already counts the lateness, so the
-            // bar repeats neither counts nor a no-change sentence; it offers only the one useful filter.
-            Assert.That(bar.Message, Is.Empty);
-            Assert.That(bar.Content, Is.Null);
-            // The bar's lateness filter is an identity set over this sheet. Its id and label are read here,
-            // on the UI thread; the rendered button is found and invoked below, waiting for it to realise.
-            if (bar.ActionButton is Button button) {
-                var id = AutomationProperties.GetAutomationId(button);
-                var label = button.Content as string ?? "";
-                offeredId = id; offeredLabel = label;
-                // The bar never offers a zero count: the 期限超過 fallback is absent when nothing is
-                // overdue, and a count filter always names a nonzero set (docs/spec.md, #236 part B).
-                if (id != "PlanRefreshCauseFilter")
-                    Assert.That(int.TryParse(label.Split(' ')[^1].Replace(",", ""), System.Globalization.NumberStyles.Integer,
-                        System.Globalization.CultureInfo.InvariantCulture, out var offeredCount) && offeredCount > 0,
-                        Is.True, "A count filter in the bar must name a nonzero set: " + label);
-                filtered = true;
-            }
+            // #238: the strip's right end carries the read result; no result bar opens and no row moves.
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
+            var read = Ui.Find<TextBlock>("PlanReadResult");
+            Assert.That(read.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(read.Text, Does.Match(@"^\d+/\d+ \d+:\d{2} に GitHub から読み込み$"));
+            Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.Empty, "A count never becomes title text.");
         });
-        if (filtered) {
-            // The InfoBar holds the logical action button; the tree materialises its own instance, and its
-            // id is not necessarily carried over. Wait for the rendered button (the search covers the whole
-            // window, not just the view subtree) and invoke it, which is what a user does.
-            Button? realized = null;
-            await Ui.Until(() => {
-                realized = Ui.Tree(Ui.Root).OfType<Button>().FirstOrDefault(b =>
-                    (b.Content as string == offeredLabel || AutomationProperties.GetName(b) == offeredLabel) && b.IsLoaded);
-                return realized is not null;
-            }, () => "the bar's filter must be rendered: [" + offeredLabel + "] id=" + offeredId
-                + "; buttons=[" + string.Join(" | ", Ui.Tree(Ui.Root).OfType<Button>().Select(b => AutomationProperties.GetName(b) + "/" + b.Content as string)) + "]");
-            await Ui.Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(realized!)
-                .GetPattern(PatternInterface.Invoke)).Invoke());
-            await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
-            await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-refresh-filter-" + closeBar + "-" + advanceDate));
-        }
+        // The 遅れ toggle is the route the removed result bar used to offer: it presses, filters and clears.
+        await PressAttentionToggle("PlanAttentionLate");
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count < 4);
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue238-read-result-" + advanceDate));
         await Ui.Run(() => {
-            if (closeBar) Ui.Find<InfoBar>("PlanRefreshResult").IsOpen = false;
-            else Ui.Find<TextBox>("PlanSheetFilter").Text = "";
-            // Closing the bar clears the identity filter; clearing the text restores the unfiltered plan.
-            if (!closeBar) Ui.Tree(view).OfType<PlanSheetView>().Single().ClearIdentityFilter();
+            Assert.That(Ui.Find<ToggleButton>("PlanAttentionLate").IsChecked, Is.True);
+            Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.Empty, "The toggle filter is not text.");
+            Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Does.Contain("担当者なし"), "The status bar becomes the chase list.");
+            Assert.That(Ui.Find<Button>("PlanCopyByAssignee").Visibility, Is.EqualTo(Visibility.Visible));
         });
+        await PressAttentionToggle("PlanAttentionLate");
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 4);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Visibility, Is.EqualTo(Visibility.Collapsed));
-            Ui.Click("PlanRefresh");
+            Assert.That(Ui.Find<Button>("PlanCopyByAssignee").Visibility, Is.EqualTo(Visibility.Collapsed));
         });
-        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        await RefreshFromToolbar();
         await Ui.Run(() => {
-            var bar = Ui.Find<InfoBar>("PlanRefreshResult");
-            Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            Assert.That(bar.Message, Is.Empty);
-            Assert.That(bar.Content, Is.Null, "A refresh with no added Issue shows no added-Issue filter.");
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
+            Assert.That(Ui.Find<ToggleButton>("PlanAttentionAdded").Visibility, Is.EqualTo(Visibility.Collapsed),
+                "A refresh with no added Issue shows no 新しい Issue filter.");
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test, Category("PlanReadDate")]
-    public async Task RefreshNamesIssuesAddedOnGitHubPlacesTheSubIssueAndShowsThePartialTotal()
+    public async Task RefreshNamesIssuesItPlacedInThePlanAndTheStripFiltersThem()
     {
         readDay = new(2026, 10, 6);
         FakePlanEditor.Save(root, new([
@@ -341,17 +327,15 @@ internal sealed partial class PlanWorkspaceHostedTests
         FakePlanEditor.Save(root, remote with { NextId = 7, Issues = remote.Issues
             .Add(new(new("I4", "R01 PG-005 不具合修正", "acme/repo") { Parent = "I1" }, "", true))
             .Add(new(new("I5", "顧客からの問い合わせ対応", "acme/repo"), "", true)) });
-        await Ui.Run(() => Ui.Click("PlanRefresh"));
-        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
-        await Ui.Ready<Button>("PlanRefreshAddedFilter");
+        await RefreshFromToolbar();
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue245-added-issues"));
         await Ui.Run(() => {
             Assert.That(workspace.Session!.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I4", "I3", "I6", "I5" }));
             Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator3")), Does.Contain("未発行の変更あり"));
             Assert.That(workspace.Session.Changes(readDay).Fields.Where(p => p.Value.Contains(PlanField.Order)).Select(p => p.Key), Is.EqualTo(new[] { "I4" }));
-            var links = workspace.Session.Document.Sync.IssueLinks;
-            string Number(string id) => links[id].Caption[links[id].Caption.LastIndexOf('#')..];
-            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.EndWith(
-                $"GitHub で追加された Issue 2: {Number("I4")} R01 PG-005 不具合修正、{Number("I5")} 顧客からの問い合わせ対応"));
+            // #238: the Issues a read placed are a filter at the strip's right end, not a result bar.
+            Assert.That(AttentionLabel("PlanAttentionAdded"), Is.EqualTo("新しい Issue 2"));
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
             var total = Ui.Find<FrameworkElement>("PlanCell1_Estimate");
             Assert.That(AutomationProperties.GetName(total), Does.Contain("16h（見積のないタスク 1 件を除く）"));
             Assert.That(ToolTipService.GetToolTip(total), Is.EqualTo("見積工数 · 16h（見積のないタスク 1 件を除く）"));
@@ -367,30 +351,32 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(cell.Text.IsTextTrimmed, Is.False, "The sum stays readable beside its badge at the default width.");
             Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("PlanIndicator1")), Does.Contain("見積のないタスク 1"));
         });
-        await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue245-added-issues"));
-        await Ui.Run(() => Ui.Click("PlanRefreshAddedFilter"));
+        await PressAttentionToggle("PlanAttentionAdded");
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 3);
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I4", "I5", "" }));
-            Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.EqualTo("追加された Issue"));
-            Ui.Find<InfoBar>("PlanRefreshResult").IsOpen = false;
+            Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.Empty, "The toggle filter is not title text.");
+            Assert.That(Ui.Find<ToggleButton>("PlanAttentionAdded").IsChecked, Is.True);
         });
+        await PressAttentionToggle("PlanAttentionAdded");
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 7);
-        // A reset never lists added Issues, so its bar offers no filter for them either.
+        // A reset never lists added Issues, so the strip offers no filter for them either.
         await OpenResetDialog();
         await Ui.Run(() => Ui.DialogButton("PlanResetConfirm", "PrimaryButton"));
         await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
         await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Tree(Ui.Find<InfoBar>("PlanRefreshResult")).OfType<Button>().Select(AutomationProperties.GetAutomationId),
-            Does.Not.Contain("PlanRefreshAddedFilter")));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.True, "A reset keeps its own result bar.");
+            Assert.That(Ui.Find<ToggleButton>("PlanAttentionAdded").Visibility, Is.EqualTo(Visibility.Collapsed));
+        });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test, Category("PlanReadDate")]
-    public async Task RefreshBarCountsTheLatenessOfTheReadNotOfThePreviousStatusDate()
+    public async Task AttentionStripCountsTheReadDaysLatenessNotThePreviousStatusDates()
     {
         // The weekly flow: last week's 基準日 is still set when the PMO refreshes, and the refresh moves it to
-        // the read day. The bar's counts must be the ones the refreshed sheet shows, not last week's.
+        // the read day. The strip must show the refreshed sheet's lateness, not last week's.
         readDay = new(2026, 10, 6);
         FakePlanEditor.Save(root, new([
             new(new("I1", "設計", "acme/repo"), "", true),
@@ -399,38 +385,32 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(new DateTime(2026, 10, 20)));
         await Ui.Until(() => workspace.Session!.Document.State.Settings.StatusDate == new DateOnly(2026, 10, 20));
-        await Ui.Ready<Button>("PlanStatusOverdueFilter");
-        await Ui.Run(() => Ui.Click("PlanRefresh"));
-        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
-        await Ui.Idle();
+        await Ui.Ready<ToggleButton>("PlanAttentionLate");
+        await Ui.Run(() => Assert.That(AttentionLabel("PlanAttentionLate"), Is.EqualTo("遅れ 1"), "The old 基準日 makes it late."));
+        await RefreshFromToolbar();
         await Ui.Run(() => {
             Assert.That(workspace.Session!.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 6)), "The read day becomes the 基準日.");
-            Assert.That(Ui.Tree(Ui.Root).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanStatusOverdueFilter"), Is.False,
-                "On the read day the task is not overdue.");
-            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Not.Contain("期限超過"),
-                "The bar reports the refreshed sheet's lateness, not the previous 基準日's.");
+            Assert.That(AttentionLabel("PlanAttentionLate"), Is.EqualTo("遅れ 0"), "On the read day the task is not late.");
+            Assert.That(Ui.Find<ToggleButton>("PlanAttentionLate").IsEnabled, Is.False, "A zero count stays visible and disabled.");
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test, Category("PlanReadDate")]
-    public async Task RefreshResultKeepsThePmoStatusDateAndReportsNoMovedDate()
+    public async Task RefreshLeavesThePmoStatusDateAndReportsItselfOnTheStrip()
     {
         readDay = new(2026, 10, 6);
         await Open();
         await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(new DateTime(2026, 10, 7)));
         await Ui.Until(() => workspace.Session!.Document.State.Settings.StatusDate == new DateOnly(2026, 10, 7));
         await Ui.Idle();
-        await Ui.Run(() => Ui.Click("PlanRefresh"));
-        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        await RefreshFromToolbar();
         await Ui.Run(() => {
-            var bar = Ui.Find<InfoBar>("PlanRefreshResult");
-            // #236 part B: the status date a PMO chose is not "moved back" by a refresh, and the bar no
-            // longer reports a 基準日 change at all — it reports that no date moved (docs/spec.md).
-            Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
-            Assert.That(bar.Message, Is.Empty);
-            // The read day still becomes the 基準日 of the read document.
-            Assert.That(Ui.Find<CalendarDatePicker>("PlanStatusDate").Date!.Value.Date, Is.EqualTo(new DateTime(2026, 10, 6)));
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False, "A successful refresh opens no result bar (#238).");
+            Assert.That(Ui.Find<TextBlock>("PlanReadResult").Text, Does.EndWith(" に GitHub から読み込み"));
+            Assert.That(Ui.Find<CalendarDatePicker>("PlanStatusDate").Date!.Value.Date, Is.EqualTo(new DateTime(2026, 10, 6)),
+                "The read day still becomes the 基準日 of the read document.");
         });
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
@@ -667,18 +647,18 @@ internal sealed partial class PlanWorkspaceHostedTests
         }
     }
 
-    [TestCase(false, false, "")]
-    [TestCase(true, false, "期限超過 1 · 遅れの原因 1")]
-    [TestCase(false, true, "予定より遅れ 1 · 遅れの原因 1")]
-    [TestCase(true, true, "期限超過 1 · 予定より遅れ 1 · 遅れの原因 2")]
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    [TestCase(true, true)]
     [Category("ShellChrome")]
-    public async Task StatusCountsOmitZeroLatenessParts(bool overdue, bool later, string expectedMarks)
+    public async Task AttentionStripHoldsTheCountsAndTheStatusBarKeepsOnlyThePlanCounts(bool overdue, bool later)
     {
         var date = new DateOnly(2026, 10, 5);
         var state = FakePlanEditor.Load(root);
         var row = state.Issues[0].Row with { Start = date, End = date.AddDays(2) };
-        // 遅れの原因 (#236 part B) is an overdue task or a task whose own remaining work pushes its forecast
-        // past its planned end, so the overdue row and the later row each contribute one cause.
+        // #260 D3: the attention counts live on the strip and in the summary verdict only; the status bar keeps
+        // the requirement and task counts and becomes the chase list while a filter is on.
         FakePlanEditor.Save(root, state with { Issues = [
             state.Issues[0] with { Row = row with { Start = overdue ? date.AddDays(-3) : date, End = overdue ? date.AddDays(-3) : date.AddDays(2) } },
             new(row with { Identity = "I2", Title = "後続" }, "", true),
@@ -688,46 +668,55 @@ internal sealed partial class PlanWorkspaceHostedTests
             var session = workspace.Session!;
             await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = date }), date);
             // Pulling I3's end onto the 基準日 leaves its 16h forecast on the next day: a later task that is
-            // not overdue, so the two lateness levels are exercised independently.
+            // not overdue, so the two lateness cases are exercised independently.
             if (later) await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I3", PlanField.End, date)]), date);
             Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh();
-            // #236 part B keeps the requirement and task counts in the status text and moves the lateness
-            // counts beside it as identity-set filter buttons, so a zero part is absent rather than "0".
+        });
+        await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 0 · タスク 3"));
-            var marks = Ui.Tree(Ui.Find<StackPanel>("PlanStatusMarks")).OfType<Button>()
-                .Select(b => b.Content as string ?? "").Where(t => t.Length > 0).ToArray();
-            Assert.That(string.Join(" · ", marks), Is.EqualTo(expectedMarks));
+            var late = overdue || later ? "遅れ 1" : "遅れ 0";
+            Assert.That(AttentionLabel("PlanAttentionLate"), Is.EqualTo(late));
+            Assert.That(AttentionLabel("PlanAttentionCause"), Is.EqualTo("遅れの原因 0"),
+                "A late task with no late successor is not a cause (#260).");
+            Assert.That(AttentionLabel("PlanAttentionOverEstimate"), Is.EqualTo("見積超過 0"));
+            Assert.That(AttentionLabel("PlanAttentionNotUpdated"), Is.EqualTo("未更新 0"));
+            Assert.That(Ui.Find<ToggleButton>("PlanAttentionCause").IsEnabled, Is.False, "A zero count stays visible and disabled.");
+            Assert.That(Ui.Tree(view).OfType<StackPanel>().Any(p => AutomationProperties.GetAutomationId(p) == "PlanStatusMarks"), Is.False,
+                "The status bar no longer repeats the attention counts.");
         });
     }
 
     [Test, Category("ShellChrome")]
-    public async Task StatusCountFilterKeepsAncestorRequirementRowsDimmedForContext()
+    public async Task AttentionToggleFilterKeepsAncestorRequirementRowsDimmedForContext()
     {
         var date = new DateOnly(2026, 10, 5);
         readDay = date;
         var requirement = new PlanRow("I1", "要求事項", "acme/repo");
-        var overdue = new PlanRow("I2", "遅れ", "acme/repo") { Parent = "I1", Start = date.AddDays(-3), End = date.AddDays(-3), Estimate = 8, Remaining = 8 };
+        var late = new PlanRow("I2", "遅れ", "acme/repo") { Parent = "I1", Start = date.AddDays(-3), End = date.AddDays(-3), Estimate = 8, Remaining = 8 };
         var onPlan = new PlanRow("I3", "予定どおり", "acme/repo") { Parent = "I1", Start = date.AddDays(3), End = date.AddDays(3), Estimate = 8, Remaining = 8 };
         var outside = new PlanRow("I4", "別の要求", "acme/repo") { Start = date.AddDays(3), End = date.AddDays(3), Estimate = 8, Remaining = 8 };
-        FakePlanEditor.Save(root, new([new(requirement, "", true), new(overdue, "", true), new(onPlan, "", true), new(outside, "", true)], 5));
+        FakePlanEditor.Save(root, new([new(requirement, "", true), new(late, "", true), new(onPlan, "", true), new(outside, "", true)], 5));
         await Open("要求事項");
-        await Ui.Ready<Button>("PlanStatusOverdueFilter");
-        await Ui.Run(() => Ui.Click("PlanStatusOverdueFilter"));
-        await Ui.Idle();
+        await PressAttentionToggle("PlanAttentionLate");
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 3);
         await Ui.Run(() => {
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
             // The matched row and its ancestor requirement row stay; unrelated rows leave the view.
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I1", "I2", "" }));
             // XAML stores Opacity as a float, so compare against the float value the product sets.
             Assert.That(sheet.Realized.Single(row => row.Identity == "I1").Opacity, Is.EqualTo(0.55f),
-                "A count filter keeps the ancestor requirement row for context and dims it.");
+                "A toggle filter keeps the ancestor requirement row for context and dims it.");
             Assert.That(sheet.Realized.Single(row => row.Identity == "I2").Opacity, Is.EqualTo(1),
                 "The matched task keeps its ordinary weight.");
-            sheet.ClearIdentityFilter();
+            Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("担当者なし 1"), "The status bar is the chase list.");
         });
+        await PressAttentionToggle("PlanAttentionLate");
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 5);
-        await Ui.Run(() => Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().Realized.Single(row => row.Identity == "I1").Opacity, Is.EqualTo(1),
-            "Clearing the filter restores the ancestor row."));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 1 · タスク 3"));
+            Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().Realized.Single(row => row.Identity == "I1").Opacity, Is.EqualTo(1),
+                "Clearing the filter restores the ancestor row.");
+        });
     }
 
 

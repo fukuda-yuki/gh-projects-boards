@@ -22,6 +22,7 @@ internal sealed partial class PlanSheetView : Grid
         if (value) { CancelPendingFilter(); pendingMenuAction = null; commandMenu.Hide(); }
         remoteBusy = value;
         commandBar.IsEnabled = moreCommands.IsEnabled = filter.IsEnabled = zoom.IsEnabled = statusDate.IsEnabled = !value;
+        foreach (var control in attentionControls) control.IsEnabled = !value;
         RefreshOverviewCommands();
         RefreshRealized();
     }
@@ -47,26 +48,16 @@ internal sealed partial class PlanSheetView : Grid
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
     private PlanDocument? presentedDocument;
     private DateOnly presentedToday;
-    private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0, 0, 0);
-    internal int OverdueTasks => lateness.OverdueTasks;
-    internal int LaterTasks => lateness.LaterTasks;
+    private PlanLatenessResult lateness = PlanLatenessResult.Empty;
+    internal int LateTasks => lateness.LateTasks;
     internal int CauseTasks => lateness.CauseTasks;
     internal int OverEstimateTasks => lateness.OverEstimateTasks;
-    private IReadOnlySet<string> Set(Func<PlanTaskLateness, bool> matches) =>
-        lateness.Tasks.Where(pair => matches(pair.Value)).Select(pair => pair.Key).ToHashSet(StringComparer.Ordinal);
-    // The four status-bar filters (#236 part B) are identity sets over the same classification the marks use.
-    internal IReadOnlySet<string> OverdueSet => Set(late => late.Level == PlanLatenessLevel.Overdue);
-    internal IReadOnlySet<string> LaterSet => Set(late => late.Level == PlanLatenessLevel.Later);
-    internal IReadOnlySet<string> CauseSet => Set(late => late.IsCause);
-    internal IReadOnlySet<string> OverEstimateSet => Set(late => late.OverEstimate);
     internal PlanMarkVisibility Marks => PlanMarkVisibility.From(Session.Document.State.Settings);
     internal DateOnly? ForecastEndOf(string identity) => Schedule.GetValueOrDefault(identity)?.ForecastEnd;
     internal int? WorkingDaysLater(string identity) => LatenessOf(identity)?.DaysLater;
-    // Ancestor requirement rows a lateness filter keeps for context: shown, but dimmed.
-    private HashSet<string> filterContext = [];
     internal bool IsFilterContext(string identity) => filterContext.Contains(identity);
-    internal ImmutableArray<string> LaterDescendantsOf(string identity) =>
-        PlanLateness.LaterDescendants(Schedule.Values.OrderBy(t => t.Input.RowId).ToArray(), identity, lateness);
+    // 遅れている後続: the late tasks this task's lateness pushed, transitively (#260).
+    internal ImmutableArray<string> DelayedSuccessorsOf(string identity) => lateness.DelayedSuccessors(identity);
     internal string IdentityOfRow(int rowId) => Schedule.Values.FirstOrDefault(t => t.Input.RowId == rowId)?.Input.Identity ?? "";
     private Dictionary<string, string> peopleNames = new();
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<string>>.Empty);
@@ -112,8 +103,6 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Button reapplyStored = Id(new Button { Content = "読み直して編集を適用" }, "PlanSaveReapply");
     private readonly Button saveCopy = Id(new Button { Content = "コピーとして保存…" }, "PlanSaveCopy");
     private string? headerKey, timelineKey;
-    private string acceptedFilter = "";
-    private Func<PlanRow, bool>? filterPredicate;
     private long filterGeneration;
     private readonly DispatcherTimer filterDelay = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private readonly TextBlock filterCount = Id(new TextBlock { Visibility = Visibility.Collapsed,
@@ -130,6 +119,9 @@ internal sealed partial class PlanSheetView : Grid
     private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
     private readonly TextBlock latenessDetail = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetLatenessDetail");
+    // #260: the last 実績/残 change from GitHub and the 見積超過 effort line of the selected task.
+    private readonly TextBlock progressLine = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), FontSize = 12 }, "PlanSelectionProgress");
+    private readonly TextBlock estimateDetail = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), FontSize = 12 }, "PlanSelectionOverEstimate");
     // The selection line's two impact links (#236 part B): what this task's lateness delayed, and the
     // predecessor that delayed it. One button per action, shown only when the lateness has that cause.
     private readonly HyperlinkButton successorLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0, Visibility = Visibility.Collapsed }, "PlanSelectionSuccessorFilter");
@@ -161,7 +153,7 @@ internal sealed partial class PlanSheetView : Grid
         this.resolveAssignee = resolveAssignee;
         this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
         this.writeClipboard = writeClipboard is null ? WriteClipboard : (content, _) => writeClipboard(content);
-        for (var r = 0; r < 4; r++) RowDefinitions.Add(new() { Height = GridLength.Auto });
+        for (var r = 0; r < 5; r++) RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         var controls = new Grid { ColumnSpacing = 8, BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
@@ -169,16 +161,12 @@ internal sealed partial class PlanSheetView : Grid
         controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         var scales = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
         scales.Children.Add(new TextBlock { Text = "表示単位", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom);
-        var filterBox = new Grid();
-        filter.Padding = new(30, 4, 24, 4);
-        filterBox.Children.Add(filter);
-        filterBox.Children.Add(Id(new FontIcon { Glyph = "\uE721", FontSize = 14, Width = 14, Height = 14,
-            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new(10, 0, 0, 0),
-            IsHitTestVisible = false, IsTabStop = false, Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetFilterSearch"));
-        scales.Children.Add(filterBox); scales.Children.Add(filterCount);
         controls.Children.Add(scales); SetColumn(scales, 1);
-        AutomationProperties.SetName(statusDate, "基準日"); AutomationProperties.SetName(zoom, "ガントの表示単位"); AutomationProperties.SetName(filter, "タイトルで絞り込み");
-        Children.Add(controls);
+        AutomationProperties.SetName(statusDate, "基準日"); AutomationProperties.SetName(zoom, "ガントの表示単位");
+        // The attention strip sits above the command row and has a fixed height (#260 / #233).
+        var attentionStrip = InitializeAttention();
+        Children.Add(attentionStrip); SetRow(attentionStrip, 0);
+        Children.Add(controls); SetRow(controls, 1);
         var commands = commandBar = Id(new SheetCommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
             OverflowButtonVisibility = CommandBarOverflowButtonVisibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetCommands");
         AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
@@ -222,12 +210,17 @@ internal sealed partial class PlanSheetView : Grid
         controls.Children.Add(InitializeCommandMenu(commands));
         var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
             Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
-        for (var i = 0; i < 5; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
-        selectedLine.Children.Add(selection); selectedLine.Children.Add(selectedTitle); SetColumn(selectedTitle, 1);
+        for (var i = 0; i < 4; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
+        selectedLine.Children.Add(selection);
+        // The Issue reference sits next to the title it belongs to; 詳細 stays at the right end (#260).
+        var titleGroup = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+        titleGroup.Children.Add(selectedTitle); titleGroup.Children.Add(issueLink);
+        selectedLine.Children.Add(titleGroup); SetColumn(titleGroup, 1);
         var explanation = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Left };
-        // 0 start reason, 1 typed-start notice (#229), 2 lateness pill, 3 lateness detail, 4 impact links.
+        // 0 dates and scheduler reasons, 1 typed-start notice (#229), 2 lateness tag, 3 effect/cause links,
+        // 4 progress change, 5 見積超過, 6 requirement-row set counts or 自分の残による.
         explanation.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        for (var column = 0; column < 4; column++) explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        for (var column = 0; column < 6; column++) explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         reason.VerticalAlignment = VerticalAlignment.Center;
         reason.Foreground = Brush("TextFillColorSecondaryBrush");
         slip.FontSize = 12; slip.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
@@ -235,15 +228,16 @@ internal sealed partial class PlanSheetView : Grid
         explanation.Children.Add(reason);
         InitializeStartNotice(explanation);
         explanation.Children.Add(slipPill); SetColumn(slipPill, 2);
-        explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 3);
         var impact = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         impact.Children.Add(successorLink); impact.Children.Add(predecessorLink);
-        explanation.Children.Add(impact); SetColumn(impact, 4);
+        explanation.Children.Add(impact); SetColumn(impact, 3);
+        explanation.Children.Add(progressLine); SetColumn(progressLine, 4);
+        explanation.Children.Add(estimateDetail); SetColumn(estimateDetail, 5);
+        explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 6);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
         InitializeDetailToggle(selectedLine);
-        selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
-        Children.Add(selectedLine); SetRow(selectedLine, 2);
+        Children.Add(selectedLine); SetRow(selectedLine, 3);
         var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(untitledRows); feedback.Children.Add(error);
         SaveFailure.ActionButton = retrySave;
         conflictActions.Children.Add(reapplyStored); conflictActions.Children.Add(saveCopy);
@@ -254,7 +248,7 @@ internal sealed partial class PlanSheetView : Grid
         saveCopy.Click += async (_, _) => { if (savePlanCopy is { } copy) await Run(copy, "Save plan copy"); };
         error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = string.IsNullOrEmpty(error.Text) ? Visibility.Collapsed : Visibility.Visible);
         untitledRows.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => untitledRows.Visibility = string.IsNullOrEmpty(untitledRows.Text) ? Visibility.Collapsed : Visibility.Visible);
-        Children.Add(feedback); SetRow(feedback, 1);
+        Children.Add(feedback); SetRow(feedback, 2);
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions.Add(new()); grid.ColumnDefinitions.Add(new()); }
         sheetClip.Children.Add(sheetHead);
@@ -262,7 +256,7 @@ internal sealed partial class PlanSheetView : Grid
         headers.Children.Add(sheetClip); headers.Children.Add(chartHead); SetColumn(chartHead, 1);
         chartHead.Clip = new RectangleGeometry();
         chartHead.PointerWheelChanged += (_, args) => ScrollTimeline(args);
-        Children.Add(headers); SetRow(headers, 3);
+        Children.Add(headers); SetRow(headers, 4);
         List.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["PlanSheetRowsPanel"];
         List.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanSheetRowTemplate"];
         List.ContainerContentChanging += RowContentChanging;
@@ -277,11 +271,11 @@ internal sealed partial class PlanSheetView : Grid
             var point = args.GetCurrentPoint(List).Position;
             if (point.X >= SheetViewport && point.X < SheetViewport + ChartViewport) ScrollTimeline(args);
         };
-        Children.Add(chartBackground); SetRow(chartBackground, 4);
-        Children.Add(List); SetRow(List, 4);
-        Children.Add(chartStatus); SetRow(chartStatus, 4);
+        Children.Add(chartBackground); SetRow(chartBackground, 5);
+        Children.Add(List); SetRow(List, 5);
+        Children.Add(chartStatus); SetRow(chartStatus, 5);
         moveIndicator.Background = Brush("SheetSelectionStrokeBrush");
-        Children.Add(moveIndicator); SetRow(moveIndicator, 4);
+        Children.Add(moveIndicator); SetRow(moveIndicator, 5);
         List.SizeChanged += (_, _) => { RenderTimelineHeader(); if (Problems.Count > 0) UpdateInputProblem(); };
         List.Loaded += (_, _) => {
             var current = Descendants(List).OfType<ScrollViewer>().FirstOrDefault();
@@ -296,13 +290,13 @@ internal sealed partial class PlanSheetView : Grid
         };
         sheetHorizontal.Content = new Border { Height = 1 }; chartHorizontal.Content = new Border { Height = 1 };
         scrollbars.Children.Add(sheetHorizontal); scrollbars.Children.Add(chartHorizontal); SetColumn(chartHorizontal, 1);
-        Children.Add(scrollbars); SetRow(scrollbars, 5);
+        Children.Add(scrollbars); SetRow(scrollbars, 6);
         divider = Id(new PlanSheetDivider(() => SheetViewport, () => Math.Max(160, Math.Max(320, ActualWidth - 20) - 230), value => {
             dividerWidth = value; RefreshLayout();
         }) { Width = 6, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetDivider");
         AutomationProperties.SetName(divider, "シートとガントの幅");
         ToolTipService.SetToolTip(divider, "ドラッグまたは左右キーで幅を変更");
-        Children.Add(divider); SetRow(divider, 3); SetRowSpan(divider, 3);
+        Children.Add(divider); SetRow(divider, 4); SetRowSpan(divider, 4);
         sheetHorizontal.ViewChanged += (_, _) => RefreshScrolledRows(sheet: true, chart: false);
         chartHorizontal.ViewChanged += (_, args) => {
             if (!args.IsIntermediate) pendingWheelOffset = null;
@@ -336,7 +330,7 @@ internal sealed partial class PlanSheetView : Grid
         filter.TextChanged += async (_, _) => {
             filterDelay.Stop();
             filterGeneration++;
-            if (rendering || disposed || filter.Text == acceptedFilter) return;
+            if (rendering || disposed || filter.Text == activeFilter.Title) return;
             if (filter.Text.Length == 0) await ApplyFilter();
             else filterDelay.Start();
         };
@@ -373,72 +367,7 @@ internal sealed partial class PlanSheetView : Grid
 
         Refresh();
     }
-    internal void CancelPendingFilter()
-    {
-        filterDelay.Stop();
-        filterGeneration++;
-        var wasRendering = rendering;
-        rendering = true;
-        try { filter.Text = acceptedFilter; }
-        finally { rendering = wasRendering; }
-    }
-    internal void FilterTasks(IReadOnlySet<string> identities, string label, bool includeSummaries = false, bool dimAncestors = false)
-    {
-        CancelPendingFilter();
-        acceptedFilter = label;
-        // Ancestor requirement rows stay visible as context when a count filter is applied (#236 part B).
-        filterContext = dimAncestors ? AncestorsOf(identities) : [];
-        filterPredicate = row => identities.Contains(row.Identity) && (includeSummaries || !SummaryIds.Contains(row.Identity))
-            || filterContext.Contains(row.Identity);
-        rendering = true;
-        try { filter.Text = acceptedFilter; }
-        finally { rendering = false; }
-        Refresh();
-    }
-    private HashSet<string> AncestorsOf(IReadOnlySet<string> identities)
-    {
-        var found = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var identity in identities)
-            for (var parent = Rows.GetValueOrDefault(identity)?.Parent; parent is not null; parent = Rows.GetValueOrDefault(parent)?.Parent)
-                if (!found.Add(parent)) break;
-        return found;
-    }
-    internal void ClearIdentityFilter()
-    {
-        if (filterPredicate is null) return;
-        CancelPendingFilter();
-        acceptedFilter = ""; filterPredicate = null; filterContext = [];
-        rendering = true;
-        try { filter.Text = ""; }
-        finally { rendering = false; }
-        Refresh();
-    }
-    private bool MatchesFilter(PlanRow row) => filterPredicate?.Invoke(row)
-        ?? row.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase);
-    private Task ApplyFilter()
-    {
-        filterDelay.Stop();
-        var proposed = filter.Text;
-        var generation = filterGeneration;
-        if (disposed || proposed == acceptedFilter) return Task.CompletedTask;
-        return Run(async () => {
-            if (generation != filterGeneration || filter.Text != proposed || proposed == acceptedFilter) return;
-            try { await CommitPending(); }
-            catch {
-                rendering = true;
-                try { if (generation == filterGeneration && filter.Text == proposed) filter.Text = acceptedFilter; }
-                finally { rendering = false; }
-                throw;
-            }
-            if (generation != filterGeneration || filter.Text != proposed || disposed) return;
-            pendingFrame = metrics.Begin(Session.Document.State.Rows.Length, "filter");
-            acceptedFilter = proposed; filterPredicate = null;
-            metrics.Mark("accepted");
-            Refresh();
-            metrics.Mark("presented");
-            CompositionTarget.Rendered -= FrameRendered; CompositionTarget.Rendered += FrameRendered; frameSubscribed = true;
-        }, "Filter");
-    }
+
     private void RefreshScrolledRows(bool sheet, bool chart)
     {
         if (disposed) return;
@@ -725,6 +654,7 @@ internal sealed partial class PlanSheetView : Grid
             if (!nonWorkingDates.SetEquals(nextNonWorkingDates)) timelineKey = null;
             nonWorkingDates = nextNonWorkingDates;
             lateness = PlanLateness.Classify(scheduled, calendar, document.State.Settings.StatusDate ?? today);
+            Attention = PlanAttention.From(document, scheduled, lateness, document.State.Settings.StatusDate ?? today);
             Unpublished = PlanOperations.Changes(document, today, scheduled);
             untitledNewRows = PlanOperations.UntitledNewRows(document);
             SummaryIds = Rows.Values.Where(r => r.Parent is not null && Rows.ContainsKey(r.Parent)).Select(r => r.Parent!).ToHashSet();
@@ -733,6 +663,7 @@ internal sealed partial class PlanSheetView : Grid
         }
         metrics.Mark("derived");
         RefreshVisibleRows(document);
+        RenderAttentionStrip();
         metrics.Mark("visible-rows");
         rendering = true;
         try { statusDate.Date = new DateTimeOffset(StatusDate.ToDateTime(TimeOnly.MinValue)); }
@@ -756,17 +687,15 @@ internal sealed partial class PlanSheetView : Grid
     {
         var pendingRows = Pending.Keys.Select(k => k.Identity)
             .Concat(Realized.Where(r => r.Cells.Any(c => c.Composing)).Select(r => r.Identity)).ToHashSet();
+        UpdateFilterResult(document);
         var next = new List<string>(document.State.Rows.Length + 1);
-        var matches = 0;
+        var matched = filterResult.Matches.Length > 0 ? filterResult.Matches.ToHashSet(StringComparer.Ordinal) : null;
         foreach (var row in document.State.Rows)
         {
-            var matchesFilter = acceptedFilter.Length > 0 && MatchesFilter(row);
-            if (matchesFilter) matches++;
-            if (pendingRows.Contains(row.Identity) || (acceptedFilter.Length > 0 ? matchesFilter : !HiddenByFold(row))) next.Add(row.Identity);
+            var shown = FilterActive ? matched!.Contains(row.Identity) || filterContext.Contains(row.Identity) : !HiddenByFold(row);
+            if (pendingRows.Contains(row.Identity) || shown) next.Add(row.Identity);
         }
         next.Add("");
-        filterCount.Text = acceptedFilter.Length == 0 ? "" : $"{matches:N0} 件";
-        filterCount.Visibility = acceptedFilter.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         if (!RowIds.SequenceEqual(next))
         {
             // Collection notifications can synchronously refresh or focus containers.

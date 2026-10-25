@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Input;
 using Rectangle = Microsoft.UI.Xaml.Shapes.Rectangle;
@@ -617,11 +618,11 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [TestCase("completed", "完了", "\uE73E")]
-    [TestCase("late", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8h）", "\uE7BA")]
+    [TestCase("late", "遅れ: 終了日 10/2 を過ぎて未完了", "\uE7BA")]
     [TestCase("changed", "未発行の変更あり", "\u2022")]
     [TestCase("failed", "発行失敗", "\uEA39")]
     [TestCase("unverified", "GitHub で未確認", "\uEA39")]
-    [TestCase("summary", "配下に期限超過 1", "\uE7BA")]
+    [TestCase("summary", "配下に遅れ 1", "\uE7BA")]
     [Category("PlanSheetPhase2")]
     public async Task IndicatorPriorityAndSelectionExplainAllApplicableRowStates(string state, string expected, string glyph)
     {
@@ -667,7 +668,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("#1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, state == "summary" ? Is.Empty : Is.Not.Empty);
-            if (state == "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日を維持 · 終了: 開始から 8h"));
+            if (state == "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("開始: 開始日を維持").And.Contain("終了: 開始から 8h"));
             Assert.That(Ui.Find<HyperlinkButton>("PlanSheetIssue").Content, Is.EqualTo("acme/repo#1"));
             var slip = Ui.Find<TextBlock>("PlanSheetSlip").Text;
             if (state == "late") {
@@ -747,18 +748,18 @@ internal sealed partial class PlanSheetHostedTests
     // #236 part B: the pill compares the plan with the forecast (「見込終了 M/d (曜) · M/d から +N 日」) and
     // the published-end basis is retired. Each state states the plan's own dates, because a task with no dates
     // has no forecast and no pill.
-    [TestCase("finish", "終了日 10/2 を過ぎて未完了 · +1日", true, "")]
-    [TestCase("start", "開始日 10/2 を過ぎて未着手", true, "")]
-    [TestCase("moved", "終了日 10/2 を過ぎて未完了 · +1日", true, "")]
-    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1日", false, "")]
+    [TestCase("finish", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
+    [TestCase("start", "開始日 10/2 を過ぎて未着手", true, "自分の残による")]
+    [TestCase("moved", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
+    [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1日", false, "自分の残による")]
     // The predecessor state names its cause through the selection line's link, not the pill's detail line.
     // The plan follows the predecessor's kept 10/7 end, while the forecast starts once its 10/7 work is
     // used up, so the successor does not share that day.
     [TestCase("predecessor", "見込終了 10/8 (木) · 10/7 から +1日", false, "")]
-    [TestCase("long", "見込終了 10/6 (火) · 10/5 から +1日", false, "")]
-    [TestCase("summary-overdue", "見込終了 10/5 (月) · 10/2 から +1日", true, "配下: 期限超過 1")]
-    [TestCase("summary-later", "見込終了 10/6 (火) · 10/5 から +1日", false, "配下: 予定より遅れ 1")]
-    [TestCase("summary-counts", "見込終了 10/6 (火) · 10/5 から +1日", true, "配下: 期限超過 1 · 予定より遅れ 1")]
+    [TestCase("long", "見込終了 10/6 (火) · 10/5 から +1日", false, "自分の残による")]
+    [TestCase("summary-overdue", "見込終了 10/5 (月) · 10/2 から +1日", true, "配下: 遅れ 1")]
+    [TestCase("summary-later", "見込終了 10/6 (火) · 10/5 から +1日", false, "配下: 遅れ 1")]
+    [TestCase("summary-counts", "見込終了 10/6 (火) · 10/5 から +1日", true, "配下: 遅れ 2")]
     [TestCase("none", "", false, "")]
     [Category("SelectionLine")]
     public async Task SelectionPresentsLatenessAndKeepsIssueAtRight(string state, string expected, bool tinted, string detail)
@@ -808,7 +809,8 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(pill.Visibility, Is.EqualTo(expected.Length == 0 ? Visibility.Collapsed : Visibility.Visible));
             if (expected.Length > 0) {
                 Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(pill), Is.EqualTo(expected));
-                Assert.That(((SolidColorBrush)slip.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
+                Assert.That(((SolidColorBrush)slip.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush(
+                    tinted ? "SystemFillColorCriticalBrush" : "SystemFillColorCautionBrush")).Color));
                 if (tinted) Assert.That(((SolidColorBrush)pill.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("GanttLateTintBrush")).Color));
                 else {
                     Assert.That(pill.Background is null || pill.Background is SolidColorBrush { Color.A: 0 }, Is.True);
@@ -820,15 +822,20 @@ internal sealed partial class PlanSheetHostedTests
             // #236 part B: a predecessor-caused lateness names its cause with a link to that row.
             Assert.That(Ui.Find<HyperlinkButton>("PlanSelectionPredecessorLink").Visibility,
                 Is.EqualTo(state == "predecessor" ? Visibility.Visible : Visibility.Collapsed));
+            // #260: the Issue reference sits next to the title it belongs to; 詳細 stays at the right end.
             var issue = Ui.Find<HyperlinkButton>("PlanSheetIssue");
             Assert.That(issue.Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(issue.Content, Is.EqualTo("acme/repo#1"));
             var issueX = issue.TransformToVisual(sheet).TransformPoint(new()).X;
-            Assert.That(sheet.ActualWidth - issueX - issue.ActualWidth, Is.InRange(7d, 10d));
             var reason = Ui.Find<TextBlock>("PlanStartReason");
             Assert.That(reason.TextTrimming, Is.EqualTo(TextTrimming.CharacterEllipsis));
-            Assert.That(reason.TransformToVisual(sheet).TransformPoint(new()).X + reason.ActualWidth, Is.LessThan(issueX));
-            if (expected.Length > 0) Assert.That(pill.TransformToVisual(sheet).TransformPoint(new()).X + pill.ActualWidth, Is.LessThan(issueX));
+            Assert.That(issueX, Is.LessThan(reason.TransformToVisual(sheet).TransformPoint(new()).X),
+                "The Issue reference follows the task name, before the explanation.");
+            var detailToggle = Ui.Find<ToggleButton>("PlanSheetDetail");
+            var detailX = detailToggle.TransformToVisual(sheet).TransformPoint(new()).X;
+            Assert.That(sheet.ActualWidth - detailX - detailToggle.ActualWidth, Is.InRange(0d, 20d),
+                "詳細 is the right-most control of the selection line.");
+            if (expected.Length > 0) Assert.That(pill.TransformToVisual(sheet).TransformPoint(new()).X + pill.ActualWidth, Is.LessThan(detailX));
         });
         if (state is "moved" or "predecessor" or "long") await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-" + state));
     }
@@ -881,16 +888,16 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Mount(sheetHost);
     }
 
-    [TestCase("finish", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
-    [TestCase("finish-estimate", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true, Category = "OverdueMissingWork")]
-    [TestCase("finish-unknown", "期限超過: 終了日 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
-    [TestCase("start", "期限超過: 開始日 10/2 を過ぎて未着手", "\uE7BA", true)]
+    [TestCase("finish", "遅れ: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
+    [TestCase("finish-estimate", "遅れ: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("finish-unknown", "遅れ: 終了日 10/2 を過ぎて未完了", "\uE7BA", true, Category = "OverdueMissingWork")]
+    [TestCase("start", "遅れ: 開始日 10/2 を過ぎて未着手", "\uE7BA", true)]
     // #236 part B: the mark compares the plan with the forecast, so 予定より遅れ names the cause and the
     // working days it slipped; the retired 「発行済み M/d から」 basis no longer appears anywhere.
-    [TestCase("later", "予定より遅れ: +1日（自分の残による）", "\uE7BA", false)]
-    [TestCase("unchanged", "期限超過: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
-    [TestCase("summary-overdue", "配下に期限超過 1", "\uE7BA", false)]
-    [TestCase("summary-later", "配下に予定より遅れ 1", "\uE7BA", false)]
+    [TestCase("later", "遅れ: 見込終了 +1日（自分の残による）", "\uE7BA", false)]
+    [TestCase("unchanged", "遅れ: 終了日 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE7BA", true)]
+    [TestCase("summary-overdue", "配下に遅れ 1", "\uE7BA", false)]
+    [TestCase("summary-later", "配下に遅れ 1", "\uE7BA", false)]
     [Category("SheetRowPresentation")]
     public async Task LatenessMarkerAndEndColorFollowOverdueAndOwnEndMovement(string state, string expected, string glyph, bool critical)
     {

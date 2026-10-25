@@ -12,7 +12,8 @@ namespace GhProjectsBoards.App;
 internal sealed class PlanSummaryView : UserControl
 {
     internal PlanSession Session { get; }
-    private readonly Action<IReadOnlySet<string>> filter;
+    private readonly Action<IReadOnlySet<string>, string> filter;
+    private readonly Action<PlanToggle> openToggle;
     private readonly Action settings;
     private readonly StackPanel body = new() { Spacing = 12 };
     private readonly StackPanel matrix = new() { Spacing = 4 };
@@ -27,10 +28,10 @@ internal sealed class PlanSummaryView : UserControl
     private IReadOnlyDictionary<string, ScheduledTask> schedule = null!;
     private int generation, measure, mode;
     private static readonly CultureInfo Japanese = CultureInfo.GetCultureInfo("ja-JP");
-    private static readonly string[] Measures = ["見込み残存工数 h", "見込工数 h", "進捗", "期限超過"];
-    internal PlanSummaryView(PlanSession session, Action<IReadOnlySet<string>> filter, Action settings)
+    private static readonly string[] Measures = ["見込み残存工数 h", "見込工数 h", "進捗", "遅れ"];
+    internal PlanSummaryView(PlanSession session, Action<IReadOnlySet<string>, string> filter, Action settings, Action<PlanToggle> openToggle)
     {
-        Session = session; this.filter = filter; this.settings = settings; matrixScroll = Wide(matrix);
+        Session = session; this.filter = filter; this.settings = settings; this.openToggle = openToggle; matrixScroll = Wide(matrix);
         AutomationProperties.SetAutomationId(this, "PlanSummary");
         scroll = Id(new ScrollViewer { Content = body, HorizontalScrollMode = ScrollMode.Disabled,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new(12) }, "SummaryScroll");
@@ -129,6 +130,29 @@ internal sealed class PlanSummaryView : UserControl
         var s = document!.State.Settings;
         // The 基準日 is the toolbar's own control; the header only names the period the figures cover.
         body.Children.Add(Text($"期間 {Date(s.ProjectStart)} – {Date(s.ProjectEnd)}", "SummaryStatusDate"));
+        // #260 R6-4: the verdict comes first and states the worst slip in plain words; the measures below
+        // explain it. Its count buttons press the strip's toggle on the plan, nothing else.
+        var difference = report.FinishDifference is null ? "—" : report.FinishDifference > 0 ? $"終了日より {report.FinishDifference} 稼働日遅れ" : report.FinishDifference < 0 ? $"終了日より {-report.FinishDifference} 稼働日前" : "終了日どおり";
+        var verdict = PlanSummary.Verdict(report, s);
+        var verdictPanel = new StackPanel { Spacing = 3 };
+        var verdictHeadline = Text(verdict.Headline, "SummaryVerdictHeadline");
+        verdictHeadline.FontSize = 16; verdictHeadline.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+        if (verdict.Slipping) verdictHeadline.Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush");
+        verdictPanel.Children.Add(verdictHeadline);
+        verdictPanel.Children.Add(Text($"完了見込 {Finish(report.Total)} · {difference}", "SummaryVerdictForecast"));
+        if (verdict.SlippingPhases.Count > 0)
+            verdictPanel.Children.Add(Text("目標日より遅れている工程: " + string.Join(" · ", verdict.SlippingPhases.Select(p => $"{p.Phase} +{p.Days}日")), "SummaryVerdictPhases"));
+        var verdictCounts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new(0, 4, 0, 0) };
+        void VerdictCount(string label, string id, PlanToggle toggle, IReadOnlyList<string> identities) {
+            if (identities.Count == 0) return;
+            verdictCounts.Children.Add(Button($"{label} {identities.Count:N0}", id, () => openToggle(toggle)));
+        }
+        VerdictCount("遅れ", "SummaryVerdictLate", PlanToggle.Late, report.Attention.Late);
+        VerdictCount("遅れの原因", "SummaryVerdictCause", PlanToggle.Cause, report.Attention.Cause);
+        VerdictCount("見積超過", "SummaryVerdictOverEstimate", PlanToggle.OverEstimate, report.Attention.OverEstimate);
+        VerdictCount("未更新", "SummaryVerdictNotUpdated", PlanToggle.NotUpdated, report.Attention.NotUpdated);
+        if (verdictCounts.Children.Count > 0) verdictPanel.Children.Add(verdictCounts);
+        body.Children.Add(Id(verdictPanel, "SummaryVerdict"));
         if (s.ProjectEnd is null) {
             body.Children.Add(Text("終了日が未設定です", "SummaryNoEnd"));
             body.Children.Add(Button("設定を開く", "SummaryPeriodSettings", settings));
@@ -146,7 +170,6 @@ internal sealed class PlanSummaryView : UserControl
             Cell(band, border, index);
         }
         Band(0, "残り稼働日", $"{Number(report.RemainingDays)} 日\n{Number(report.ElapsedDays)} / {Number(report.WorkingDays)} 稼働日が経過", "SummaryRemainingDays");
-        var difference = report.FinishDifference is null ? "—" : report.FinishDifference > 0 ? $"終了日より {report.FinishDifference} 稼働日遅れ" : report.FinishDifference < 0 ? $"終了日より {-report.FinishDifference} 稼働日前" : "終了日どおり";
         Band(1, "完了見込", $"{Finish(report.Total)}\n{difference}", "SummaryFinish", report.FinishDifference > 0, "担当者の負荷は含まない", "先行関係と見込み残存工数から計算（担当者の負荷は含まない）");
         Band(2, "終了日までに必要な稼働", $"{Percent(report.RequiredLoad)}{(report.RequiredLoad > 1 ? " 超過" : "")}", "SummaryRequiredLoad", report.RequiredLoad > 1,
             tooltip: $"残 {Value(report.Total.Remaining)}h ÷ 稼働可能 {Number(report.Capacity)}h（100% を超えると間に合わない）");
@@ -155,15 +178,11 @@ internal sealed class PlanSummaryView : UserControl
         var attention = new StackPanel { Spacing = 3 }; attention.Children.Add(Text("要注意"));
         void Attention(string label, string id, IReadOnlyList<string> tasks, string glyph, string detail = "") {
             if (tasks.Count == 0) return;
-            var button = Button($"{label} {tasks.Count:N0}{detail}", id, () => filter(tasks.ToHashSet()));
+            var button = Button($"{label} {tasks.Count:N0}{detail}", id, () => filter(tasks.ToHashSet(), label));
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
             content.Children.Add(new FontIcon { Glyph = glyph, FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 13 });
             content.Children.Add(TableText($"{label} {tasks.Count:N0}{detail}")); button.Content = content; attention.Children.Add(button);
         }
-        Attention("期限超過", "SummaryOverdue", report.Attention.Overdue, "\uE814");
-        Attention("遅れの原因", "SummaryCause", report.Attention.Cause, "\uE7BA");
-        Attention("予定より遅れ", "SummaryLater", report.Attention.Later, "\uE7BA");
-        Attention("見積超過", "SummaryOverEstimate", report.Attention.OverEstimate, "\uE7BA");
         Attention("残 0・未完了", "SummaryZeroRemaining", report.Attention.ZeroRemainingOpen, "\uE7BA");
         var unassignedRemaining = report.Attention.UnassignedRemaining;
         var unassignedDetail = unassignedRemaining.Value is null ? "" : $" · 残 {Number(unassignedRemaining.Value)}h"
@@ -182,12 +201,12 @@ internal sealed class PlanSummaryView : UserControl
             var rows = new StackPanel();
             double[] widths = [88, 112, 72, 72, 72, 72, 72, 64, 108, 108, 64, 76, 76];
             phases.SizeChanged += (_, args) => phases.ColumnDefinitions[0].Width = new(Math.Min(widths.Sum(), Math.Max(0, args.NewSize.Width - 276)));
-            var header = Row(widths); header.Height = 54; var names = new[] { "工程", "完了 / タスク", "見積 h", "実績 h", "残 h", "見込 h", "差異 h", "進捗", "目標日", "完了見込", "差", "期限超過", "見積超過" };
+            var header = Row(widths); header.Height = 54; var names = new[] { "工程", "完了 / タスク", "見積 h", "実績 h", "残 h", "見込 h", "差異 h", "進捗", "目標日", "完了見込", "差", "遅れ", "見積超過" };
             for (var i = 0; i < names.Length; i++) Cell(header, TableText(names[i], numeric: i > 0), i); rows.Children.Add(header);
             for (var n = 0; n < report.Phases.Count; n++) {
                 var phase = report.Phases[n]; var t = phase.Tasks; var row = Id(Row(widths), $"SummaryPhaseRow_{n}"); row.MinHeight = 29;
                 Cell(row, TableCell(Phase(phase), phase.IsTotal ? "SummaryPhaseTotal" : $"SummaryPhase_{n}", () => Select(Phase(phase), t.Identities), left: true), 0);
-                string[] values = [$"{t.Closed:N0} / {t.Count:N0}", Value(t.Estimate), Value(t.Actual), Value(t.Remaining), Value(t.Forecast), Signed(t.Variance.Value) + (t.Variance.Excluded > 0 ? $"（工数未入力 {t.Variance.Excluded:N0} タスクを除く）" : ""), Progress(t), Date(phase.Target), Finish(t), Days(phase.Difference), $"{t.Overdue:N0}", $"{t.OverEstimate:N0}"];
+                string[] values = [$"{t.Closed:N0} / {t.Count:N0}", Value(t.Estimate), Value(t.Actual), Value(t.Remaining), Value(t.Forecast), Signed(t.Variance.Value) + (t.Variance.Excluded > 0 ? $"（工数未入力 {t.Variance.Excluded:N0} タスクを除く）" : ""), Progress(t), Date(phase.Target), Finish(t), Days(phase.Difference), $"{t.Late:N0}", $"{t.OverEstimate:N0}"];
                 for (var i = 0; i < values.Length; i++) { var text = TableText(values[i], numeric: true); ToolTipService.SetToolTip(text, names[i + 1] + " " + values[i]); AutomationProperties.SetName(text, Phase(phase) + " " + names[i + 1] + " " + values[i]); Cell(row, text, i + 1); }
                 AutomationProperties.SetName(row, Phase(phase) + " " + string.Join(" · ", values.Select((value, i) => names[i + 1] + " " + value)));
                 rows.Children.Add(row);
@@ -324,8 +343,8 @@ internal sealed class PlanSummaryView : UserControl
                 string value, label; IReadOnlyList<string> tasks; IReadOnlySet<string>? unallocated = null; bool warning;
                 if (mode == 0) {
                     var t = person.Phases[i].Tasks;
-                    value = t.Count == 0 ? "–" : measure switch { 0 => Value(t.Remaining), 1 => Value(t.Forecast), 2 => Progress(t), _ => $"{t.Overdue:N0}" };
-                    warning = t.Overdue > 0; if (warning) value += " ⚠ 期限超過";
+                    value = t.Count == 0 ? "–" : measure switch { 0 => Value(t.Remaining), 1 => Value(t.Forecast), 2 => Progress(t), _ => $"{t.Late:N0}" };
+                    warning = t.Late > 0; if (warning) value += " ⚠ 遅れ";
                     label = $"{person.Name} · {Phase(phases[i])} · {Measures[measure]} {value}"; tasks = t.Identities;
                 } else {
                     var cell = load?.Periods[i];
@@ -363,12 +382,12 @@ internal sealed class PlanSummaryView : UserControl
     {
         detail.Children.Clear(); var ids = identities.ToHashSet(); var tasks = schedule.Values.Where(t => ids.Contains(t.Input.Identity)).ToArray();
         var remaining = tasks.Where(t => t.Remaining.HasValue).Select(t => t.Remaining!.Value).ToArray();
-        var overdue = identities.Count(report.Attention.Overdue.Contains); var over = tasks.Count(t => t.IsOverEstimate); var zero = tasks.Count(t => t.IsZeroRemainingOpen);
+        var late = identities.Count(report.Attention.Late.Contains); var over = tasks.Count(t => t.IsOverEstimate); var zero = tasks.Count(t => t.IsZeroRemainingOpen);
         var caption = $"{title}　{ids.Count:N0} タスク · 残 {Number(remaining.Length == 0 ? null : remaining.Sum())}h";
         if (remaining.Length < tasks.Length) caption += $"（工数未入力 {tasks.Length - remaining.Length:N0} タスクを除く）";
-        if (overdue > 0) caption += $" · 期限超過 {overdue}"; if (over > 0) caption += $" · 見積超過 {over}"; if (zero > 0) caption += $" · 残 0・未完了 {zero}";
+        if (late > 0) caption += $" · 遅れ {late}"; if (over > 0) caption += $" · 見積超過 {over}"; if (zero > 0) caption += $" · 残 0・未完了 {zero}";
         detail.Children.Add(Text(caption, "SummarySelection"));
-        detail.Children.Add(Button($"この {ids.Count:N0} タスクで計画を絞り込む", "SummaryFilter", () => filter(ids)));
+        detail.Children.Add(Button($"この {ids.Count:N0} タスクで計画を絞り込む", "SummaryFilter", () => filter(ids, title)));
         double[] widths = [70, 260, 90, 90, 90, 110, 110, 380];
         // A bounded preview shares one horizontal origin and the page's vertical viewport.
         var table = new StackPanel { Width = widths.Sum(), HorizontalAlignment = HorizontalAlignment.Left };
@@ -382,17 +401,16 @@ internal sealed class PlanSummaryView : UserControl
         var selectedRows = document.State.Rows.Where(r => ids.Contains(r.Identity)).ToArray();
         foreach (var row in selectedRows.Take(200)) {
             var task = schedule[row.Identity]; var states = new List<string>();
-            var late = lateness.Tasks[row.Identity];
-            if (late.MissedDate is { } missed) {
+            var state = lateness.Tasks[row.Identity];
+            if (state.MissedDate is { } missed) {
                 var remainingText = task.Remaining is { } work ? $"（見込み残存工数 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
-                states.Add(late.OverdueKind == PlanOverdueKind.Finish
-                    ? $"期限超過: 終了日 {missed.ToString("M/d", CultureInfo.InvariantCulture)} を過ぎて未完了{remainingText}"
-                    : $"期限超過: 開始日 {missed.ToString("M/d", CultureInfo.InvariantCulture)} を過ぎて未着手");
+                states.Add(state.OverdueKind == PlanOverdueKind.Finish
+                    ? $"遅れ: 終了日 {missed.ToString("M/d", CultureInfo.InvariantCulture)} を過ぎて未完了{remainingText}"
+                    : $"遅れ: 開始日 {missed.ToString("M/d", CultureInfo.InvariantCulture)} を過ぎて未着手");
             }
-            // 予定より遅れ is the not-overdue set (#236); an overdue task is named once, as on the sheet.
-            if (late.DaysLater is { } days && late.Level == PlanLatenessLevel.Later && task.End.Value is { } planned)
-                states.Add($"予定より遅れ: {planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days}日"
-                    + (task.ForecastEnd is { } forecast ? $"（見込終了 {forecast.ToString("M/d", CultureInfo.InvariantCulture)}）" : ""));
+            // One 遅れ set (#260 D0); a passed 終了日 is the red case, a later forecast the ochre one.
+            if (state.DaysLater is { } days && state.Level == PlanLatenessLevel.Later && task.End.Value is { } planned)
+                states.Add($"遅れ: 見込終了 {(task.ForecastEnd is { } forecast ? forecast.ToString("M/d", CultureInfo.InvariantCulture) : "—")}（{planned.ToString("M/d", CultureInfo.InvariantCulture)} から +{days}日）");
             if (task.IsOverEstimate) states.Add(task.Forecast is null ? "見積超過: 見込工数・差異が数値の範囲外です" : $"見積超過: 見込工数 {task.Forecast:0.############################}h（見積工数 {task.Estimate:0.############################}h、差異 {task.Variance:+0.############################;-0.############################;0}h）");
             if (task.IsZeroRemainingOpen) states.Add("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません");
             if (task.Input.Closed) states.Add("完了");
