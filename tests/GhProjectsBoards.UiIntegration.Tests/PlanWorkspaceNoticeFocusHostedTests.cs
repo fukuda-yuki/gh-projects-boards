@@ -67,7 +67,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await SheetNativeInput.Press(VirtualKey.Home, VirtualKey.Control);
         await Ui.Until(() => FocusManager.GetFocusedElement(view.XamlRoot) == Ui.Find<Control>("PlanCell1_Title"),
             () => "focus=" + (FocusManager.GetFocusedElement(view.XamlRoot) as FrameworkElement)?.Name + "/" + FocusManager.GetFocusedElement(view.XamlRoot)?.GetType().Name);
-        Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().IsSelected("I1", PlanField.Title), Is.True);
+        await Ui.Run(() => Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().IsSelected("I1", PlanField.Title), Is.True));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 }
