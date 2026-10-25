@@ -187,4 +187,32 @@ internal sealed class PlanPeopleTests
         var reassigned = d with { State = d.State with { Rows = d.State.Rows.Select(r => r.Identity == "I2" ? r with { Assignees = ["U2"] } : r).ToImmutableArray() } };
         Assert.That(PlanPeople.Calculate(reassigned, Day, Day, scale, 1).People.Single(p => p.Identity == "U1").Periods[0].DailyOverloads, Is.Empty);
     }
+    [Test]
+    public void PeriodCarriesEveryLoadDayAndTheDateOfTheMaximumForTheDrillDown()
+    {
+        // Two tasks on the same day put 8 h on a 4 h cap: the day bar needs the day itself, not only the
+        // overloaded ones, and the drill-down names the day the maximum falls on (#230).
+        var d = Document([Row("I1"), Row("I2")]);
+        var period = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Month, 1).People.Single(p => p.Identity == "U1").Periods[0];
+        Assert.That(period.Days.Select(day => (day.Date, day.Planned, day.Capacity)), Is.EqualTo(new[] { (Day, 8m, 4m) }));
+        Assert.That(period.MaxDailyPercent, Is.EqualTo(200m));
+        Assert.That(period.MaxDailyDate, Is.EqualTo(Day));
+        var noWork = Document([Row("I1") with { Closed = true }]);
+        var empty = PlanPeople.Calculate(noWork, Day, Day, PlanPeriodScale.Month, 1).People.Single(p => p.Identity == "U1").Periods[0];
+        Assert.That((empty.MaxDailyPercent, empty.MaxDailyDate), Is.EqualTo(((decimal?)0, (DateOnly?)null)));
+        Assert.That(empty.Days, Is.Empty);
+    }
+    [Test]
+    public void MaxDailyDateIsUnknownWithUnknownMonthlyLoadAndPicksTheEarliestDayOnATie()
+    {
+        // An unknown allocation must not invent the maximum's date, and a tie goes to the earlier day so
+        // repeated renders name one date.
+        var unknown = Document([Row("I1") with { Remaining = null, Estimate = null }]);
+        var period = PlanPeople.Calculate(unknown, Day, Day, PlanPeriodScale.Month, 1).People.Single(p => p.Identity == "U1").Periods[0];
+        Assert.That((period.MaxDailyPercent, period.MaxDailyDate), Is.EqualTo(((decimal?)null, (DateOnly?)null)));
+        var tied = Document([Row("I1"), Row("I2") with { Start = Day.AddDays(1) }]);
+        var twoDays = PlanPeople.Calculate(tied, Day, Day, PlanPeriodScale.Month, 1).People.Single(p => p.Identity == "U1").Periods[0];
+        Assert.That(twoDays.Days.Select(day => day.Date), Is.EqualTo(new[] { Day, Day.AddDays(1) }));
+        Assert.That(twoDays.MaxDailyDate, Is.EqualTo(Day));
+    }
 }

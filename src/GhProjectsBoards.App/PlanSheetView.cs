@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using GhProjectsBoards.Core.PlanEditor;
@@ -6,6 +6,7 @@ using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.Foundation;
@@ -171,6 +172,8 @@ internal sealed partial class PlanSheetView : Grid
     // #260: the last 実績/残 change from GitHub and the 見積超過 effort line of the selected task.
     private readonly TextBlock progressLine = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), FontSize = 12 }, "PlanSelectionProgress");
     private readonly TextBlock estimateDetail = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), FontSize = 12 }, "PlanSelectionOverEstimate");
+    // #230: the assignee load for the selected task's weeks, so an assignee change shows its effect here.
+    private readonly TextBlock assignmentLoad = Id(new TextBlock { FontSize = 12, VerticalAlignment = VerticalAlignment.Center }, "PlanSelectionLoad");
     // The selection line's two impact links (#236 part B): what this task's lateness delayed, and the
     // predecessor that delayed it. One button per action, shown only when the lateness has that cause.
     private readonly HyperlinkButton successorLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0, Visibility = Visibility.Collapsed }, "PlanSelectionSuccessorFilter");
@@ -288,7 +291,7 @@ internal sealed partial class PlanSheetView : Grid
         // takes its spacing, so the tag cancels that spacing while the start notice is absent.
         var explanation = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Left };
         explanation.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        for (var column = 0; column < 6; column++) explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        for (var column = 0; column < 7; column++) explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         reason.VerticalAlignment = VerticalAlignment.Center;
         reason.Foreground = Brush("TextFillColorSecondaryBrush");
         slip.FontSize = 12; slip.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
@@ -302,6 +305,7 @@ internal sealed partial class PlanSheetView : Grid
         explanation.Children.Add(progressLine); SetColumn(progressLine, 4);
         explanation.Children.Add(estimateDetail); SetColumn(estimateDetail, 5);
         explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 6);
+        explanation.Children.Add(assignmentLoad); SetColumn(assignmentLoad, 7);
         slipPill.Margin = new(-10, 0, 0, 0);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
         InitializeDetailToggle(selectedLine);
@@ -1228,3 +1232,4 @@ internal sealed class PlanRowItems : ObservableCollection<string>
         OnCollectionChanged(new System.Collections.Specialized.NotifyCollectionChangedEventArgs(System.Collections.Specialized.NotifyCollectionChangedAction.Reset));
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Globalization;
 using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
@@ -765,6 +765,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }, section => OpenSettingsPage(section, "summary"), toggle => {
                 // The verdict's count buttons press the strip toggle and nothing else (#260 3).
                 Show("tasks"); sheet.FilterToggle(toggle);
+            }, identity => {
+                // A summary person link uses the shared person filter (#230/#227), not an exact-set chip.
+                Show("tasks"); sheet.FilterPerson(identity);
             });
             summaryArea.Children.Clear(); summaryArea.Children.Add(summaryView);
         }
@@ -934,3 +937,4 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
 }
 internal sealed record PlanFieldChoice(PlanColumnDefinition Definition, string Label);
+

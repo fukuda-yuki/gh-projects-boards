@@ -146,12 +146,14 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<Button>("SummaryMonth_U1_0");
         await Ui.Run(() => {
             var cell = Ui.Find<Button>("SummaryMonth_U1_0");
-            Assert.That(AutomationProperties.GetName(cell), Does.Contain("日超過"));
+            Assert.That(AutomationProperties.GetName(cell), Does.Contain("上限を超える日"));
             Ui.Click("SummaryMonth_U1_0");
         });
-        await Ui.Ready<FrameworkElement>("SummaryTasks");
+        // The month drill-down is the side panel beside the matrix (#230 D3), not the bottom detail.
+        await Ui.Ready<FrameworkElement>("SummaryLoadPanel"); await Ui.Ready<FrameworkElement>("SummaryLoadTasks"); await Ui.Idle();
         await Ui.Run(() => {
-            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
+            Assert.That(Ui.Tree(Ui.Find<PlanSummaryView>("PlanSummary")).OfType<FrameworkElement>().Any(e => AutomationProperties.GetAutomationId(e) == "SummaryTasks"), Is.False);
+            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryLoadTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryLoadTask_")), Is.EqualTo(2));
         });
     }
     [Test]
@@ -194,15 +196,13 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanShowSummary")); await Ui.Ready<ComboBox>("SummaryMode");
         await Ui.Run(() => Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1);
         await Ui.Ready<Button>("SummaryMonth_U1_0");
+        await Ui.Run(() => Ui.Click("SummaryMonth_U1_0"));
+        await Ui.Ready<FrameworkElement>("SummaryLoadTasks");
         await Ui.Run(() => {
-            Ui.Click("SummaryMonth_U1_0");
+            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryLoadTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryLoadTask_")), Is.EqualTo(2));
         });
-        await Ui.Ready<FrameworkElement>("SummaryTasks");
-        await Ui.Run(() => {
-            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
-        });
-        await Ui.Ready<TextBlock>("SummaryTask_I2");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("SummaryTask_I2").Text, Does.Contain("未配分: 見込み残存工数が未入力")));
+        await Ui.Ready<TextBlock>("SummaryLoadTaskState_I2");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("SummaryLoadTaskState_I2").Text, Does.Contain("未配分: 見込み残存工数が未入力")));
     }
     [TestCase(1920, 1080), TestCase(1280, 720)]
     public async Task SummaryVersionScaleKeepsTablesInsideTheCardAndCachesTheSameDocument(int width, int height)
@@ -223,21 +223,44 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("SummaryProgress"), Is.SameAs(band));
             Assert.That(Ui.Tree(summary).OfType<Button>().Count(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryPhase_")), Is.EqualTo(9));
             Assert.That(summary.ActualWidth, Is.LessThanOrEqualTo(width));
+            // #230 After 1: the phase table and the person load are two columns, and the load heading
+            // and its header sit beside the phase table rather than below it.
+            var phase = Ui.Find<FrameworkElement>("SummaryPhaseTable");
+            var load = Ui.Find<TextBlock>("SummaryLoadHeading");
+            Assert.That(load.TransformToVisual(summary).TransformPoint(new()).X, Is.GreaterThan(phase.TransformToVisual(summary).TransformPoint(new()).X));
             if (width == 1920) {
-                foreach (var element in new Microsoft.UI.Xaml.FrameworkElement[] { band, Ui.Find<FrameworkElement>("SummaryPhaseTable"), Ui.Find<Button>("SummaryPhaseTotal"), Ui.Find<ComboBox>("SummaryMeasure"), Ui.Tree(summary).OfType<Button>().First(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryCell_")) })
+                foreach (var element in new FrameworkElement[] { band, phase, Ui.Find<Button>("SummaryPhaseTotal"), Ui.Find<TextBlock>("SummaryLoadHeading"),
+                    Ui.Find<FrameworkElement>("SummaryMatrixHeader") })
                     Assert.That(element.TransformToVisual(summary).TransformPoint(new()).Y + element.ActualHeight, Is.LessThan(summary.ActualHeight));
+                // The matrix header and its first rows are at the top of the right column, not below the
+                // phase table and timeline: reaching a person's load no longer needs scrolling.
+                var matrixHeader = Ui.Find<FrameworkElement>("SummaryMatrixHeader");
+                Assert.That(matrixHeader.TransformToVisual(summary).TransformPoint(new()).Y, Is.LessThan(phase.TransformToVisual(summary).TransformPoint(new()).Y + 80));
             }
-            var personCells = Ui.Tree(summary).OfType<Button>().Where(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryCell_")).ToArray();
-            if (width == 1920) {
-                var firstRows = personCells.Where(b => AutomationProperties.GetAutomationId(b).EndsWith("_0")).Take(2).ToArray();
-                Assert.That(firstRows, Has.Length.EqualTo(2));
-                foreach (var cell in firstRows)
-                    Assert.That(cell.TransformToVisual(summary).TransformPoint(new()).Y + cell.ActualHeight, Is.LessThan(summary.ActualHeight));
-            }
-            var personBottom = personCells.Max(b => b.TransformToVisual(summary).TransformPoint(new()).Y + b.ActualHeight);
-            Assert.That(Ui.Find<FrameworkElement>("SummaryMilestoneTable").TransformToVisual(summary).TransformPoint(new()).Y, Is.GreaterThan(personBottom));
+            // The page never scrolls horizontally; wide tables keep their own viewport.
+            Assert.That(Ui.Find<ScrollViewer>("SummaryScroll").HorizontalScrollMode, Is.EqualTo(Microsoft.UI.Xaml.Controls.ScrollMode.Disabled));
+            Assert.That(Ui.Find<FrameworkElement>("SummaryMilestoneTable").TransformToVisual(summary).TransformPoint(new()).Y,
+                Is.GreaterThan(phase.TransformToVisual(summary).TransformPoint(new()).Y + phase.ActualHeight));
             await RenderedEvidence.Capture(view, $"summary-{width}x{height}");
         });
+        // #230 After 2+3: at 1920 every month of the month scale fits the matrix viewport.
+        if (width == 1920) {
+            await Ui.Run(() => Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1);
+            await Ui.Ready<Button>("SummaryMonth_U1_0"); await Ui.Idle();
+            await Ui.Run(() => {
+                var summary = Ui.Find<PlanSummaryView>("PlanSummary");
+                var matrix = Ui.Find<FrameworkElement>("SummaryMatrixScroll");
+                var viewport = Ui.Find<ScrollView>("SummaryMatrixScroll");
+                Assert.That(viewport.ScrollableWidth, Is.Zero, "Every month column must fit at 1920 without horizontal scrolling.");
+                var headerCount = Ui.Tree(summary).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryMonthHeader_"));
+                Assert.That(headerCount, Is.GreaterThanOrEqualTo(7));
+                var last = Ui.Find<TextBlock>($"SummaryMonthHeader_{headerCount - 1}");
+                Assert.That(last.TransformToVisual(matrix).TransformPoint(new()).X + last.ActualWidth, Is.LessThanOrEqualTo(matrix.ActualWidth + 1));
+                var cells = Ui.Tree(summary).OfType<Button>().Count(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryMonth_"));
+                Assert.That(cells % headerCount, Is.Zero);
+                Assert.That(cells / headerCount, Is.GreaterThanOrEqualTo(20));
+            });
+        }
     }
 
     [Test]
@@ -257,3 +280,5 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
 }
+
+

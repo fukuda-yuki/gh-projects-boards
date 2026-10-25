@@ -317,6 +317,9 @@ internal sealed partial class PlanSheetView
         => AssignFilter(new PlanFilter { Named = new(label, identities.ToImmutableHashSet(StringComparer.Ordinal), includeSummaries) });
     // The summary verdict's count buttons press this toggle and nothing else (#260 3).
     internal void FilterToggle(PlanToggle toggle) => AssignFilter(new PlanFilter { Toggles = [toggle] });
+    // A summary person link filters to that person through the shared filter (#230/#227): 担当者なし is a
+    // person identity there; 担当者が複数 has no single filter, so its link stays disabled.
+    internal void FilterPerson(string identity) => AssignFilter(new PlanFilter { Assignees = [identity] });
     private void AssignFilter(PlanFilter next)
     {
         activeFilter = next;
@@ -404,3 +407,4 @@ internal sealed partial class PlanSheetView
         return true;
     }
 }
+

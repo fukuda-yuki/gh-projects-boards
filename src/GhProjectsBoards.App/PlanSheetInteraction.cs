@@ -8,6 +8,7 @@ using Microsoft.UI.Dispatching;
 using DispatcherQueueController = Microsoft.UI.Dispatching.DispatcherQueueController;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
@@ -193,6 +194,27 @@ internal sealed partial class PlanSheetView
                     estimateDetail.Text = $"見積超過 見込 {forecastEffort.ToString(CultureInfo.CurrentCulture)}h / 見積 {estimate.ToString(CultureInfo.CurrentCulture)}h";
             }
         }
+        // #230: while reassigning, name the selected task's assignee load for the task's weeks, so the
+        // effect of an assignee change is visible without opening サマリー. The days over the cap are text.
+        assignmentLoad.Inlines.Clear();
+        var loadParts = new List<string>();
+        if (task is { IsSummary: false } && PlanLoad.ForTask(Session.Document, Schedule.Values.ToArray(), selected) is { } load) {
+            var loadSecondary = Brush("TextFillColorSecondaryBrush"); var loadCritical = Brush("SystemFillColorCriticalBrush");
+            assignmentLoad.Inlines.Add(new Run { Text = "負荷 ", Foreground = loadSecondary });
+            for (var i = 0; i < Math.Min(3, load.Periods.Count); i++) {
+                var period = load.Periods[i];
+                var label = $"{(i == 0 ? "" : " · ")}{load.Name} {period.Start.ToString("M/d", CultureInfo.InvariantCulture)}週 {PlanSummaryPresentation.Percent(period.Percent / 100)}";
+                assignmentLoad.Inlines.Add(new Run { Text = label, Foreground = loadSecondary }); loadParts.Add(label);
+                if (period.Overloaded) {
+                    var days = $" {period.DaysOverCap.ToString("N0", CultureInfo.InvariantCulture)}日";
+                    assignmentLoad.Inlines.Add(new Run { Text = days, Foreground = loadCritical }); loadParts.Add(days);
+                }
+            }
+            if (load.Periods.Count > 3) {
+                var more = $" ほか {load.Periods.Count - 3}週";
+                assignmentLoad.Inlines.Add(new Run { Text = more, Foreground = loadSecondary }); loadParts.Add(more);
+            }
+        }
         var overdue = late?.Level == PlanLatenessLevel.Overdue;
         slipPill.Background = overdue ? Brush("GanttLateTintBrush") : null;
         slipPill.BorderBrush = Brush(overdue ? "SystemFillColorCriticalBrush" : "SystemFillColorCautionBrush");
@@ -202,11 +224,13 @@ internal sealed partial class PlanSheetView
         latenessDetail.Visibility = latenessDetail.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         progressLine.Visibility = progressLine.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         estimateDetail.Visibility = estimateDetail.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        assignmentLoad.Visibility = loadParts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetName(slip, slip.Text);
         AutomationProperties.SetName(slipPill, slip.Text);
         AutomationProperties.SetName(latenessDetail, latenessDetail.Text);
         AutomationProperties.SetName(progressLine, progressLine.Text);
         AutomationProperties.SetName(estimateDetail, estimateDetail.Text);
+        AutomationProperties.SetName(assignmentLoad, string.Join(" ", loadParts));
         AutomationProperties.SetName(selectedTitle, selectedTitle.Text);
         if (Session.Document.Sync.IssueLinks.TryGetValue(selected, out var link) && Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.Host == Session.Document.Project.Scope.Host) {
             issueLink.Content = link.Caption; issueLink.NavigateUri = uri; issueLink.Visibility = Visibility.Visible;
@@ -916,3 +940,5 @@ internal sealed partial class PlanSheetView
         if (operation.Fill && !disposed) Select(operation.Source, operation.Field, false);
     }
 }
+
+

@@ -59,7 +59,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             foreach (var measure in Enumerable.Range(0, 4)) {
                 Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = measure;
-                Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U2_0")), Does.EndWith(" –"));
+                Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U2_0")), Does.EndWith(" —"));
             }
         });
         await Settings(); await PickDate("PlanProjectEnd", new(2026, 11, 30));
@@ -68,7 +68,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryStatusDate" && t.Text.Contains("11/30")));
         await Ui.Run(() => {
             Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1;
-            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryMonth_U1_1")), Does.EndWith(" –"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryMonth_U1_1")), Does.EndWith(" —"));
         });
     }
     [Test]
@@ -80,7 +80,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             var table = Ui.Find<FrameworkElement>("SummaryPhaseTable");
             var timeline = Ui.Find<FrameworkElement>("SummaryTimeline");
             Assert.That(timeline.ActualWidth, Is.GreaterThan(650));
-            Assert.That(timeline.TransformToVisual(summary).TransformPoint(new()).X - (table.TransformToVisual(summary).TransformPoint(new()).X + table.ActualWidth), Is.InRange(15, 17));
+            // #230: the timeline sits below the phase table in the left column, not beside it.
+            Assert.That(timeline.TransformToVisual(summary).TransformPoint(new()).Y,
+                Is.GreaterThan(table.TransformToVisual(summary).TransformPoint(new()).Y + table.ActualHeight));
             Assert.That(Ui.Find<TextBlock>("SummaryTimelineStatusDate").Text, Does.StartWith("基準日"));
             Assert.That(Ui.Find<TextBlock>("SummaryTimelineEndDate").Text, Does.StartWith("終了日"));
             Assert.That(Ui.Tree(timeline).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryMonthLabel_")), Is.GreaterThanOrEqualTo(6));
@@ -106,37 +108,50 @@ internal sealed partial class PlanWorkspaceHostedTests
             foreach (var text in Ui.Tree(summary).OfType<TextBlock>()) Assert.That(text.Text, Does.Not.Match(@"\d+\.\d+%"));
         });
     }
-    [TestCase(false, 1), TestCase(true, 1), TestCase(false, 10), TestCase(true, 10), Category("PlanSheetNative")]
-    public async Task SummaryHorizontalTablesPreserveOrdinaryVerticalWheelSpeed(bool phases, int notches)
+    [TestCase(true), TestCase(false), Category("PlanSheetNative")]
+    public async Task SummaryWheelKeepsThePageRateOrScrollsTheMatrixRows(bool phases)
     {
         await OpenVersionSummary();
+        // 1920×1032 fits the summary; 1280×720 leaves the page a scroll range to measure.
+        await Ui.Run(() => ResizeWorkspace(1280, 720)); await Ui.Idle();
         ScrollViewer scroll = null!;
         await Ui.Run(() => scroll = Ui.Find<ScrollViewer>("SummaryScroll"));
         SheetNativeInput.Move(await SheetNativeInput.PointFor("SummaryStatusDate"));
-        await Wheel();
+        await WheelPage();
         double ordinary = 0;
         await Ui.Run(() => { ordinary = scroll.VerticalOffset; Assert.That(ordinary, Is.GreaterThan(0)); scroll.ChangeView(null, 0, null, true); });
         await Ui.Until(() => scroll.VerticalOffset == 0); await Ui.Idle();
         Button target = null!;
         await Ui.Run(() => target = phases ? Ui.Find<Button>("SummaryPhase_0") : Ui.Tree(view).OfType<Button>().First(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryCell_")));
         SheetNativeInput.Move(await SheetNativeInput.PointFor(target));
-        await Wheel();
-        await Ui.Run(() => Assert.That(scroll.VerticalOffset, Is.EqualTo(ordinary).Within(2)));
+        if (phases) {
+            await WheelPage();
+            await Ui.Run(() => Assert.That(scroll.VerticalOffset, Is.EqualTo(ordinary).Within(2)));
+        } else {
+            // The person matrix owns its rows' vertical range (sticky header): the wheel moves its body
+            // while the page keeps its own offset.
+            ScrollViewer body = null!; double bodyBefore = 0, pageBefore = 0;
+            await Ui.Run(() => { body = Ui.Find<ScrollViewer>("SummaryMatrixBody"); bodyBefore = body.VerticalOffset; pageBefore = scroll.VerticalOffset; });
+            await SheetNativeInput.ScrollWheel(-120);
+            await Ui.Until(() => body.VerticalOffset > bodyBefore);
+            await Ui.Run(() => {
+                Assert.That(body.VerticalOffset, Is.GreaterThan(bodyBefore));
+                Assert.That(scroll.VerticalOffset, Is.EqualTo(pageBefore));
+            });
+        }
 
-        async Task Wheel()
+        async Task WheelPage()
         {
             var settled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             EventHandler<ScrollViewerViewChangedEventArgs> handler = (_, args) => { if (!args.IsIntermediate) settled.TrySetResult(); };
             await Ui.Run(() => scroll.ViewChanged += handler);
             try {
                 await SheetNativeInput.ScrollWheel(-120);
-                for (var i = 1; i < notches; i++) SheetNativeInput.Wheel(-120);
                 await settled.Task.WaitAsync(TimeSpan.FromSeconds(5));
             }
             finally { await Ui.Run(() => scroll.ViewChanged -= handler); }
         }
-    }
-    [TestCase("tab"), TestCase("close"), TestCase("scroll")]
+    }    [TestCase("tab"), TestCase("close"), TestCase("scroll")]
     public async Task InvalidAllowanceRevealsItsPersonAndReturnsFocusWithoutAnEdit(string navigation)
     {
         await SummaryPlan(); await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
@@ -199,3 +214,6 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + (commit ? 1 : 0)));
     }
 }
+
+
+
