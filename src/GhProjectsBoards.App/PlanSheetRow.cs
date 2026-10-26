@@ -276,6 +276,7 @@ public sealed class PlanSheetRow : Grid
         var number = owner.PlanIds.GetValueOrDefault(Identity);
         var name = number == 0 ? "新規" : owner.TaskNames[Identity];
         ColumnDefinitions[0].Width = new(owner.SheetViewport); ColumnDefinitions[1].Width = new(owner.ChartViewport);
+        chartClip.Visibility = owner.GanttVisible ? Visibility.Visible : Visibility.Collapsed;
         Width = owner.SheetViewport + owner.ChartViewport;
         var sheetBounds = new Rect(0, 0, owner.SheetViewport, owner.RowHeight);
         var chartBounds = new Rect(0, 0, owner.ChartViewport, owner.RowHeight);
@@ -499,6 +500,8 @@ public sealed class PlanSheetRow : Grid
     {
         // Recycle notifications hide the old bounded slice before assigning another item.
         if (Owner is not { } owner || boundIdentity is null) { chart.Opacity = 0; return; }
+        // #298: the chart column is collapsed while the Gantt is hidden; keep the shapes for showing it again.
+        if (!owner.GanttVisible) { chart.Opacity = 0; return; }
         AutomationProperties.SetAutomationId(chartSeparator, "PlanChartSeparator" + owner.PlanIds.GetValueOrDefault(Identity));
         if (!owner.Schedule.TryGetValue(Identity, out var task)) {
             dependencyChart.Children.Clear(); dependencyVisuals.Clear(); predecessorStub = null; HideTaskShapes();

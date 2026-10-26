@@ -200,7 +200,8 @@ internal sealed partial class PlanSheetView : Grid
     internal event Action? Changed;
     internal event Action<PlanSaveResult>? SaveFeedbackChanged;
     internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? openColumns = null, Func<Task>? exportCsv = null,
-        Func<Task>? reapplyStoredPlan = null, Func<Task>? savePlanCopy = null, Func<string, string, CancellationToken, Task<PlanResource>>? resolveAssignee = null)
+        Func<Task>? reapplyStoredPlan = null, Func<Task>? savePlanCopy = null, Func<string, string, CancellationToken, Task<PlanResource>>? resolveAssignee = null,
+        Func<bool, Task>? changeGanttVisible = null)
     {
         Session = session;
         this.resolveAssignee = resolveAssignee;
@@ -215,7 +216,7 @@ internal sealed partial class PlanSheetView : Grid
         var controls = new Grid { ColumnSpacing = 8, BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
         controls.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        var scales = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+        var scales = ganttScale;
         // Beside the scale, like a calendar's 今日: one action back to the week the PMO decides about (#265).
         // No shortcut: Ctrl+T would surprise sheet users who know it as Excel's "create table".
         var goToStatusCaption = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -227,6 +228,7 @@ internal sealed partial class PlanSheetView : Grid
         scales.Children.Add(goToStatusDate);
         scales.Children.Add(new TextBlock { Text = "表示単位", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom);
         controls.Children.Add(scales); SetColumn(scales, 1);
+        InitializeGanttToggle(controls, changeGanttVisible);
         AutomationProperties.SetName(statusDate, "基準日"); AutomationProperties.SetName(zoom, "ガントの表示単位");
         // The attention strip sits above the command row and has a fixed height (#260 / #233).
         var attentionStrip = InitializeAttention();
@@ -966,12 +968,16 @@ internal sealed partial class PlanSheetView : Grid
         var previousOffset = ChartOffset;
         var width = Math.Max(320, ActualWidth - 20);
         var minimumChartWidth = sidePaneOpen ? SidePaneChartMinimum : dividerWidth.HasValue ? 230 : 320;
-        SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - minimumChartWidth));
-        ChartViewport = width - SheetViewport;
+        if (ganttVisible)
+        {
+            SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - minimumChartWidth));
+            ChartViewport = width - SheetViewport;
+        }
+        else { SheetViewport = width; ChartViewport = 0; }
         metrics.Mark("timeline-range-start");
         var offsetShift = columnResize ? 0 : UpdateTimelineRange();
         metrics.Mark("timeline-range");
-        if (acceptedZoom == 3) DayWidth = (ChartViewport - 2 * ChartDateInset) / DayCount;
+        if (acceptedZoom == 3 && ChartViewport > 0) DayWidth = (ChartViewport - 2 * ChartDateInset) / DayCount;
         if (divider is not null) divider.Margin = new(SheetViewport - 3, 0, 0, 0);
         RowHeight = 28;
         sheetClip.Width = SheetViewport;
@@ -981,7 +987,7 @@ internal sealed partial class PlanSheetView : Grid
         ((FrameworkElement)chartHorizontal.Content).Width = DayCount * DayWidth + 2 * ChartDateInset;
         sheetHorizontal.Width = SheetViewport; chartHorizontal.Width = ChartViewport;
         metrics.Mark("layout-properties");
-        if (initialChartPositioned && preserveDateViewport && acceptedZoom != 3 && offsetShift != 0) {
+        if (initialChartPositioned && ganttVisible && preserveDateViewport && acceptedZoom != 3 && offsetShift != 0) {
             // Native extent changes can clamp the old offset; restore the date using the pre-layout offset.
             metrics.Mark("forced-layout-start");
             chartHorizontal.UpdateLayout();
@@ -1118,6 +1124,14 @@ internal sealed partial class PlanSheetView : Grid
         if (sheetClip.Clip is RectangleGeometry geometry) {
             if (geometry.Rect != headerBounds) geometry.Rect = headerBounds;
         } else sheetClip.Clip = new RectangleGeometry { Rect = headerBounds };
+        if (!ganttVisible)
+        {
+            // Nothing of the chart is arranged while it is hidden; showing it again renders from scratch.
+            timelineKey = null;
+            chartHead.Children.Clear(); chartHead.Width = 0;
+            foreach (var layer in new[] { chartBackground, chartStatus }) { layer.Children.Clear(); layer.Width = 0; }
+            return;
+        }
         if (timelineKey == key) return;
         timelineKey = key;
         chartHead.Children.Clear(); chartHead.Width = ChartViewport;
