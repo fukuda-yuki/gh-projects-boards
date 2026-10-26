@@ -59,8 +59,12 @@ internal sealed partial class PlanWorkspaceHostedTests
                 for (var parent = VisualTreeHelper.GetParent(header); parent is FrameworkElement ancestor; parent = VisualTreeHelper.GetParent(parent)) {
                     if (ancestor.Clip is not RectangleGeometry clip) continue;
                     var bounds = header.TransformToVisual(ancestor).TransformBounds(new Windows.Foundation.Rect(0, 0, header.ActualWidth, header.ActualHeight));
+                    // The header text is bottom-aligned; WinUI's fractional line boxes can overhang the clip
+                    // by a subpixel amount (the 11 px 状態 label at a 70 px milestone header). That leaves no
+                    // glyph outside the clip, so the check allows one effective pixel of text-layout slop while
+                    // still catching a header clipped by the milestone strip's added height.
                     Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(clip.Rect.Top - .1), header.Text);
-                    Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(clip.Rect.Bottom + .1), header.Text);
+                    Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(clip.Rect.Bottom + 1), header.Text);
                 }
             }
             var marker = Ui.Find<Button>("PlanMilestone_0");

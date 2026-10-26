@@ -776,7 +776,9 @@ internal sealed partial class PlanSheetHostedTests
     // the published-end basis is retired. Each state states the plan's own dates, because a task with no dates
     // has no forecast and no pill.
     [TestCase("finish", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
-    [TestCase("start", "開始日 10/2 を過ぎて未着手", false, "自分の残による")]
+    // #264: a passed plan start is the date-passed 遅れ too, so the pill uses the red critical form and its
+    // tint; only the forecast-only slip is ochre.
+    [TestCase("start", "開始日 10/2 を過ぎて未着手", true, "自分の残による")]
     [TestCase("moved", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
     [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1日", false, "自分の残による")]
     // The predecessor state names its cause through the selection line's link, not the pill's detail line.

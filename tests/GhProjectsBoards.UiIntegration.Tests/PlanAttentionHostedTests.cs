@@ -74,7 +74,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             // #260 D0: one 遅れ count even though I2 is red and I3 is ochre.
             Assert.That(AttentionLabel("PlanAttentionLate"), Is.EqualTo("遅れ 2"));
-            Assert.That(AttentionLabel("PlanAttentionCause"), Is.EqualTo("遅れの原因 1"), "I2 delays its successor.");
+            // #264: a cause is every date-passed 遅れ plus a forecast-late task caused by its own remaining
+            // work. I2 (end 10/3) and I3 (end 10/5, both before the 10/6 基準日) are both date-passed, so
+            // both are causes even though I2 is the one delaying its successor.
+            Assert.That(AttentionLabel("PlanAttentionCause"), Is.EqualTo("遅れの原因 2"));
             Assert.That(AttentionLabel("PlanAttentionOverEstimate"), Is.EqualTo("見積超過 1"));
             Assert.That(AttentionLabel("PlanAttentionNotUpdated"), Is.EqualTo("未更新 1"));
             Assert.That(Text("PlanStatusCounts"), Is.EqualTo("要求事項 1 · タスク 3"));
