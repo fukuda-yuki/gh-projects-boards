@@ -22,7 +22,7 @@ internal sealed record PlanPublishResult(bool Succeeded, string? Error, PlanPubl
 { public PlanRefreshResult? Refresh { get; init; } }
 internal sealed class PlanPublisher(GhConnectionService service, ConnectionContext context)
 {
-    // GitHub prefers serial requests; use the owner-measured bound and back off on pushback.
+    // GitHub prefers serial requests; keep the owner-measured bound in flight and back off on pushback.
     private const int FieldConcurrencyLimit = 4;
     // #201: the Project, field and option metadata one publish read once, plus the repositories its first
     // scoped read covered. Every later scoped read of the same attempt reuses it; a new publish starts empty.
@@ -424,54 +424,38 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     return (fieldGatewayRecovery, resourceRecovery);
                 }
                 async Task SendBatch(ImmutableArray<PlanWrite> group)
-                    => await SendWindow([group]).ConfigureAwait(false);
-                async Task SendWindow(IReadOnlyList<ImmutableArray<PlanWrite>> groups)
                 {
-                    var requests = new List<ApiRequest>();
-                    foreach (var group in groups) requests.Add(await PrepareBatch(group).ConfigureAwait(false));
-                    await Save(groups.SelectMany(g => g).Select(w => w with { State = PlanWriteState.Dispatched, Error = null }));
-                    foreach (var group in groups) EffectiveBatchSizes.Add(group.Length);
-                    // Only transport overlaps. All progress and durable state changes stay on this flow.
-                    var responses = await Task.WhenAll(requests.Select(request => lease.SendAsync(request, token))).ConfigureAwait(false);
-                    var results = groups.Select((group, i) => ReadBatch(group, responses[i])).ToArray();
-                    await Save(results.SelectMany(r => r));
-                    var now = DateTimeOffset.UtcNow;
+                    var request = await PrepareBatch(group).ConfigureAwait(false);
+                    await Save(group.Select(w => w with { State = PlanWriteState.Dispatched, Error = null })).ConfigureAwait(false);
+                    EffectiveBatchSizes.Add(group.Length);
+                    var response = await lease.SendAsync(request, token).ConfigureAwait(false);
+                    var results = ReadBatch(group, response);
+                    await Save(results).ConfigureAwait(false);
                     var notBefore = session.Document.Sync.NotBefore;
-                    for (var i = 0; i < groups.Count; i++)
+                    if (response.RetryAfter is { } delay && delay > TimeSpan.Zero)
                     {
-                        var response = responses[i];
-                        if (response.RetryAfter is { } delay && delay > TimeSpan.Zero)
-                        {
-                            var deadline = now + delay;
-                            if (notBefore is null || deadline > notBefore) notBefore = deadline;
-                        }
-                        var recovery = Recovery(groups[i], response);
-                        if (groups[i][0].Stage == PlanPublishStage.Fields &&
-                            (response.RetryAfter > TimeSpan.Zero || response.Failure == FailureKind.RateLimited ||
-                             recovery.Gateway || results[i].Any(w => w.State != PlanWriteState.Succeeded &&
-                                 w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
-                            serialFields = true;
+                        var deadline = DateTimeOffset.UtcNow + delay;
+                        if (notBefore is null || deadline > notBefore) notBefore = deadline;
                     }
+                    var recovery = Recovery(group, response);
+                    if (group[0].Stage == PlanPublishStage.Fields &&
+                        (response.RetryAfter > TimeSpan.Zero || response.Failure == FailureKind.RateLimited || recovery.Gateway ||
+                         results.Any(w => w.State != PlanWriteState.Succeeded &&
+                             w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
+                        serialFields = true;
                     if (notBefore != session.Document.Sync.NotBefore)
                         RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = notBefore }).ConfigureAwait(false));
-                    // Check the whole window before any split retry can dispatch another request.
-                    var lost = responses.Any(response => ConnectionLostException.IsTransportLoss(response.Failure, response.HttpStatus));
-                    for (var i = 0; i < groups.Count; i++)
+                    if (!recovery.Gateway && results.Any(w => w.State == PlanWriteState.Dispatched &&
+                        !(recovery.Resource && w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
                     {
-                        var recovery = Recovery(groups[i], responses[i]);
-                        if (!recovery.Gateway && results[i].Any(w => w.State == PlanWriteState.Dispatched &&
-                            !(recovery.Resource && w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
-                        {
-                            // #246: a response that never arrived is a lost connection; an answered 5xx
-                            // keeps the unconfirmed-response message.
-                            if (lost) throw new ConnectionLostException();
-                            throw new InvalidOperationException("GitHubの応答を確認できないため発行を中断しました。最新の情報に更新で確認してから再発行してください。");
-                        }
+                        // #246: a response that never arrived is a lost connection; an answered 5xx
+                        // keeps the unconfirmed-response message.
+                        if (ConnectionLostException.IsTransportLoss(response.Failure, response.HttpStatus)) throw new ConnectionLostException();
+                        throw new InvalidOperationException("GitHubの応答を確認できないため発行を中断しました。最新の情報に更新で確認してから再発行してください。");
                     }
                     if (notBefore is { } until && until - DateTimeOffset.UtcNow is var wait && wait > TimeSpan.Zero)
                         await Task.Delay(wait, token).ConfigureAwait(false);
-                    for (var i = 0; i < groups.Count; i++)
-                        await HandleResponse(groups[i], responses[i], results[i]).ConfigureAwait(false);
+                    await HandleResponse(group, response, results).ConfigureAwait(false);
                 }
                 async Task HandleResponse(ImmutableArray<PlanWrite> group, ApiResult response, ImmutableArray<PlanWrite> results)
                 {
@@ -509,14 +493,91 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                             await SendBatch(part.ToImmutableArray()).ConfigureAwait(false);
                     }
                 }
-                var window = new List<ImmutableArray<PlanWrite>>();
+                // #298: the field phase keeps four requests in flight for the whole phase. A completion saves its
+                // response, frees its slot and is replaced by the next ready request while its peers are still
+                // running, instead of a window waiting for its slowest response. A pushback, a split recovery or
+                // an unresolved outcome stops dispatch and drains the requests already in flight before acting on
+                // any of their outcomes.
+                var fieldInFlight = new List<(ImmutableArray<PlanWrite> Group, Task<ApiResult> Response)>();
+                var fieldRecovery = new List<(ImmutableArray<PlanWrite> Group, ApiResult Response, ImmutableArray<PlanWrite> Results)>();
+                var fieldStopped = false; var fieldLost = false; var fieldUncertain = false;
+                var fieldNotBefore = session.Document.Sync.NotBefore;
+                async Task DispatchFieldRequest(ImmutableArray<PlanWrite> group)
+                {
+                    var request = await PrepareBatch(group).ConfigureAwait(false);
+                    await Save(group.Select(w => w with { State = PlanWriteState.Dispatched, Error = null })).ConfigureAwait(false);
+                    EffectiveBatchSizes.Add(group.Length);
+                    fieldInFlight.Add((group, lease.SendAsync(request, token)));
+                }
+                async Task<ApiResult> AwaitFieldResponse(Task<ApiResult> response)
+                {
+                    try { return await response.ConfigureAwait(false); }
+                    catch
+                    {
+                        // A cancelled send still owns its peers: observe them before the attempt unwinds.
+                        foreach (var pending in fieldInFlight.Where(r => r.Response != response))
+                            try { await pending.Response.ConfigureAwait(false); } catch { /* the interruption is reported once */ }
+                        fieldInFlight.Clear();
+                        throw;
+                    }
+                }
+                async Task ObserveFieldResponse()
+                {
+                    var done = await Task.WhenAny(fieldInFlight.Select(r => r.Response)).ConfigureAwait(false);
+                    var index = fieldInFlight.FindIndex(r => r.Response == done);
+                    var (group, response) = fieldInFlight[index];
+                    fieldInFlight.RemoveAt(index);
+                    var reply = await AwaitFieldResponse(response).ConfigureAwait(false);
+                    var results = ReadBatch(group, reply);
+                    await Save(results).ConfigureAwait(false);
+                    var recovery = Recovery(group, reply);
+                    // Every later field request of this attempt is serial after any pushback or split recovery.
+                    if (reply.RetryAfter > TimeSpan.Zero || reply.Failure == FailureKind.RateLimited || recovery.Gateway ||
+                        results.Any(w => w.State != PlanWriteState.Succeeded &&
+                            w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true))
+                        fieldStopped = true;
+                    if (reply.RetryAfter is { } delay && delay > TimeSpan.Zero &&
+                        (fieldNotBefore is null || DateTimeOffset.UtcNow + delay > fieldNotBefore))
+                        fieldNotBefore = DateTimeOffset.UtcNow + delay;
+                    // An unresolved outcome is never acted on until every in-flight response is recorded. A
+                    // gateway failure keeps its split recovery instead of stopping the phase.
+                    if (!recovery.Gateway && results.Any(w => w.State == PlanWriteState.Dispatched && !(recovery.Resource &&
+                        w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
+                    {
+                        fieldStopped = true;
+                        if (ConnectionLostException.IsTransportLoss(reply.Failure, reply.HttpStatus)) fieldLost = true;
+                        else fieldUncertain = true;
+                    }
+                    if (group.Length > 1 && results.Any(w => w.State != PlanWriteState.Succeeded &&
+                        (recovery.Gateway || w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
+                        fieldRecovery.Add((group, reply, results));
+                }
+                async Task FinishFieldRequests()
+                {
+                    while (fieldInFlight.Count > 0) await ObserveFieldResponse().ConfigureAwait(false);
+                    var persisted = session.Document.Sync.NotBefore;
+                    var deadline = fieldNotBefore;
+                    if (persisted is { } saved && (deadline is null || saved > deadline)) deadline = persisted;
+                    if (deadline != persisted)
+                        RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = deadline }).ConfigureAwait(false));
+                    if (fieldLost) throw new ConnectionLostException();
+                    if (fieldUncertain)
+                        throw new InvalidOperationException("GitHubの応答を確認できないため発行を中断しました。最新の情報に更新で確認してから再発行してください。");
+                    if (session.Document.Sync.NotBefore is { } until && until - DateTimeOffset.UtcNow is var wait && wait > TimeSpan.Zero)
+                        await Task.Delay(wait, token).ConfigureAwait(false);
+                    foreach (var (group, response, results) in fieldRecovery)
+                        await HandleResponse(group, response, results).ConfigureAwait(false);
+                    fieldRecovery.Clear();
+                }
+                async Task StartFieldRequest(ImmutableArray<PlanWrite> group)
+                {
+                    await DispatchFieldRequest(group).ConfigureAwait(false);
+                    while (fieldInFlight.Count >= FieldConcurrencyLimit) await ObserveFieldResponse().ConfigureAwait(false);
+                }
                 foreach (var batch in PlanPublishPlan.Batches(progress.Writes.Where(w => w.State != PlanWriteState.Succeeded)))
                 {
-                    if (batch[0].Stage != PlanPublishStage.Fields && window.Count > 0)
-                    {
-                        await SendWindow(window).ConfigureAwait(false);
-                        window.Clear();
-                    }
+                    if (batch[0].Stage != PlanPublishStage.Fields)
+                        await FinishFieldRequests().ConfigureAwait(false);
                     var ready = ImmutableArray.CreateBuilder<PlanWrite>();
                     foreach (var write in batch)
                     {
@@ -539,24 +600,28 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     var remainingReady = ready.ToImmutable();
                     while (!remainingReady.IsEmpty)
                     {
-                        var size = Math.Min(remainingReady.Length, reducedLimits.GetValueOrDefault(batch[0].Stage, remainingReady.Length));
-                        var group = remainingReady.Take(size).ToImmutableArray();
-                        remainingReady = remainingReady.RemoveRange(0, size);
-                        if (batch[0].Stage == PlanPublishStage.Fields && !serialFields)
+                        if (batch[0].Stage == PlanPublishStage.Fields && !serialFields && !fieldStopped)
                         {
-                            window.Add(group);
-                            if (window.Count == FieldConcurrencyLimit)
-                            {
-                                await SendWindow(window).ConfigureAwait(false);
-                                window.Clear();
-                            }
+                            var size = Math.Min(remainingReady.Length, reducedLimits.GetValueOrDefault(batch[0].Stage, remainingReady.Length));
+                            var group = remainingReady.Take(size).ToImmutableArray();
+                            remainingReady = remainingReady.RemoveRange(0, size);
+                            await StartFieldRequest(group).ConfigureAwait(false);
                         }
-                        else await SendBatch(group).ConfigureAwait(false);
+                        else
+                        {
+                            // A pushback or an unresolved outcome drains the field phase before a serial request;
+                            // its split recovery lowers the ceiling this same batch uses for its remaining writes.
+                            if (batch[0].Stage == PlanPublishStage.Fields) await FinishFieldRequests().ConfigureAwait(false);
+                            var size = Math.Min(remainingReady.Length, reducedLimits.GetValueOrDefault(batch[0].Stage, remainingReady.Length));
+                            var group = remainingReady.Take(size).ToImmutableArray();
+                            remainingReady = remainingReady.RemoveRange(0, size);
+                            await SendBatch(group).ConfigureAwait(false);
+                        }
                     }
                     if (batch[0].Stage == PlanPublishStage.Create && progress.Writes.Any(w => batch.Any(b => b.Key == w.Key) && w.State != PlanWriteState.Succeeded)) break;
                 }
 
-                if (window.Count > 0) await SendWindow(window).ConfigureAwait(false);
+                await FinishFieldRequests().ConfigureAwait(false);
 
                 progressReporter?.Report(new("検証"));
                 await ReconcileCreations(session, lease, token).ConfigureAwait(false);
