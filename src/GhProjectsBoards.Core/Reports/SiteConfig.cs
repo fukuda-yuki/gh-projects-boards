@@ -17,7 +17,6 @@ internal sealed record SiteConfig(string Title, bool Demo, IReadOnlyList<SitePro
 internal static class SiteConfigReader
 {
     internal const string DefaultStateField = "Status";
-    internal static readonly string DefaultTitle = "プロジェクト進捗";
 
     internal static SiteConfig Parse(string json)
     {

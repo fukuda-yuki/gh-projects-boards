@@ -107,25 +107,6 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
         finally { gate.Release(); }
     }
 
-    // Evidence lasts only through this immediate read. External gh credential changes
-    // are not locked; the scoped reader also verifies the viewer in each response.
-    internal async Task<ApiResult> RecheckAndReadAsync(ConnectionContext context, ApiRequest request, string requiredScope, CancellationToken cancellationToken)
-    {
-        if (request.IsMutation) return new(ApiOutcome.Failed, FailureKind.InvalidInput);
-        try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }
-        catch (OperationCanceledException) { return new(ApiOutcome.Cancelled, FailureKind.Cancelled); }
-        try
-        {
-            var check = await RecheckCoreAsync(context, cancellationToken);
-            if (!check.IsConnected) return check.Result;
-            if (check.Authentication?.Store != CredentialStore.Keyring) return new(ApiOutcome.Failed, FailureKind.UnknownCredentialStore);
-            if (check.Authentication.HasScope(requiredScope) != true) return new(ApiOutcome.Failed, FailureKind.PermissionDenied);
-            if (cancellationToken.IsCancellationRequested) return new(ApiOutcome.Cancelled, FailureKind.Cancelled);
-            return await new GhApiTransport(runner, executable, timeout).SendAsync(context.Host, request, cancellationToken);
-        }
-        finally { gate.Release(); }
-    }
-
     private async Task<ConnectionReport> RecheckCoreAsync(ConnectionContext context, CancellationToken cancellationToken)
     {
         if (context.IsInvalidated || !GitHubAddress.TryHost(host, out var normalizedHost)

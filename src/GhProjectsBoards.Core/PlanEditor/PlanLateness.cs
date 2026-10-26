@@ -13,11 +13,8 @@ internal sealed record PlanTaskLateness(PlanLatenessLevel Level, PlanOverdueKind
     int OverdueDescendantTasks = 0, int LaterDescendantTasks = 0, int OverEstimateDescendantTasks = 0)
 {
     public bool IsCause => Level == PlanLatenessLevel.Overdue || Cause == PlanLateCause.OwnRemaining;
-    public bool StartDelayedByPredecessor => Cause == PlanLateCause.Predecessor;
     // #260: one 遅れ set for the strip, the chase list and the band; the mark table still splits the causes.
     public bool IsLate => Level != PlanLatenessLevel.None;
-    // Late only because a predecessor's forecast pushed it: the delay is not this task's own.
-    public bool OnlyPushed => Level == PlanLatenessLevel.Later && OverdueKind is null && Cause == PlanLateCause.Predecessor;
 }
 internal sealed record PlanLatenessResult(ImmutableDictionary<string, PlanTaskLateness> Tasks,
     int OverdueTasks, int LaterTasks, int OverEstimateTasks, int CauseTasks)
@@ -128,24 +125,5 @@ internal static class PlanLateness
         // The plan consumes the task from its start: actual work plus what is left (#236).
         var hours = remaining.Value + (task.Input.Actual ?? 0);
         return $"終了: 開始から {hours.ToString("0.############################", CultureInfo.InvariantCulture)}h";
-    }
-
-    // The descendants this task's own lateness pushed later (#236 part B): the identity set behind 後続を表示.
-    internal static ImmutableArray<string> LaterDescendants(IReadOnlyList<ScheduledTask> tasks, string identity, PlanLatenessResult result)
-    {
-        var children = tasks.Where(t => t.Input.Parent is not null).GroupBy(t => t.Input.Parent!, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.Select(t => t.Input.Identity).ToArray(), StringComparer.Ordinal);
-        var found = ImmutableArray.CreateBuilder<string>();
-        var seen = new HashSet<string>(StringComparer.Ordinal) { identity };
-        var queue = new Queue<string>();
-        queue.Enqueue(identity);
-        while (queue.Count > 0)
-            foreach (var child in children.GetValueOrDefault(queue.Dequeue()) ?? [])
-                if (seen.Add(child))
-                {
-                    queue.Enqueue(child);
-                    if (result.Tasks.TryGetValue(child, out var late) && late.Level == PlanLatenessLevel.Later) found.Add(child);
-                }
-        return found.ToImmutable();
     }
 }

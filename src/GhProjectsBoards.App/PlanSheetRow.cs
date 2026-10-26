@@ -95,7 +95,6 @@ public sealed class PlanSheetRow : Grid
     // the current task does not draw is collapsed and loses its automation id, so no stale bar is found.
     private static readonly string[] TaskShapeOrder = ["endpoint", "task", "summary", "milestone", "progress", "lateTask", "lateSummary", "lateLabel"];
     private readonly Dictionary<string, FrameworkElement> taskShapes = [];
-    private static readonly FontFamily IconFont = new("Segoe Fluent Icons");
     private NativePath? crossingPath;
     // #264: the reused off-screen predecessor stub (`#1204 →`) in the Gantt row.
     private TextBlock? predecessorStub;

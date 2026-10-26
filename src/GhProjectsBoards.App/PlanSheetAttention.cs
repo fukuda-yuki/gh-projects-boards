@@ -39,7 +39,6 @@ internal sealed partial class PlanSheetView
     private HashSet<string> filterContext = [];
     private List<PlanChaseGroup> chaseGroups = [];
     internal bool FilterActive => activeFilter.IsActive;
-    internal int FilterMatchCount => filterResult.Matches.Length;
     internal IReadOnlyList<PlanChaseGroup> FilterChase => chaseGroups;
 
     private readonly List<Control> attentionControls = [];
@@ -310,7 +309,6 @@ internal sealed partial class PlanSheetView
         return options;
     }
     private void ClearPart(Func<PlanFilter, PlanFilter> change) => AssignFilter(change(activeFilter));
-    internal void ClearIdentityFilter() => ClearFilters();
     internal void ClearFilters() => AssignFilter(PlanFilter.None);
     // A named task set another surface hands in: the summary drill-down, a milestone or 後続を表示 (#260 4).
     internal void FilterTasks(IReadOnlySet<string> identities, string label, bool includeSummaries = false)
@@ -355,8 +353,6 @@ internal sealed partial class PlanSheetView
         filterContext = filterResult.Context.ToHashSet(StringComparer.Ordinal);
         chaseGroups = PlanChase.Groups(document, filterResult.Matches, SummaryIds).ToList();
     }
-    private bool IsFilterMatch(string identity) => filterContext.Count == 0 && filterResult.Matches.Length == 0 ? false
-        : filterResult.Matches.Contains(identity) || filterContext.Contains(identity);
     // Restores the accepted filter text after a cancelled or unaccepted edit of the search box (#227).
     internal void CancelPendingFilter()
     {

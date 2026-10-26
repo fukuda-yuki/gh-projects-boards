@@ -53,13 +53,6 @@ internal sealed partial class PlanSheetView : Grid
     internal int LateTasks => lateness.LateTasks;
     internal int CauseTasks => lateness.CauseTasks;
     internal int OverEstimateTasks => lateness.OverEstimateTasks;
-    private IReadOnlySet<string> Set(Func<PlanTaskLateness, bool> matches) =>
-        lateness.Tasks.Where(pair => matches(pair.Value)).Select(pair => pair.Key).ToHashSet(StringComparer.Ordinal);
-    // The four status-bar filters (#236 part B) are identity sets over the same classification the marks use.
-    internal IReadOnlySet<string> OverdueSet => Set(late => late.Level == PlanLatenessLevel.Overdue);
-    internal IReadOnlySet<string> LaterSet => Set(late => late.Level == PlanLatenessLevel.Later);
-    internal IReadOnlySet<string> CauseSet => Set(late => late.IsCause);
-    internal IReadOnlySet<string> OverEstimateSet => Set(late => late.OverEstimate);
     // #251 D1: this PC's display preference, set by the workspace for every Project's sheet.
     internal PlanMarkVisibility Marks { get; set; } = PlanMarkVisibility.All;
     internal DateOnly? ForecastEndOf(string identity) => Schedule.GetValueOrDefault(identity)?.ForecastEnd;

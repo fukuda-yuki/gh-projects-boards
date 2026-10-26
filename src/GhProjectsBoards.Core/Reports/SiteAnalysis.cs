@@ -168,6 +168,4 @@ internal static class SiteAnalysis
     internal static string Number(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
     internal static string DayOfWeek(DateOnly day) => day.ToString("ddd", CultureInfo.GetCultureInfo("ja-JP"));
-
-    internal static bool Merged(RawItem item) => item.Content?.MergedAt is not null;
 }
