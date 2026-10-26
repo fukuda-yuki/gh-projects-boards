@@ -652,7 +652,8 @@ internal sealed class PlanDocumentTests
         var initial = Initial();
         var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Closed = true, CloseDate = Today });
         var session = await Create(initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } });
-        object value = field == PlanField.Title ? "Updated" : field == PlanField.Start ? Today.AddDays(7) : 12m;
+        // #308: a closed row's dates are plan values, so a start edit must still form a valid plan pair.
+        object value = field == PlanField.Title ? "Updated" : field == PlanField.Start ? Today.AddDays(-1) : 12m;
         await session.Execute(Edit(field, value), Today);
         Assert.That(PlanOperations.Value(session.Document.State.Rows[0], field), Is.EqualTo(value));
         Assert.That(session.UndoCount, Is.EqualTo(1));
@@ -661,11 +662,11 @@ internal sealed class PlanDocumentTests
         Assert.That(scheduled.Warnings, Does.Not.Contain("開始日が終了日より後"));
     }
 
-    [TestCase(PlanField.Remaining, "edit"), TestCase(PlanField.End, "edit")]
-    [TestCase(PlanField.Remaining, "paste"), TestCase(PlanField.End, "paste")]
-    [TestCase(PlanField.Remaining, "fill"), TestCase(PlanField.End, "fill")]
-    [TestCase(PlanField.Remaining, "clear"), TestCase(PlanField.End, "clear")]
-    public async Task ClosedFinalFieldsRejectWholeOperationWithoutDocumentOrHistoryChanges(string field, string operation)
+    [TestCase("edit")]
+    [TestCase("paste")]
+    [TestCase("fill")]
+    [TestCase("clear")]
+    public async Task ClosedRemainingWorkRejectsWholeOperationWithoutDocumentOrHistoryChanges(string operation)
     {
         var initial = Initial();
         var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Closed = true, CloseDate = Today });
@@ -677,16 +678,49 @@ internal sealed class PlanDocumentTests
         var bytes = await File.ReadAllBytesAsync(savedPath);
         var undo = session.UndoCount; var redo = session.RedoCount;
         PlanCommand command = operation switch {
-            "fill" => new FillPlanCells(PlanOperationKind.Fill, "issue:2", ["issue:1"], [field]),
-            "clear" => new ClearPlanCells(["issue:1"], [field]),
+            "fill" => new FillPlanCells(PlanOperationKind.Fill, "issue:2", ["issue:1"], [PlanField.Remaining]),
+            "clear" => new ClearPlanCells(["issue:1"], [PlanField.Remaining]),
             _ => new EditPlanCells(operation == "paste" ? PlanOperationKind.Paste : PlanOperationKind.Cell,
-                [new("issue:2", PlanField.Title, "Must not survive"), new("issue:1", field, field == PlanField.Remaining ? 4m : Today.AddDays(1))])
+                [new("issue:2", PlanField.Title, "Must not survive"), new("issue:1", PlanField.Remaining, 4m)])
         };
         var error = Assert.Catch<ArgumentException>(() => session.Execute(command, Today));
         Assert.That(error!.Message, Is.EqualTo("完了したタスクは Issue のクローズで確定します（編集不可）"));
         Assert.That(Text(session.Document), Is.EqualTo(before));
         Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo((undo, redo)));
         Assert.That(await File.ReadAllBytesAsync(savedPath), Is.EqualTo(bytes));
+    }
+
+    [TestCase("edit")]
+    [TestCase("paste")]
+    [TestCase("fill")]
+    [TestCase("clear")]
+    public async Task ClosedEndStaysEditableAsAPlanValueAndUndoRestoresIt(string operation)
+    {
+        // #308 R9: only 残 h stays read-only on a closed row. 終了日 is a plan value, so an edit, paste,
+        // fill or clear of it is one ordinary Undo step — the close day itself is never written.
+        var initial = Initial();
+        var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Closed = true, CloseDate = Today })
+            .SetItem(1, initial.State.Rows[1] with { End = Today.AddDays(2) });
+        var session = await Create(initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } });
+        await session.Execute(Edit(PlanField.Title, "Editable"), Today);
+        await session.Undo(Today);
+        var before = Text(session.Document);
+        var planEnd = session.Document.State.Rows.Single(r => r.Identity == "issue:1").End;
+        PlanCommand command = operation switch {
+            "fill" => new FillPlanCells(PlanOperationKind.Fill, "issue:2", ["issue:1"], [PlanField.End]),
+            "clear" => new ClearPlanCells(["issue:1"], [PlanField.End]),
+            _ => new EditPlanCells(operation == "paste" ? PlanOperationKind.Paste : PlanOperationKind.Cell,
+                [new("issue:1", PlanField.End, Today.AddDays(1))])
+        };
+        var result = await session.Execute(command, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var expected = operation switch { "clear" => (DateOnly?)null, "fill" => Today.AddDays(2), _ => Today.AddDays(1) };
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "issue:1").End, Is.EqualTo(expected),
+            "An editable plan end is accepted on a closed row.");
+        Assert.That(session.UndoCount, Is.EqualTo(1));
+        Assert.That((await session.Undo(Today)).Succeeded, Is.True);
+        Assert.That(Text(session.Document), Is.EqualTo(before));
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "issue:1").End, Is.EqualTo(planEnd));
     }
 
     [TestCase("summary"), TestCase("closed"), TestCase("foreign identity"), TestCase("duplicate identity"), TestCase("date pair")]

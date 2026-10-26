@@ -28,8 +28,13 @@ internal sealed record PlanTask(string Identity, int RowId)
     public bool Removed { get; init; }
     public bool Inactive => Cancelled || Removed;
     public decimal? EffectiveRemaining => Closed ? 0 : Remaining ?? (Estimate is >= 0 && Actual is null or >= 0 ? Math.Max(Estimate.Value - (Actual ?? 0), 0) : null);
-    public (DateOnly? Start, DateOnly? End) KeptDates => Closed && CloseDate is { } close
-        ? (Start > close ? close : Start, close) : (Start, End);
+    // #308: the records behind 着手日 and 完了日, resolved from this row's stored Issue history. They are
+    // observations, not inputs, and no calculation reads them except the lateness start case.
+    public PlanActualStart? ActualStart { get; init; }
+    public PlanActualFinish? ActualFinish { get; init; }
+    // Start and end are plan values: closing no longer substitutes the close day (#308). The close day is
+    // only the task's effective end for successors, summary roll-ups and the forecast.
+    public (DateOnly? Start, DateOnly? End) KeptDates => (Start, End);
     public bool KeepsDates => IsComplete || Estimate is null && Remaining is null;
 }
 internal sealed record PlanPerson(string Identity, decimal Rate = 100m);

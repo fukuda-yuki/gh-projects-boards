@@ -61,12 +61,12 @@ internal static class ProjectQueries
     // publication read resolves each Issue to its Project items and reads those items in the same request,
     // so its pre-write and verification reads cost one request per batch instead of two.
     private const string ItemDetail = """
-        type isArchived project { id }
+        type isArchived updatedAt project { id }
         content {
           __typename
           ... on Node { id }
           ... on Issue {
-            labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt viewerCanUpdate viewerCanSetFields milestone { id title dueOn state } NATIVE
+            labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt updatedAt viewerCanUpdate viewerCanSetFields milestone { id title dueOn state } NATIVE
             repository { id nameWithOwner owner { id } }
           }
         }

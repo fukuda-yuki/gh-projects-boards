@@ -19,7 +19,10 @@ internal sealed record PlanRemoteSnapshot(PlanBaseline Baseline, ImmutableDictio
   // #258: rows whose Issue Field values the viewer cannot set, observed by this read.
   public ImmutableArray<string> CannotSetFields { get; init; } = [];
   // #238: when GitHub last changed each row's 実績 or 残; null when GitHub holds neither value.
-  public ImmutableDictionary<string, DateTimeOffset?> ProgressUpdatedAt { get; init; } = ImmutableDictionary<string, DateTimeOffset?>.Empty; }
+  public ImmutableDictionary<string, DateTimeOffset?> ProgressUpdatedAt { get; init; } = ImmutableDictionary<string, DateTimeOffset?>.Empty;
+  // #308: the Issue history read by this read, keyed by row identity. Only the rows this read needed are here;
+  // the adoption keeps every other row's stored history.
+  public ImmutableDictionary<string, PlanIssueHistory> IssueHistory { get; init; } = ImmutableDictionary<string, PlanIssueHistory>.Empty; }
 internal static class PlanSnapshot
 {
     internal static string ReadDiagnostic(ProjectReadResult result) => $"{result.Outcome}: " + string.Join("; ",
@@ -48,7 +51,82 @@ internal static class PlanSnapshot
             await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
         }
     }
-    internal static PlanRemoteSnapshot From(ProjectReadResult result, ProjectPlanSettings settings, TimeZoneInfo? timeZone = null)
+    // #308: the rows whose Issue history this read must fetch. A first open reads all of them; a refresh reuses
+    // the stored history while the Project item's and the Issue's updatedAt are unchanged and the stored events
+    // still agree with the baseline's closed state (a close event can lag its write by a moment).
+    internal static ImmutableArray<string> HistoryScope(ProjectReadResult result, PlanDocument? document)
+    {
+        var p = RequireComplete(result, "プロジェクト全体を取得できませんでした。計画は変更していません。再試行してください。 ");
+        var baseline = document?.Baseline.Rows.ToDictionary(r => r.Identity) ?? [];
+        var stored = document?.Sync.IssueHistory ?? ImmutableDictionary<string, PlanIssueHistory>.Empty;
+        var ids = ImmutableArray.CreateBuilder<string>();
+        foreach (var item in p.Items.Where(i => i.Kind == ProjectItemKind.Issue && !i.IsArchived && i.ContentId is not null))
+        {
+            var id = item.ContentId!.NodeId;
+            if (!stored.TryGetValue(id, out var history) || item.UpdatedAt is not { } itemAt || !p.Issues.TryGetValue(item.ContentId, out var issue) ||
+                issue.UpdatedAt is not { } issueAt || history.ItemUpdatedAt != itemAt || history.IssueUpdatedAt != issueAt ||
+                !Agrees(history, baseline.GetValueOrDefault(id)))
+                ids.Add(id);
+        }
+        return ids.ToImmutable();
+        static bool Agrees(PlanIssueHistory history, PlanRow? row)
+        {
+            if (row is null) return true;
+            if (PlanActualDates.ClosedByEvents(history) is { } closed && closed != row.Closed) return false;
+            if (!row.Closed || row.Cancelled) return true;
+            // A closed row as 完了 must carry a completed close in the history read that produced it; otherwise
+            // the event had not arrived yet and the next read asks again.
+            PlanHistoryEvent? latest = null;
+            foreach (var change in history.Events)
+                if (change.Kind is PlanHistoryEventKind.Closed or PlanHistoryEventKind.Reopened && (latest is null || change.At >= latest.At)) latest = change;
+            return latest is { Kind: PlanHistoryEventKind.Closed, StateReason: "COMPLETED" };
+        }
+    }
+    // #308: the history read for the given Issues, retried under the same bounded concurrent-change policy as the
+    // complete read. A non-complete history fails the whole read: no partial history is adopted.
+    internal static async Task<ProjectHistoryResult> ReadHistoriesAsync(GhConnectionService service, GhConnectionService.OperationLease lease,
+        ConnectionContext context, ScopedId project, IReadOnlyList<string> issueIds, CancellationToken token)
+    {
+        if (issueIds.Count == 0) return new(ProjectReadOutcome.Complete, ImmutableDictionary<string, IssueHistoryRead>.Empty, []);
+        for (var attempt = 1; ; attempt++)
+        {
+            var result = await new ProjectHistoryReader(service, lease).ReadAsync(context, project, issueIds, token).ConfigureAwait(false);
+            if (result.Outcome == ProjectReadOutcome.Complete) return result;
+            if (attempt == 3 || result.Outcome != ProjectReadOutcome.Partial || result.Problems.Count == 0 ||
+                result.Problems.Any(p => p.Kind != ReadProblemKind.ConcurrentChange))
+            {
+                if (IsConnectionLost(new(ProjectReadOutcome.Partial, null, result.Problems))) throw new ConnectionLostException();
+                throw new InvalidOperationException("Issue の履歴を取得できませんでした。計画は変更していません。再試行してください。 " +
+                    string.Join("; ", result.Problems.Select(p => $"{p.Stage}/{p.Kind}/{p.Failure}/{p.ApiOutcome}/{p.HttpStatus}")));
+            }
+            await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
+        }
+    }
+    // #308: maps the raw timeline events into the plan's stored observation. The Issue's updatedAt comes from the
+    // same request as the events, so it is the value that observation covers; the item's comes from the item read.
+    internal static ImmutableDictionary<string, PlanIssueHistory> Histories(ProjectReadModel p, ProjectHistoryResult? result)
+    {
+        if (result?.History is not { } read) return ImmutableDictionary<string, PlanIssueHistory>.Empty;
+        var items = p.Items.Where(i => i.ContentId is not null).ToDictionary(i => i.ContentId!.NodeId, i => i, StringComparer.Ordinal);
+        var issues = p.Issues.Values.ToDictionary(i => i.Id.NodeId, StringComparer.Ordinal);
+        var histories = ImmutableDictionary.CreateBuilder<string, PlanIssueHistory>(StringComparer.Ordinal);
+        foreach (var (id, raw) in read)
+        {
+            if (!items.TryGetValue(id, out var item)) continue;
+            var events = ImmutableArray.CreateBuilder<PlanHistoryEvent>();
+            foreach (var change in raw.StatusChanges)
+                events.Add(new(PlanHistoryEventKind.StatusChanged, change.At, change.Actor, change.Automated, change.Previous, change.New));
+            foreach (var close in raw.Closes)
+                events.Add(new(PlanHistoryEventKind.Closed, close.At, close.Actor, close.Automated, StateReason: close.StateReason));
+            foreach (var reopen in raw.Reopens)
+                events.Add(new(PlanHistoryEventKind.Reopened, reopen.At, reopen.Actor, reopen.Automated));
+            var itemAt = item.UpdatedAt ?? raw.UpdatedAt;
+            histories[id] = new(events.OrderBy(e => e.At).ToImmutableArray(), itemAt, raw.UpdatedAt);
+        }
+        return histories.ToImmutable();
+    }
+    internal static PlanRemoteSnapshot From(ProjectReadResult result, ProjectPlanSettings settings, TimeZoneInfo? timeZone = null,
+        ProjectHistoryResult? history = null)
     {
         var p = RequireComplete(result, "プロジェクト全体を取得できませんでした。計画は変更していません。再試行してください。 ");
         var (rows, items, progress) = ObservedRows(p, settings, timeZone);
@@ -65,7 +143,8 @@ internal static class PlanSnapshot
           // as a denial, so a read that could not see permission leaves the observation alone.
           CannotUpdate = DeniedUpdates(p, items),
           CannotSetFields = DeniedFieldWrites(p, items),
-          ProgressUpdatedAt = progress };
+          ProgressUpdatedAt = progress,
+          IssueHistory = Histories(p, history) };
     }
     // #201: assembles the scoped observation into the whole-Project snapshot shape the merge, verification
     // and adoption paths expect. The written rows and their items come from the read; a row outside the
@@ -74,7 +153,7 @@ internal static class PlanSnapshot
     // metadata (carried) also carries that read's repository catalogs, so those repositories are replaced
     // exactly as the read itself covered them.
     internal static PlanRemoteSnapshot FromItems(ProjectReadResult result, PlanDocument document, IReadOnlyCollection<string> scope,
-        TimeZoneInfo? timeZone = null, IReadOnlyCollection<string>? carried = null)
+        TimeZoneInfo? timeZone = null, IReadOnlyCollection<string>? carried = null, ProjectHistoryResult? history = null)
     {
         var p = RequireComplete(result, "発行対象の項目を取得できませんでした。計画は変更していません。再試行してください。 ");
         var settings = document.State.Settings;
@@ -111,7 +190,10 @@ internal static class PlanSnapshot
           CannotSetFields = DeniedFieldWrites(p, items),
           // #238: like the Issue links, a row outside the scope keeps its last observed change time.
           ProgressUpdatedAt = document.Sync.ProgressUpdatedAt.Where(pair => !covered.Contains(pair.Key) && rows.Any(r => r.Identity == pair.Key))
-              .ToImmutableDictionary(StringComparer.Ordinal).SetItems(progress) };
+              .ToImmutableDictionary(StringComparer.Ordinal).SetItems(progress),
+          // #308: the same carry-over for the Issue history; a scoped read covers only the rows it was asked for.
+          IssueHistory = document.Sync.IssueHistory.Where(pair => !covered.Contains(pair.Key) && rows.Any(r => r.Identity == pair.Key))
+              .ToImmutableDictionary(StringComparer.Ordinal).SetItems(Histories(p, history).Where(pair => rows.Any(r => r.Identity == pair.Key))) };
     }
     // #231: the identities this read observed with a definite inability to update, keyed the way the rows are.
     private static ImmutableArray<string> DeniedUpdates(ProjectReadModel p, ImmutableDictionary<string, string> items)

@@ -198,6 +198,32 @@ internal sealed class PlanCsvExportTests
         Assert.That(timer.Elapsed, Is.LessThan(TimeSpan.FromSeconds(2)));
     }
 
+    [Test]
+    public void RecordColumnsExportTheIssueHistoryDatesAndStayBlankWithoutTheRecord()
+    {
+        // #308 R8: 着手日 and 完了日 print as yyyy-MM-dd from PlanSync.IssueHistory, never from a field.
+        var start = new DateOnly(2026, 10, 24);
+        var finish = new DateOnly(2026, 10, 27);
+        var recorded = new PlanRow("I1", "記録", "acme/repo") { Closed = true, CloseDate = finish };
+        var absent = new PlanRow("I2", "未記録", "acme/repo");
+        var document = Columns(Document(recorded, absent), "Title", "ActualStart", "ActualFinish");
+        var history = new PlanIssueHistory(
+            [new(PlanHistoryEventKind.StatusChanged, LocalStamp(start), "fukuda-yuki", false, "Ready", "In progress"),
+                new(PlanHistoryEventKind.Closed, LocalStamp(finish), "fukuda-yuki", false, StateReason: "COMPLETED")],
+            DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch);
+        document = document with { Sync = new() { IssueHistory = ImmutableDictionary<string, PlanIssueHistory>.Empty.Add("I1", history) } };
+        var rows = Read(PlanCsvExport.Create(document, Today));
+        Assert.That(rows[0].Skip(2).Take(2), Is.EqualTo(new[] { "着手日", "完了日" }));
+        Assert.That(rows[1].Skip(2).Take(2), Is.EqualTo(new[] { "2026-10-24", "2026-10-27" }));
+        Assert.That(rows[2].Skip(2).Take(2), Is.EqualTo(new[] { "", "" }), "A row without the record exports blank.");
+    }
+
+    private static DateTimeOffset LocalStamp(DateOnly day)
+    {
+        var local = day.ToDateTime(new TimeOnly(12, 0));
+        return new DateTimeOffset(local, TimeZoneInfo.Local.GetUtcOffset(local));
+    }
+
     private sealed class CultureScope : IDisposable
     {
         private readonly CultureInfo previous = CultureInfo.CurrentCulture;

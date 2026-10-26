@@ -73,7 +73,12 @@ internal static class PlanScheduler
     }
     // EndDayOnly marks an end that is a stored plan day rather than an endpoint this calculation derived.
     // A successor may start on that day; an exact internal finish still decides its interval.
-    private sealed record Result(ScheduledTask Row, Point? Start, Point? End, bool Valid = true, bool EndDayOnly = false, Point? ForecastFinish = null);
+    // EffectiveEnd is the task's end for successors and summary roll-ups. It differs from End only for a closed
+    // task, whose close day constrains later work while its plan 終了日 stays a plan value (#308 R10).
+    private sealed record Result(ScheduledTask Row, Point? Start, Point? End, bool Valid = true, bool EndDayOnly = false, Point? ForecastFinish = null)
+    {
+        public Point? EffectiveEnd { get; init; } = End;
+    }
 
     private sealed class Calculation
     {
@@ -227,13 +232,15 @@ internal static class PlanScheduler
                 else if (summary)
                 {
                     var starts = values.Where(v => v.Start.HasValue).Select(v => v.Start!.Value).ToArray();
-                    var ends = values.Where(v => v.End.HasValue).Select(v => v.End!.Value).ToArray();
+                    // A closed child contributes its close day as the effective end, as it did when the close day
+                    // was its displayed end (R10); its own plan dates are untouched.
+                    var ends = values.Where(v => (v.EffectiveEnd ?? v.End).HasValue).Select(v => (v.EffectiveEnd ?? v.End)!.Value).ToArray();
                     result = Create(task, starts.Length == 0 ? null : starts.Min(), ends.Length == 0 ? null : ends.Max(),
                         DateOrigin.Calculated, DateOrigin.Calculated, "子タスクの集計", warnings, true,
                         values.Sum(v => v.Row.Estimate ?? 0), values.Sum(v => v.Row.Remaining ?? 0), values.Sum(v => v.Row.Actual ?? 0));
                     // A known sum travels with the number of leaf tasks it leaves out, so it is never read as complete.
                     // A summary's rolled-up end is a plan day too, so its successors may start on it.
-                    result = result with { EndDayOnly = true, Row = result.Row with {
+                    result = result with { EndDayOnly = true, EffectiveEnd = result.End, Row = result.Row with {
                         MissingEstimates = values.Where(v => !v.Row.Input.Inactive).Sum(v => v.Row.IsSummary ? v.Row.MissingEstimates : v.Row.Estimate is null ? 1 : 0),
                         MissingRemaining = values.Where(v => !v.Row.Input.Inactive).Sum(v => v.Row.IsSummary ? v.Row.MissingRemaining : v.Row.Remaining is null ? 1 : 0) } };
                 }
@@ -305,7 +312,7 @@ internal static class PlanScheduler
                 task.GitHubEnd is { } end ? new Point(end.DayNumber, 18) : null,
                 DateOrigin.Kept, DateOrigin.Kept, "入力エラー", warnings, summary);
             // Retain the visible baseline, but never let invalid dates drive another row.
-            return result with { Start = null, End = null, Valid = false };
+            return result with { Start = null, End = null, EffectiveEnd = null, Valid = false };
         }
         private Result Leaf(PlanTask task, List<(PlanTask Task, Result Result)> dependencies, HashSet<string> warnings)
         {
@@ -323,19 +330,19 @@ internal static class PlanScheduler
             // Reverse row order lets the smallest row ID win equal predecessor endpoints. A predecessor whose
             // end is a stored plan day lets its successor start on that day, so a read leaves the pair alone.
             foreach (var (before, result) in dependencies.AsEnumerable().Reverse())
-                if (result.End is { } finish) Consider(result.EndDayOnly ? Point.Morning(finish.Date) : finish, $"{before.RowId} の終了後");
+                if ((result.EffectiveEnd ?? result.End) is { } finish) Consider(result.EndDayOnly ? Point.Morning(finish.Date) : finish, $"{before.RowId} の終了後");
             Point? start = task.Start is { } s ? Point.Morning(s) : null;
             Point? end = task.End is { } e ? new Point(e.DayNumber, 18) : null;
             var complete = task.IsComplete;
             if (task.KeepsDates)
             {
-                if (complete) {
-                    end = task.CloseDate is { } closed ? new Point(closed.DayNumber, 18) : null;
-                    start = task.KeptDates.Start is { } keptStart ? Point.Morning(keptStart) : null;
-                }
-                if (complete && end is null) warnings.Add("完了タスクの終了日なし");
-                return Create(task, start, end, task.KeptDates.Start != task.Start ? DateOrigin.Calculated : DateOrigin.Kept, complete ? DateOrigin.Calculated : DateOrigin.Kept,
-                    complete ? "完了" : "工数なし", warnings) with { EndDayOnly = true };
+                // #308: a closed task keeps its plan dates. The close day is only its effective end for the
+                // successors and the summary roll-up; start and end are plan values and are published as such.
+                var effective = complete ? task.CloseDate is { } closedDay ? new Point(closedDay.DayNumber, 18)
+                    : end : end;
+                if (complete && task.CloseDate is null) warnings.Add("完了タスクの終了日なし");
+                return Create(task, start, end, DateOrigin.Kept, DateOrigin.Kept, complete ? "完了" : "工数なし", warnings)
+                    with { EndDayOnly = true, EffectiveEnd = effective };
             }
             var work = task.EffectiveRemaining!.Value;
             var person = task.Assignees.Distinct(StringComparer.Ordinal).ToArray() is [var single] && people.TryGetValue(single, out var p) ? p : null;

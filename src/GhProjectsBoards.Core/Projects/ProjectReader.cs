@@ -436,7 +436,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             MatchProject(node);
             var id = Id(node);
             if (items.ContainsKey(id)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
-            var item = new ItemBuilder(id, Text(node, "type"), Boolean(node, "isArchived"));
+            var item = new ItemBuilder(id, Text(node, "type"), Boolean(node, "isArchived")) { UpdatedAt = UpdatedAt(node) };
             items.Add(id, item);
             if (item.Type is not ("ISSUE" or "PULL_REQUEST" or "DRAFT_ISSUE" or "REDACTED"))
                 item.Kind = ProjectItemKind.Unsupported;
@@ -457,7 +457,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var repository = Property(content, "repository");
                     var issue = new IssueReadModel(item.ContentId, new(Id(repository), Id(Property(repository, "owner")),
                         Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
-                        ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content),
+                        ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content), UpdatedAt = UpdatedAt(content),
                             StateReason = ReadStateReason(content),
                             CanSetFields = Optional(content, "viewerCanSetFields").ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, _ => null },
                             Labels = ReadIssueLabels(content),
@@ -769,7 +769,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     : complete && item.Complete ? ValueAvailability.Empty : ValueAvailability.NotLoaded;
                 values.Add(new(field.Id, null, field.TypeName, availability));
             }
-            return new(item.Id, kind, item.Type, item.ContentId, item.IsArchived, values.AsReadOnly(), item.Complete);
+            return new(item.Id, kind, item.Type, item.ContentId, item.IsArchived, values.AsReadOnly(), item.Complete) { UpdatedAt = item.UpdatedAt };
         }
 
         private async Task<bool> WalkAsync(string stage, string query, string id,
@@ -933,6 +933,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             public List<ProjectFieldValue> Values { get; } = [];
             public HashSet<ScopedId> FieldIds { get; } = [];
             public bool Complete { get; set; }
+            public DateTimeOffset? UpdatedAt { get; set; }
             public int? ValueTotal { get; set; }
             public int ValueCount { get; set; }
             public string? NextValueCursor { get; set; }

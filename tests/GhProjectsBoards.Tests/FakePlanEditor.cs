@@ -9,7 +9,12 @@ namespace GhProjectsBoards.Tests;
 
 internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } public string? Phase { get; init; }
     // #238: when GitHub last changed this item's 実績 or 残 value; GitHub reports it per Project field value.
-    public DateTimeOffset? ProgressUpdatedAt { get; init; } }
+    public DateTimeOffset? ProgressUpdatedAt { get; init; }
+    // #308: the Issue timeline a read observes. The timestamps say which read produced it, as GitHub's
+    // Project item and Issue updatedAt do; a fixture changes one to make the next read fetch the history again.
+    public ImmutableArray<PlanHistoryEvent> History { get; init; } = [];
+    public DateTimeOffset? ItemUpdatedAt { get; init; }
+    public DateTimeOffset? IssueUpdatedAt { get; init; } }
 internal sealed record PlanFakeMilestone(string Id, string Repository, string Title, DateOnly? DueDate, bool Closed = false);
 // #253: a repository's assignable people for the on-demand resolver. A fixture declares them, so it can
 // stand for a 1,000-user repository that the resolver searches like GitHub does.
@@ -18,6 +23,8 @@ internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int N
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    // #308: a stable observation time, so a stored history stays current until a fixture moves it.
+    internal static readonly DateTimeOffset ObservedAt = new(2026, 10, 17, 0, 0, 0, TimeSpan.FromHours(9));
     internal static string StatePath(string root) => Path.Combine(root, "plan-state.json");
     internal static PlanFakeState Load(string root) => JsonSerializer.Deserialize<PlanFakeState>(File.ReadAllText(StatePath(root)), Json)!;
     internal static void Save(string root, PlanFakeState state) => File.WriteAllText(StatePath(root), JsonSerializer.Serialize(state, Json));
@@ -184,7 +191,8 @@ internal static class FakePlanEditor
         object Item(PlanFakeIssue issue)
         {
             var row = issue.Row;
-            var item = JsonSerializer.SerializeToNode(new { __typename = "ProjectV2Item", id = ItemId("T-" + row.Identity), type = "ISSUE", isArchived = issue.Archived, project = new { id = projectId },
+            var item = JsonSerializer.SerializeToNode(new { __typename = "ProjectV2Item", id = ItemId("T-" + row.Identity), type = "ISSUE", isArchived = issue.Archived,
+                updatedAt = (issue.ItemUpdatedAt ?? ObservedAt).ToUniversalTime().ToString("O"), project = new { id = projectId },
                 content = new { __typename = "Issue", id = row.Identity, number = int.Parse(row.Identity[1..]), url = "https://github.com/" + row.Repository + "/issues/" + row.Identity[1..], title = row.Title,
                     state = row.Closed ? "CLOSED" : "OPEN",
                     stateReason = row.Closed ? row.Cancelled ? "NOT_PLANNED" : "COMPLETED" : null,
@@ -192,6 +200,7 @@ internal static class FakePlanEditor
                     milestone = state.Milestones.SingleOrDefault(m => m.Repository == row.Repository && m.Title == row.MilestoneTitle) is { } member ? Milestone(member) : null,
                     closedAt = row.Closed && row.CloseDate is { } closeDate ? new DateTimeOffset(closeDate.ToDateTime(new TimeOnly(12, 0)),
                         TimeZoneInfo.Local.GetUtcOffset(closeDate.ToDateTime(new TimeOnly(12, 0)))).ToUniversalTime().ToString("O") : null,
+                    updatedAt = (issue.IssueUpdatedAt ?? ObservedAt).ToUniversalTime().ToString("O"),
                     // #231: only this fault denies Issue update permission, so the ordinary fixtures stay writable.
                     viewerCanUpdate = !(fault == "no-update-permission" && row.Identity == "I1"),
                     viewerCanSetFields = !(fault == "no-set-fields" && row.Identity == "I1"), repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository, owner = new { id = "O1" } },
@@ -309,6 +318,39 @@ internal static class FakePlanEditor
             node = new { __typename = "Repository", id, milestones = Page(all.Skip(offset).Take(100).Select(Milestone),
                 all.Length + (fault == "milestones-incomplete" ? 1 : 0), offset + 100 < all.Length,
                 offset + 100 < all.Length ? (offset + 100).ToString() : null) };
+        }
+        else if (query.Contains("PlanIssueHistor"))
+        {
+            var events = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+            JsonElement Events(PlanFakeIssue issue, int offset)
+                => JsonSerializer.SerializeToElement(new { totalCount = issue.History.Length,
+                    pageInfo = new { hasNextPage = false, endCursor = (string?)null },
+                    nodes = issue.History.Skip(offset).Select(change => (object)(change.Kind switch
+                    {
+                        PlanHistoryEventKind.StatusChanged => new { __typename = "ProjectV2ItemStatusChangedEvent", createdAt = change.At.ToUniversalTime().ToString("O"),
+                            actor = new { __typename = change.Automated ? "Bot" : "User", login = change.Actor },
+                            previousStatus = change.Previous ?? "", status = change.Status, project = new { id = projectId } },
+                        PlanHistoryEventKind.Closed => new { __typename = "ClosedEvent", createdAt = change.At.ToUniversalTime().ToString("O"),
+                            actor = new { __typename = change.Automated ? "Bot" : "User", login = change.Actor }, stateReason = change.StateReason },
+                        _ => (object)new { __typename = "ReopenedEvent", createdAt = change.At.ToUniversalTime().ToString("O"),
+                            actor = new { __typename = change.Automated ? "Bot" : "User", login = change.Actor } }
+                    })).ToArray() });
+            if (query.Contains("PlanIssueHistoryPage"))
+            {
+                var id = variables.GetProperty("id").GetString()!;
+                var after = variables.TryGetProperty("after", out var cursor) && cursor.ValueKind == JsonValueKind.String ? int.Parse(cursor.GetString()!) : 0;
+                var issue = state.Issues.Single(i => i.Row.Identity == id);
+                var page = Events(issue, after);
+                Write(new { data = new { viewer = new { databaseId = 42 }, node = new { __typename = "Issue", id, updatedAt = (issue.IssueUpdatedAt ?? ObservedAt).ToUniversalTime().ToString("O"),
+                    timelineItems = page } } });
+                return 0;
+            }
+            var ids = variables.GetProperty("ids").EnumerateArray().Select(id => id.GetString()!).ToArray();
+            var nodes = ids.Select(id => state.Issues.SingleOrDefault(i => i.Row.Identity == id) is { } issue
+                ? new { __typename = "Issue", id, updatedAt = (issue.IssueUpdatedAt ?? ObservedAt).ToUniversalTime().ToString("O"), timelineItems = Events(issue, 0) }
+                : null).ToArray();
+            Write(new { data = new { viewer = new { databaseId = 42 }, nodes } });
+            return 0;
         }
         else if (query.Contains("ProjectFields"))
             node = new { __typename = "ProjectV2", id = projectId, number = 3, url = "https://github.com/users/acme/projects/3", title = "Plan", viewerCanUpdate = true,

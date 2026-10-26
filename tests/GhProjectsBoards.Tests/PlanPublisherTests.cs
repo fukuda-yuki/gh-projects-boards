@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Text.Json;
 using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
@@ -317,16 +317,23 @@ internal sealed partial class PlanPublisherTests
     }
 
     [Test]
-    public async Task ClosedIssuePublishesRemainingAndCloseDayAndRefreshClearsTheirDifferences()
+    public async Task ClosedIssuePublishesRemainingOnlyAndRefreshKeepsThePlanEnd()
     {
         await Start(1, state => state with { Issues = state.Issues.Select(i => i with {
             Row = i.Row with { Closed = true, CloseDate = Today, Remaining = 8, End = Today.AddDays(2) }
         }).ToImmutableArray() });
-        Assert.That(session.Changes(Today).Fields["I1"], Is.EquivalentTo(new[] { PlanField.Remaining, PlanField.End }));
+        // #308: a closed Issue publishes its calculated remaining work; its 終了日 is a plan value.
+        Assert.That(session.Changes(Today).Fields["I1"], Is.EquivalentTo(new[] { PlanField.Remaining }));
         var published = await publisher.PublishAsync(session, Today);
         Assert.That(published.Succeeded, Is.True, published.Error);
         var row = FakePlanEditor.Load(root).Issues.Single().Row;
-        Assert.That((row.Remaining, row.End, row.CloseDate), Is.EqualTo((0m, Today, Today)));
+        Assert.That((row.Remaining, row.End), Is.EqualTo((0m, Today.AddDays(2))), "the close day is not written into 終了日");
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        var refreshed = await publisher.RefreshAsync(session, Today);
+        Assert.That(refreshed.Succeeded, Is.True, refreshed.Error);
+        var state = session.Document.State.Rows.Single();
+        Assert.That((state.End, state.CloseDate), Is.EqualTo(((DateOnly?)Today.AddDays(2), (DateOnly?)Today)),
+            "a refresh keeps the plan end and adopts the close record");
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
 
@@ -1225,13 +1232,15 @@ internal sealed partial class PlanPublisherTests
         Assert.That(sent, Does.Contain("closeIssue"));
         Assert.That(sent, Does.Contain("COMPLETED"));
         Assert.That(sent, Does.Contain("NOT_PLANNED"));
-        // The closed-task follow-up writes (the close-day End and Remaining 0) are planned from the close
-        // day the read reports and sent by the same publish, so one publish leaves nothing behind.
+        // #308: the close also publishes the calculated Remaining 0, but no plan date from the close day:
+        // 開始日 and 終了日 stay plan values.
         Assert.That(sent, Does.Contain("updateProjectV2ItemFieldValue"));
+        Assert.That(sent, Does.Not.Contain("F-Start"));
+        Assert.That(sent, Does.Not.Contain("F-End"));
         Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(0));
-        // The end written is the day GitHub reports the close, not the provisional 基準日.
         var closedRow = FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I1").Row;
-        Assert.That(closedRow.End, Is.EqualTo(closedRow.CloseDate));
+        Assert.That(closedRow.End, Is.Null, "the plan end stays the plan value (none here)");
+        Assert.That(closedRow.CloseDate, Is.Not.Null, "the Issue records the close day");
     }
 
     [Test]

@@ -6,21 +6,26 @@ namespace GhProjectsBoards.Core.PlanEditor;
 
 internal static class PlanOperations
 {
-    internal static PlanTask TaskInput(PlanRow r, int index = 0) => new(r.Identity, index + 1)
+    internal static PlanTask TaskInput(PlanRow r, int index = 0, PlanIssueHistory? history = null,
+        IReadOnlyList<string>? notStarted = null, TimeZoneInfo? zone = null) => new(r.Identity, index + 1)
     {
         Parent = r.Parent, Predecessors = r.Predecessors.ToArray(), Assignees = r.Assignees.ToArray(),
         Estimate = r.Estimate, Remaining = r.Remaining, Actual = r.Actual, Closed = r.Closed, CloseDate = r.CloseDate,
         Cancelled = r.Cancelled, Removed = r.Removed,
-        Start = r.Start, End = r.End
+        Start = r.Start, End = r.End,
+        // #308: the records the sheet and the lateness case read. Resolution happens per calculation, so a
+        // changed not-started option list applies without another remote read.
+        ActualStart = PlanActualDates.Start(history, notStarted ?? PlanActualDates.DefaultNotStarted, zone ?? TimeZoneInfo.Local),
+        ActualFinish = PlanActualDates.Finish(history, r.Closed, zone ?? TimeZoneInfo.Local)
     };
     internal static bool NeedsProgressDate(PlanRow before, PlanRow current, string field)
     {
         if (field is not (PlanField.Start or PlanField.End) || TaskInput(before).KeepsDates) return false;
-        var complete = TaskInput(current).IsComplete;
-        // Automatic null inputs were not clear commands. Once work starts, its start becomes history.
+        // Automatic null inputs were not clear commands. A task that starts work adopts the known GitHub start
+        // once; a close no longer derives a plan date from the close day (#308).
         return field == PlanField.Start
-            ? before.Start is null && current.Start is null && !(before.Actual > 0) && (complete || current.Actual > 0)
-            : before.End is null && current.End is null && complete;
+            ? before.Start is null && current.Start is null && !(before.Actual > 0) && current.Actual > 0
+            : false;
     }
     internal static ImmutableArray<PlanRow> EffectiveRows(PlanDocument document)
     {
@@ -47,7 +52,9 @@ internal static class PlanOperations
     {
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
         var settings = document.State.Settings;
-        return PlanScheduler.Calculate(EffectiveRows(document).Select((r, i) => TaskInput(r, i) with
+        var notStarted = PlanActualDates.NotStarted(settings);
+        return PlanScheduler.Calculate(EffectiveRows(document).Select((r, i) => TaskInput(r, i,
+                document.Sync.IssueHistory.GetValueOrDefault(r.Identity), notStarted) with
         { GitHubStart = baseline.GetValueOrDefault(r.Identity)?.Start, GitHubEnd = baseline.GetValueOrDefault(r.Identity)?.End }).ToArray(),
             new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
                 Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
@@ -80,6 +87,8 @@ internal static class PlanOperations
         Unique(s.CompanyDaysOff); Unique(s.People.Select(p => p.Identity).ToImmutableArray());
         Unique(s.Columns.Select(c => c.Role).ToImmutableArray()); Unique(s.Columns.Select(c => c.FieldId).ToImmutableArray());
         Require(s.DefaultRepository is null || Repository(s.DefaultRepository), "リポジトリはowner/repositoryで指定してください。");
+        Require(s.NotStartedStatuses is null || s.NotStartedStatuses.All(name => !string.IsNullOrWhiteSpace(name)) &&
+            s.NotStartedStatuses.Distinct(StringComparer.Ordinal).Count() == s.NotStartedStatuses.Length, "着手前の Status の設定が不正です。");
         foreach (var p in s.People)
         {
             Require(!string.IsNullOrWhiteSpace(p.Identity) && !string.IsNullOrWhiteSpace(p.Name) && p.Rate > 0 && p.Rate <= 100 && !(p.Allowance < 0), "担当者、稼働率または上限工数が不正です。");
@@ -544,9 +553,11 @@ internal static class PlanOperations
         if (field == PlanField.Repository) return "この列は読み取り専用です。";
         // 見込終了 is the forecast (#236 part B): a derived value, never an input.
         if (field == "ForecastEnd") return "見込終了は先行関係と見込み残存工数から計算します（編集不可）";
+        // #308: 着手日 and 完了日 are records of the Issue's history, read-only on every row.
+        if (field is "ActualStart" or "ActualFinish") return "Issue の履歴から読み取ります（編集不可）";
         if (summary && field is not (PlanField.Title or PlanField.Repository or PlanField.Parent))
             return SummaryReadOnlyReason(field);
-        return row.Closed && field is PlanField.Remaining or PlanField.End
+        return row.Closed && field == PlanField.Remaining
             ? "完了したタスクは Issue のクローズで確定します（編集不可）" : null;
     }
     // An Issue cannot be deleted from the plan: #231 owns 完了・中止・この版から外す, and a delete that

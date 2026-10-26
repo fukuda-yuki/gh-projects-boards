@@ -41,10 +41,14 @@ internal static class PlanJson
         var removed = span.IndexOf("\"startNoEarlierThan\""u8) >= 0 || span.IndexOf("\"StartNoEarlierThan\""u8) >= 0 || span.IndexOf("\"Fixed\""u8) >= 0;
         var removedSettings = span.IndexOf("Mark\""u8) >= 0;
         var readObservations = span.IndexOf("\"progressUpdatedAt\""u8) < 0;
-        if (!removed && !removedSettings && !readObservations) return null;
+        // #308: a plan or settings file saved before the Issue history or the not-started Status options still
+        // opens: the new observations are empty and the options keep their defaults until the file is next saved.
+        var noHistory = span.IndexOf("\"issueHistory\""u8) < 0;
+        var noNotStarted = span.IndexOf("\"notStartedStatuses\""u8) < 0;
+        if (!removed && !removedSettings && !readObservations && !noHistory && !noNotStarted) return null;
 
         var root = JsonNode.Parse(bytes);
-        if (readObservations) AddReadObservations(root);
+        if (readObservations || noHistory || noNotStarted) AddReadObservations(root);
         if (removed || removedSettings) Strip(root);
         return root;
         static void AddReadObservations(JsonNode? node)
@@ -55,7 +59,11 @@ internal static class PlanJson
                 {
                     sync["progressUpdatedAt"] ??= new JsonObject();
                     if (!sync.ContainsKey("lastRead")) sync["lastRead"] = null;
+                    if (!sync.ContainsKey("issueHistory")) sync["issueHistory"] = new JsonObject();
                 }
+                // Every settings object (the document's and both sides of a settings history patch) gains the
+                // not-started option list. Null keeps the defaults rather than freezing the names of the day.
+                if (item.ContainsKey("sheetColumns") && !item.ContainsKey("notStartedStatuses")) item["notStartedStatuses"] = null;
                 foreach (var (_, child) in item.ToArray()) AddReadObservations(child);
             }
             else if (node is JsonArray list)
@@ -94,6 +102,8 @@ internal static class PlanJson
             // #238: read observations stay a set. They may name rows a later local delete removed, like the
             // latest read's placed Issues, so their membership is not part of the stored invariant.
             sync.ProgressUpdatedAt is not null &&
+            // #308: like the progress observations, history keys may name a row a later local delete removed.
+            sync.IssueHistory is not null && sync.IssueHistory.Values.All(h => !h.Events.IsDefault) &&
             (sync.LastRead is not { } lastRead || lastRead.Added.Distinct().Count() == lastRead.Added.Length), "更新状態が不正です。");
         PlanOperations.Require(sync.Conflicts.Select(c => (c.Identity, c.Field)).Distinct().Count() == sync.Conflicts.Length &&
             sync.Conflicts.All(c => PlanField.IsDefined(c.Field) && c.Field != PlanField.NewTask && c.Baseline is not null && c.Local is not null && c.Remote is not null &&
