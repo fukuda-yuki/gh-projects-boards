@@ -6,8 +6,7 @@ internal static class PlanInitialSettings
     {
         // One repository can run several versions in parallel, each a separate Project with its own milestones,
         // so only milestones that this Project's Issues belong to describe its period and phases.
-        var used = baseline.Rows.Select(r => r.MilestoneTitle).OfType<string>().ToHashSet(StringComparer.Ordinal);
-        var milestones = baseline.Milestones.Where(m => used.Contains(m.Title)).ToArray();
+        var milestones = PlanMilestones.InScope(baseline.Rows, baseline.Milestones);
         var start = settings.ProjectStart ?? baseline.Rows.Min(r => r.Start);
         var end = settings.ProjectEnd ?? milestones.Max(m => m.DueDate) ?? baseline.Rows.Max(r => r.End);
         if (start > end) { start = settings.ProjectStart; end = settings.ProjectEnd; }
