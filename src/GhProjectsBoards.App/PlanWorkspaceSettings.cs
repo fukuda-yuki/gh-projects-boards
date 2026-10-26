@@ -156,8 +156,8 @@ internal sealed partial class PlanWorkspaceView
             // #298: the same this-PC preference the plan sheet's ガント toggle changes.
             display.Children.Add(GanttSwitch());
             // #236 part B / #251 D1: each lateness mark can be hidden on this PC. The sets, the counts and the filters stay.
-            display.Children.Add(MarkSwitch("期限超過の印", "PlanShowOverdueMark", m => m.Overdue, (m, on) => m with { Overdue = on }));
-            display.Children.Add(MarkSwitch("予定より遅れの印", "PlanShowLaterMark", m => m.Later, (m, on) => m with { Later = on }));
+            display.Children.Add(MarkSwitch("遅れの印（日付を過ぎた・赤）", "PlanShowOverdueMark", m => m.Overdue, (m, on) => m with { Overdue = on }));
+            display.Children.Add(MarkSwitch("遅れの印（見込・黄）", "PlanShowLaterMark", m => m.Later, (m, on) => m with { Later = on }));
             display.Children.Add(MarkSwitch("見積超過の印", "PlanShowOverEstimateMark", m => m.OverEstimate, (m, on) => m with { OverEstimate = on }));
             RenderAssistSettings();
 

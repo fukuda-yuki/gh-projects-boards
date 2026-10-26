@@ -802,7 +802,7 @@ public sealed class PlanSheetRow : Grid
         var late = lateness?.DaysLater;
         var overdue = lateness?.Level == PlanLatenessLevel.Overdue;
         var barName = $"{owner.TaskNames[Identity]} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
-            + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" {(overdue ? "期限超過" : "予定より遅れ")} +{days}日" : "");
+            + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? " " + PlanSheetText.BarLateness(overdue, days) : "");
         AutomationProperties.SetAutomationId(bar, "PlanBar" + number);
         AutomationProperties.SetName(bar, barName);
         ToolTipService.SetToolTip(bar, barName);

@@ -708,8 +708,9 @@ internal sealed class PlanOverviewHostedTests
                 else Assert.That(segment.Fill is null || segment.Fill is SolidColorBrush { Color.A: 0 }, Is.True);
                 Assert.That(Ui.Tree(sheet).Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PlanLateLabel" + number), Is.EqualTo(overdue && scale == "週"));
                 var bar = Ui.Find<Shape>("PlanBar" + number);
-                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain($"+{days}日"));
-                Assert.That(ToolTipService.GetToolTip(bar)?.ToString(), Does.Contain($"+{days}日"));
+                var wording = PlanSheetText.BarLateness(overdue, days);
+                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain(wording));
+                Assert.That(ToolTipService.GetToolTip(bar)?.ToString(), Does.Contain(wording));
                 if (overdue && scale == "週") {
                     var label = Ui.Find<TextBlock>("PlanLateLabel" + number);
                     Assert.That(label.Text, Is.EqualTo($"+{days}日"));

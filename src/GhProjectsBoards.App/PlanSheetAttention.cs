@@ -19,7 +19,7 @@ internal sealed partial class PlanSheetView
     // The strip's order is the agreed order of the attention sets (#260 / #122 terms).
     private static readonly ToggleSpec[] ToggleSpecs = [
         new(PlanToggle.Late, "遅れ", "PlanAttentionLate",
-            "遅れ: 終了日を過ぎて未完了、または予定より遅れているタスク（赤: 終了日を過ぎた、黄: それ以外）"),
+            "遅れ: 終了日を過ぎて未完了、または見込終了が終了日より後ろのタスク（赤: 終了日を過ぎた、黄: 見込）"),
         new(PlanToggle.Cause, "遅れの原因", "PlanAttentionCause",
             "遅れの原因: 終了日か開始日を過ぎた遅れと、自分の残で見込終了が終了日より後ろのタスク。先行タスクの遅れだけが原因のタスクは含まない"),
         new(PlanToggle.OverEstimate, "見積超過", "PlanAttentionOverEstimate",
