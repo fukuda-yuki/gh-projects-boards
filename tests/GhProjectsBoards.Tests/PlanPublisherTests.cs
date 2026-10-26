@@ -556,7 +556,9 @@ internal sealed partial class PlanPublisherTests
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(mutationDelayMs: 50);
+        // Hold the first response so all four slots are dispatched before any response lands; a loaded CI host
+        // can otherwise complete a 50 ms request while the fourth is still being prepared.
+        Scenario(mutationDelayMs: 50, firstMutationDelayMs: 2000);
         var reports = new List<RemoteProgress>();
         var result = await publisher.PublishAsync(session, Today, progressReporter: new InlineProgress<RemoteProgress>(reports.Add));
         Assert.That(result.Succeeded, Is.True, result.Error);
@@ -605,7 +607,7 @@ internal sealed partial class PlanPublisherTests
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(fault, mutationDelayMs: 50);
+        Scenario(fault, mutationDelayMs: 50, firstMutationDelayMs: 2000);
         var deadlines = new List<DateTimeOffset?>();
         runner.MutationStarting = () => deadlines.Add(session.Document.Sync.NotBefore);
         var result = await publisher.PublishAsync(session, Today);
