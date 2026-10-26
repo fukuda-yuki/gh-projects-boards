@@ -21,7 +21,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     // The short form the spec fixes for these date cells: M/d (曜).
     private static string ShortDate(DateOnly day)
         => day.ToString("M/d", CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)day.DayOfWeek] + ")";
-    private static string WordingDate(DateTimeOffset at) => LocalDay(at).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    // The record wording carries the actor and the local time, as the spec fixes it (the hosted runner is in UTC).
+    private static string WordingStamp(DateTimeOffset at) => TimeZoneInfo.ConvertTime(at, TimeZoneInfo.Local).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
     private static PlanFakeIssue WithHistory(PlanFakeIssue issue, params PlanHistoryEvent[] events)
         => issue with { History = events.ToImmutableArray(), ItemUpdatedAt = FakePlanEditor.ObservedAt, IssueUpdatedAt = FakePlanEditor.ObservedAt };
     private static PlanHistoryEvent StatusChanged(DateTimeOffset at, string from, string to, bool automated = false)
@@ -56,12 +57,12 @@ internal sealed partial class PlanWorkspaceHostedTests
             var started = Ui.Find<PlanSheetCell>("PlanCell1_ActualStart");
             Assert.That(started.Text, Is.EqualTo(ShortDate(LocalDay(startAt))), "The record shows its short local date.");
             Assert.That(started.IsReadOnly, Is.True);
-            var startWording = "fukuda-yuki が In progress に変更 · " + WordingDate(startAt);
+            var startWording = "fukuda-yuki が In progress に変更 · " + WordingStamp(startAt);
             Assert.That(AutomationProperties.GetName(started), Does.Contain("着手日 " + startWording).And.StartWith("#1 "));
             Assert.That(ToolTipService.GetToolTip(started), Is.EqualTo(startWording));
             var finished = Ui.Find<PlanSheetCell>("PlanCell1_ActualFinish");
             Assert.That(finished.Text, Is.EqualTo(ShortDate(LocalDay(finishAt))));
-            var finishWording = "fukuda-yuki が完了としてクローズ · " + WordingDate(finishAt);
+            var finishWording = "fukuda-yuki が完了としてクローズ · " + WordingStamp(finishAt);
             Assert.That(AutomationProperties.GetName(finished), Does.Contain("完了日 " + finishWording));
             Assert.That(ToolTipService.GetToolTip(finished), Is.EqualTo(finishWording));
 
@@ -76,7 +77,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             var reason = Ui.Find<TextBlock>("PlanStartReason").Text;
             Assert.That(reason, Does.Contain("Issue の履歴から読み取ります（編集不可）"));
-            Assert.That(reason, Does.Contain("fukuda-yuki が In progress に変更 · " + WordingDate(startAt)));
+            Assert.That(reason, Does.Contain("fukuda-yuki が In progress に変更 · " + WordingStamp(startAt)));
             // F2 and a double-click enter editing through BeginEditing; a record refuses before the editor opens.
             var started = Ui.Find<PlanSheetCell>("PlanCell1_ActualStart");
             started.BeginEditing();

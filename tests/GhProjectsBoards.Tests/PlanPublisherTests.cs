@@ -674,7 +674,9 @@ internal sealed partial class PlanPublisherTests
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(body, gatewayAliasLimit: 6, mutationDelayMs: 50);
+        // Hold the first response until all four slots are dispatched: the gateway error is the contract, and a
+        // 50 ms delay let a loaded runner answer it before the fourth request existed.
+        Scenario(body, gatewayAliasLimit: 6, mutationDelayMs: 300, firstMutationDelayMs: 2000);
 
         var result = await publisher.PublishAsync(session, Today);
 
