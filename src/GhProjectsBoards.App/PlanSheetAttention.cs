@@ -21,7 +21,7 @@ internal sealed partial class PlanSheetView
         new(PlanToggle.Late, "遅れ", "PlanAttentionLate",
             "遅れ: 終了日を過ぎて未完了、または予定より遅れているタスク（赤: 終了日を過ぎた、黄: それ以外）"),
         new(PlanToggle.Cause, "遅れの原因", "PlanAttentionCause",
-            "遅れの原因: 自分の遅れで後続を 1 つ以上遅らせているタスク"),
+            "遅れの原因: 終了日か開始日を過ぎた遅れと、自分の残で見込終了が終了日より後ろのタスク。先行タスクの遅れだけが原因のタスクは含まない"),
         new(PlanToggle.OverEstimate, "見積超過", "PlanAttentionOverEstimate",
             "見積超過: 実績 + 残が見積を超えたタスク"),
         new(PlanToggle.NotUpdated, "未更新", "PlanAttentionNotUpdated",

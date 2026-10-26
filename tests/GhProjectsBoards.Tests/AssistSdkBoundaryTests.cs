@@ -180,6 +180,8 @@ internal sealed class AssistSdkBoundaryTests
         Assert.That(prompt, Does.StartWith("選択した行をまとめて直してください"));
         Assert.That(AssistConversation.ComposePrompt("そのまま", []), Is.EqualTo("そのまま"),
             "No selection keeps the question exactly as typed.");
+        Assert.That(AssistConversation.SystemPrompt, Does.Contain("一つの提案にまとまる"),
+            "The model is told that several selected rows belong in one proposal.");
     }
     [Test]
     public async Task DisabledAssistNeverStartsRuntimeOrCreatesStorage()
