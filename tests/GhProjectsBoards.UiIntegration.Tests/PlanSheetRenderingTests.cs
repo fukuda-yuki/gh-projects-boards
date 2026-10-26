@@ -15,6 +15,32 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal sealed partial class PlanSheetHostedTests
 {
+    [Test, Category("SheetRowPresentation")]
+    public async Task ScrollingAwayAndBackKeepsTheCurrentEstimateAndUndoRemovesItsOverrun()
+    {
+        await Edit(1, PlanField.Remaining, "16");
+        await SelectFocusedCell(2, PlanField.Title);
+        await Ui.Run(() => sheet.List.ScrollIntoView("I75"));
+        await Ui.Until(() => sheet.Realized.Any(row => row.IsLoaded && row.Identity == "I75"
+            && row.Cells.Single(cell => cell.Field == PlanField.Title).Text == "Task 75"));
+        await Ui.Run(() => sheet.List.ScrollIntoView("I1"));
+        await Ui.Until(() => sheet.Realized.Any(row => row.IsLoaded && row.Identity == "I1"
+            && row.Cells.Single(cell => cell.Field == PlanField.Title).Text == "Task 1"));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanEstimateDisplay1").Text, Is.EqualTo("8h +8h"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<PlanSheetCell>("PlanCell1_Estimate")),
+                Does.Contain("見積超過: 見込 16h（見積 8h）"));
+        });
+        await Ui.Run(async () => { await session.Undo(Today); sheet.Refresh(); });
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanEstimateDisplay1").Text == "8h");
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Estimate");
+            Assert.That(AutomationProperties.GetName(cell), Does.Not.Contain("見積超過"));
+            Assert.That(ToolTipService.GetToolTip(cell), Is.EqualTo("見積工数 · 8h"));
+            Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(8));
+        });
+    }
+
     [TestCase(false), TestCase(true), Category("SheetRowPresentation")]
     public async Task OrdinaryCellTextSharesTitleAndAssigneeVerticalCentre(bool editing)
     {

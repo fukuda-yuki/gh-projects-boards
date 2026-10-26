@@ -474,7 +474,12 @@ internal sealed class PlanSheetNavigationHostedTests
             Assert.That(sheet.IsSelectedRow("I500"), Is.True);
         });
         await SheetNativeInput.Press(VirtualKey.Escape);
-        await Ui.Until(() => !Ui.Find<PlanSheetCell>(CellId("I500", PlanField.Title)).Editing);
+        // Escape refreshes recycled containers asynchronously; wait for the bound cell, not its former instance.
+        await Ui.Until(() => Ui.Tree(sheet).OfType<PlanSheetCell>().Any(cell =>
+            AutomationProperties.GetAutomationId(cell) == CellId("I500", PlanField.Title)
+            && cell.IsLoaded && !cell.Editing && cell.Text == "Task 500" && cell.FocusState != FocusState.Unfocused));
+        Assert.That(sheet.IsSelectedRow("I500"), Is.True);
+        await AssertRowInView("I500");
         AssertPlanUnchanged(before);
     }
 }

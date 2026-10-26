@@ -46,12 +46,19 @@ public sealed class PlanScreenPerformanceTests
 
     [Test]
     public void VersionEditsRecordNativeEnterToChangedDatePixelsInTheOrdinaryApp()
+        => RecordVersionPerformance(scrollOnly: false);
+
+    [Test, Category("PlanScrollPixels")]
+    public void VersionWheelScrollingRecordsOrdinaryAppPixelsWithoutEditing()
+        => RecordVersionPerformance(scrollOnly: true);
+
+    private void RecordVersionPerformance(bool scrollOnly)
     {
         if (Environment.GetEnvironmentVariable("GHPB_RUN_E2E") != "1")
             Assert.Ignore("Run Test-E2E.ps1 -Filter TestCategory=PlanScreenPerformance on an idle Windows desktop.");
         var executable = Environment.GetEnvironmentVariable("GHPB_E2E_APP_PATH")!;
         var fake = Environment.GetEnvironmentVariable("GHPB_E2E_FAKE_GH_PATH")!;
-        var root = Path.Combine(Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!, "plan-screen");
+        var root = Path.Combine(Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!, scrollOnly ? "plan-scroll" : "plan-screen");
         var data = Path.Combine(root, "data");
         Directory.CreateDirectory(root);
         var repo = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(fake)!, "..", "..", "..", "..", ".."));
@@ -144,6 +151,11 @@ public sealed class PlanScreenPerformanceTests
                     Assert.That(down ? afterOffset > beforeOffset : afterOffset < beforeOffset, Is.True,
                         "The ordinary app must receive the recorded wheel input.");
                 }
+            }
+            if (scrollOnly) {
+                Assert.That(Find("PlanUnpublished").Properties.Name.ValueOrDefault, Is.EqualTo("未発行 0 タスク"));
+                outcome = "completed";
+                return;
             }
             // Record the native return position above, then reset outside the edit measurement.
             list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
@@ -474,9 +486,12 @@ public sealed class PlanScreenPerformanceTests
             if (changedAnimation) SetSystemParameter(0x1043, 0, nint.Zero, 0);
         }
         void WriteSummary() => File.WriteAllText(Path.Combine(root, "plan-screen.json"), JsonSerializer.Serialize(new {
-            schemaVersion = 1, outcome, failure, rows = 1040, version = "2027.04", environment, wheelRecordings, flyoutRecordings, samples,
+            schemaVersion = 1, outcome, failure, scope = scrollOnly ? "wheel-only" : "scroll-edit-filter-flyouts",
+            rows = 1040, version = "2027.04", environment, wheelRecordings, flyoutRecordings, samples,
             processExited = process.HasExited, processExitCode = process.HasExited ? (int?)process.ExitCode : null,
-            targetMs = 200, boundary = "Native Enter injection start to first desktop copy matching the final stable changed End-date pixels. CopyFromScreen is desktop-compositor evidence, not monitor photon latency. The observed upper bound is final-copy end; the conservative lower bound is previous-copy start. CI runner timings are reported, not asserted as PMO hardware acceptance."
+            targetMs = scrollOnly ? (int?)null : 200, boundary = scrollOnly
+                ? "Native wheel input and desktop copies; inspect recorded row identities, blank strips and recovery separately. Completion verifies acquisition and unchanged unpublished count, not smoothness or physical-display acceptance."
+                : "Native Enter injection start to first desktop copy matching the final stable changed End-date pixels. CopyFromScreen is desktop-compositor evidence, not monitor photon latency. The observed upper bound is final-copy end; the conservative lower bound is previous-copy start. CI runner timings are reported, not asserted as PMO hardware acceptance."
         }, new JsonSerializerOptions { WriteIndented = true }));
     }
 
