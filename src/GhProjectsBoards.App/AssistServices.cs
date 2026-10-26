@@ -34,7 +34,7 @@ internal interface IAssistRuntime
 }
 internal interface IAssistTurn : IAsyncDisposable
 {
-    IAsyncEnumerable<AssistEvent> Send(string text, string? selected, CancellationToken cancellation);
+    IAsyncEnumerable<AssistEvent> Send(string text, IReadOnlyList<string> selected, CancellationToken cancellation);
 }
 internal sealed class AssistRuntime : IAssistRuntime
 {
@@ -44,7 +44,7 @@ internal sealed class AssistRuntime : IAssistRuntime
         => AssistConversation.CheckConnectionAsync(settings, root, host, login, key, cancellation: cancellation);
     private sealed class Turn(AssistConversation conversation) : IAssistTurn
     {
-        public IAsyncEnumerable<AssistEvent> Send(string text, string? selected, CancellationToken cancellation)
+        public IAsyncEnumerable<AssistEvent> Send(string text, IReadOnlyList<string> selected, CancellationToken cancellation)
             => conversation.SendAsync(text, selected, cancellation);
         public ValueTask DisposeAsync() => conversation.DisposeAsync();
     }

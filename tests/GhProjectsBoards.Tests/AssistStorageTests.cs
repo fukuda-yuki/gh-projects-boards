@@ -130,6 +130,15 @@ internal sealed class AssistStorageTests
         Assert.That(config.Tools!.Select(t => t.Name), Is.EquivalentTo(new[] { "find_tasks", "get_tasks", "summarize_plan", "read_manual", "propose_changes" }));
     }
     [Test]
+    public async Task SelectedContextAcceptsEveryRowOfTheOpenPlanAndRejectsAnotherIdentity()
+    {
+        var tools = new AssistPlanTools(await Create(), AssistRulesTests.Today, "");
+        Assert.DoesNotThrow(() => tools.ValidateSelectedIdentities([]), "No selection is a valid context.");
+        Assert.DoesNotThrow(() => tools.ValidateSelectedIdentities(["A", "B"]), "Every selected plan row is accepted.");
+        var error = Assert.Throws<ArgumentException>(() => tools.ValidateSelectedIdentities(["A", "other"]));
+        Assert.That(error!.Message, Is.EqualTo("開いている計画にないタスクです。"));
+    }
+    [Test]
     public async Task SettingsRoundTripIsAppWideAtomicAndContainsNoKey()
     {
         var store = new AssistSettingsStore(root); Assert.That((await store.LoadAsync()).Settings.Mode, Is.EqualTo(AssistMode.None));

@@ -61,6 +61,10 @@ internal sealed class AssistPlanTools(PlanSession session, DateOnly today, strin
             pending = null; return save;
         }
     }
-    internal void ValidateSelectedIdentity(string? identity)
-    { if (identity is not null && !session.Document.State.Rows.Any(r => r.Identity == identity)) throw new ArgumentException("開いている計画にないタスクです。"); }
+    internal void ValidateSelectedIdentities(IReadOnlyList<string> identities)
+    {
+        // The App sends only task rows from the open plan; a stale or foreign identity must fail before any answer.
+        if (identities.Any(identity => !session.Document.State.Rows.Any(row => row.Identity == identity)))
+            throw new ArgumentException("開いている計画にないタスクです。");
+    }
 }
