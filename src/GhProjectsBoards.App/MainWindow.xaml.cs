@@ -14,17 +14,8 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        try
-        {
-            workspace = new(PlanWorkspace.ForUser(() => PlanClock.Today)) { WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this), SetWindowTitle = text => Title = text };
-            WorkspaceRoot.Children.Add(workspace);
-            ExtendsContentIntoTitleBar = true;
-            SetTitleBar(workspace.WorkspaceTitleBar);
-        }
-        catch (Exception)
-        {
-            WorkspaceRoot.Children.Add(new TextBlock { Text = "保存先を利用できません。GHPB_DATA_ROOT は絶対パスを指定してください。", TextWrapping = TextWrapping.Wrap, Margin = new(24) });
-        }
+        if (PlanStartup.Try(OpenWorkspace) is { } notice)
+            WorkspaceRoot.Children.Add(PlanStartupView.Create(notice));
         SizeWorkspaceWindow();
         AppWindow.Closing += Closing;
     }
@@ -44,6 +35,13 @@ public sealed partial class MainWindow : Window
         }
         AppWindow.MoveAndResize(new RectInt32(workArea.X + (workArea.Width - width) / 2,
             workArea.Y + (workArea.Height - height) / 2, width, height));
+    }
+    private void OpenWorkspace()
+    {
+        workspace = new(PlanWorkspace.ForUser(() => PlanClock.Today)) { WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this), SetWindowTitle = text => Title = text };
+        WorkspaceRoot.Children.Add(workspace);
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(workspace.WorkspaceTitleBar);
     }
 
     private async void Closing(AppWindow sender, AppWindowClosingEventArgs args)
