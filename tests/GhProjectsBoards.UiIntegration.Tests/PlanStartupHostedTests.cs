@@ -23,8 +23,11 @@ public sealed class PlanStartupHostedTests
     {
         var root = PlanStartupNotice.For(new PlanDataRootException(@"D:\missing\plans"));
         var general = PlanStartupNotice.For(new InvalidOperationException("forced workspace failure"));
-        view = PlanStartupView.Create(root);
-        await Ui.Mount(view);
+        // A TextBox belongs to the window thread. Creating it on the test thread is RPC_E_WRONG_THREAD.
+        var rootPanel = default(FrameworkElement)!;
+        await Ui.Run(() => rootPanel = PlanStartupView.Create(root));
+        view = rootPanel;
+        await Ui.Mount(rootPanel);
         await Ui.Run(() =>
         {
             var box = Ui.Find<TextBox>("PlanStartupDataRoot");
@@ -34,8 +37,10 @@ public sealed class PlanStartupHostedTests
             Assert.That(Ui.Find<Button>("PlanStartupCopy").IsEnabled, Is.True);
         });
         await Ui.Unmount(view, check: false);
-        view = PlanStartupView.Create(general);
-        await Ui.Mount(view);
+        var failurePanel = default(FrameworkElement)!;
+        await Ui.Run(() => failurePanel = PlanStartupView.Create(general));
+        view = failurePanel;
+        await Ui.Mount(failurePanel);
         string copied = "";
         await Ui.Run(async () =>
         {
