@@ -551,6 +551,9 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
     [Test]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task FieldRequestsRunFourAtATime()
     {
         await Start(65);
@@ -572,6 +575,9 @@ internal sealed partial class PlanPublisherTests
     }
 
     [Test]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task FieldRequestsStayFourInFlightAndStartTheNextOnCompletion()
     {
         await Start(65);
@@ -602,6 +608,9 @@ internal sealed partial class PlanPublisherTests
     [TestCase("field-pushback")]
     [TestCase("field-rate-rejected")]
     [TestCase("field-rate-no-delay")]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task FieldPushbackMakesRemainingRequestsSerial(string fault)
     {
         await Start(65);
@@ -633,6 +642,9 @@ internal sealed partial class PlanPublisherTests
     }
 
     [Test]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task UnknownWindowPersistsTheLongestRetryDeadlineAndAllSiblingOutcomes()
     {
         await Start(65);
@@ -654,6 +666,9 @@ internal sealed partial class PlanPublisherTests
 
     [TestCase("gateway")]
     [TestCase("gateway-json")]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task FieldGatewayFailureSplitsAndRetainsTheReducedCeiling(string body)
     {
         await Start(65);
@@ -1701,6 +1716,9 @@ internal sealed partial class PlanPublisherTests
     [TestCase("global-resource-unknown")]
     [TestCase("missing-alias")]
     [TestCase("unknown-and-resource")]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task UnresolvedResponseStopsLaterFieldsAndRelationshipsAndSurvivesReopen(string fault)
     {
         await Start(51);
