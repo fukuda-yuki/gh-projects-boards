@@ -11,9 +11,10 @@ namespace GhProjectsBoards.Tests;
 
 // #308 live validation on the authorized sandbox Project 3 (https://github.com/users/fukuda-yuki/projects/3).
 // It moves a few items' Status and closed state through gh, verifies the product's read/refresh/publish behavior
-// against GitHub, records the read timings R13 asks for, and restores the items it touched. Run it only with
-// GHPB_LIVE_PROJECT3=1 (it is in the LiveGitHub category):
-//   $env:GHPB_LIVE_PROJECT3='1'; dotnet <runner> <tests dll> 'PlanActualDatesLiveTests' (without the LiveGitHub exclusion)
+// against GitHub, records the read timings R13 asks for, and restores the items it touched. The intermediate
+// adoptions use the product's scoped read and history reader (the path a publish read-back uses), so one run
+// stays within GitHub's read budget. Run only with GHPB_LIVE_PROJECT3=1, without the LiveGitHub category filter:
+//   $env:GHPB_LIVE_PROJECT3='1'; dotnet <runner> <tests dll> 'PlanActualDatesLiveTests'
 [TestFixture, Category("LiveGitHub")]
 [NonParallelizable]
 internal sealed class PlanActualDatesLiveTests
@@ -24,48 +25,51 @@ internal sealed class PlanActualDatesLiveTests
     private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.Now);
     private static readonly string Root = Path.Combine(AppContext.BaseDirectory, "live-actual-dates-" + Guid.NewGuid().ToString("N"));
 
-    private static void RequireLive()
-    {
-        if (Environment.GetEnvironmentVariable("GHPB_LIVE_PROJECT3") != "1")
-            Assert.Ignore("set GHPB_LIVE_PROJECT3=1 to run the live Project 3 validation");
-    }
-
     [Test]
     public async Task Project3RecordsStatusesClosesAndPlanDatesEndToEnd()
     {
-        RequireLive();
-        var project = new ScopedId(new("github.com", 42), ProjectNodeId);
+        if (Environment.GetEnvironmentVariable("GHPB_LIVE_PROJECT3") != "1")
+            Assert.Ignore("set GHPB_LIVE_PROJECT3=1 to run the live Project 3 validation");
         var service = new GhConnectionService(Gh, "github.com", timeout: TimeSpan.FromSeconds(180));
         var report = await service.ConnectAsync();
         Assert.That(report.IsConnected, Is.True, report.Result.Failure.ToString());
         var context = report.Context!;
-        project = new(new(context.Host, context.ViewerId), ProjectNodeId);
+        var project = new ScopedId(new(context.Host, context.ViewerId), ProjectNodeId);
         Directory.CreateDirectory(Root);
         var store = new PlanStore(Root);
         Directory.CreateDirectory(store.Root);
         var timings = new JsonObject();
         var evidence = new JsonObject();
-        // 1. The read #308 must not regress: a full Project read without the history read (the before-#308 cost).
+        // R13: a full Project read without the history read is the cost this change must not add to.
         var baselineRead = Stopwatch.StartNew();
-        var direct = await new ProjectReader(service).ReadAsync(context, project);
+        ProjectReadResult direct = null!;
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            direct = await new ProjectReader(service).ReadAsync(context, project);
+            if (direct.Outcome == ProjectReadOutcome.Complete) break;
+            await Task.Delay(TimeSpan.FromSeconds(5));
+        }
         baselineRead.Stop();
         Assert.That(direct.Outcome, Is.EqualTo(ProjectReadOutcome.Complete), string.Join(", ", direct.Problems));
         timings["fullReadWithoutHistoryMs"] = baselineRead.ElapsedMilliseconds;
         timings["items"] = direct.Project!.Items.Count(i => i.Kind == ProjectItemKind.Issue && !i.IsArchived);
-        // 2. First open reads every history (R13).
+        // R13: a first open reads every Issue's history and keeps it.
         var open = Stopwatch.StartNew();
         var workspace = new PlanWorkspace(store, () => Today);
         await workspace.Connect(service);
         var choice = new ProjectChoice(new(new(context.Host, context.ViewerId), ProjectNodeId),
             new(new(context.Host, context.ViewerId), "O-sandbox"), "fukuda-yuki", "User", 3, SandboxUrl, "第2027.04版");
-        await workspace.Open(choice);
+        for (var attempt = 1; ; attempt++)
+        {
+            try { await workspace.Open(choice); break; }
+            catch (InvalidOperationException) when (attempt < 3) { await Task.Delay(TimeSpan.FromSeconds(5)); }
+        }
         open.Stop();
         var session = workspace.Session!;
         timings["firstOpenWithAllHistoriesMs"] = open.ElapsedMilliseconds;
-        Assert.That(session.Document.Sync.IssueHistory, Is.Not.Empty, "a first open reads every Issue history");
         timings["histories"] = session.Document.Sync.IssueHistory.Count;
+        Assert.That(session.Document.Sync.IssueHistory, Is.Not.Empty, "a first open reads every Issue history");
         var notStarted = PlanActualDates.NotStarted(session.Document.State.Settings).ToHashSet(StringComparer.Ordinal);
-        // 3. Pick open items in a not-started Status for the Status/close cases, and a row with plan dates for R9.
         var openItems = session.Document.State.Rows.Where(r => !r.Closed && !r.Cancelled &&
             !string.IsNullOrEmpty(r.Status) && notStarted.Contains(r.Status)).Take(3).ToArray();
         Assert.That(openItems.Length, Is.EqualTo(3), "Project 3 has open not-started Issues to exercise");
@@ -75,82 +79,80 @@ internal sealed class PlanActualDatesLiveTests
         var dated = session.Document.State.Rows
             .Where(r => !r.Closed && !r.Cancelled && r.End is not null && r.Identity != a && r.Identity != b && r.Identity != c)
             .Select(r => r.Identity).FirstOrDefault();
-        Assert.That(dated, Is.Not.Null, "Project 3 has an open Issue with plan dates for the R9 case");
-        var status = await FieldIds(service, context, project);
-        File.WriteAllText(Path.Combine(Root, "touched.json"), JsonSerializer.Serialize(new { a, b, c, dated, status = openItems.Select(r => r.Status) }));
-        evidence["touched"] = new JsonArray(JsonValue.Create(a), JsonValue.Create(b), JsonValue.Create(c), JsonValue.Create(dated));
+        Assert.That(dated, Is.Not.Null, "Project 3 has an open Issue with a plan end for the R9 case");
+        var status = await StatusField(service, context);
+        evidence["touched"] = new JsonArray(new[] { a, b, c, dated! }.Select(id => (JsonNode?)JsonValue.Create(id)).ToArray());
         try
         {
-            // R4: Ready -> In progress gives 着手日; In progress -> In review keeps it.
-            await SetStatus(service, context, project, a, status.Option("In progress"));
-            await workspace.Refresh();
-            var start = Scheduled(session, a).Input.ActualStart;
-            Assert.That(start, Is.Not.Null, "a Status write becomes 着手日 on the next read");
-            Assert.That((start!.Day, start.To, start.Automated), Is.EqualTo((Today, "In progress", false)));
+            // R4: a not-started -> started move gives 着手日; In progress -> In review keeps it, then a repeat
+            // Ready -> In progress is the latest start transition.
+            await SetStatus(service, context, status, a, status.Option("In progress"));
+            await SetStatus(service, context, status, a, status.Option("In review"));
+            await SyncScoped(session, service, context, project, [a]);
+            var first = Scheduled(session, a).Input.ActualStart;
+            Assert.That(first, Is.Not.Null, "a Status write becomes 着手日 on the next read");
+            Assert.That((first!.Day, first.To), Is.EqualTo((Today, "In progress")), "In review keeps the first started day");
+            await SetStatus(service, context, status, a, status.Option("Ready"));
+            await SetStatus(service, context, status, a, status.Option("In progress"));
+            await SyncScoped(session, service, context, project, [a]);
+            var again = Scheduled(session, a).Input.ActualStart!;
+            Assert.That((again.From, again.To, again.Day, again.Automated), Is.EqualTo(("Ready", "In progress", Today, false)),
+                "Ready -> In progress again gives the newer start transition");
+            evidence["R4"] = new JsonObject { ["startDay"] = again.Day.ToString("yyyy-MM-dd"), ["from"] = again.From, ["to"] = again.To, ["actor"] = again.Actor };
 
-            await SetStatus(service, context, project, a, status.Option("Ready"));
-            await workspace.Refresh();
-            await SetStatus(service, context, project, a, status.Option("In progress"));
-            await workspace.Refresh();
-            Assert.That((Scheduled(session, a).Input.ActualStart!.From, Scheduled(session, a).Input.ActualStart!.To),
-                Is.EqualTo(("Ready", "In progress")), "Ready -> In progress again is the latest start transition");
-            await SetStatus(service, context, project, a, status.Option("In review"));
-            await workspace.Refresh();
-            Assert.That(Scheduled(session, a).Input.ActualStart!.To, Is.EqualTo("In progress"),
-                "In progress -> In review keeps the 着手日");
-            evidence["R4"] = new JsonObject { ["startDay"] = start.Day.ToString("yyyy-MM-dd"), ["startTo"] = start.To, ["actor"] = start.Actor };
-
-            // R5/R7: close as completed, reopen clears; a close through the app needs the read-back.
+            // R5/R7: a completed close becomes 完了日 on the read; a reopen clears it.
             await Close(service, context, b, "COMPLETED");
-            await workspace.Refresh();
-            Assert.That(Scheduled(session, b).Input.ActualFinish!.Day, Is.EqualTo(Today), "a completed close becomes 完了日");
+            await SyncScoped(session, service, context, project, [b]);
+            var finish = Scheduled(session, b).Input.ActualFinish;
+            Assert.That(finish, Is.Not.Null, "a completed close becomes 完了日");
+            Assert.That(finish!.Day, Is.EqualTo(Today));
             await Reopen(service, context, b);
-            await workspace.Refresh();
+            await SyncScoped(session, service, context, project, [b]);
             Assert.That(Scheduled(session, b).Input.ActualFinish, Is.Null, "a reopen clears 完了日");
             evidence["R5"] = new JsonObject { ["finishAfterClose"] = Today.ToString("yyyy-MM-dd"), ["clearedByReopen"] = true };
 
             // R5: a NOT_PLANNED close (中止) has no 完了日.
             await Close(service, context, c, "NOT_PLANNED");
-            await workspace.Refresh();
+            await SyncScoped(session, service, context, project, [c]);
             var cancelled = session.Document.State.Rows.Single(r => r.Identity == c);
-            Assert.That((cancelled.Closed, cancelled.Cancelled, Scheduled(session, c).Input.ActualFinish), Is.EqualTo((true, true, (PlanActualFinish?)null)));
+            Assert.That((cancelled.Closed, cancelled.Cancelled, Scheduled(session, c).Input.ActualFinish),
+                Is.EqualTo((true, true, (PlanActualFinish?)null)));
             await Reopen(service, context, c);
-            await workspace.Refresh();
+            await SyncScoped(session, service, context, project, [c]);
             evidence["R5NotPlanned"] = new JsonObject { ["cancelled"] = true, ["finish"] = null };
 
-            // R9: closing through the app publishes no plan date, and the read-back records 完了日.
+            // R9/R7: closing through the app changes no plan date locally or on GitHub, and the read-back
+            // records the close as 完了日.
             var before = session.Document.State.Rows.Single(r => r.Identity == dated);
             var beforeDates = (before.Start, before.End);
-            var beforeRemote = await DateValues(service, context, project, dated);
-            await session.Execute(new ClosePlanRows([dated]), Today);
-            Assert.That(Scheduled(session, dated).Input.ActualFinish, Is.Null, "a provisional close is not 完了日 (R7)");
+            var beforeRemote = await DateValues(service, context, dated!);
+            await session.Execute(new ClosePlanRows([dated!]), Today);
+            Assert.That(Scheduled(session, dated!).Input.ActualFinish, Is.Null, "a provisional close is not 完了日");
             var published = await new PlanPublisher(service, context).PublishAsync(session, Today);
             Assert.That(published.Succeeded, Is.True, published.Error);
-            await workspace.Refresh();
             var after = session.Document.State.Rows.Single(r => r.Identity == dated);
             Assert.That((after.Start, after.End), Is.EqualTo(beforeDates), "a close changes no plan date locally (R9)");
-            Assert.That(await DateValues(service, context, project, dated), Is.EqualTo(beforeRemote), "a close writes no plan date to GitHub (R9)");
-            Assert.That(Scheduled(session, dated).Input.ActualFinish!.Day, Is.EqualTo(Today), "the read-back records the close as 完了日 (R7)");
-            evidence["R9"] = new JsonObject {
-                ["start"] = before.Start?.ToString("yyyy-MM-dd"), ["end"] = before.End?.ToString("yyyy-MM-dd"),
-                ["finish"] = Scheduled(session, dated).Input.ActualFinish!.Day.ToString("yyyy-MM-dd") };
-            var reopened = new PlanPublisher(service, context);
-            await session.Execute(new ReopenPlanRows([dated]), Today);
-            Assert.That((await reopened.PublishAsync(session, Today)).Succeeded, Is.True);
-            await workspace.Refresh();
-            Assert.That(await DateValues(service, context, project, dated), Is.EqualTo(beforeRemote));
+            Assert.That(await DateValues(service, context, dated!), Is.EqualTo(beforeRemote), "a close writes no plan date to GitHub (R9)");
+            var recorded = Scheduled(session, dated!).Input.ActualFinish;
+            Assert.That(recorded, Is.Not.Null, "the publish read-back records the close as 完了日 (R7)");
+            Assert.That(recorded!.Day, Is.EqualTo(Today));
+            evidence["R9"] = new JsonObject { ["start"] = before.Start?.ToString("yyyy-MM-dd"), ["end"] = before.End?.ToString("yyyy-MM-dd"),
+                ["finish"] = recorded.Day.ToString("yyyy-MM-dd") };
+            await session.Execute(new ReopenPlanRows([dated!]), Today);
+            Assert.That((await new PlanPublisher(service, context).PublishAsync(session, Today)).Succeeded, Is.True);
+            Assert.That(await DateValues(service, context, dated!), Is.EqualTo(beforeRemote));
 
-            // R13: an unchanged refresh reads no history; an all-history refresh is the bounded worst case.
-            var unchanged = Stopwatch.StartNew();
+            // R13: an unchanged refresh reads only changed rows' history; reading all histories is the worst case.
+            var incremental = Stopwatch.StartNew();
             await workspace.Refresh();
-            unchanged.Stop();
-            timings["incrementalRefreshMs"] = unchanged.ElapsedMilliseconds;
+            incremental.Stop();
+            timings["incrementalRefreshMs"] = incremental.ElapsedMilliseconds;
             await session.SaveSync(session.Document.Sync with { IssueHistory = ImmutableDictionary<string, PlanIssueHistory>.Empty });
             var all = Stopwatch.StartNew();
             await workspace.Refresh();
             all.Stop();
             timings["refreshReadingAllHistoriesMs"] = all.ElapsedMilliseconds;
-            Assert.That(session.Document.Sync.IssueHistory.Count, Is.GreaterThan(0));
+            Assert.That(session.Document.Sync.IssueHistory, Is.Not.Empty);
             Assert.That(timings["incrementalRefreshMs"]!.GetValue<long>(), Is.LessThan(timings["refreshReadingAllHistoriesMs"]!.GetValue<long>()),
                 "the incremental refresh is cheaper than reading every history");
             evidence["R13"] = timings.DeepClone();
@@ -158,10 +160,10 @@ internal sealed class PlanActualDatesLiveTests
         finally
         {
             // Restore every item the run touched, even when a case failed.
-            foreach (var (identity, option) in new[] { (a, openItems[0].Status), (b, openItems[1].Status), (c, openItems[2].Status) })
-                try { await SetStatus(service, context, project, identity, status.Option(option)); }
+            foreach (var (identity, option) in openItems.Select(r => (r.Identity, r.Status)))
+                try { await SetStatus(service, context, status, identity, status.Option(option!)); }
                 catch (Exception error) { TestContext.Out.WriteLine("could not restore " + identity + ": " + error.Message); }
-            foreach (var identity in new[] { a, b, c, dated })
+            foreach (var identity in new[] { a, b, c, dated! })
                 try { await Reopen(service, context, identity); } catch (Exception error) { TestContext.Out.WriteLine("could not reopen " + identity + ": " + error.Message); }
             var path = Path.Combine(FindRepositoryRoot(), "TestResults", "live-actual-dates.json");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -172,6 +174,19 @@ internal sealed class PlanActualDatesLiveTests
         }
     }
 
+    // The product's scoped read and adoption path (the one a publish read-back uses): read the items and their
+    // Issue history, then adopt them as a refresh would.
+    private static async Task SyncScoped(PlanSession session, GhConnectionService service, ConnectionContext context,
+        ScopedId project, string[] ids)
+    {
+        using var lease = await service.BeginOperationAsync(context, CancellationToken.None);
+        var read = await new ProjectReader(service, lease).ReadItemsAsync(context, project, ids);
+        Assert.That(read.Outcome, Is.EqualTo(ProjectReadOutcome.Complete), string.Join(", ", read.Problems));
+        var history = await PlanSnapshot.ReadHistoriesAsync(service, lease, context, project, ids, CancellationToken.None);
+        var remote = PlanSnapshot.FromItems(read, session.Document, ids, history: history);
+        var save = await session.AcceptRefresh(remote, Today);
+        Assert.That(save.Succeeded, Is.True, save.Error);
+    }
     private static ScheduledTask Scheduled(PlanSession session, string identity)
         => PlanOperations.Schedule(session.Document, Today).Single(t => t.Input.Identity == identity);
     private static string FindRepositoryRoot()
@@ -184,42 +199,41 @@ internal sealed class PlanActualDatesLiveTests
     {
         public string? Option(string? name) => name is not null && Options.TryGetValue(name, out var id) ? id : null;
     }
-    private async Task<StatusIds> FieldIds(GhConnectionService service, ConnectionContext context, ScopedId project)
+    private static async Task<StatusIds> StatusField(GhConnectionService service, ConnectionContext context)
     {
-        var data = await Query(service, context, "query LiveFields($id:ID!){node(id:$id){... on ProjectV2{fields(first:50){nodes{__typename ... on ProjectV2SingleSelectField{id name options{id name}}}}}}}", new { id = project.NodeId });
+        var data = await Query(service, context, "query LiveFields($id:ID!){node(id:$id){... on ProjectV2{fields(first:50){nodes{__typename ... on ProjectV2SingleSelectField{id name options{id name}}}}}}}", new { id = ProjectNodeId });
         foreach (var field in data.GetProperty("node").GetProperty("fields").GetProperty("nodes").EnumerateArray())
         {
             if (field.GetProperty("__typename").GetString() != "ProjectV2SingleSelectField") continue;
-            var name = field.GetProperty("name").GetString();
-            if (name is not ("Status" or "ステータス")) continue;
+            if (field.GetProperty("name").GetString() is not ("Status" or "ステータス")) continue;
             var options = field.GetProperty("options").EnumerateArray()
                 .ToDictionary(o => o.GetProperty("name").GetString()!, o => o.GetProperty("id").GetString()!, StringComparer.Ordinal);
             return new(field.GetProperty("id").GetString()!, options);
         }
         throw new AssertionException("Project 3 has no readable Status field");
     }
-    private async Task SetStatus(GhConnectionService service, ConnectionContext context, ScopedId project, string issueId, string? optionId)
+    private static async Task SetStatus(GhConnectionService service, ConnectionContext context, StatusIds status, string issueId, string? optionId)
     {
         if (optionId is null) return;
-        var item = await ItemId(service, context, project, issueId);
+        var item = await ItemId(service, context, issueId);
         await Mutate(service, context, "mutation LiveSetStatus($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
-            new { input = new { projectId = ProjectNodeId, itemId = item, fieldId = (await FieldIds(service, context, project)).Field, value = new { singleSelectOptionId = optionId } } });
+            new { input = new { projectId = ProjectNodeId, itemId = item, fieldId = status.Field, value = new { singleSelectOptionId = optionId } } });
     }
-    private async Task<string> ItemId(GhConnectionService service, ConnectionContext context, ScopedId project, string issueId)
+    private static async Task<string> ItemId(GhConnectionService service, ConnectionContext context, string issueId)
     {
         var data = await Query(service, context, "query LiveItem($id:ID!){node(id:$id){... on Issue{projectItems(first:20){nodes{id project{id}}}}}}", new { id = issueId });
         foreach (var item in data.GetProperty("node").GetProperty("projectItems").GetProperty("nodes").EnumerateArray())
-            if (item.GetProperty("project").GetProperty("id").GetString() == project.NodeId) return item.GetProperty("id").GetString()!;
+            if (item.GetProperty("project").GetProperty("id").GetString() == ProjectNodeId) return item.GetProperty("id").GetString()!;
         throw new AssertionException("no Project 3 item for " + issueId);
     }
-    private Task Close(GhConnectionService service, ConnectionContext context, string issueId, string reason)
+    private static Task Close(GhConnectionService service, ConnectionContext context, string issueId, string reason)
         => Mutate(service, context, "mutation LiveClose($input:CloseIssueInput!){closeIssue(input:$input){issue{id}}}",
             new { input = new { issueId, stateReason = reason } });
-    private Task Reopen(GhConnectionService service, ConnectionContext context, string issueId)
+    private static Task Reopen(GhConnectionService service, ConnectionContext context, string issueId)
         => Mutate(service, context, "mutation LiveReopen($input:ReopenIssueInput!){reopenIssue(input:$input){issue{id}}}", new { input = new { issueId } });
-    private async Task<(string? Start, string? End)> DateValues(GhConnectionService service, ConnectionContext context, ScopedId project, string issueId)
+    private static async Task<(string? Start, string? End)> DateValues(GhConnectionService service, ConnectionContext context, string issueId)
     {
-        var item = await ItemId(service, context, project, issueId);
+        var item = await ItemId(service, context, issueId);
         var data = await Query(service, context, "query LiveDates($id:ID!){node(id:$id){... on ProjectV2Item{fieldValues(first:50){nodes{... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2FieldCommon{name}}}}}}}}", new { id = item });
         string? start = null, end = null;
         foreach (var value in data.GetProperty("node").GetProperty("fieldValues").GetProperty("nodes").EnumerateArray())
@@ -231,13 +245,13 @@ internal sealed class PlanActualDatesLiveTests
         }
         return (start, end);
     }
-    private async Task Mutate(GhConnectionService service, ConnectionContext context, string query, object variables)
+    private static async Task Mutate(GhConnectionService service, ConnectionContext context, string query, object variables)
     {
         using var lease = await service.BeginOperationAsync(context, CancellationToken.None, mutation: true);
         var result = await lease.SendAsync(ApiRequest.GraphQl(query, variables), CancellationToken.None);
         Assert.That(result.IsSuccess, Is.True, result.Failure.ToString());
     }
-    private async Task<JsonElement> Query(GhConnectionService service, ConnectionContext context, string query, object variables)
+    private static async Task<JsonElement> Query(GhConnectionService service, ConnectionContext context, string query, object variables)
     {
         using var lease = await service.BeginOperationAsync(context, CancellationToken.None);
         var result = await lease.SendAsync(ApiRequest.GraphQl(query, variables), CancellationToken.None);
