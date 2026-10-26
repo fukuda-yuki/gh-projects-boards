@@ -1978,17 +1978,17 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        // #236 part B: the twelve default columns measure 988 px (ID 76 + 状態 28 + タスク名 200 + 工程 48 +
-        // 担当者 80 + 見積 72 + 残 72 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 108 + 先行 64) and the
-        // divider 6 px. RefreshLayout lays the sheet out inside 20 px less than the control width (a reserve for
-        // its own chrome) and keeps the Gantt at its 320 px minimum, so the honest threshold is
-        // 988 + 6 + 320 + 20 = 1334 control px — the "about 1,340 effective pixels of window" the spec and
-        // manual quote. A narrower control clips 先行.
-        await Ui.Run(() => { sheet.Width = 1334; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        // #236 part B / #308: the fourteen default columns measure 1,172 px (ID 76 + 状態 28 + タスク名 200 +
+        // 工程 48 + 担当者 80 + 見積 72 + 残 72 + 実績 56 + 開始日 92 + 終了日 92 + 着手日 92 + 完了日 92 +
+        // 見込終了 108 + 先行 64) and the divider 6 px. RefreshLayout lays the sheet out inside 20 px less than
+        // the control width (a reserve for its own chrome) and keeps the Gantt at its 320 px minimum, so the
+        // honest threshold is 1,172 + 6 + 320 + 20 = 1,518 control px — the "about 1,520 effective pixels of
+        // window" the spec and manual quote. A narrower control clips 先行.
+        await Ui.Run(() => { sheet.Width = 1518; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        // Layout rounds a 1334 effective-pixel width to the display's physical pixels, so accept the rounded
+        // Layout rounds a 1,518 effective-pixel width to the display's physical pixels, so accept the rounded
         // width; the fit assertions below are the claim this case measures.
-        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1334) <= 1);
+        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1518) <= 1);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
