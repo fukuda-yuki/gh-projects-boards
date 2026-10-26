@@ -205,5 +205,74 @@ internal sealed partial class PlanWorkspaceHostedTests
         await restarted.Connect(new(FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
         Assert.That(restarted.Display.Marks.Overdue, Is.False, "The display preference survives restart.");
     }
+
+    // #298 item 3: the settings switch and the sheet's ガント toggle are one this-PC preference; either entry
+    // point shows the other's choice, hiding changes no count or filter, and the choice survives restart.
+    [Test, Category("DisplaySettings")]
+    public async Task GanttVisibilityIsOneThisPcChoiceForBothEntryPointsAndSurvivesRestart()
+    {
+        var date = new DateOnly(2026, 10, 5);
+        readDay = date;
+        var state = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, state with { Issues = [
+            new(new("I1", "要求事項", "acme/repo"), "", true),
+            new(new("I2", "遅れ", "acme/repo") { Parent = "I1", Start = date.AddDays(-3), End = date.AddDays(-3), Remaining = 8 }, "", true)] });
+        await Open("要求事項");
+        await Ui.Run(async () => {
+            var session = workspace.Session!;
+            await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = date }), date);
+            Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh();
+        });
+        var sheet = default(PlanSheetView)!;
+        string attention = "", unpublished = "";
+        await Ui.Run(() => {
+            sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            Assert.That(Ui.Find<CheckBox>("PlanSheetShowGantt").IsChecked, Is.True);
+            Assert.That(sheet.GanttVisible, Is.True);
+            Assert.That(sheet.ChartViewport, Is.GreaterThan(0));
+            Assert.That(Ui.Find<StackPanel>("PlanGanttLegend").Visibility, Is.EqualTo(Visibility.Visible));
+            attention = AttentionLabel("PlanAttentionLate");
+            unpublished = Ui.Find<TextBlock>("PlanUnpublished").Text;
+        });
+
+        // The settings entry point hides the chart for every Project on this PC.
+        await Settings();
+        await Ui.Ready<CheckBox>("PlanSettingsShowGantt");
+        await Ui.Run(() => {
+            var box = Ui.Find<CheckBox>("PlanSettingsShowGantt");
+            Assert.That(box.IsChecked, Is.True);
+            Assert.That(AutomationProperties.GetName(box), Is.EqualTo("ガントを表示"));
+            Ui.Toggle(box);
+        });
+        await Ui.Until(() => !workspace.Display.GanttVisible);
+        await Ui.Run(() => Ui.Click("PlanSettingsBack")); await Ui.Idle();
+        await Ui.Until(() => sheet.ChartViewport == 0);
+        await Ui.Run(() => {
+            Assert.That(sheet.GanttVisible, Is.False);
+            Assert.That(Ui.Find<StackPanel>("PlanGanttLegend").Visibility, Is.EqualTo(Visibility.Collapsed), "The legend goes with the chart.");
+            Assert.That(AttentionLabel("PlanAttentionLate"), Is.EqualTo(attention), "Hiding the Gantt changes no count.");
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo(unpublished));
+            Assert.That(Ui.Find<CheckBox>("PlanSheetShowGantt").IsChecked, Is.False, "Both entry points show one stored choice.");
+        });
+        var stored = await new PlanDisplaySettingsStore(new PlanStore(root)).LoadAsync(workspace.Selected!.Id);
+        Assert.That(stored.GanttVisible, Is.False, "The preference is stored in display.json.");
+
+        // The sheet entry point shows it again and the settings switch follows.
+        await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("PlanSheetShowGantt")));
+        await Ui.Until(() => workspace.Display.GanttVisible);
+        await Ui.Until(() => sheet.ChartViewport > 0);
+        await Ui.Run(() => Assert.That(Ui.Find<StackPanel>("PlanGanttLegend").Visibility, Is.EqualTo(Visibility.Visible)));
+        await Settings();
+        await Ui.Run(() => Assert.That(Ui.Find<CheckBox>("PlanSettingsShowGantt").IsChecked, Is.True));
+        await Ui.Run(() => Ui.Click("PlanSettingsBack")); await Ui.Idle();
+
+        // A hidden Gantt is kept for the next start of the app.
+        await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("PlanSheetShowGantt")));
+        await Ui.Until(() => !workspace.Display.GanttVisible);
+        await workspace.Flush();
+        var restarted = new PlanWorkspace(new(root), () => readDay);
+        await restarted.Connect(new(FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+        Assert.That(restarted.Display.GanttVisible, Is.False, "The Gantt visibility survives restart.");
+    }
 }
 

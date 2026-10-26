@@ -50,7 +50,7 @@ internal sealed partial class PlanSheetView
             AutomationProperties.SetHelpText(button, reason);
             ToolTipService.SetToolTip(button, reason.Length > 0 ? reason : button.Label);
         }
-        goToDate.IsEnabled = SelectedDate() is not null;
+        goToDate.IsEnabled = SelectedDate() is not null && ganttVisible;
         // #231: the row-state commands report the same eligibility and reasons in the overflow as in the row
         // context menu, so a PMO reading either route is told the same thing.
         foreach (var (button, action) in new[] { (completeRows, PlanRowAction.Complete), (cancelRows, PlanRowAction.Cancel),
@@ -165,6 +165,7 @@ internal sealed partial class PlanSheetView
 
     private void PositionTimelineAnchor(DateOnly? anchor = null)
     {
+        if (!ganttVisible) return;
         // ChangeView clamps against the arranged native extent, not the new content width alone.
         chartHorizontal.UpdateLayout();
         ChangeTimelineOffset(acceptedZoom == 3 ? 0 : AnchorOffset(anchor ?? TimelineAnchor, FirstDay, DayWidth, ChartViewport));

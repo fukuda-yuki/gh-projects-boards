@@ -64,6 +64,37 @@ internal sealed class PlanDisplaySettingsTests
         Assert.That((await new PlanDisplaySettingsStore(store).LoadAsync(Second)), Is.EqualTo(hidden));
     }
 
+    // #298: the Gantt visibility is the same kind of this-PC display preference as the marks.
+    [Test]
+    public async Task TheGanttIsShownByDefaultAndTheStoredChoiceAppliesToEveryProjectAndSurvivesRestart()
+    {
+        var store = new PlanStore(root);
+        var display = new PlanDisplaySettingsStore(store);
+        Assert.That((await display.LoadAsync(First)).GanttVisible, Is.True, "The Gantt is shown by default.");
+
+        await display.SaveAsync(new PlanDisplaySettings(1, PlanMarkVisibility.All, GanttVisible: false));
+
+        var reopened = await new PlanDisplaySettingsStore(store).LoadAsync(Second);
+        Assert.That(reopened.GanttVisible, Is.False, "It survives restart.");
+        Assert.That(reopened.Marks, Is.EqualTo(PlanMarkVisibility.All), "The mark switches beside it are kept.");
+    }
+
+    // #298: a display file written before the switch existed must keep its marks and show the Gantt.
+    [Test]
+    public async Task ADisplayFileFromBeforeTheGanttSwitchKeepsItsMarksAndShowsTheGantt()
+    {
+        var store = new PlanStore(root);
+        var display = new PlanDisplaySettingsStore(store);
+        Directory.CreateDirectory(Path.GetDirectoryName(display.FilePath)!);
+        await File.WriteAllTextAsync(display.FilePath,
+            "{\"version\":1,\"marks\":{\"overdue\":false,\"later\":true,\"overEstimate\":false}}");
+
+        var loaded = await new PlanDisplaySettingsStore(store).LoadAsync(First);
+
+        Assert.That(loaded.Marks, Is.EqualTo(new PlanMarkVisibility(Overdue: false, Later: true, OverEstimate: false)));
+        Assert.That(loaded.GanttVisible, Is.True);
+    }
+
     [Test]
     public async Task ASettingsFileThatStillHoldsTheSwitchesImportsWithoutThem()
     {

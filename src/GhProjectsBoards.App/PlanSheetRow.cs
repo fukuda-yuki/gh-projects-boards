@@ -163,6 +163,25 @@ public sealed class PlanSheetRow : Grid
         };
     }
     private PlanSheetView.Column[]? presentedColumns;
+    // #298: the same calendar affordance the settings date pickers show, placed on the selected date cell. It is
+    // pointer-only (no tab stop, no focus) so it never takes the editor or the range selection; the keyboard
+    // route is Alt+↓ on the cell.
+    private Button CreateDateCalendar(PlanSheetCell cell)
+    {
+        var button = new Button {
+            Width = 18, Height = 18, MinWidth = 0, MinHeight = 0, Padding = new(0), BorderThickness = new(0),
+            Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), CornerRadius = new(2),
+            HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new(0, 1, 1, 0),
+            IsTabStop = false, AllowFocusOnInteraction = false, Visibility = Visibility.Collapsed,
+            Content = new FontIcon { Glyph = "\uE787", FontSize = 12 }
+        };
+        ToolTipService.SetToolTip(button, "カレンダーから日付を選ぶ");
+        button.Click += async (_, _) => {
+            if (Owner is { } owner) await owner.Run(() => { owner.OpenDateCalendar(cell); return Task.CompletedTask; }, "Date calendar");
+        };
+        cell.CalendarButton = button;
+        return button;
+    }
     private void EnsureColumns(PlanSheetView owner)
     {
         if (ReferenceEquals(presentedColumns,owner.VisibleColumns)) return;
@@ -177,6 +196,7 @@ public sealed class PlanSheetRow : Grid
             if (cell.EstimateDisplay is { } estimate) grid.Children.Add(estimate);
             if (cell.AssigneeDisplay is { } assignees) grid.Children.Add(assignees);
             if (cell.Field == PlanField.Title) grid.Children.Add(fold);
+            if (owner.IsDateField(cell.Field)) grid.Children.Add(CreateDateCalendar(cell));
             var frame = new Border { Child = grid, BorderThickness = new(0, 0, 0, 1) };
             line.Children.Add(frame); frames.Add(frame); markers.Add(null); corners.Add(null); handles.Add(null);
         }
@@ -247,7 +267,10 @@ public sealed class PlanSheetRow : Grid
     private void ClearIds()
     {        AutomationProperties.SetAutomationId(id, ""); AutomationProperties.SetAutomationId(idHandle, ""); AutomationProperties.SetAutomationId(indicator, "");
         AutomationProperties.SetAutomationId(selectionAccent, "");
-        foreach (var cell in Cells) { AutomationProperties.SetAutomationId(cell, ""); cell.Rebind(); }
+        foreach (var cell in Cells) {
+            AutomationProperties.SetAutomationId(cell, ""); cell.Rebind();
+            if (cell.CalendarButton is { } calendar) AutomationProperties.SetAutomationId(calendar, "");
+        }
         foreach (var display in summaryCells.Values) AutomationProperties.SetAutomationId(display, "");
         foreach (var handle in handles) if (handle is not null) AutomationProperties.SetAutomationId(handle, "");
         AutomationProperties.SetAutomationId(fold, "");
@@ -276,6 +299,7 @@ public sealed class PlanSheetRow : Grid
         var number = owner.PlanIds.GetValueOrDefault(Identity);
         var name = number == 0 ? "新規" : owner.TaskNames[Identity];
         ColumnDefinitions[0].Width = new(owner.SheetViewport); ColumnDefinitions[1].Width = new(owner.ChartViewport);
+        chartClip.Visibility = owner.GanttVisible ? Visibility.Visible : Visibility.Collapsed;
         Width = owner.SheetViewport + owner.ChartViewport;
         var sheetBounds = new Rect(0, 0, owner.SheetViewport, owner.RowHeight);
         var chartBounds = new Rect(0, 0, owner.ChartViewport, owner.RowHeight);
@@ -380,6 +404,12 @@ public sealed class PlanSheetRow : Grid
             // reason would mislead. This is information, not a cell error, so it never colours the frame (#231).
             var stateHint = problem is null && cell.IsReadOnly && owner.IsPendingClose(Identity) && field is PlanField.Remaining or PlanField.End
                 ? owner.Rows[Identity].Closed ? "完了にする を発行すると確定します（未発行）" : "未完了に戻す を発行すると編集できます（未発行）" : null;
+            if (cell.CalendarButton is { } calendar)
+            {
+                cell.CalendarAllowed = !summary && owner.IsDateField(field) && !owner.ReadOnly(Identity, field) && owner.IsRangeEnd(Identity, field);
+                AutomationProperties.SetAutomationId(calendar, $"PlanDateCalendar{number}_{field}");
+                AutomationProperties.SetName(calendar, "カレンダーから日付を選ぶ");
+            }
             var text = owner.Pending.GetValueOrDefault((Identity, field))?.Text ?? (cell.Editing ? owner.EditForm(Identity, field) : owner.Display(Identity, field));
             cell.Refresh(text);
             if (cell.TitleDisplay is { } titleDisplay) AutomationProperties.SetAutomationId(titleDisplay, "PlanTitleDisplay" + number);
@@ -499,6 +529,8 @@ public sealed class PlanSheetRow : Grid
     {
         // Recycle notifications hide the old bounded slice before assigning another item.
         if (Owner is not { } owner || boundIdentity is null) { chart.Opacity = 0; return; }
+        // #298: the chart column is collapsed while the Gantt is hidden; keep the shapes for showing it again.
+        if (!owner.GanttVisible) { chart.Opacity = 0; return; }
         AutomationProperties.SetAutomationId(chartSeparator, "PlanChartSeparator" + owner.PlanIds.GetValueOrDefault(Identity));
         if (!owner.Schedule.TryGetValue(Identity, out var task)) {
             dependencyChart.Children.Clear(); dependencyVisuals.Clear(); predecessorStub = null; HideTaskShapes();
@@ -822,6 +854,11 @@ internal sealed class PlanSheetCell : TextBox
     internal void AllowAssigneeList() => AssigneeListDismissed = false;
     private readonly Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase? textMenu;
     internal TextBlock? TitleDisplay { get; }
+    // #298: the calendar button the row places over this date cell while it is selected. The row owns the
+    // control; the cell owns when a date edit may offer the calendar and hides it while the text editor shows.
+    internal Button? CalendarButton { get; set; }
+    internal bool CalendarAllowed { get; set; }
+    internal string Identity => row.Identity;
     // 見込終了 needs two colours in one cell: the derived date in secondary text and its working-day slip
     // in critical red (#236 decision 5). A TextBlock with runs draws that; the TextBox keeps its text and
     // input path with its paint hidden, like the title display.
@@ -902,7 +939,8 @@ internal sealed class PlanSheetCell : TextBox
         LosingFocus += (_, args) => {
             // LostFocus can arrive after a pane action has moved focus again. Decide from this
             // transition's destination, not the eventual global focus when the notification arrives.
-            preservePendingOnLostFocus = row.Owner?.PreservePendingFocus?.Invoke(args.NewFocusedElement) == true;
+            preservePendingOnLostFocus = row.Owner?.PreservePendingFocus?.Invoke(args.NewFocusedElement) == true
+                || row.Owner?.PreserveForDateCalendar(args.NewFocusedElement) == true;
         };
         LostFocus += async (_, _) => {
             var preservePending = preservePendingOnLostFocus;
@@ -979,6 +1017,16 @@ internal sealed class PlanSheetCell : TextBox
         if (!owner.Pending.ContainsKey((row.Identity, Field))) { EndEditing(); return; }
         _ = owner.CommitCell(row.Identity, Field, text);
     }
+    // #298: a day chosen on the calendar becomes the cell's ISO edit form and commits through the ordinary cell
+    // commit, so the choice is one operation and one Undo step; choosing the current date creates no edit.
+    internal void ApplyDateChoice(DateOnly day)
+    {
+        var text = day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        if (Text != text) Text = text;
+        if (row.Owner is not { } owner) { EndEditing(); return; }
+        if (!owner.Pending.ContainsKey((row.Identity, Field))) { EndEditing(); return; }
+        _ = owner.CommitCell(row.Identity, Field, text);
+    }
     // #225: Escape closed the candidate list first (handled before this); this is the second Escape and every
     // other edit-cancel path. Native key handling and the hosted cases both enter here.
     internal void CancelOrClose()
@@ -1038,6 +1086,8 @@ internal sealed class PlanSheetCell : TextBox
                 estimate.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = " " + overrun,
                     Foreground = PlanSheetView.Brush("SystemFillColorCautionBrush") });
         }
+        if (CalendarButton is { } calendar)
+            calendar.Visibility = CalendarAllowed && !Editing && Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
         if (TitleDisplay is not { } display) return;
         // Keep the full TextBox value, focus, hit testing and native input path intact.
         // Only its paint is hidden while the ellipsized display owns presentation.
@@ -1089,6 +1139,12 @@ internal sealed class PlanSheetCell : TextBox
         else if (!Editing && control && !PlanSheetView.Down(VirtualKey.Menu) && args.Key == VirtualKey.F2)
         { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
         else if (!control && args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
+        else if (!IsReadOnly && !control && args.Key == VirtualKey.Down && PlanSheetView.Down(VirtualKey.Menu)
+            && row.Owner?.IsDateField(Field) == true)
+        {
+            // #298: Alt+↓ is the keyboard route to the same calendar the selected cell's button opens.
+            args.Handled = true; owner.OpenDateCalendar(this);
+        }
         else if (!Editing && !IsReadOnly && Field == PlanField.Assignees && args.Key == VirtualKey.Down && PlanSheetView.Down(VirtualKey.Menu))
         {
             // #225: Alt+↓ opens the 担当者 candidate list from a selected cell without a pointer.
