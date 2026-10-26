@@ -156,6 +156,15 @@ internal static class FakeGhProgram
             {
                 if (ticket > 0) File.WriteAllText(orderPath, ticket.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 if (mutation && settings.TryGetProperty("mutationDelayMs", out var delay)) await Task.Delay(delay.GetInt32());
+                // A test can stretch the first mutation's response while the ticket ordering keeps its peers
+                // queued, so the field phase's dispatch bound is observable regardless of host speed. The marker
+                // is created under the state lock, so exactly the first mutation since the scenario write is held.
+                if (mutation && settings.TryGetProperty("firstMutationDelayMs", out var firstDelay) && firstDelay.GetInt32() > 0 &&
+                    !File.Exists(Path.Combine(directory, "first-mutation-delay.done")))
+                {
+                    await WriteDiagnosticAsync(Path.Combine(directory, "first-mutation-delay.done"), ticket.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    await Task.Delay(firstDelay.GetInt32());
+                }
                 return await FakePlanEditor.Handle(query, planPayload.RootElement.GetProperty("variables"), directory, settings);
             }
         }

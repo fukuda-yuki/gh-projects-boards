@@ -568,8 +568,9 @@ internal sealed partial class PlanPublisherTests
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        // 300 ms per request separates completions from the process spawn of the request that refills the slot.
-        Scenario(mutationDelayMs: 300);
+        // Holding the first response until all four slots are dispatched makes the steady-state bound measurable
+        // independent of host speed; the 300 ms per request then spaces the completions for the refill check.
+        Scenario(mutationDelayMs: 300, firstMutationDelayMs: 2000);
 
         var result = await publisher.PublishAsync(session, Today);
 
@@ -611,7 +612,9 @@ internal sealed partial class PlanPublisherTests
             Assert.That(runner.MutationStarted.Skip(4).Zip(deadlines.Skip(4)).All(p => p.First >= p.Second), Is.True);
         }
         Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 10, 10, 10, 10, 10, 5 }));
-        Scenario(mutationDelayMs: 50);
+        // The ramp assertion needs the four slots to fill before the first response; holding that response
+        // keeps the exact 1,2,3,4 sequence independent of how fast a host prepares and starts the requests.
+        Scenario(mutationDelayMs: 300, firstMutationDelayMs: 2000);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 4m)).ToImmutableArray()), Today);
         runner.MutationConcurrency.Clear();
@@ -1361,9 +1364,11 @@ internal sealed partial class PlanPublisherTests
         TestContext.Out.WriteLine("Real fake-gh processes: " + (runner?.Count ?? 0));
         Directory.Delete(root, true);
     }
-    private void Scenario(string? fault = null, int batch = 1, int gatewayAliasLimit = 0, int mutationDelayMs = 0)
+    private void Scenario(string? fault = null, int batch = 1, int gatewayAliasLimit = 0, int mutationDelayMs = 0, int firstMutationDelayMs = 0)
     {
-        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, planFault = fault, faultBatch = batch, gatewayAliasLimit, mutationDelayMs }));
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, planFault = fault, faultBatch = batch, gatewayAliasLimit, mutationDelayMs, firstMutationDelayMs }));
+        var marker = Path.Combine(root, "first-mutation-delay.done");
+        if (File.Exists(marker)) File.Delete(marker);
         if (File.Exists(FakePlanEditor.StatePath(root))) FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { ReadAttempts = 0 });
     }
     private async Task Start(int count, Func<PlanFakeState, PlanFakeState>? fixture = null, ProjectPlanSettings? settings = null)
