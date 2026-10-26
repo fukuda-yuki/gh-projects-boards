@@ -431,8 +431,9 @@ internal sealed partial class PlanSheetView : Grid
             args.Handled = true; await ApplyFilter();
         };
         InitializeInteraction();
+        InitializeDateCalendar();
         Unloaded += (_, _) => { disposed = true; pendingWheelOffset = null; CancelPendingFilter();
-            inputProblem.Close(); predecessorFlyout?.Hide(); assigneePicker?.Hide(); pendingMenuAction = null; commandMenu.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
+            inputProblem.Close(); predecessorFlyout?.Hide(); assigneePicker?.Hide(); dateCalendarFlyout.Hide(); pendingMenuAction = null; commandMenu.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
             // The first culture-aware comparison loads collation data (about 90 ms measured);
             // pay it while idle instead of on the first typed filter character.
