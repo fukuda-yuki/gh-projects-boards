@@ -842,10 +842,11 @@ internal sealed class PlanSheetCell : TextBox
 {
     private readonly PlanSheetRow row;
     internal string Field { get; }
-    internal bool Composing { get; private set; }
+    internal bool Composing { get => composing; private set { composing = value; ApplyContentHost(); } }
+    private bool composing;
     // While editing, the text box keeps its own menu for the characters being typed; otherwise a right click
     // opens the row menu (#231).
-    internal bool Editing { get => editing; private set { editing = value; ContextFlyout = value ? textMenu : null; } }
+    internal bool Editing { get => editing; private set { editing = value; ContextFlyout = value ? textMenu : null; ApplyContentHost(); } }
     private bool editing;
     // #225: Escape closes the 担当者 candidate list for the rest of this edit; typing after that does not
     // reopen it until the edit starts again.
@@ -964,6 +965,22 @@ internal sealed class PlanSheetCell : TextBox
         AddHandler(PointerPressedEvent, new PointerEventHandler((_, args) => {
             if (!Editing && row.Owner is { } owner) owner.BeginRange(row.Identity, Field, this, args);
         }), true);
+    }
+    private ScrollViewer? contentHost;
+    protected override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        contentHost = GetTemplateChild("ContentElement") as ScrollViewer;
+        ApplyContentHost();
+    }
+    // Title, forecast, estimate and assignee cells already paint with an overlay. The text host
+    // still measures its hidden text on every refresh, so it stays collapsed until editing or an
+    // IME composition needs the caret. The TextBox value, focus and input path stay.
+    private void ApplyContentHost()
+    {
+        if (contentHost is null) return;
+        if (TitleDisplay is null && ForecastDisplay is null && EstimateDisplay is null && AssigneeDisplay is null) return;
+        contentHost.Visibility = Editing || Composing ? Visibility.Visible : Visibility.Collapsed;
     }
     private string EditOriginal()
     {
@@ -1088,14 +1105,17 @@ internal sealed class PlanSheetCell : TextBox
         }
         if (CalendarButton is { } calendar)
             calendar.Visibility = CalendarAllowed && !Editing && Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
-        if (TitleDisplay is not { } display) return;
-        // Keep the full TextBox value, focus, hit testing and native input path intact.
-        // Only its paint is hidden while the ellipsized display owns presentation.
-        Opacity = Editing ? 1 : 0;
-        display.Visibility = Editing ? Visibility.Collapsed : Visibility.Visible;
-        display.Text = shownText; display.FontSize = FontSize; display.FontFamily = FontFamily;
-        display.FontWeight = FontWeight; display.Foreground = Foreground;
-        display.Margin = new(Padding.Left, Padding.Top, Padding.Right + TagReserve, Padding.Bottom);
+        if (TitleDisplay is { } display)
+        {
+            // Keep the full TextBox value, focus, hit testing and native input path intact.
+            // Only its paint is hidden while the ellipsized display owns presentation.
+            Opacity = Editing ? 1 : 0;
+            display.Visibility = Editing ? Visibility.Collapsed : Visibility.Visible;
+            display.Text = shownText; display.FontSize = FontSize; display.FontFamily = FontFamily;
+            display.FontWeight = FontWeight; display.Foreground = Foreground;
+            display.Margin = new(Padding.Left, Padding.Top, Padding.Right + TagReserve, Padding.Bottom);
+        }
+        ApplyContentHost();
     }
     protected override void OnPreviewKeyDown(KeyRoutedEventArgs args)
     {
