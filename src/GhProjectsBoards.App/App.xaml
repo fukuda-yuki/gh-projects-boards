@@ -84,7 +84,7 @@
             <x:String x:Key="ScrollViewerSeparatorExpandDuration">0</x:String>
             <x:String x:Key="ScrollViewerSeparatorContractDuration">0</x:String>
             <x:String x:Key="ComboBoxItemScaleAnimationDuration">0</x:String>
-            <ItemsPanelTemplate x:Key="PlanSheetRowsPanel"><ItemsStackPanel CacheLength="0"/></ItemsPanelTemplate>
+            <ItemsPanelTemplate x:Key="PlanSheetRowsPanel"><ItemsStackPanel CacheLength="0.25"/></ItemsPanelTemplate>
             <!-- Every realized row carries a dozen cell editors. The default TextBox template also builds
                  header, description, placeholder, delete-button and scroll-bar parts that a sheet cell never
                  shows, so it keeps only the editing parts and the default pointer/focus appearance. -->
