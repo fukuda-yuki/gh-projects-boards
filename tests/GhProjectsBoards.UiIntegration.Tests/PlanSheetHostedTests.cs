@@ -609,22 +609,33 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test, Category("SheetRowPresentation")]
-    public async Task ClosedRemainingAndEndShowCalculatedCornersWithoutEnteredTint()
+    public async Task ClosedRemainingShowsItsCalculatedCornerAndEndKeepsItsPlanDate()
     {
+        // #308 R9: closing no longer replaces 終了日 with the close day. 残 h is still calculated on a closed
+        // row; 終了日 shows its plan date, stays editable and draws no calculated corner or entered tint.
         var row = new PlanRow("I1", "Closed task", "acme/repo") { Closed = true, CloseDate = Today,
             Estimate = 40, Actual = 40, Remaining = 8, Start = Today.AddDays(-7), End = Today.AddDays(2) };
         await MountPresentation([row], [row]);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text, Is.EqualTo("0h"));
-            Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("10/5 (月)"));
-            foreach (var field in new[] { PlanField.Remaining, PlanField.End }) {
-                var cell = Ui.Find<PlanSheetCell>($"PlanCell1_{field}");
-                var grid = (Grid)VisualTreeHelper.GetParent(cell);
-                var frame = (Border)VisualTreeHelper.GetParent(grid);
-                Assert.That(((SolidColorBrush)cell.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
-                Assert.That(grid.Children.OfType<Microsoft.UI.Xaml.Shapes.Polygon>().Single().Visibility, Is.EqualTo(Visibility.Visible));
-                Assert.That(((SolidColorBrush)frame.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("LayerFillColorDefaultBrush")).Color));
-            }
+            Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("10/7 (水)"),
+                "A closed task keeps its plan end date.");
+            var remaining = Ui.Find<PlanSheetCell>("PlanCell1_Remaining");
+            var remainingGrid = (Grid)VisualTreeHelper.GetParent(remaining);
+            var remainingFrame = (Border)VisualTreeHelper.GetParent(remainingGrid);
+            Assert.That(((SolidColorBrush)remaining.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
+            Assert.That(remainingGrid.Children.OfType<Microsoft.UI.Xaml.Shapes.Polygon>().Single().Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(((SolidColorBrush)remainingFrame.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("LayerFillColorDefaultBrush")).Color));
+            var end = Ui.Find<PlanSheetCell>("PlanCell1_End");
+            var endGrid = (Grid)VisualTreeHelper.GetParent(end);
+            var endFrame = (Border)VisualTreeHelper.GetParent(endGrid);
+            Assert.That(end.IsReadOnly, Is.False, "終了日 stays editable on a closed row (R9).");
+            Assert.That(((SolidColorBrush)end.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorPrimaryBrush")).Color),
+                "The plan date is ordinary text, not a calculated value.");
+            Assert.That(endGrid.Children.OfType<Microsoft.UI.Xaml.Shapes.Polygon>().Any(polygon => polygon.Visibility == Visibility.Visible), Is.False,
+                "終了日 no longer shows the calculated corner on a closed row.");
+            Assert.That(((SolidColorBrush)endFrame.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("LayerFillColorDefaultBrush")).Color),
+                "An unchanged plan end has no entered tint.");
         });
     }
 
