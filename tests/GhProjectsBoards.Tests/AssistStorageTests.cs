@@ -98,6 +98,31 @@ internal sealed class AssistStorageTests
         Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before)); Assert.That(session.UndoCount, Is.EqualTo(undo));
     }
     [Test]
+    public async Task CallsInOneTurnCombineIntoOneProposalAndALaterTurnReplacesIt()
+    {
+        var tools = new AssistPlanTools(await Create(), AssistRulesTests.Today, "");
+        tools.BeginTurn();
+        var first = tools.ProposeChanges([new("A", PlanField.Remaining, JsonSerializer.SerializeToElement(24m))]).Proposal!;
+        var second = tools.ProposeChanges([new("B", PlanField.Title, JsonSerializer.SerializeToElement("検証を見直す"))]).Proposal!;
+        Assert.That(tools.PendingProposal, Is.SameAs(second));
+        Assert.That(second.Changes.Select(change => (change.Task.Identity, change.Field, change.Proposed)),
+            Is.EqualTo(new[] { ("A", PlanField.Remaining, "24"), ("B", PlanField.Title, "検証を見直す") }),
+            "A call per selected row stays one review instead of leaving only the last row.");
+        Assert.ThrowsAsync<InvalidOperationException>(async () => await tools.ApplyProposal(first.Id));
+
+        var corrected = tools.ProposeChanges([new("A", PlanField.Remaining, JsonSerializer.SerializeToElement(40m))]).Proposal!;
+        Assert.That(corrected.Changes.Select(change => (change.Task.Identity, change.Field, change.Proposed)),
+            Is.EqualTo(new[] { ("A", PlanField.Remaining, "40"), ("B", PlanField.Title, "検証を見直す") }),
+            "The same task and field keep the later value.");
+
+        tools.BeginTurn();
+        var next = tools.ProposeChanges([new("B", PlanField.Title, JsonSerializer.SerializeToElement("次の提案"))]).Proposal!;
+        Assert.That(next.Changes.Select(change => change.Task.Identity), Is.EqualTo(new[] { "B" }),
+            "A later turn replaces the pending proposal.");
+        Assert.That(tools.PendingProposal, Is.SameAs(next));
+    }
+
+    [Test]
     public async Task NewProposalReplacesPendingAndDiscardCannotApply()
     {
         var tools = new AssistPlanTools(await Create(), AssistRulesTests.Today, "");
@@ -105,6 +130,10 @@ internal sealed class AssistStorageTests
         var second = tools.ProposeChanges([new("A", PlanField.Remaining, JsonSerializer.SerializeToElement(40m))]).Proposal!;
         Assert.ThrowsAsync<InvalidOperationException>(async () => await tools.ApplyProposal(first.Id));
         tools.DiscardProposal(); Assert.ThrowsAsync<InvalidOperationException>(async () => await tools.ApplyProposal(second.Id));
+        var afterDiscard = tools.ProposeChanges([new("B", PlanField.Title, JsonSerializer.SerializeToElement("破棄のあと"))]).Proposal!;
+        Assert.That(afterDiscard.Changes.Select(change => (change.Task.Identity, change.Field)),
+            Is.EqualTo(new[] { ("B", PlanField.Title) }),
+            "A discarded proposal is not extended by a later call in the same turn.");
     }
 
     [Test]
@@ -128,6 +157,15 @@ internal sealed class AssistStorageTests
         var config = AssistConversation.SessionOptions(new() { Mode = AssistMode.Copilot, Model = "model" }, null, "conversation", tools);
         Assert.That(config.AvailableTools, Is.EquivalentTo(new[] { "custom:find_tasks", "custom:get_tasks", "custom:summarize_plan", "custom:read_manual", "custom:propose_changes" }));
         Assert.That(config.Tools!.Select(t => t.Name), Is.EquivalentTo(new[] { "find_tasks", "get_tasks", "summarize_plan", "read_manual", "propose_changes" }));
+    }
+    [Test]
+    public async Task SelectedContextAcceptsEveryRowOfTheOpenPlanAndRejectsAnotherIdentity()
+    {
+        var tools = new AssistPlanTools(await Create(), AssistRulesTests.Today, "");
+        Assert.DoesNotThrow(() => tools.ValidateSelectedIdentities([]), "No selection is a valid context.");
+        Assert.DoesNotThrow(() => tools.ValidateSelectedIdentities(["A", "B"]), "Every selected plan row is accepted.");
+        var error = Assert.Throws<ArgumentException>(() => tools.ValidateSelectedIdentities(["A", "other"]));
+        Assert.That(error!.Message, Is.EqualTo("開いている計画にないタスクです。"));
     }
     [Test]
     public async Task SettingsRoundTripIsAppWideAtomicAndContainsNoKey()

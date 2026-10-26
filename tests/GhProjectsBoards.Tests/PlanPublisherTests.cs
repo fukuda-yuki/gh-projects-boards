@@ -544,7 +544,7 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
     [Test]
-    public async Task FieldRequestsRunInWindowsOfFour()
+    public async Task FieldRequestsRunFourAtATime()
     {
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
@@ -559,6 +559,34 @@ internal sealed partial class PlanPublisherTests
         Assert.That(counts.Last().Completed, Is.EqualTo(65));
         Assert.That(counts.Last().Total, Is.EqualTo(65));
         Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(4));
+        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 10, 10, 10, 10, 10, 5 }));
+    }
+
+    [Test]
+    public async Task FieldRequestsStayFourInFlightAndStartTheNextOnCompletion()
+    {
+        await Start(65);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
+            .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
+        // Holding the first response until all four slots are dispatched makes the steady-state bound measurable
+        // independent of host speed; the 300 ms per request then spaces the completions for the refill check.
+        Scenario(mutationDelayMs: 300, firstMutationDelayMs: 2000);
+
+        var result = await publisher.PublishAsync(session, Today);
+
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var intervals = runner.MutationIntervals;
+        TestContext.Out.WriteLine("field request intervals: " + string.Join("; ", intervals.Select(i =>
+            i.Start.ToString("HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture) + "-" +
+            i.End.ToString("HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture))));
+        var inFlightAtStart = intervals.Select(request =>
+            intervals.Count(other => other.Start <= request.Start && other.End > request.Start)).ToArray();
+        TestContext.Out.WriteLine("requests in flight when each starts: " + string.Join(",", inFlightAtStart));
+        Assert.That(intervals, Has.Count.EqualTo(7), "65 values fill seven ten-alias requests.");
+        Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(4), "The field phase never exceeds four requests in flight.");
+        Assert.That(inFlightAtStart.Take(4), Is.EqualTo(new[] { 1, 2, 3, 4 }), "The phase fills its four slots before waiting for a response.");
+        Assert.That(inFlightAtStart.Skip(4), Is.All.GreaterThanOrEqualTo(3),
+            "A completion starts the next request while its peers are still running; a window of four would start the next group after its peers all finished.");
         Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 10, 10, 10, 10, 10, 5 }));
     }
 
@@ -584,7 +612,9 @@ internal sealed partial class PlanPublisherTests
             Assert.That(runner.MutationStarted.Skip(4).Zip(deadlines.Skip(4)).All(p => p.First >= p.Second), Is.True);
         }
         Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 10, 10, 10, 10, 10, 5 }));
-        Scenario(mutationDelayMs: 50);
+        // The ramp assertion needs the four slots to fill before the first response; holding that response
+        // keeps the exact 1,2,3,4 sequence independent of how fast a host prepares and starts the requests.
+        Scenario(mutationDelayMs: 300, firstMutationDelayMs: 2000);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 4m)).ToImmutableArray()), Today);
         runner.MutationConcurrency.Clear();
@@ -1334,9 +1364,11 @@ internal sealed partial class PlanPublisherTests
         TestContext.Out.WriteLine("Real fake-gh processes: " + (runner?.Count ?? 0));
         Directory.Delete(root, true);
     }
-    private void Scenario(string? fault = null, int batch = 1, int gatewayAliasLimit = 0, int mutationDelayMs = 0)
+    private void Scenario(string? fault = null, int batch = 1, int gatewayAliasLimit = 0, int mutationDelayMs = 0, int firstMutationDelayMs = 0)
     {
-        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, planFault = fault, faultBatch = batch, gatewayAliasLimit, mutationDelayMs }));
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, planFault = fault, faultBatch = batch, gatewayAliasLimit, mutationDelayMs, firstMutationDelayMs }));
+        var marker = Path.Combine(root, "first-mutation-delay.done");
+        if (File.Exists(marker)) File.Delete(marker);
         if (File.Exists(FakePlanEditor.StatePath(root))) FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { ReadAttempts = 0 });
     }
     private async Task Start(int count, Func<PlanFakeState, PlanFakeState>? fixture = null, ProjectPlanSettings? settings = null)
@@ -2300,10 +2332,15 @@ internal sealed partial class PlanPublisherTests
     private sealed class CountingRunner(IGhProcessRunner inner) : IGhProcessRunner
     {
         private int active, tickets;
+        private readonly List<(DateTimeOffset Start, DateTimeOffset End)> mutationIntervals = [];
         public int MaximumConcurrentMutations { get; private set; }
         public int MaximumConcurrentNonFieldMutations { get; private set; }
         public List<int> MutationConcurrency { get; } = [];
         public List<DateTimeOffset> MutationStarted { get; } = [];
+        // Start and end of each field request, in dispatch order; the interval between them is how long the
+        // request stayed in flight, so a test can see the bound and that a completion refilled the phase.
+        public IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> MutationIntervals
+        { get { lock (Queries) return mutationIntervals.ToArray(); } }
         public Action? MutationStarting { get; set; }
         public int Count { get; private set; }
         public List<string> Queries { get; } = [];
@@ -2312,6 +2349,7 @@ internal sealed partial class PlanPublisherTests
         public async Task<GhProcessResult> RunAsync(GhCommand command, CancellationToken cancellationToken = default)
         {
             var mutation = command.StandardInput?.Contains("mutation PlanPublish", StringComparison.Ordinal) == true;
+            var mutationIndex = -1;
             lock (Queries)
             {
                 Count++; Started.Add(DateTimeOffset.UtcNow);
@@ -2326,6 +2364,8 @@ internal sealed partial class PlanPublisherTests
                     MaximumConcurrentMutations = Math.Max(MaximumConcurrentMutations, concurrent);
                     MutationConcurrency.Add(concurrent);
                     MutationStarted.Add(DateTimeOffset.UtcNow);
+                    mutationIndex = mutationIntervals.Count;
+                    mutationIntervals.Add((MutationStarted[^1], DateTimeOffset.MaxValue));
                     MutationStarting?.Invoke();
                     if (new[] { "createIssue", "addProjectV2ItemById", "addSubIssue", "removeSubIssue",
                         "reprioritizeSubIssue", "addBlockedBy", "removeBlockedBy", "updateProjectV2ItemPosition" }
@@ -2339,7 +2379,18 @@ internal sealed partial class PlanPublisherTests
                 if (result.StandardOutput.StartsWith("HTTP/2 429", StringComparison.Ordinal)) RateLimitObserved?.Invoke();
                 return result;
             }
-            finally { if (mutation) Interlocked.Decrement(ref active); }
+            finally
+            {
+                if (mutation)
+                {
+                    lock (Queries)
+                    {
+                        var interval = mutationIntervals[mutationIndex];
+                        mutationIntervals[mutationIndex] = (interval.Start, DateTimeOffset.UtcNow);
+                    }
+                    Interlocked.Decrement(ref active);
+                }
+            }
         }
     }
 }

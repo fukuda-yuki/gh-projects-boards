@@ -29,7 +29,8 @@ internal sealed partial class PlanWorkspaceView
     private AssistSettingsStore assistStore = null!;
     private Task assistLoaded = Task.CompletedTask;
     private string assistDataRoot = "";
-    private string? assistSettingsError, assistSelected, assistDismissed, assistLastText;
+    private string? assistSettingsError, assistLastText;
+    private IReadOnlyList<string> assistSelected = [], assistDismissed = [];
     private bool assistComposing, assistCompositionEnded;
     private IAssistTurn? assistConversation;
     private AssistPlanTools? assistTools;
@@ -73,7 +74,7 @@ internal sealed partial class PlanWorkspaceView
         };
         assistMessages.Unloaded += (_, _) => assistMessages.LayoutUpdated -= AssistLayoutUpdated;
         assistMessages.SizeChanged += (_, _) => FollowAssist();
-        assistChip.Click += (_, _) => { assistDismissed = assistSelected; assistSelected = null; UpdateAssistSelection(); };
+        assistChip.Click += (_, _) => { assistDismissed = assistSelected; assistSelected = []; UpdateAssistSelection(); };
         assistInput.TextCompositionStarted += (_, _) => AssistCompositionStarted();
         assistInput.TextCompositionEnded += (_, _) => AssistCompositionEnded();
         assistInput.KeyDown += async (_, e) => {
@@ -143,17 +144,29 @@ internal sealed partial class PlanWorkspaceView
     }
     private void UpdateAssistSelection()
     {
-        var identity = sheet?.RowIds.FirstOrDefault(id => sheet.IsSelectedRow(id));
-        if (identity != assistSelected && identity != assistDismissed) assistDismissed = null;
-        assistSelected = identity == assistDismissed ? null : identity;
-        var row = workspace.Session?.Document.State.Rows.FirstOrDefault(r => r.Identity == assistSelected);
-        // Requirement header rows are selectable in the sheet but are not plan tasks; offer and send only tasks.
-        if (row is null) assistSelected = null;
-        assistChip.Visibility = row is null ? Visibility.Collapsed : Visibility.Visible;
-        if (row is not null) {
-            assistChip.Content = new TextBlock { Text = $"選択中: {sheet!.TaskNames[row.Identity]} {row.Title} ×", MaxWidth = 292, TextTrimming = TextTrimming.CharacterEllipsis };
-            AutomationProperties.SetName(assistChip, $"選択中: {sheet.TaskNames[row.Identity]} {row.Title}、選択を外す");
+        var identities = SelectedAssistIdentities();
+        // Pressing the chip sends no context for this selection; a different selection offers it again.
+        if (identities.SequenceEqual(assistDismissed)) { assistSelected = []; }
+        else { assistDismissed = []; assistSelected = identities; }
+        var single = assistSelected.Count == 1 ? workspace.Session?.Document.State.Rows.FirstOrDefault(r => r.Identity == assistSelected[0]) : null;
+        assistChip.Visibility = assistSelected.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        if (single is not null) {
+            assistChip.Content = new TextBlock { Text = $"選択中: {sheet!.TaskNames[single.Identity]} {single.Title} ×", MaxWidth = 292, TextTrimming = TextTrimming.CharacterEllipsis };
+            AutomationProperties.SetName(assistChip, $"選択中: {sheet.TaskNames[single.Identity]} {single.Title}、選択を外す");
+        } else if (assistSelected.Count > 1) {
+            assistChip.Content = new TextBlock { Text = $"選択中: {assistSelected.Count} 件のタスク ×", MaxWidth = 292, TextTrimming = TextTrimming.CharacterEllipsis };
+            AutomationProperties.SetName(assistChip, $"選択中: {assistSelected.Count} 件のタスク、選択を外す");
         }
+    }
+    // Every task row in the sheet's current selection, in plan display order. Requirement header rows and the
+    // empty input row are selectable but are not tasks, so they never become context (#298).
+    private IReadOnlyList<string> SelectedAssistIdentities()
+    {
+        if (sheet is not { } current || workspace.Session is not { } session) return [];
+        var rows = session.Document.State.Rows;
+        var byIdentity = rows.ToDictionary(row => row.Identity);
+        var summaries = rows.Where(row => row.Parent is not null).Select(row => row.Parent!).ToHashSet(StringComparer.Ordinal);
+        return [.. current.SelectedRows.Where(identity => byIdentity.ContainsKey(identity) && !summaries.Contains(identity))];
     }
     // The native composition edge is also used by hosted tests; it never synthesizes plan edits.
     internal void AssistCompositionStarted() => assistComposing = true;
@@ -199,7 +212,7 @@ internal sealed partial class PlanWorkspaceView
             catch (Exception ex) when (ex is not OutOfMemoryException) { ShowAssistFailure("AI アシストを開始できませんでした。設定と API キーを確認してください。"); }
         });
     }
-    private async Task StreamAssist(IAssistTurn conversation, string text, string? selected, TextBlock answer, int generation, CancellationToken token)
+    private async Task StreamAssist(IAssistTurn conversation, string text, IReadOnlyList<string> selected, TextBlock answer, int generation, CancellationToken token)
     {
         var rawAnswer = new StringBuilder();
         var channel = Channel.CreateBounded<AssistEvent>(new BoundedChannelOptions(64) { FullMode = BoundedChannelFullMode.Wait, SingleReader = true, SingleWriter = true });

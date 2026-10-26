@@ -40,7 +40,10 @@ internal sealed partial class PlanSheetHostedTests
                     });
                     await Task.Delay(pauseMs);
                 }
-                await Ui.Until(() => sheet.List.Items.Count == 121
+                // #227/#260: each matching task's requirement rows stay visible as dimmed context and are
+                // not counted, so the version shows 120 matches plus their 40 requirement parents and the
+                // new-task row; the count text states the 120 matching rows only.
+                await Ui.Until(() => sheet.List.Items.Count == 161
                     && Ui.Find<TextBlock>("PlanSheetFilterCount").Text == "120 件");
                 await SheetNativeInput.Rendered();
                 await Ui.Run(() => {

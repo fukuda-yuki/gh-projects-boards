@@ -153,6 +153,8 @@ internal sealed partial class PlanWorkspaceView
             ghPath.Description = "空欄のときは PATH の gh.exe を使います。次の接続から使います。";
             SettingsSection("connection", "接続").Children.Add(ghPath);
             var display = SettingsSection("display", "表示");
+            // #298: the same this-PC preference the plan sheet's ガント toggle changes.
+            display.Children.Add(GanttSwitch());
             // #236 part B / #251 D1: each lateness mark can be hidden on this PC. The sets, the counts and the filters stay.
             display.Children.Add(MarkSwitch("期限超過の印", "PlanShowOverdueMark", m => m.Overdue, (m, on) => m with { Overdue = on }));
             display.Children.Add(MarkSwitch("予定より遅れの印", "PlanShowLaterMark", m => m.Later, (m, on) => m with { Later = on }));
@@ -178,6 +180,30 @@ internal sealed partial class PlanWorkspaceView
         if (currentPage == "settings") settingsNav.UpdateLayout();
     }
 
+    // #298: the plan sheet's ガント toggle and this switch read and write one stored preference, so either
+    // entry point shows the other's choice and applies to every Project on this PC.
+    private CheckBox GanttSwitch()
+    {
+        const string label = "ガントを表示";
+        var box = Id(new CheckBox { Content = label, IsChecked = workspace.Display.GanttVisible, MinWidth = 0 }, "PlanSettingsShowGantt");
+        AutomationProperties.SetName(box, label);
+        ToolTipService.SetToolTip(box, label + "します。件数と絞り込みは変わりません。");
+        var generation = settingsGeneration;
+        async void Changed(object sender, RoutedEventArgs args) {
+            if (rendering || generation != settingsGeneration) return;
+            var on = box.IsChecked == true;
+            await Run(async () => {
+                await workspace.SaveDisplay(workspace.Display with { GanttVisible = on });
+                RenderTasks();
+            });
+            if (generation != settingsGeneration) return;
+            rendering = true;
+            try { box.IsChecked = workspace.Display.GanttVisible; }
+            finally { rendering = false; }
+        }
+        box.Checked += Changed; box.Unchecked += Changed;
+        return box;
+    }
     private CheckBox MarkSwitch(string label, string id, Func<PlanMarkVisibility, bool> read, Func<PlanMarkVisibility, bool, PlanMarkVisibility> change)
     {
         var box = Id(new CheckBox { Content = label, IsChecked = read(workspace.Display.Marks), MinWidth = 0 }, id);
@@ -275,10 +301,17 @@ internal sealed partial class PlanWorkspaceView
                 return row;
             }
             phaseTargets.Children.Add(PhaseRow("工程", "タスク", Label("目標日（マイルストーン）")));
-            var milestones = session.Document.Baseline.Milestones.OrderBy(m => m.Title, StringComparer.Ordinal).ToArray();
-            var labels = new[] { "なし" }.Concat(milestones.Select(m => m.Title + " · " + (m.DueDate?.ToString("M/d") ?? "目標日なし"))).ToArray();
+            // #298: one repository can run several versions in parallel, so only the milestones this Project's
+            // rows use are offered as targets. A stored mapping whose group no row uses stays as that option's
+            // value so the PMO can still clear it; it is never offered to the options that do not map to it.
+            var milestones = PlanMilestones.InScope(session.Document).OrderBy(m => m.Title, StringComparer.Ordinal).ToArray();
             foreach (var option in field.Options) {
-                int Accepted() => Array.FindIndex(milestones, m => m.Title == session.Document.State.Settings.PhaseMilestones.GetValueOrDefault(option)) + 1;
+                var mapped = session.Document.State.Settings.PhaseMilestones.GetValueOrDefault(option);
+                var choices = mapped is null || milestones.Any(m => m.Title == mapped) ? milestones
+                    : session.Document.Baseline.Milestones.Where(m => m.Title == mapped).Concat(milestones)
+                        .OrderBy(m => m.Title, StringComparer.Ordinal).ToArray();
+                var labels = new[] { "なし" }.Concat(choices.Select(m => m.Title + " · " + (m.DueDate?.ToString("M/d") ?? "目標日なし"))).ToArray();
+                int Accepted() => Array.FindIndex(choices, m => m.Title == session.Document.State.Settings.PhaseMilestones.GetValueOrDefault(option)) + 1;
                 var combo = Id(new ComboBox { ItemsSource = labels, HorizontalAlignment = HorizontalAlignment.Stretch,
                     SelectedIndex = Accepted() }, "PlanPhaseMilestone_" + option);
                 AutomationProperties.SetName(combo, option + " 目標日（マイルストーン）");
@@ -287,7 +320,7 @@ internal sealed partial class PlanWorkspaceView
                     var selected = combo.SelectedIndex;
                     if (selected == Accepted()) return;
                     await Run(() => ChangeSettings(s => s with { PhaseMilestones = selected <= 0 ? s.PhaseMilestones.Remove(option)
-                        : s.PhaseMilestones.SetItem(option, milestones[selected - 1].Title) }));
+                        : s.PhaseMilestones.SetItem(option, choices[selected - 1].Title) }));
                     rendering = true;
                     try { combo.SelectedIndex = Accepted(); }
                     finally { rendering = false; }

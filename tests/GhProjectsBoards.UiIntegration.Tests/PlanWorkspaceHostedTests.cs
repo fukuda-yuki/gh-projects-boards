@@ -691,11 +691,13 @@ internal sealed partial class PlanWorkspaceHostedTests
             var lateCount = (overdue ? 1 : 0) + (later ? 1 : 0);
             var late = $"遅れ {lateCount}";
             Assert.That(AttentionLabel("PlanAttentionLate"), Is.EqualTo(late));
-            Assert.That(AttentionLabel("PlanAttentionCause"), Is.EqualTo("遅れの原因 0"),
-                "A late task with no late successor is not a cause (#260).");
+            // #264: a cause is every date-passed 遅れ plus a forecast-late task caused by its own remaining
+            // work, so the overdue row and the forecast-later row count as causes without a late successor.
+            Assert.That(AttentionLabel("PlanAttentionCause"), Is.EqualTo($"遅れの原因 {lateCount}"));
             Assert.That(AttentionLabel("PlanAttentionOverEstimate"), Is.EqualTo("見積超過 0"));
             Assert.That(AttentionLabel("PlanAttentionNotUpdated"), Is.EqualTo("未更新 0"));
-            Assert.That(Ui.Find<ToggleButton>("PlanAttentionCause").IsEnabled, Is.False, "A zero count stays visible and disabled.");
+            Assert.That(Ui.Find<ToggleButton>("PlanAttentionCause").IsEnabled, Is.EqualTo(lateCount > 0),
+                "A zero count stays visible and disabled.");
             Assert.That(Ui.Tree(view).OfType<StackPanel>().Any(p => AutomationProperties.GetAutomationId(p) == "PlanStatusMarks"), Is.False,
                 "The status bar no longer repeats the attention counts.");
         });

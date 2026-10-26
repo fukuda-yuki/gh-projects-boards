@@ -391,13 +391,22 @@ internal sealed partial class PlanSheetHostedTests
         SheetNativeInput.Move(point);
         SheetNativeInput.Button(true); SheetNativeInput.Button(false);
         SheetNativeInput.Button(true); SheetNativeInput.Button(false);
-        await Ui.Until(() => session.UndoCount == undo + 2 && Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width
-            == PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width);
+        // The accepted width is a whole effective pixel, but XAML snaps the rendered header to the device
+        // pixel grid: at a fractional RasterizationScale (for example 125 %) 317 effective pixels render as
+        // 316.8, a subpixel difference and not a clipped column. Read the accepted fit only after the second
+        // commit (the drag width is still on screen until the fit's refresh) and allow it one effective
+        // pixel; the content range gets the same allowance.
+        await Ui.Until(() => session.UndoCount == undo + 2);
+        var fitted = PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width ?? 0;
+        await Ui.Until(() => Math.Abs(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width - fitted) <= 1);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width,
+            Is.EqualTo(fitted).Within(1)));
         await Ui.Run(() => {
             var cell = Ui.Find<PlanSheetCell>("PlanCell2_Title");
             var measure = new TextBlock { Text = rows[1].Title, FontSize = cell.FontSize, FontFamily = cell.FontFamily, FontWeight = cell.FontWeight };
             measure.Measure(new(double.PositiveInfinity, double.PositiveInfinity));
-            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width, Is.InRange(Math.Ceiling(measure.DesiredSize.Width + 40), Math.Ceiling(measure.DesiredSize.Width + 44)));
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width,
+                Is.InRange(Math.Ceiling(measure.DesiredSize.Width + 39), Math.Ceiling(measure.DesiredSize.Width + 45)));
         });
     }
 

@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Text.Json;
 using GhProjectsBoards.App;
@@ -776,7 +776,9 @@ internal sealed partial class PlanSheetHostedTests
     // the published-end basis is retired. Each state states the plan's own dates, because a task with no dates
     // has no forecast and no pill.
     [TestCase("finish", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
-    [TestCase("start", "開始日 10/2 を過ぎて未着手", false, "自分の残による")]
+    // #264: a passed plan start is the date-passed 遅れ too, so the pill uses the red critical form and its
+    // tint; only the forecast-only slip is ochre.
+    [TestCase("start", "開始日 10/2 を過ぎて未着手", true, "自分の残による")]
     [TestCase("moved", "終了日 10/2 を過ぎて未完了 · +1日", true, "自分の残による")]
     [TestCase("later", "見込終了 10/6 (火) · 10/5 から +1日", false, "自分の残による")]
     // The predecessor state names its cause through the selection line's link, not the pill's detail line.
@@ -888,6 +890,135 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("#1"));
         });
+    }
+
+    // #298 item 3: hiding the Gantt is presentation only; the sheet takes the width and the counts and
+    // filters keep finding the same work until the chart is shown again.
+    [Test, Category("DisplaySettings")]
+    public async Task HidingTheGanttCollapsesTheChartColumnAndKeepsCountsAndFilters()
+    {
+        var late = new PlanRow("I1", "Late", "acme/repo") { Estimate = 8, Remaining = 8, Start = Today.AddDays(-3), End = Today.AddDays(-3) };
+        var other = new PlanRow("I2", "Other", "acme/repo") { Estimate = 8, Remaining = 8 };
+        await MountPresentation([late, other], [late, other]);
+        await Ui.Run(() => sheet.FilterToggle(PlanToggle.Late));
+        await Ui.Idle();
+        var rows = sheet.RowIds.ToArray();
+        var attention = sheet.Attention;
+        var changes = session.Changes(Today).TaskCount;
+        await Ui.Run(() => {
+            Assert.That(sheet.GanttVisible, Is.True);
+            Assert.That(Ui.Find<CheckBox>("PlanSheetShowGantt").IsChecked, Is.True);
+            Assert.That(Ui.Find<FrameworkElement>("PlanGanttHeader").Visibility, Is.EqualTo(Visibility.Visible));
+        });
+
+        await Ui.Run(() => sheet.SetGanttVisible(false));
+        await Ui.Until(() => sheet.ChartViewport == 0 && sheet.SheetViewport > 0);
+        await Ui.Run(() => {
+            Assert.That(sheet.GanttVisible, Is.False);
+            Assert.That(sheet.SheetViewport, Is.EqualTo(Math.Max(320, sheet.ActualWidth - 20)).Within(0.5), "The sheet takes the chart's width.");
+            Assert.That(sheet.RowIds, Is.EqualTo(rows), "The filter keeps the same rows.");
+            Assert.That(sheet.Attention, Is.EqualTo(attention), "Hiding the Gantt changes no count or set.");
+            Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(changes), "Hiding the Gantt is not an edit.");
+            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<FrameworkElement>("PlanGanttHeader").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<FrameworkElement>("PlanSheetDivider").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<CheckBox>("PlanSheetShowGantt").IsChecked, Is.False);
+        });
+
+        await Ui.Run(() => sheet.SetGanttVisible(true));
+        await Ui.Until(() => sheet.ChartViewport > 0);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<CheckBox>("PlanSheetShowGantt").IsChecked, Is.True);
+            Assert.That(Ui.Find<FrameworkElement>("PlanGanttHeader").Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(sheet.Attention, Is.EqualTo(attention));
+        });
+    }
+
+    // #298 item 4: choosing a day on a date cell's calendar commits that date through the ordinary cell
+    // operation, one Undo step.
+    [Test, Category("DateInput")]
+    public async Task CalendarDayChoiceCommitsADateCellAsOneOperation()
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, End = Today };
+        await MountPresentation([row], [row]);
+        await Ui.Run(() => sheet.Refresh());
+        await Select(1, PlanField.Start);
+        await Ui.Ready<Button>("PlanDateCalendar1_Start");
+        await Ui.Run(() => {
+            var calendarButton = Ui.Find<Button>("PlanDateCalendar1_Start");
+            Assert.That(calendarButton.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(AutomationProperties.GetName(calendarButton), Is.EqualTo("カレンダーから日付を選ぶ"));
+        });
+        var undo = session.UndoCount;
+        await Ui.Run(() => Ui.Click("PlanDateCalendar1_Start"));
+        await Ui.Ready<CalendarView>("PlanDateCalendar");
+        await Ui.Run(() => {
+            var calendar = Ui.Find<CalendarView>("PlanDateCalendar");
+            Assert.That(calendar.SelectedDates.Select(date => DateOnly.FromDateTime(date.Date)), Is.EqualTo(new[] { Today }),
+                "The calendar marks the cell's current date.");
+            calendar.SelectedDates.Clear();
+            calendar.SelectedDates.Add(new DateTimeOffset(new DateTime(2026, 10, 14)));
+        });
+        await Ui.Until(() => session.Document.State.Rows[0].Start == new DateOnly(2026, 10, 14));
+        await Ui.Until(() => Ui.Popup<CalendarView>("PlanDateCalendar") is null);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/14 (水)"));
+            Assert.That(Ui.Find<CheckBox>("PlanSheetShowGantt"), Is.Not.Null);
+        });
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 1), "One choice is one cell operation.");
+    }
+
+    // #298 item 4: the cell keeps its verified ISO editor; the calendar is beside it, not instead of it.
+    [Test, Category("DateInput")]
+    public async Task TypedIsoStillCommitsOnADateCellThatOffersTheCalendar()
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, End = Today };
+        await MountPresentation([row], [row]);
+        await Ui.Run(() => sheet.Refresh());
+        await Select(1, PlanField.Start);
+        await Ui.Ready<Button>("PlanDateCalendar1_Start");
+        var undo = session.UndoCount;
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+            cell.Focus(FocusState.Programmatic); cell.BeginEditing();
+            Assert.That(cell.Text, Is.EqualTo("2026-10-05"));
+            Assert.That(Ui.Find<Button>("PlanDateCalendar1_Start").Visibility, Is.EqualTo(Visibility.Collapsed),
+                "The calendar button stays out of the ISO edit form's width while editing.");
+            cell.Text = "2026-10-14";
+        });
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
+        await Ui.Until(() => session.Document.State.Rows[0].Start == new DateOnly(2026, 10, 14));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/14 (水)")));
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
+    }
+
+    // #298 item 4: Escape closes the calendar and leaves the draft; the next Escape cancels the cell edit.
+    [Test, Category("DateInput")]
+    public async Task ClosingTheCalendarKeepsTheDraftAndTheNextEscapeCancelsIt()
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, End = Today };
+        await MountPresentation([row], [row]);
+        await Ui.Run(() => sheet.Refresh());
+        await Select(1, PlanField.Start);
+        await Ui.Ready<Button>("PlanDateCalendar1_Start");
+        var undo = session.UndoCount;
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+            cell.Focus(FocusState.Programmatic); cell.BeginEditing(); cell.Text = "2026-10-14";
+            sheet.OpenDateCalendar(cell);
+        });
+        await Ui.Ready<CalendarView>("PlanDateCalendar");
+        await Ui.Run(() => sheet.CloseDateCalendar());
+        await Ui.Until(() => Ui.Popup<CalendarView>("PlanDateCalendar") is null);
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+            Assert.That(cell.Text, Is.EqualTo("2026-10-14"), "Closing the calendar keeps the typed draft.");
+            cell.CancelOrClose();
+        });
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/5 (月)")));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+        Assert.That(session.Document.State.Rows[0].Start, Is.Null);
     }
 
     private async Task MountPresentation(ImmutableArray<PlanRow> rows, ImmutableArray<PlanRow> baseline,

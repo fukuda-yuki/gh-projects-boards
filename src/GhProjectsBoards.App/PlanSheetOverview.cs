@@ -50,7 +50,7 @@ internal sealed partial class PlanSheetView
             AutomationProperties.SetHelpText(button, reason);
             ToolTipService.SetToolTip(button, reason.Length > 0 ? reason : button.Label);
         }
-        goToDate.IsEnabled = SelectedDate() is not null;
+        goToDate.IsEnabled = SelectedDate() is not null && ganttVisible;
         // #231: the row-state commands report the same eligibility and reasons in the overflow as in the row
         // context menu, so a PMO reading either route is told the same thing.
         foreach (var (button, action) in new[] { (completeRows, PlanRowAction.Complete), (cancelRows, PlanRowAction.Cancel),
@@ -138,7 +138,9 @@ internal sealed partial class PlanSheetView
         var dates = Schedule.Values.SelectMany(task => new[] { task.Start.Value, task.End.Value })
             .Where(day => day is not null).Select(day => day!.Value).ToArray();
         var settings = Session.Document.State.Settings;
-        dates = dates.Append(StatusDate).Concat(Session.Document.Baseline.Milestones.Where(m => m.DueDate.HasValue).Select(m => m.DueDate!.Value))
+        // #298: only the milestones this Project's rows use extend the range; another version's catalog
+        // dates in the same repository must not leave 全期間 showing empty time.
+        dates = dates.Append(StatusDate).Concat(PlanMilestones.InScope(Session.Document).Where(m => m.DueDate.HasValue).Select(m => m.DueDate!.Value))
             .Concat(new[] { settings.ProjectStart, settings.ProjectEnd }.Where(day => day is not null).Select(day => day!.Value)).ToArray();
         // Every scale ends at the version plus a short margin: padding a coarse scale by viewport fractions
         // filled the 月 chart with a year of empty months. The range stays independent of selection, so
@@ -163,6 +165,7 @@ internal sealed partial class PlanSheetView
 
     private void PositionTimelineAnchor(DateOnly? anchor = null)
     {
+        if (!ganttVisible) return;
         // ChangeView clamps against the arranged native extent, not the new content width alone.
         chartHorizontal.UpdateLayout();
         ChangeTimelineOffset(acceptedZoom == 3 ? 0 : AnchorOffset(anchor ?? TimelineAnchor, FirstDay, DayWidth, ChartViewport));

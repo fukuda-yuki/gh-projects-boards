@@ -34,8 +34,8 @@ internal sealed class PlanMilestoneTests
             Assert.That(result.Phases.Single(p => p.Phase == "SA").Target, Is.EqualTo(Day));
             Assert.That(result.Phases.Single(p => p.Phase == "SA").Difference, Is.EqualTo(2));
             Assert.That(result.Phases.Single(p => p.Phase == "UI").Target, Is.Null);
-            Assert.That(result.Milestones.Single(m => m.Milestone.Title == "Empty").Forecast, Is.Null);
-            Assert.That(result.Milestones.Single(m => m.Milestone.Title == "Empty").Difference, Is.Null);
+            Assert.That(result.Milestones.Select(m => m.Milestone.Title), Is.EqualTo(new[] { "Release" }),
+                "A milestone no current row uses is not part of this Project's plan.");
             Assert.That(System.Text.Json.JsonSerializer.Serialize(PlanOperations.Schedule(d with { Baseline = d.Baseline with { Milestones = [] } }, Day)), Is.EqualTo(System.Text.Json.JsonSerializer.Serialize(scheduled)));
         });
     }
@@ -74,17 +74,23 @@ internal sealed class PlanMilestoneTests
     public void UneditedMilestoneMembershipAdoptsRemoteAndSummaryUsesLocalMembership()
     {
         var d = Document(new PlanRow("I1", "Kept", "a/b") { MilestoneTitle = "Release", End = Day });
-        var remote = d.Baseline with { Milestones = [new("New", Day.AddDays(7), false, false)],
+        // The repository catalog holds the other version's group as well; only the group the local row
+        // belongs to is reported (#298).
+        var remote = d.Baseline with { Milestones = [new("New", Day.AddDays(7), false, false), new("Release", Day, false, false)],
             Rows = [d.Baseline.Rows[0] with { MilestoneTitle = "New" }] };
         var merged = PlanMerge.Merge(d, remote);
         Assert.That(merged.State.Rows[0].MilestoneTitle, Is.EqualTo("New"));
-        Assert.That(merged.Baseline.Milestones.Select(m => m.Title), Is.EqualTo(new[] { "New" }));
+        Assert.That(merged.Baseline.Milestones.Select(m => m.Title), Is.EqualTo(new[] { "New", "Release" }));
         Assert.That(merged.Sync.Conflicts, Is.Empty);
         Assert.That(PlanOperations.Changes(merged, Day).TaskCount, Is.Zero);
         var snapshot = new PlanRemoteSnapshot(remote, ImmutableDictionary<string, string>.Empty, [], 0, 0);
         Assert.That(PlanPublishPlan.Build(merged, snapshot, Day, "milestones").Writes, Is.Empty);
+        var mergedMilestone = PlanSummary.CalculateMilestones(merged, PlanOperations.Schedule(merged, Day)).Single();
+        Assert.That((mergedMilestone.Milestone.Title, mergedMilestone.Tasks), Is.EqualTo(("New", new[] { "I1" })));
         var locallyChanged = merged with { State = merged.State with { Rows = d.State.Rows } };
-        Assert.That(PlanSummary.CalculateMilestones(locallyChanged, PlanOperations.Schedule(locallyChanged, Day))[0].Tasks, Is.Empty);
+        var localMilestone = PlanSummary.CalculateMilestones(locallyChanged, PlanOperations.Schedule(locallyChanged, Day)).Single();
+        Assert.That((localMilestone.Milestone.Title, localMilestone.Tasks), Is.EqualTo(("Release", new[] { "I1" })),
+            "Summary membership follows the local row, not the read's row.");
         Assert.That(PlanOperations.Changes(locallyChanged, Day).Fields["I1"], Does.Contain(PlanField.MilestoneTitle));
     }
 
@@ -119,5 +125,48 @@ internal sealed class PlanMilestoneTests
         var result = PlanSummary.Calculate(d, PlanOperations.Schedule(d, Day), Day);
         Assert.That(result.Milestones[0].Forecast, Is.Null);
         Assert.That(result.Milestones.All(m => m.Difference is null && m.LateTasks.Count == 0), Is.True);
+    }
+
+    [Test]
+    public void GroupsOfAnotherVersionInTheSameRepositoryAreNotReported()
+    {
+        // #298: one repository runs several versions in parallel, each a separate Project. The catalog holds
+        // every version's milestones, but only the groups a current plan row belongs to are this Project's.
+        var rows = new[] {
+            new PlanRow("I1", "SA task", "a/b") { MilestoneTitle = "第2027.04版 SA 完了", Phase = "SA", End = Day.AddDays(4) },
+            new PlanRow("I2", "UI task", "a/b") { MilestoneTitle = "第2027.04版 UI 完了", Phase = "UI", End = Day.AddDays(2) } };
+        var d = new PlanDocument(new(new("github.com", 1), "P1"),
+            new([.. rows], [new("F", "工程", "SINGLE_SELECT") { Options = ["SA", "UI"] }]) {
+                Milestones = [new("第2027.04版 SA 完了", Day.AddDays(5), false, false),
+                    new("第2027.04版 UI 完了", null, true, false),
+                    new("第2027.10版 SA 完了", Day.AddDays(200), true, false),
+                    new("第2027.10版 UI 完了", null, false, false)],
+                // The repository catalog still validates milestone-cell edits for both versions.
+                RepositoryMilestones = [new("a/b", "M1", "第2027.04版 SA 完了"), new("a/b", "M2", "第2027.04版 UI 完了"),
+                    new("a/b", "M3", "第2027.10版 SA 完了"), new("a/b", "M4", "第2027.10版 UI 完了")] },
+            new([.. rows], new() { StatusDate = Day, Columns = [new(PlanField.Phase, "F", "工程", "SINGLE_SELECT")],
+                PhaseMilestones = ImmutableDictionary<string, string>.Empty.Add("SA", "第2027.04版 SA 完了").Add("UI", "第2027.04版 UI 完了") }));
+        var report = PlanSummary.Calculate(d, PlanOperations.Schedule(d, Day), Day);
+        Assert.Multiple(() => {
+            Assert.That(report.Milestones.Select(m => m.Milestone.Title),
+                Is.EqualTo(new[] { "第2027.04版 SA 完了", "第2027.04版 UI 完了" }),
+                "Unused groups of the other version never appear; the used undated group stays last.");
+            Assert.That(report.Phases.Single(p => p.Phase == "SA").Target, Is.EqualTo(Day.AddDays(5)));
+            Assert.That(report.Phases.Single(p => p.Phase == "UI").Target, Is.Null, "An undated group has no target.");
+            Assert.That(report.Milestones.Single(m => m.Milestone.Title == "第2027.04版 UI 完了").Milestone.Closed, Is.True);
+            Assert.That(PlanMilestones.InScope(d).Select(m => m.Title), Is.EqualTo(report.Milestones.Select(m => m.Milestone.Title)),
+                "The settings phase-target choices use the same in-scope set as the summary.");
+        });
+        // Assigning a row to a milestone no current row used makes that group appear; the title it left is
+        // no longer used, so its group disappears and its stored phase mapping supplies no target.
+        var changed = d with { State = PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell,
+            [new("I1", PlanField.MilestoneTitle, "第2027.10版 SA 完了")]), Day).State };
+        var changedReport = PlanSummary.Calculate(changed, PlanOperations.Schedule(changed, Day), Day);
+        Assert.Multiple(() => {
+            Assert.That(changedReport.Milestones.Select(m => m.Milestone.Title),
+                Is.EqualTo(new[] { "第2027.10版 SA 完了", "第2027.04版 UI 完了" }));
+            Assert.That(changedReport.Phases.Single(p => p.Phase == "SA").Target, Is.Null,
+                "A stored mapping to a group no row uses supplies no target.");
+        });
     }
 }

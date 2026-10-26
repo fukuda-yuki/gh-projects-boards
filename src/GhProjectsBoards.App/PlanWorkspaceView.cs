@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Globalization;
 using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
@@ -698,7 +698,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         if (currentPage == "publish" && page == "tasks") sheet?.FocusSelected();
         currentPage = page; SyncTabs(); UpdateAssistVisibility(); UpdateDetailVisibility(); SetRemotePresentation();
         openPublish.Style = page == "publish" ? null : (Style)Application.Current.Resources["AccentButtonStyle"];
-        legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
+        // #298: the legend describes the chart, so it appears only on 計画 and only while the Gantt is shown.
+        legend.Visibility = page == "tasks" && workspace.Display.GanttVisible ? Visibility.Visible : Visibility.Collapsed;
         summaryArea.Visibility = page == "summary" ? Visibility.Visible : Visibility.Collapsed;
         publishReview.Visibility = page == "publish" ? Visibility.Visible : Visibility.Collapsed;
         connection.Visibility = page == "connection" ? Visibility.Visible : Visibility.Collapsed;
@@ -760,6 +761,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
             {
                 next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { OpenSettingsPage("columns", "tasks"); return Task.CompletedTask; }),
                     reapplyStoredPlan: ReapplyStoredPlanAsync, savePlanCopy: SavePlanCopyAsync,
+                    // #298: the sheet's ガント toggle changes the same this-PC preference as settings › 表示.
+                    changeGanttVisible: value => Run(async () => {
+                        await workspace.SaveDisplay(workspace.Display with { GanttVisible = value });
+                        RenderTasks();
+                    }),
                     // #253: verify a typed login on demand for the row's repository through the read-only lease.
                     resolveAssignee: (repository, login, token) => ReferenceEquals(workspace.Session, session)
                         ? workspace.ResolveAssigneeAsync(repository, login, token)
@@ -780,6 +786,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
             UpdateSheetSidePane();
         }
         sheet.Marks = workspace.Display.Marks;
+        sheet.SetGanttVisible(workspace.Display.GanttVisible);
+        // #298: hiding the Gantt takes its legend; the counts in the status bar stay.
+        legend.Visibility = currentPage == "tasks" && workspace.Display.GanttVisible ? Visibility.Visible : Visibility.Collapsed;
         sheetFailureHost.Child = sheet.SaveFailure;
         statusDateHost.Child = sheet.statusDate;
         sheet.Refresh();
