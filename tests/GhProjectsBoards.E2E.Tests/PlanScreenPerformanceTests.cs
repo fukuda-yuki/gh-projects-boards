@@ -52,6 +52,90 @@ public sealed class PlanScreenPerformanceTests
     public void VersionWheelScrollingRecordsOrdinaryAppPixelsWithoutEditing()
         => RecordVersionPerformance(scrollOnly: true);
 
+    [Test]
+    public void EditSample_SelectsTheFirstOpenLeafWithAnEstimate()
+    {
+        var chosen = PlanEditSampleReader.Select("""
+            {
+              "document": { "state": { "rows": [
+                {"identity":"I1","title":"Req","closed":false,"parent":null,"estimate":null},
+                {"identity":"I2","title":"Done","closed":true,"parent":"I1","estimate":8},
+                {"identity":"I3","title":"Open","closed":false,"parent":"I1","estimate":16}
+              ]}}
+            }
+            """);
+        Assert.Multiple(() =>
+        {
+            Assert.That(chosen.Number, Is.EqualTo(3));
+            Assert.That(chosen.Identity, Is.EqualTo("I3"));
+            Assert.That(chosen.Title, Is.EqualTo("Open"));
+            Assert.That(chosen.RowCount, Is.EqualTo(3));
+        });
+
+        var noEstimate = PlanEditSampleReader.Select("""
+            {
+              "document": { "state": { "rows": [
+                {"identity":"I1","title":"No estimate","closed":false,"parent":null,"estimate":null},
+                {"identity":"I2","title":"Zero","closed":false,"parent":null,"estimate":0},
+                {"identity":"I3","title":"Next","closed":false,"parent":null,"estimate":4}
+              ]}}
+            }
+            """);
+        Assert.That(noEstimate.Identity, Is.EqualTo("I3"), "A leaf without a positive estimate is skipped.");
+
+        var summary = PlanEditSampleReader.Select("""
+            {
+              "document": { "state": { "rows": [
+                {"identity":"I1","title":"Summary","closed":false,"parent":null,"estimate":8},
+                {"identity":"I2","title":"Leaf","closed":false,"parent":"I1","estimate":2}
+              ]}}
+            }
+            """);
+        Assert.That(summary.Identity, Is.EqualTo("I2"), "An open summary with an estimate is not a leaf.");
+
+        var childFirst = PlanEditSampleReader.Select("""
+            {
+              "document": { "state": { "rows": [
+                {"identity":"I2","title":"Leaf","closed":false,"parent":"I1","estimate":5},
+                {"identity":"I1","title":"Summary","closed":false,"parent":null,"estimate":8}
+              ]}}
+            }
+            """);
+        Assert.That(childFirst.Number, Is.EqualTo(1));
+        Assert.That(childFirst.Identity, Is.EqualTo("I2"), "Parenthood is the whole list, even when the child is stored first.");
+
+        var missing = Assert.Throws<InvalidOperationException>(() => PlanEditSampleReader.Select("""
+            {"document":{"state":{"rows":[{"identity":"I1","title":"Closed","closed":true,"parent":null,"estimate":8}]}}}
+            """))!;
+        Assert.That(missing.Message, Does.Contain("no open leaf task with an estimate"));
+
+        Assert.That(PlanEditSampleReader.ScrollPercent(144, 1040), Is.EqualTo(143 * 100d / 1039).Within(1e-9));
+        Assert.That(PlanEditSampleReader.ScrollPercent(1, 1040), Is.EqualTo(0));
+        Assert.That(PlanEditSampleReader.ScrollPercent(1040, 1040), Is.EqualTo(100));
+
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-edit-sample-" + Guid.NewGuid().ToString("N"));
+        var directory = Path.Combine(root, "PlanningEditor", "v1");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            const string Plan = """
+                {"document":{"state":{"rows":[
+                  {"identity":"I1","title":"Req","closed":false,"parent":null,"estimate":null},
+                  {"identity":"I2","title":"Open","closed":false,"parent":"I1","estimate":16}
+                ]}}}
+                """;
+            File.WriteAllText(Path.Combine(directory, "plan.json.bak"), "not a plan");
+            File.WriteAllText(Path.Combine(directory, "plan.json.unreadable-1"), "not a plan");
+            File.WriteAllText(Path.Combine(directory, "AABBCC.json"), Plan);
+            var read = PlanEditSampleReader.Read(root);
+            Assert.That(read.Identity, Is.EqualTo("I2"));
+            Assert.That(read.Number, Is.EqualTo(2));
+            File.WriteAllText(Path.Combine(directory, "second.json"), Plan);
+            Assert.Throws<InvalidOperationException>(() => PlanEditSampleReader.Read(root));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private void RecordVersionPerformance(bool scrollOnly)
     {
         if (Environment.GetEnvironmentVariable("GHPB_RUN_E2E") != "1")
@@ -61,6 +145,8 @@ public sealed class PlanScreenPerformanceTests
         var root = Path.Combine(Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!, scrollOnly ? "plan-scroll" : "plan-screen");
         var data = Path.Combine(root, "data");
         Directory.CreateDirectory(root);
+        PlanEditSample? editSample = null;
+        double editScrollPercent = 0;
         var repo = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(fake)!, "..", "..", "..", "..", ".."));
         var prepare = new ProcessStartInfo("pwsh") { UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden };
         foreach (var argument in new[] { "-NoProfile", "-File", Path.Combine(repo, "scripts", "Start-Evaluation.ps1"), "-NoBuild", "-Configuration", new DirectoryInfo(Path.GetDirectoryName(fake)!).Parent!.Name, "-PrepareOnly", "-DataRoot", data })
@@ -70,6 +156,8 @@ public sealed class PlanScreenPerformanceTests
             Assert.That(fixture.WaitForExit(30000), Is.True, "Evaluation preparation must finish.");
             Assert.That(fixture.ExitCode, Is.Zero);
         }
+        editSample = PlanEditSampleReader.Read(data);
+        editScrollPercent = PlanEditSampleReader.ScrollPercent(editSample.Value.Number, editSample.Value.RowCount);
         var fixtureContext = JsonDocument.Parse(File.ReadAllText(Path.Combine(data, "evaluation.json"))).RootElement.Clone();
         var referenceDay = fixtureContext.GetProperty("statusDate").GetString()!;
         using var dpi = new DesktopDpiScope();
@@ -160,24 +248,26 @@ public sealed class PlanScreenPerformanceTests
             // Record the native return position above, then reset outside the edit measurement.
             list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
             Wait(() => list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value == 0);
-            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 13);
-            Wait(() => Find("PlanCell144_Remaining").IsOffscreen == false);
+            var task = editSample!.Value;
+            string Cell(string field) => "PlanCell" + task.Number + "_" + field;
+            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, editScrollPercent);
+            Wait(() => Find(Cell("Remaining")).IsOffscreen == false);
             Thread.Sleep(500);
             using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "before-edits.png"));
-            var firstEditor = Find("PlanCell144_Remaining").AsTextBox();
+            var firstEditor = Find(Cell("Remaining")).AsTextBox();
             firstEditor.Focus();
             Wait(() => firstEditor.Properties.HasKeyboardFocus.ValueOrDefault);
             Keyboard.Type(VirtualKeyShort.F2);
             Wait(() => double.TryParse(firstEditor.Text, out _));
             var original = firstEditor.Text;
-            Assert.That(double.TryParse(original, out var remaining), Is.True, "ID 144 must expose numeric Remaining in edit mode.");
+            Assert.That(double.TryParse(original, out var remaining), Is.True, $"ID {task.Number} ({task.Identity}) must expose numeric Remaining in edit mode.");
             for (var index = 0; index < 6; index++)
             {
-                var editor = Find("PlanCell144_Remaining").AsTextBox();
+                var editor = Find(Cell("Remaining")).AsTextBox();
                 editor.Focus();
                 Wait(() => editor.Properties.HasKeyboardFocus.ValueOrDefault);
                 editor.Text = index % 2 == 0 ? (remaining + 24).ToString(System.Globalization.CultureInfo.CurrentCulture) : original;
-                var endCell = Find("PlanCell144_End").AsTextBox();
+                var endCell = Find(Cell("End")).AsTextBox();
                 var before = endCell.Text;
                 var bounds = endCell.BoundingRectangle;
                 // Exclude selection borders/changed markers. The date text is read independently through UIA.
@@ -186,11 +276,11 @@ public sealed class PlanScreenPerformanceTests
                 Thread.Sleep(200);
                 var recording = RecordPixels(Path.Combine(root, $"edit-{index + 1}"), region,
                     mark => { mark("Enter"); Keyboard.Type(VirtualKeyShort.RETURN); }, TimeSpan.FromSeconds(3));
-                var finalEndCell = Find("PlanCell144_End").AsTextBox();
+                var finalEndCell = Find(Cell("End")).AsTextBox();
                 var after = finalEndCell.Text;
                 var unchangedBounds = finalEndCell.BoundingRectangle == bounds;
                 var valid = before != after && unchangedBounds && recording.ScreenChanged && recording.FinalStateStable;
-                samples.Add(new { sample = index + 1, row = 144, title = Find("PlanCell144_Title").AsTextBox().Text,
+                samples.Add(new { sample = index + 1, row = task.Number, identity = task.Identity, title = Find(Cell("Title")).AsTextBox().Text,
                     remaining = editor.Text, before, after, unchangedBounds, valid,
                     recording.FirstFinalPixelsMs, recording.FirstFinalFrameStartMs, recording.PreviousFrameMs,
                     recording.PreviousFrameStartMs, recording.MaxCaptureIntervalMs,
@@ -271,9 +361,9 @@ public sealed class PlanScreenPerformanceTests
             using (Keyboard.Pressing(VirtualKeyShort.CONTROL)) Keyboard.Type(VirtualKeyShort.KEY_A);
             Keyboard.Type(VirtualKeyShort.BACK);
             Wait(() => filter.Text.Length == 0 && countElement.IsOffscreen);
-            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 13);
-            Wait(() => Find("PlanCell144_Title").IsOffscreen == false);
-            var selectedEditor = Find("PlanCell144_Title");
+            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, editScrollPercent);
+            Wait(() => Find(Cell("Title")).IsOffscreen == false);
+            var selectedEditor = Find(Cell("Title"));
             selectedEditor.Focus();
             Wait(() => selectedEditor.Properties.HasKeyboardFocus.ValueOrDefault);
             var commands = Find("PlanSheetCommands");
@@ -487,7 +577,9 @@ public sealed class PlanScreenPerformanceTests
         }
         void WriteSummary() => File.WriteAllText(Path.Combine(root, "plan-screen.json"), JsonSerializer.Serialize(new {
             schemaVersion = 1, outcome, failure, scope = scrollOnly ? "wheel-only" : "scroll-edit-filter-flyouts",
-            rows = 1040, version = "2027.04", environment, wheelRecordings, flyoutRecordings, samples,
+            rows = editSample?.RowCount ?? 1040, version = "2027.04",
+            editedTask = editSample is { } chosen ? new { number = chosen.Number, identity = chosen.Identity, title = chosen.Title, rowCount = chosen.RowCount, scrollPercent = editScrollPercent } : null,
+            environment, wheelRecordings, flyoutRecordings, samples,
             processExited = process.HasExited, processExitCode = process.HasExited ? (int?)process.ExitCode : null,
             targetMs = scrollOnly ? (int?)null : 200, boundary = scrollOnly
                 ? "Native wheel input and desktop copies; inspect recorded row identities, blank strips and recovery separately. Completion verifies acquisition and unchanged unpublished count, not smoothness or physical-display acceptance."
@@ -655,4 +747,52 @@ public sealed class PlanScreenPerformanceTests
         }
         Assert.Fail("The ordinary version sheet did not reach the expected state.");
     }
+}
+
+internal readonly record struct PlanEditSample(int Number, string Identity, string Title, int RowCount);
+
+internal static class PlanEditSampleReader
+{
+    internal static PlanEditSample Read(string dataRoot)
+    {
+        var directory = Path.Combine(dataRoot, "PlanningEditor", "v1");
+        var files = Directory.EnumerateFiles(directory, "*.json").ToArray();
+        if (files.Length != 1)
+            throw new InvalidOperationException($"The version fixture must contain one plan JSON, found {files.Length}.");
+        return Select(File.ReadAllText(files[0]));
+    }
+
+    internal static PlanEditSample Select(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return Select(document.RootElement);
+    }
+
+    internal static PlanEditSample Select(JsonElement root)
+    {
+        var rows = root.GetProperty("document").GetProperty("state").GetProperty("rows");
+        var parents = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var row in rows.EnumerateArray())
+        {
+            if (row.TryGetProperty("parent", out var parent) && parent.ValueKind == JsonValueKind.String)
+            {
+                var value = parent.GetString();
+                if (!string.IsNullOrEmpty(value)) parents.Add(value);
+            }
+        }
+        var number = 0;
+        foreach (var row in rows.EnumerateArray())
+        {
+            number++;
+            var identity = row.GetProperty("identity").GetString() ?? "";
+            if (parents.Contains(identity)) continue;
+            if (row.TryGetProperty("closed", out var closed) && closed.ValueKind == JsonValueKind.True) continue;
+            if (!row.TryGetProperty("estimate", out var estimate) || estimate.ValueKind != JsonValueKind.Number || estimate.GetDecimal() <= 0) continue;
+            return new PlanEditSample(number, identity, row.GetProperty("title").GetString() ?? "", rows.GetArrayLength());
+        }
+        throw new InvalidOperationException("The version fixture has no open leaf task with an estimate.");
+    }
+
+    internal static double ScrollPercent(int number, int rowCount)
+        => Math.Clamp((number - 1) * 100d / Math.Max(1, rowCount - 1), 0, 100);
 }
