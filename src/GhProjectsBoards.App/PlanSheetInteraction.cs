@@ -100,6 +100,9 @@ internal sealed partial class PlanSheetView
         return row >= range.Row && row < range.Row + range.RowCount && column >= range.Column && column < range.Column + range.ColumnCount;
     }
     internal bool IsSelectedRow(string identity) => identity == selected;
+    // #298: every row the current range covers, in display order. A multi-row selection sends each of its
+    // rows as assist context, not only the range end where keyboard focus sits.
+    internal IReadOnlyList<string> SelectedRows => RowIds.Skip(Range.Row).Take(Range.RowCount).ToArray();
     internal Func<DependencyObject?, bool>? PreservePendingFocus { get; set; }
     internal bool HasActiveCellEdit => Pending.Count > 0 || Realized.SelectMany(r => r.Cells).Any(c => c.Editing || c.Composing);
     internal event Action? SelectionChanged;

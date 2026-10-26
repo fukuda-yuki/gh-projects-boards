@@ -33,14 +33,14 @@ internal sealed class AssistLiveTests
             await using (var conversation = new AssistConversation(settings, root, "github.com", "offline-evaluation", tools, key, runtime)) {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
                 var events = new List<AssistEvent>();
-                await foreach (var e in conversation.SendAsync("選択中のタスクはなぜ遅れていますか。ツールで調べ、日程の理由を説明してください。", target.Identity, timeout.Token)) events.Add(e);
+                await foreach (var e in conversation.SendAsync("選択中のタスクはなぜ遅れていますか。ツールで調べ、日程の理由を説明してください。", [target.Identity], timeout.Token)) events.Add(e);
                 Assert.That(events.Any(e => e.Kind == AssistEventKind.Error), Is.False, "Live turn failed; raw provider output is intentionally not logged.");
                 Assert.That(events.Any(e => e.Kind == AssistEventKind.Message && !string.IsNullOrWhiteSpace(e.Text)), Is.True);
                 Assert.That(events.Any(e => e.Kind == AssistEventKind.TurnEnd), Is.True);
                 Assert.That(tools.References.Select(r => r.Identity), Does.Contain(target.Identity));
                 Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
                 events.Clear();
-                await foreach (var e in conversation.SendAsync($"選択中のタスクの残を{proposedRemaining.ToString(System.Globalization.CultureInfo.InvariantCulture)}時間にする変更を propose_changes で提案してください。適用は私が行います。", target.Identity, timeout.Token)) events.Add(e);
+                await foreach (var e in conversation.SendAsync($"選択中のタスクの残を{proposedRemaining.ToString(System.Globalization.CultureInfo.InvariantCulture)}時間にする変更を propose_changes で提案してください。適用は私が行います。", [target.Identity], timeout.Token)) events.Add(e);
                 Assert.That(events.Any(e => e.Kind == AssistEventKind.Error), Is.False);
                 Assert.That(tools.PendingProposal, Is.Not.Null);
                 Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before)); Assert.That(session.UndoCount, Is.Zero);

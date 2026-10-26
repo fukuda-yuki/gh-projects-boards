@@ -169,12 +169,25 @@ internal sealed class AssistSdkBoundaryTests
         Assert.That(JsonSerializer.Serialize(result), Does.Not.Contain("sentinel-key").And.Not.Contain("user-plan-title"));
     }
     [Test]
+    public void SelectionContextCarriesEverySelectedTaskIdentityInOrder()
+    {
+        var prompt = AssistConversation.ComposePrompt("選択した行をまとめて直してください", ["I1", "I2", "I3"]);
+        const string label = "選択中のタスク Identity: ";
+        var context = prompt.Split('\n')[^1];
+        Assert.That(context, Does.StartWith(label));
+        Assert.That(JsonSerializer.Deserialize<string[]>(context[label.Length..]), Is.EqualTo(new[] { "I1", "I2", "I3" }),
+            "A multi-row selection reaches the model as every selected identity, in order.");
+        Assert.That(prompt, Does.StartWith("選択した行をまとめて直してください"));
+        Assert.That(AssistConversation.ComposePrompt("そのまま", []), Is.EqualTo("そのまま"),
+            "No selection keeps the question exactly as typed.");
+    }
+    [Test]
     public async Task DisabledAssistNeverStartsRuntimeOrCreatesStorage()
     {
         var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, "unused-" + Guid.NewGuid().ToString("N"));
         await using var conversation = new AssistConversation(new(), path, "github.com", "pmo", null, runtimePath: "missing.exe");
         var events = new List<AssistEvent>();
-        await foreach (var e in conversation.SendAsync("hello")) events.Add(e);
+        await foreach (var e in conversation.SendAsync("hello", [])) events.Add(e);
         Assert.That(events.Single().Failure!.Kind, Is.EqualTo(AssistFailureKind.Disabled));
         Assert.That(Directory.Exists(path), Is.False);
     }
@@ -185,7 +198,7 @@ internal sealed class AssistSdkBoundaryTests
         await using var conversation = new AssistConversation(new(), path, "github.com", "pmo", null, runtimePath: "missing.exe");
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
         var events = new List<AssistEvent>();
-        await foreach (var e in conversation.SendAsync("hello", cancellation: cancellation.Token)) events.Add(e);
+        await foreach (var e in conversation.SendAsync("hello", [], cancellation: cancellation.Token)) events.Add(e);
         Assert.That(events.Single().Kind, Is.EqualTo(AssistEventKind.Cancelled));
         Assert.That(Directory.Exists(path), Is.False);
     }

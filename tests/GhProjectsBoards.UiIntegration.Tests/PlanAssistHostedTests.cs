@@ -504,9 +504,14 @@ internal sealed partial class PlanWorkspaceHostedTests
         var runtime = await EnableAssist();
         await Ui.Run(() => Ui.Tree(view).OfType<PlanSheetView>().Single().Select("I1", PlanField.Title, false));
         await Ui.Ready<Button>("AssistSelectedTask");
+        await Ui.Run(() => {
+            Assert.That(((TextBlock)Ui.Find<Button>("AssistSelectedTask").Content).Text, Is.EqualTo("選択中: #1 設計 ×"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("AssistSelectedTask")), Is.EqualTo("選択中: #1 設計、選択を外す"));
+        });
         await Ui.Run(() => Ui.Click("AssistSelectedTask"));
         await AskAssist();
-        Assert.That(runtime.Selected, Is.EqualTo(new string?[] { null }));
+        Assert.That(runtime.Selected, Has.Count.EqualTo(1));
+        Assert.That(runtime.Selected[0], Is.Empty);
     }
 
     [Test, Category("Assist")]
@@ -517,7 +522,80 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Idle();
         await Ui.Run(() => Assert.That(Ui.Find<Button>("AssistSelectedTask").Visibility, Is.EqualTo(Visibility.Collapsed)));
         await AskAssist();
-        Assert.That(runtime.Selected, Is.EqualTo(new string?[] { null }));
+        Assert.That(runtime.Selected.Single(), Is.Empty);
+    }
+
+    [Test, Category("Assist")]
+    public async Task AssistSendsEveryTaskRowInTheSheetSelectionInPlanOrder()
+    {
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8 }, "", true),
+            new(new("I2", "実装", "acme/repo") { Estimate = 8, Remaining = 8 }, "", true),
+            new(new("I3", "検証", "acme/repo") { Estimate = 8, Remaining = 8 }, "", true)], 4));
+        var runtime = await EnableAssist();
+        await Ui.Run(() => {
+            var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            sheet.Select("I1", PlanField.Title, false); sheet.Select("I3", PlanField.Title, true);
+        });
+        await Ui.Ready<Button>("AssistSelectedTask");
+        await Ui.Run(() => {
+            Assert.That(((TextBlock)Ui.Find<Button>("AssistSelectedTask").Content).Text, Is.EqualTo("選択中: 3 件のタスク ×"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("AssistSelectedTask")), Is.EqualTo("選択中: 3 件のタスク、選択を外す"));
+        });
+        await AskAssist();
+        Assert.That(runtime.Selected.Single(), Is.EqualTo(new[] { "I1", "I2", "I3" }), "Every task row in the selection is context, in plan display order.");
+        await Ui.Run(() => Ui.Click("AssistSelectedTask"));
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<Button>("AssistSelectedTask").Visibility, Is.EqualTo(Visibility.Collapsed)));
+        await AskAssist("この3行をまとめて確認してください");
+        Assert.That(runtime.Selected[^1], Is.Empty, "The chip removes the whole selection context.");
+    }
+
+    [Test, Category("Assist")]
+    public async Task AssistSendsNoSelectedTaskWhenOnlyARequirementRowIsSelected()
+    {
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "要求事項", "acme/repo"), "", true),
+            new(new("I2", "設計", "acme/repo") { Parent = "I1", Estimate = 8, Remaining = 8 }, "", true)], 3));
+        var runtime = await EnableAssist();
+        await Ui.Run(() => {
+            var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            sheet.Select("I2", PlanField.Title, false); sheet.Select("I1", PlanField.Title, false);
+        });
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<Button>("AssistSelectedTask").Visibility, Is.EqualTo(Visibility.Collapsed)));
+        await AskAssist();
+        Assert.That(runtime.Selected.Single(), Is.Empty, "A requirement header row is not a task and is not sent as context.");
+    }
+
+    [Test, Category("Assist")]
+    public async Task AssistProposalCoversEverySelectedRowAsOneReviewAndOneUndo()
+    {
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8 }, "", true),
+            new(new("I2", "実装", "acme/repo") { Estimate = 8, Remaining = 8 }, "", true)], 3));
+        var runtime = await EnableAssist(); runtime.ProposeSelected = true;
+        await Ui.Run(() => {
+            var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            sheet.Select("I1", PlanField.Title, false); sheet.Select("I2", PlanField.Title, true);
+        });
+        await AskAssist();
+        await Ui.Until(() => AssistVisible(Ui.Find<Button>("AssistApply" + runtime.ProposalId)));
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(view).OfType<Border>().Count(b => AutomationProperties.GetAutomationId(b) == "AssistProposal" + runtime.ProposalId), Is.EqualTo(1));
+            Assert.That(Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text == "変更の提案 2 件"), Is.True, "One proposal covers every selected row.");
+            Ui.Click("AssistApply" + runtime.ProposalId);
+        });
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.All(r => r.Title.StartsWith("提案 ")));
+        await Ui.Run(() => {
+            Assert.That(workspace.Session!.Document.State.Rows.Select(r => r.Title), Is.EqualTo(new[] { "提案 I1", "提案 I2" }));
+            Assert.That(workspace.Session.UndoCount, Is.EqualTo(1), "Applying the whole proposal is one operation.");
+        });
+        await Ui.Until(() => Ui.Find<Button>("PlanUndo").IsEnabled);
+        await Ui.Run(() => Ui.Click("PlanUndo"));
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Select(r => r.Title).SequenceEqual(new[] { "設計", "実装" }));
+        await Ui.Run(() => Assert.That(workspace.Session!.UndoCount, Is.Zero));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test, Category("Assist")]
@@ -575,7 +653,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         internal bool Hold, Fail;
         internal int Disposed;
-        internal bool Propose = true;
+        internal bool Propose = true, ProposeSelected;
         internal string? Answer;
         internal bool ManyReferences;
         internal bool ToolProgress;
@@ -588,7 +666,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         internal string? StatePath;
         internal string? ProposalId, CheckKey, CheckModel;
         internal readonly List<string> Prompts = [];
-        internal readonly List<string?> Selected = [];
+        internal readonly List<IReadOnlyList<string>> Selected = [];
         public IAssistTurn Create(AssistSettings settings, string root, string host, string login, AssistPlanTools tools, string? key) => new Turn(this, tools, root);
         public Task<AssistConnectionCheck> Check(AssistSettings settings, string root, string host, string login, string? key, CancellationToken cancellation) {
             CheckKey = key; CheckModel = settings.Model; return Task.FromResult(new AssistConnectionCheck(true, settings.Model, null, ["test-model"]));
@@ -597,14 +675,14 @@ internal sealed partial class PlanWorkspaceHostedTests
         {
             private readonly TaskCompletionSource killed = new(TaskCreationOptions.RunContinuationsAsynchronously);
             private AssistRuntimeDirectory? state;
-            public async IAsyncEnumerable<AssistEvent> Send(string text, string? selected, [EnumeratorCancellation] CancellationToken cancellation)
+            public async IAsyncEnumerable<AssistEvent> Send(string text, IReadOnlyList<string> selected, [EnumeratorCancellation] CancellationToken cancellation)
             {
                 if (owner.HungShutdown) {
                     state = new AssistRuntimeDirectory(root, Guid.NewGuid().ToString("N"));
                     owner.StatePath = state.Path;
                     File.WriteAllText(Path.Combine(state.Path, "session.json"), "temporary conversation");
                 }
-                owner.Prompts.Add(text); owner.Selected.Add(selected); tools.BeginTurn();
+                owner.Prompts.Add(text); owner.Selected.Add([.. selected]); tools.BeginTurn();
                 if (owner.Hold) {
                     if (owner.HungShutdown) await killed.Task;
                     else await Task.Delay(Timeout.Infinite, cancellation);
@@ -620,7 +698,9 @@ internal sealed partial class PlanWorkspaceHostedTests
                 if (owner.ManyReferences) { tools.FindTasks(new() { Title = "詳細設計", Limit = 100 }); tools.GetTasks(["I12"]); }
                 else tools.GetTasks(["I1"]);
                 if (owner.Propose) {
-                    var changes = new List<AssistEdit> { new("I1", PlanField.Title, JsonSerializer.SerializeToElement("提案したタイトル")) };
+                    List<AssistEdit> changes = owner.ProposeSelected
+                        ? [.. selected.Select(identity => new AssistEdit(identity, PlanField.Title, JsonSerializer.SerializeToElement("提案 " + identity)))]
+                        : [new("I1", PlanField.Title, JsonSerializer.SerializeToElement("提案したタイトル"))];
                     if (owner.ManyReferences) changes.Add(new("I12", PlanField.Remaining, JsonSerializer.SerializeToElement(16m)));
                     if (owner.Remaining is { } remaining) changes.Add(new("I1", PlanField.Remaining, JsonSerializer.SerializeToElement(remaining)));
                     owner.ProposalId = tools.ProposeChanges(changes).Proposal!.Id;

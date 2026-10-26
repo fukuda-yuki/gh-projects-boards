@@ -136,22 +136,22 @@ internal sealed class AssistConversation : IAsyncDisposable
         }
         return null;
     }
-    public async IAsyncEnumerable<AssistEvent> SendAsync(string text, string? selectedIdentity = null,
+    public async IAsyncEnumerable<AssistEvent> SendAsync(string text, IReadOnlyList<string> selectedIdentities,
         [EnumeratorCancellation] CancellationToken cancellation = default)
     {
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellation, lifetime.Token);
         if (linked.IsCancellationRequested) { yield return new(AssistEventKind.Cancelled); yield break; }
         if (!await turnGate.WaitAsync(0).ConfigureAwait(false)) throw new InvalidOperationException("回答を待つか停止してください。");
         var channel = Channel.CreateUnbounded<AssistEvent>(new() { SingleReader = true, SingleWriter = false });
-        var turn = RunTurn(text, selectedIdentity, channel.Writer, linked.Token);
+        var turn = RunTurn(text, selectedIdentities, channel.Writer, linked.Token);
         try { await foreach (var item in channel.Reader.ReadAllAsync(CancellationToken.None).ConfigureAwait(false)) yield return item; }
         finally { linked.Cancel(); try { await turn.ConfigureAwait(false); } finally { turnGate.Release(); } }
     }
-    private async Task RunTurn(string text, string? selectedIdentity, ChannelWriter<AssistEvent> output, CancellationToken cancellation)
+    private async Task RunTurn(string text, IReadOnlyList<string> selectedIdentities, ChannelWriter<AssistEvent> output, CancellationToken cancellation)
     {
         IDisposable? subscription = null;
         try {
-            tools?.ValidateSelectedIdentity(selectedIdentity);
+            tools?.ValidateSelectedIdentities(selectedIdentities);
             tools?.BeginTurn();
             var failure = await Start(cancellation).ConfigureAwait(false);
             if (failure is not null) { output.TryWrite(new(AssistEventKind.Error, Failure: failure)); await StopRuntime().ConfigureAwait(false); return; }
@@ -165,7 +165,7 @@ internal sealed class AssistConversation : IAsyncDisposable
                     case SessionErrorEvent error: errored = true; output.TryWrite(new(AssistEventKind.Error, Failure: Failure(error.Data.Message, error.Data.StatusCode))); break;
                 }
             });
-            var prompt = selectedIdentity is null ? text : text + "\n選択中のタスク Identity: " + JsonSerializer.Serialize(selectedIdentity);
+            var prompt = ComposePrompt(text, selectedIdentities);
             await session.SendAndWaitAsync(new MessageOptions { Prompt = prompt }, TimeSpan.FromMinutes(5), cancellation).ConfigureAwait(false);
             if (!errored) output.TryWrite(new(AssistEventKind.TurnEnd, References: tools?.References, Proposal: tools?.TurnProposal));
         }
@@ -186,6 +186,10 @@ internal sealed class AssistConversation : IAsyncDisposable
             output.TryComplete();
         }
     }
+    // Every task row in the PMO's selection is context: a multi-row selection reaches the model as one list,
+    // so a request can change all of them instead of only the row the sheet happened to end on.
+    internal static string ComposePrompt(string text, IReadOnlyList<string> selectedIdentities)
+        => selectedIdentities.Count == 0 ? text : text + "\n選択中のタスク Identity: " + JsonSerializer.Serialize(selectedIdentities);
     // Only fixed product messages cross the edge. Provider errors can include credentials, URLs or prompts.
     internal static AssistFailure Failure(string detail, int? status = null)
     {
@@ -205,7 +209,7 @@ internal sealed class AssistConversation : IAsyncDisposable
         // A cancelled check must start shutdown now, not after a hung send/abort finishes.
         using var shutdown = timeout.Token.Register(() => { _ = check.DisposeAsync(); });
         AssistFailure? failure = null; var ended = false;
-        await foreach (var e in check.SendAsync("接続を確認します。短く回答してください。", cancellation: timeout.Token)) {
+        await foreach (var e in check.SendAsync("接続を確認します。短く回答してください。", [], timeout.Token)) {
             if (e.Kind == AssistEventKind.Error) failure = e.Failure;
             if (e.Kind == AssistEventKind.TurnEnd) ended = true;
             if (e.Kind == AssistEventKind.Cancelled) {
