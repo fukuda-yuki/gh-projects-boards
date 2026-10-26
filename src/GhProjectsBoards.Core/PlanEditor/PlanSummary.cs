@@ -79,7 +79,7 @@ internal static class PlanSummary
     {
         var rows = document.State.Rows.ToDictionary(r => r.Identity);
         var groups = scheduled.Where(t => !t.IsSummary).ToLookup(t => rows.GetValueOrDefault(t.Input.Identity)?.MilestoneTitle);
-        return document.Baseline.Milestones.OrderBy(m => m.DueDate is null).ThenBy(m => m.DueDate).ThenBy(m => m.Title, StringComparer.Ordinal)
+        return PlanMilestones.InScope(document).OrderBy(m => m.DueDate is null).ThenBy(m => m.DueDate).ThenBy(m => m.Title, StringComparer.Ordinal)
             .Select(m => {
                 var members = groups[m.Title].ToArray();
                 var finish = members.Any(t => Finish(t) is null) ? null : members.Max(Finish);

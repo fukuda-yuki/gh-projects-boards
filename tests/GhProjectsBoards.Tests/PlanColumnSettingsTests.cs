@@ -300,7 +300,7 @@ internal sealed class PlanColumnSettingsTests
         var changed=d with {State=state};
         Assert.That(PlanSummary.CalculateMilestones(changed,PlanOperations.Schedule(changed,Day)).Single().Tasks,Is.EqualTo(new[]{"I1"}));
         Assert.That(PlanOperations.Schedule(changed,Day).Select(t=>(t.Start,t.End)),Is.EqualTo(schedule.Select(t=>(t.Start,t.End))));
-        Assert.That(PlanSummary.CalculateMilestones(d,schedule).Single().Tasks,Is.Empty);
+        Assert.That(PlanSummary.CalculateMilestones(d,schedule),Is.Empty, "A milestone no current row uses is not part of the plan until the edit assigns it.");
     }
 
     [Test]

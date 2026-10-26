@@ -275,10 +275,17 @@ internal sealed partial class PlanWorkspaceView
                 return row;
             }
             phaseTargets.Children.Add(PhaseRow("工程", "タスク", Label("目標日（マイルストーン）")));
-            var milestones = session.Document.Baseline.Milestones.OrderBy(m => m.Title, StringComparer.Ordinal).ToArray();
-            var labels = new[] { "なし" }.Concat(milestones.Select(m => m.Title + " · " + (m.DueDate?.ToString("M/d") ?? "目標日なし"))).ToArray();
+            // #298: one repository can run several versions in parallel, so only the milestones this Project's
+            // rows use are offered as targets. A stored mapping whose group no row uses stays as that option's
+            // value so the PMO can still clear it; it is never offered to the options that do not map to it.
+            var milestones = PlanMilestones.InScope(session.Document).OrderBy(m => m.Title, StringComparer.Ordinal).ToArray();
             foreach (var option in field.Options) {
-                int Accepted() => Array.FindIndex(milestones, m => m.Title == session.Document.State.Settings.PhaseMilestones.GetValueOrDefault(option)) + 1;
+                var mapped = session.Document.State.Settings.PhaseMilestones.GetValueOrDefault(option);
+                var choices = mapped is null || milestones.Any(m => m.Title == mapped) ? milestones
+                    : session.Document.Baseline.Milestones.Where(m => m.Title == mapped).Concat(milestones)
+                        .OrderBy(m => m.Title, StringComparer.Ordinal).ToArray();
+                var labels = new[] { "なし" }.Concat(choices.Select(m => m.Title + " · " + (m.DueDate?.ToString("M/d") ?? "目標日なし"))).ToArray();
+                int Accepted() => Array.FindIndex(choices, m => m.Title == session.Document.State.Settings.PhaseMilestones.GetValueOrDefault(option)) + 1;
                 var combo = Id(new ComboBox { ItemsSource = labels, HorizontalAlignment = HorizontalAlignment.Stretch,
                     SelectedIndex = Accepted() }, "PlanPhaseMilestone_" + option);
                 AutomationProperties.SetName(combo, option + " 目標日（マイルストーン）");
@@ -287,7 +294,7 @@ internal sealed partial class PlanWorkspaceView
                     var selected = combo.SelectedIndex;
                     if (selected == Accepted()) return;
                     await Run(() => ChangeSettings(s => s with { PhaseMilestones = selected <= 0 ? s.PhaseMilestones.Remove(option)
-                        : s.PhaseMilestones.SetItem(option, milestones[selected - 1].Title) }));
+                        : s.PhaseMilestones.SetItem(option, choices[selected - 1].Title) }));
                     rendering = true;
                     try { combo.SelectedIndex = Accepted(); }
                     finally { rendering = false; }

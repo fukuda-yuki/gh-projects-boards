@@ -18,8 +18,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         readDay = new(2026, 10, 5);
         FakePlanEditor.Save(root, new([
             new(new("I1", "Late", "acme/repo") { MilestoneTitle = "Design", Phase = "SA", Start = readDay, End = readDay.AddDays(4) }, "", true) { Phase = "SA" },
-            new(new("I2", "On time", "acme/repo") { MilestoneTitle = sameDate ? "Review" : "Design", Phase = "SA", Start = readDay, End = weekApart ? readDay.AddDays(11) : sameDate ? readDay.AddDays(3) : readDay }, "", true) { Phase = "SA" }], 3) {
-                Phases = ["SA"], Milestones = [new("M1", "acme/repo", "Design", readDay.AddDays(dueOffset)), new("M2", "acme/repo", sameDate ? "Review" : "Empty", weekApart ? readDay.AddDays(8) : sameDate ? readDay.AddDays(1) : readDay.AddDays(40))] });
+            new(new("I2", "On time", "acme/repo") { MilestoneTitle = sameDate ? "Review" : "Empty", Phase = "SA", Start = readDay, End = weekApart ? readDay.AddDays(11) : sameDate ? readDay.AddDays(3) : readDay }, "", true) { Phase = "SA" }], 3) {
+                Phases = ["SA"], Milestones = [new("M1", "acme/repo", "Design", readDay.AddDays(dueOffset)), new("M2", "acme/repo", sameDate ? "Review" : "Empty", weekApart ? readDay.AddDays(8) : sameDate ? readDay.AddDays(1) : readDay.AddDays(40)),
+                    // Another version in the same repository: no row of this Project uses it (#298).
+                    new("M3", "acme/repo", "2027.10 Design 完了", readDay.AddDays(90), true)] });
         await Open("Late");
     }
 
@@ -224,6 +226,54 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
         Assert.That(session.Document.State.Settings.PhaseMilestones, Is.Empty);
         await Ui.Run(() => Assert.That(Ui.Find<ComboBox>("PlanPhaseMilestone_SA").SelectedIndex, Is.Zero));
+    }
+
+    [Test]
+    public async Task MilestonesOfAnotherVersionInTheSameRepositoryStayOutOfThePlanSurface()
+    {
+        await MilestonePlan();
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex = 3);
+        await Ui.Idle();
+        await ReadyMilestone("PlanMilestone_0"); await ReadyMilestone("PlanMilestone_1");
+        await Ui.Run(() => {
+            var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            var markers = Ui.Tree(Ui.Find<Canvas>("PlanGanttHeader")).OfType<Button>()
+                .Where(b => AutomationProperties.GetAutomationId(b).StartsWith("PlanMilestone_")).ToArray();
+            Assert.That(markers, Has.Length.EqualTo(2), "Only the milestones this Project's rows use get a Gantt marker.");
+            Assert.That(Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("2027.10 Design 完了")), Is.False);
+            Assert.That(sheet.X(readDay.AddDays(90)), Is.GreaterThan(sheet.ChartViewport),
+                "An unused milestone of another version must not stretch 全期間.");
+            Ui.Click("PlanShowSummary");
+        });
+        await Ui.Ready<FrameworkElement>("SummaryMilestoneTable"); await Ui.Idle();
+        await Ui.Run(() => {
+            var rows = Ui.Tree(view).OfType<Grid>()
+                .Where(g => AutomationProperties.GetAutomationId(g).StartsWith("SummaryMilestoneRow_")).ToArray();
+            Assert.That(rows, Has.Length.EqualTo(2));
+            Assert.That(Ui.Find<FrameworkElement>("SummaryMilestone_0"), Is.Not.Null);
+            Assert.That(Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("2027.10 Design 完了")), Is.False);
+            Ui.Click("PlanShowTasks");
+        });
+        await Ui.Run(() => Ui.Click("PlanShowSettings"));
+        await Ui.Ready<ComboBox>("PlanPhaseMilestone_SA");
+        await Ui.Run(() => Assert.That(Ui.Find<ComboBox>("PlanPhaseMilestone_SA").Items.Cast<string>().ToArray(),
+            Is.EqualTo(new[] { "なし", "Design · 10/6", "Empty · 11/14" }),
+            "Settings offers only the in-scope titles as phase targets."));
+        // A mapping stored while its group was in scope stays visible so it can be cleared; while no row
+        // uses the group it supplies no target.
+        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
+            PhaseMilestones = ImmutableDictionary<string, string>.Empty.Add("SA", "2027.10 Design 完了") }), readDay);
+        await Ui.Run(() => Ui.Click("PlanSettingsBack"));
+        await Ui.Run(() => Ui.Click("PlanShowSettings"));
+        await Ui.Ready<ComboBox>("PlanPhaseMilestone_SA");
+        await Ui.Run(() => {
+            var combo = Ui.Find<ComboBox>("PlanPhaseMilestone_SA");
+            Assert.That(combo.Items.Cast<string>().ToArray(),
+                Is.EqualTo(new[] { "なし", "2027.10 Design 完了 · 1/3", "Design · 10/6", "Empty · 11/14" }));
+            Assert.That(combo.SelectedIndex, Is.EqualTo(1), "A stored mapping to an out-of-scope group stays clearable.");
+            combo.SelectedIndex = 0;
+        });
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.PhaseMilestones.IsEmpty);
     }
 
     [Test]

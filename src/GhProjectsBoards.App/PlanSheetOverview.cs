@@ -138,7 +138,9 @@ internal sealed partial class PlanSheetView
         var dates = Schedule.Values.SelectMany(task => new[] { task.Start.Value, task.End.Value })
             .Where(day => day is not null).Select(day => day!.Value).ToArray();
         var settings = Session.Document.State.Settings;
-        dates = dates.Append(StatusDate).Concat(Session.Document.Baseline.Milestones.Where(m => m.DueDate.HasValue).Select(m => m.DueDate!.Value))
+        // #298: only the milestones this Project's rows use extend the range; another version's catalog
+        // dates in the same repository must not leave 全期間 showing empty time.
+        dates = dates.Append(StatusDate).Concat(PlanMilestones.InScope(Session.Document).Where(m => m.DueDate.HasValue).Select(m => m.DueDate!.Value))
             .Concat(new[] { settings.ProjectStart, settings.ProjectEnd }.Where(day => day is not null).Select(day => day!.Value)).ToArray();
         // Every scale ends at the version plus a short margin: padding a coarse scale by viewport fractions
         // filled the 月 chart with a year of empty months. The range stays independent of selection, so
