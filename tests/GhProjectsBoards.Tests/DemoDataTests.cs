@@ -342,6 +342,46 @@ internal sealed class DemoDataTests
         }
     }
 
+    // #308: every demo Issue line carries the history the site reads, in the order it happened; a later event is
+    // never written into an earlier record.
+    [Test]
+    public void TheDemoRecordsCarryChronologicalHistoryThatMatchesTheRecordedState()
+    {
+        for (var project = 1; project <= 5; project++)
+        {
+            var latest = ReadDay(project, RecordedDays(project).Max);
+            foreach (var item in latest.Items.Where(item => ItemType(item) == "ISSUE"))
+            {
+                var events = Events(item);
+                var times = events.Select(change => DateTimeOffset.Parse(change.GetProperty("at").GetString()!, CultureInfo.InvariantCulture)).ToArray();
+                Assert.That(times, Is.Ordered, "Events are chronological: " + item.GetProperty("id").GetString());
+                if (IsClosed(item)) Assert.That(events, Is.Not.Empty, "A closed demo Issue keeps its close event: " + item.GetProperty("id").GetString());
+            }
+        }
+
+        var before = ReadDay(5, new DateOnly(2026, 10, 14));
+        var after = ReadDay(5, RecordedDays(5).Max);
+        var closed = Events(after.Items.Single(item => item.GetProperty("id").GetString() == "PVTI_5_task_0"));
+        var paused = ReadDay(4, RecordedDays(4).Max).Items.Single(item => item.GetProperty("id").GetString() == "PVTI_4_task_0");
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Events(before.Items.Single(item => item.GetProperty("id").GetString() == "PVTI_5_task_0")).Select(Kind),
+                Is.EqualTo(new[] { "status" }), "A later close is not written into an earlier record.");
+            Assert.That(closed.Select(Kind), Is.EqualTo(new[] { "status", "closed", "status" }));
+            Assert.That(closed[1].GetProperty("stateReason").GetString(), Is.EqualTo("COMPLETED"));
+            Assert.That(closed[2].GetProperty("automated").GetBoolean(), Is.True, "The item-closed workflow's Status write is automation.");
+            Assert.That(Events(paused).Select(Kind), Is.EqualTo(new[] { "status", "status" }), "A paused task keeps both Status changes.");
+            Assert.That(Events(paused).Select(change => change.GetProperty("to").GetString()), Is.EqualTo(new[] { "In progress", "Backlog" }));
+        }
+    }
+
+    private static JsonElement[] Events(JsonElement item)
+        => item.TryGetProperty("events", out var events) && events.ValueKind == JsonValueKind.Array
+            ? events.EnumerateArray().ToArray() : [];
+
+    private static string Kind(JsonElement change) => change.GetProperty("kind").GetString()!;
+
     private string RawRoot => Path.Combine(generated, "raw");
 
     private static SortedDictionary<string, byte[]> Files(string folder)

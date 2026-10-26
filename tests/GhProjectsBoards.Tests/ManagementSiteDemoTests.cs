@@ -12,8 +12,9 @@ internal sealed class ManagementSiteDemoTests
 {
     private static readonly string[] FixedHeaders =
     [
-        "種類", "タスク", "リポジトリ", "番号", "タイトル", "状態", "閉じた理由", "閉じた日", "親",
-        "担当者", "ラベル", "マイルストーン", "Issue の種類", "ブロック元", "アーカイブ", "追加日", "URL",
+        "種類", "タスク", "リポジトリ", "番号", "タイトル", "状態", "閉じた理由", "閉じた日",
+        "着手日", "着手した人", "完了日", "完了した人",
+        "親", "担当者", "ラベル", "マイルストーン", "Issue の種類", "ブロック元", "アーカイブ", "追加日", "URL",
     ];
     private static readonly string[] Forbidden = ["遅れ", "見込", "要確認", "現在の工程", "予測", "判定"];
 
@@ -286,6 +287,71 @@ internal sealed class ManagementSiteDemoTests
             Assert.That(Page("p/demo-2/index.html"), Does.Contain("2026-10-19 の週"), "A segment's hover title names the week by its Monday.");
             Assert.That(Page("p/demo-2/index.html"), Does.Contain("Done &#183; 708"), "A segment's hover title carries the state and count.");
         }
+    }
+
+    // #308: the demo records carry deterministic Issue history, and the CSV reads it for the same four columns the
+    // app shows: who started the task and on which local day, and who closed it as completed.
+    [Test]
+    public void TheDemoCsvCarriesRecordedActualDatesAndActors()
+    {
+        var first = Csv(Path.Combine(site, "p", "demo-1", "items.csv"));
+        var closedTasks = first.Skip(1).Where(row => Cell(first, row, "タスク") == "はい" && Cell(first, row, "状態") == "CLOSED").ToArray();
+        var closedParents = first.Skip(1)
+            .Where(row => Cell(first, row, "種類") == "Issue" && Cell(first, row, "タスク") == "いいえ" && Cell(first, row, "状態") == "CLOSED").ToArray();
+
+        var second = Csv(Path.Combine(site, "p", "demo-2", "items.csv"));
+        var batchClosed = second.Skip(1).Where(row => Cell(second, row, "状態") == "CLOSED").ToArray();
+
+        var third = Csv(Path.Combine(site, "p", "demo-3", "items.csv"));
+        var thirdRow = third.Skip(1).Single(row => Cell(third, row, "番号") == "3");
+
+        var fourth = Csv(Path.Combine(site, "p", "demo-4", "items.csv"));
+        var paused = fourth.Skip(1).Where(row => Cell(fourth, row, "着手日").Length > 0).ToArray();
+
+        var fifth = Csv(Path.Combine(site, "p", "demo-5", "items.csv"));
+        var fifthRow = fifth.Skip(1).Single(row => Cell(fifth, row, "番号") == "3");
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(closedTasks, Has.Length.EqualTo(862));
+            Assert.That(closedTasks.All(row => Cell(first, row, "完了日") == Cell(first, row, "閉じた日")),
+                Is.True, "The completed close day is the recorded close day.");
+            Assert.That(closedTasks.All(row => Cell(first, row, "着手日").Length > 0), Is.True, "A steady task starts before it closes.");
+            Assert.That(closedTasks.All(row => string.CompareOrdinal(Cell(first, row, "着手日"), Cell(first, row, "完了日")) <= 0), Is.True);
+            Assert.That(closedTasks.All(row => Cell(first, row, "完了した人").Length > 0), Is.True);
+            Assert.That(closedParents, Has.Length.EqualTo(34));
+            Assert.That(closedParents.All(row => Cell(first, row, "完了日") == Cell(first, row, "閉じた日")), Is.True);
+            Assert.That(closedParents.Any(row => Cell(first, row, "着手日").Length == 0), Is.True,
+                "A parent closed without a started Status keeps no 着手日.");
+            Assert.That(first.Skip(1).Count(row => Cell(first, row, "着手した人") == "自動（Project のワークフロー）"), Is.GreaterThan(0),
+                "A linked pull request's automated start names the Project automation.");
+
+            Assert.That(batchClosed, Has.Length.EqualTo(720));
+            Assert.That(batchClosed.All(row => Cell(second, row, "完了日") == Cell(second, row, "閉じた日")), Is.True);
+            Assert.That(batchClosed.All(row => Cell(second, row, "完了した人") == "自動（Project のワークフロー）"), Is.True,
+                "The final-week batch is automation.");
+            Assert.That(second.Skip(1).Count(row => Cell(second, row, "着手日").Length > 0), Is.EqualTo(20),
+                "Only the tasks that were already In progress have a start day.");
+
+            Assert.That(Cell(third, thirdRow, "着手日"), Is.EqualTo("2026-04-06"), "Iteration 1 starts on its first working day.");
+            Assert.That(Cell(third, thirdRow, "完了日"), Is.EqualTo("2026-04-17"), "Most of the iteration closes on its last working day.");
+
+            Assert.That(paused, Has.Length.EqualTo(6));
+            Assert.That(paused.All(row => Cell(fourth, row, "完了日").Length == 0), Is.True, "The zero-closed Project has no 完了日.");
+            Assert.That(paused.Select(row => Cell(fourth, row, "番号")), Is.EqualTo(new[] { "9", "10", "11", "12", "13", "14" }),
+                "Six tasks were started and moved back to Backlog.");
+
+            Assert.That(Cell(fifth, fifthRow, "着手日"), Is.EqualTo("2026-10-13"), "The task was already In progress at the first record.");
+            Assert.That(Cell(fifth, fifthRow, "完了日"), Is.EqualTo("2026-10-15"));
+            Assert.That(fifth.Skip(1).Count(row => Cell(fifth, row, "完了日").Length > 0), Is.EqualTo(4));
+        }
+    }
+
+    private static string Cell(List<string[]> rows, string[] row, string header)
+    {
+        var index = Array.IndexOf(rows[0], header);
+        Assert.That(index, Is.GreaterThanOrEqualTo(0), "the CSV has the " + header + " column.");
+        return row[index];
     }
 
     [Test]
