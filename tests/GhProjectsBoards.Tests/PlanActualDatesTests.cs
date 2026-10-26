@@ -156,6 +156,33 @@ internal sealed class PlanActualDatesTests
         Assert.That(PlanActualDates.NotStarted(read.State.Settings), Is.EqualTo(new[] { "Backlog", "Todo", "Ready" }));
     }
 
+    [Test]
+    public async Task APlanSavedBeforeTheHistoryOpensFromTheStore()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-old-plan-" + Guid.NewGuid().ToString("N"));
+        var store = new PlanStore(root);
+        Directory.CreateDirectory(store.Root);
+        try
+        {
+            var project = new ScopedId(new ConnectionScope("github.com", 42), "P1");
+            var row = new PlanRow("I1", "Task", "acme/repo");
+            var document = new PlanDocument(project, new([row], []), new([row], new ProjectPlanSettings {
+                StatusDate = new DateOnly(2026, 10, 5), SheetColumns = [new("Id", true, null)] }));
+            var checkpoint = new PlanCheckpoint(1, 1, document, [], []);
+            var json = JsonNode.Parse(PlanJson.Text(checkpoint))!.AsObject();
+            json["document"]!["sync"]!.AsObject().Remove("issueHistory");
+            foreach (var settings in Objects(json).Where(o => o.ContainsKey("sheetColumns")))
+                settings.Remove("notStartedStatuses");
+            await File.WriteAllTextAsync(store.FileFor(project), json.ToJsonString());
+            var opened = await PlanSession.OpenAsync(store, project, new DateOnly(2026, 10, 5));
+            Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Loaded), opened.Error);
+            Assert.That(opened.Session!.Document.Sync.IssueHistory, Is.Empty);
+            Assert.That(opened.Session.Document.State.Settings.NotStartedStatuses, Is.Null);
+            Assert.That(PlanActualDates.NotStarted(opened.Session.Document.State.Settings), Is.EqualTo(new[] { "Backlog", "Todo", "Ready" }));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     private static IEnumerable<JsonObject> Objects(JsonNode? node)
     {
         if (node is JsonObject obj)
