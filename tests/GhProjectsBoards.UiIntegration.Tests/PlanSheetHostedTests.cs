@@ -609,22 +609,33 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test, Category("SheetRowPresentation")]
-    public async Task ClosedRemainingAndEndShowCalculatedCornersWithoutEnteredTint()
+    public async Task ClosedRemainingShowsItsCalculatedCornerAndEndKeepsItsPlanDate()
     {
+        // #308 R9: closing no longer replaces 終了日 with the close day. 残 h is still calculated on a closed
+        // row; 終了日 shows its plan date, stays editable and draws no calculated corner or entered tint.
         var row = new PlanRow("I1", "Closed task", "acme/repo") { Closed = true, CloseDate = Today,
             Estimate = 40, Actual = 40, Remaining = 8, Start = Today.AddDays(-7), End = Today.AddDays(2) };
         await MountPresentation([row], [row]);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text, Is.EqualTo("0h"));
-            Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("10/5 (月)"));
-            foreach (var field in new[] { PlanField.Remaining, PlanField.End }) {
-                var cell = Ui.Find<PlanSheetCell>($"PlanCell1_{field}");
-                var grid = (Grid)VisualTreeHelper.GetParent(cell);
-                var frame = (Border)VisualTreeHelper.GetParent(grid);
-                Assert.That(((SolidColorBrush)cell.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
-                Assert.That(grid.Children.OfType<Microsoft.UI.Xaml.Shapes.Polygon>().Single().Visibility, Is.EqualTo(Visibility.Visible));
-                Assert.That(((SolidColorBrush)frame.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("LayerFillColorDefaultBrush")).Color));
-            }
+            Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("10/7 (水)"),
+                "A closed task keeps its plan end date.");
+            var remaining = Ui.Find<PlanSheetCell>("PlanCell1_Remaining");
+            var remainingGrid = (Grid)VisualTreeHelper.GetParent(remaining);
+            var remainingFrame = (Border)VisualTreeHelper.GetParent(remainingGrid);
+            Assert.That(((SolidColorBrush)remaining.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
+            Assert.That(remainingGrid.Children.OfType<Microsoft.UI.Xaml.Shapes.Polygon>().Single().Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(((SolidColorBrush)remainingFrame.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("LayerFillColorDefaultBrush")).Color));
+            var end = Ui.Find<PlanSheetCell>("PlanCell1_End");
+            var endGrid = (Grid)VisualTreeHelper.GetParent(end);
+            var endFrame = (Border)VisualTreeHelper.GetParent(endGrid);
+            Assert.That(end.IsReadOnly, Is.False, "終了日 stays editable on a closed row (R9).");
+            Assert.That(((SolidColorBrush)end.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorPrimaryBrush")).Color),
+                "The plan date is ordinary text, not a calculated value.");
+            Assert.That(endGrid.Children.OfType<Microsoft.UI.Xaml.Shapes.Polygon>().Any(polygon => polygon.Visibility == Visibility.Visible), Is.False,
+                "終了日 no longer shows the calculated corner on a closed row.");
+            Assert.That(((SolidColorBrush)endFrame.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("LayerFillColorDefaultBrush")).Color),
+                "An unchanged plan end has no entered tint.");
         });
     }
 
@@ -1978,17 +1989,17 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        // #236 part B: the twelve default columns measure 988 px (ID 76 + 状態 28 + タスク名 200 + 工程 48 +
-        // 担当者 80 + 見積 72 + 残 72 + 実績 56 + 開始日 92 + 終了日 92 + 見込終了 108 + 先行 64) and the
-        // divider 6 px. RefreshLayout lays the sheet out inside 20 px less than the control width (a reserve for
-        // its own chrome) and keeps the Gantt at its 320 px minimum, so the honest threshold is
-        // 988 + 6 + 320 + 20 = 1334 control px — the "about 1,340 effective pixels of window" the spec and
-        // manual quote. A narrower control clips 先行.
-        await Ui.Run(() => { sheet.Width = 1334; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        // #236 part B / #308: the fourteen default columns measure 1,172 px (ID 76 + 状態 28 + タスク名 200 +
+        // 工程 48 + 担当者 80 + 見積 72 + 残 72 + 実績 56 + 開始日 92 + 終了日 92 + 着手日 92 + 完了日 92 +
+        // 見込終了 108 + 先行 64) and the divider 6 px. RefreshLayout lays the sheet out inside 20 px less than
+        // the control width (a reserve for its own chrome) and keeps the Gantt at its 320 px minimum, so the
+        // honest threshold is 1,172 + 6 + 320 + 20 = 1,518 control px — the "about 1,520 effective pixels of
+        // window" the spec and manual quote. A narrower control clips 先行.
+        await Ui.Run(() => { sheet.Width = 1518; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        // Layout rounds a 1334 effective-pixel width to the display's physical pixels, so accept the rounded
+        // Layout rounds a 1,518 effective-pixel width to the display's physical pixels, so accept the rounded
         // width; the fit assertions below are the claim this case measures.
-        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1334) <= 1);
+        await Ui.Until(() => Math.Abs(sheet.ActualWidth - 1518) <= 1);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");

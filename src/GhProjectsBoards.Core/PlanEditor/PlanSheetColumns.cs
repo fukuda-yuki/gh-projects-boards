@@ -21,6 +21,7 @@ internal static class PlanSheetColumns
     internal static readonly (string Key, string Name)[] Standard = [
         ("Id", "ID"), ("Indicator", "状態"), ("Title", "タスク名"), ("Phase", "工程"), ("Assignees", "担当者"),
         ("Estimate", "見積 h"), ("Remaining", "残 h"), ("Actual", "実績 h"), ("Start", "開始日"), ("End", "終了日"),
+        ("ActualStart", "着手日"), ("ActualFinish", "完了日"),
         ("ForecastEnd", "見込終了"), ("Predecessors", "先行"), ("Status", "ステータス")];
     // #258 D2: an organization Issue Field value belongs to the Issue, so a publish from this Project changes it
     // in every Project that holds the Issue. The sheet header, the settings and the publish review say so.
@@ -42,7 +43,7 @@ internal static class PlanSheetColumns
     // (#236 part B). Row-level read-only cells — a summary's roll-up cells, a closed row's remaining work —
     // are not covered here; clearing those stays a refusal.
     internal static bool IsReadOnlyColumn(string key, ProjectPlanSettings settings) =>
-        IsComputed(key) || key == PlanField.Repository
+        IsComputed(key) || key is "ActualStart" or "ActualFinish" || key == PlanField.Repository
         || key == PlanField.Phase && !settings.Columns.Any(column => column.Role == PlanField.Phase);
     internal static bool IsMappedExtra(PlanDocument document, string key)
         => IsExtra(key) && (document.State.Settings.Columns.Any(c => c.FieldId == key[8..])
@@ -73,9 +74,11 @@ internal static class PlanSheetColumns
             var mapping = settings.Columns.SingleOrDefault(c => c.Role.ToString() == key);
             var source = mapping is not null && IsIssueField(document, key) ? mapping.Name + IssueFieldSuffix : mapping?.Name ?? key switch { "Title" => "Title", "Assignees" => "Assignees", "Predecessors" => "Blocked by", "Status" => "Status", _ => "—" };
             var type = key switch { "Title" => "テキスト", "Assignees" => "担当者", "Predecessors" => "関係",
-                "Estimate" or "Remaining" or "Actual" => "数値", "Start" or "End" or "ForecastEnd" => "日付",
+                "Estimate" or "Remaining" or "Actual" => "数値", "Start" or "End" or "ForecastEnd" or "ActualStart" or "ActualFinish" => "日付",
                 "Phase" or "Status" => "単一選択", _ => "—" };
-            result.Add(new(key, name, source, key is "Indicator" or "ForecastEnd" ? "計算" : key == "Id" ? "読み取りのみ" : "編集できる", i < 12, null) { Type = type });
+            // #308: the two record columns follow 終了日, are visible by default and cannot be edited.
+            result.Add(new(key, name, source, key is "Indicator" or "ForecastEnd" ? "計算" : key is "Id" or "ActualStart" or "ActualFinish" ? "読み取りのみ" : "編集できる",
+                key != "Status", null) { Type = type });
         }
         var mapped = settings.Columns.Select(c => c.FieldId).ToHashSet();
         foreach (var f in document.Baseline.Columns.Where(f => !mapped.Contains(f.Id) && !(f.Name == "Status" && f.DataType == "SINGLE_SELECT") && f.DataType is "TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT" or "ITERATION"))

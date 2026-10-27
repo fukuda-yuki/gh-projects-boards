@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text.Json;
 using GhProjectsBoards.Core.Projects;
@@ -552,7 +552,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
             var horizontal = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
             var chart = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
-            var headers = new[] { "Id", "Indicator", "Title", "Assignees", "Estimate", "Remaining", "Actual", "Start", "End", "ForecastEnd", "Predecessors" }
+            var headers = new[] { "Id", "Indicator", "Title", "Assignees", "Estimate", "Remaining", "Actual", "Start", "End", "ActualStart", "ActualFinish", "ForecastEnd", "Predecessors" }
                 .Select(name => Ui.Find<TextBlock>("PlanHeader" + name)).ToArray();
             var rowBounds = Ui.Tree(sheet.List).OfType<TextBox>()
                 .Where(cell => AutomationProperties.GetAutomationId(cell).EndsWith("_Title", StringComparison.Ordinal))
@@ -576,9 +576,10 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(chart.ViewportWidth, Is.GreaterThanOrEqualTo(320), "The sheet may not take the Gantt's minimum.");
             }
             if (width == 1920) {
-                // With 見積 h / 残 h at 72 px and 見込終了 at 108 px the sheet takes its 993 px of columns plus the
-                // 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation) - 993 = 865.
-                Assert.That(chart.ViewportWidth, Is.EqualTo(865).Within(2), "Default-column budget, allowing pixel rounding.");
+                // With 見積 h / 残 h at 72 px, 着手日 / 完了日 at 92 px and 見込終了 at 108 px the sheet takes its
+                // 1,172 px of columns plus the 6 px clearance, leaving 1920 - 42 (card) - 20 (right reservation)
+                // - 1,172 ≈ 681 for the Gantt.
+                Assert.That(chart.ViewportWidth, Is.EqualTo(681).Within(2), "Default-column budget, allowing pixel rounding.");
                 // The fixed 40 px attention strip above the command row costs two rows at 28 px.
                 Assert.That(fullRows, Is.EqualTo(25).Within(2),
                     $"rowViewport={sheet.List.ActualHeight}, rowHeight={sheet.RowHeight}, strip={Ui.Find<Grid>("PlanAttentionStrip").ActualHeight}, fullRows={fullRows}");

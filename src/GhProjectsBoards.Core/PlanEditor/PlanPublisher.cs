@@ -72,7 +72,10 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         if (document.Project.Scope != ConnectionScope.From(context)) throw new InvalidOperationException("プロジェクトの接続先が一致しません。");
         var read = await PlanSnapshot.ReadConsistentAsync(service, lease, context, document.Project, token, progressReporter).ConfigureAwait(false);
         token.ThrowIfCancellationRequested();
-        var snapshot = PlanSnapshot.From(read, document.State.Settings);
+        // #308: read the Issue history only for the rows this read must fill or refresh.
+        var history = await PlanSnapshot.ReadHistoriesAsync(service, lease, context, document.Project,
+            PlanSnapshot.HistoryScope(read, document), token).ConfigureAwait(false);
+        var snapshot = PlanSnapshot.From(read, document.State.Settings, history: history);
         if (snapshot.Baseline.Rows.Any(r => r.ExtraValues.Any(v => v.Value.Availability is Projects.ValueAvailability.Unavailable or Projects.ValueAvailability.NotLoaded)))
             throw new InvalidOperationException("追加列を読み取れません。計画は変更していません。");
         return snapshot;
@@ -131,7 +134,15 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         var read = await PlanSnapshot.ReadItemsConsistentAsync(service, lease, context, document.Project, scope, token, seeded).ConfigureAwait(false);
         token.ThrowIfCancellationRequested();
         var carried = seeded?.Issues.Values.Select(i => i.Repository.NameWithOwner).ToHashSet(StringComparer.Ordinal);
-        var snapshot = PlanSnapshot.FromItems(read, document, scope, carried: carried);
+        // #308: only a row whose closed state is being published needs the read-back's history — it carries the
+        // close or reopen event that confirms 完了日 (R7). A field write never changes the history, so an
+        // ordinary publish adds no history request.
+        var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
+        var state = document.State.Rows.ToDictionary(r => r.Identity);
+        var stateChanges = scope.Where(id => !id.StartsWith("local:", StringComparison.Ordinal) && state.TryGetValue(id, out var row) &&
+            baseline.TryGetValue(id, out var before) && row.Closed != before.Closed).ToImmutableArray();
+        var history = await PlanSnapshot.ReadHistoriesAsync(service, lease, context, document.Project, stateChanges, token).ConfigureAwait(false);
+        var snapshot = PlanSnapshot.FromItems(read, document, scope, carried: carried, history: history);
         if (observation is not null && observation.Metadata is null) observation.Metadata = read.Project;
         return snapshot;
     }

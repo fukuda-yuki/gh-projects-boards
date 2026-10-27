@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -101,7 +102,8 @@ internal sealed class ManagementSiteTests
         string? parent = null, bool archived = false, string type = "ISSUE", string? title = null,
         string? closedAt = null, string? stateReason = null, string? mergedAt = null,
         (string Id, string Title, string Start)? iteration = null, decimal? estimate = null, string? start = null,
-        (string Field, int Index, string Name)? custom = null, (string Title, string DueOn)? milestone = null)
+        (string Field, int Index, string Name)? custom = null, (string Title, string DueOn)? milestone = null,
+        IReadOnlyList<JsonObject>? events = null)
     {
         var values = new List<JsonObject>();
         if (status is not null) values.Add(OptionValue("Status", Array.IndexOf(StatusOptions, status), status));
@@ -155,6 +157,8 @@ internal sealed class ManagementSiteTests
                 ["parent"] = parent is null ? null : Reference(parent), ["blockedBy"] = Empty(),
             },
         };
+        if (events is not null && content is not null)
+            content["timelineItems"] = new JsonObject { ["totalCount"] = events.Count, ["nodes"] = new JsonArray(events.Cast<JsonNode>().ToArray()) };
         var item = new JsonObject
         {
             ["id"] = "PVTI_" + id, ["type"] = type, ["isArchived"] = archived, ["createdAt"] = "2026-09-01T00:00:00Z",
@@ -169,17 +173,19 @@ internal sealed class ManagementSiteTests
 
     private SiteProjectConfig Config(string stateField = "Status", string groupField = "工程", int number = 1, string name = "デモ")
         => new("https://github.com/users/demo/projects/" + number.ToString(CultureInfo.InvariantCulture), "demo", number, name,
-            stateField, groupField, new DateOnly(2026, 10, 13), new DateOnly(2026, 11, 30));
+            stateField, groupField, new DateOnly(2026, 10, 13), new DateOnly(2026, 11, 30), SiteConfigReader.DefaultNotStartedStatuses);
 
     private ProjectProgress Progress(string stateField = "Status", string groupField = "工程")
         => SiteAnalysis.Compute(Config(stateField, groupField), root);
 
-    private string WriteConfig(string stateField = "Status", string groupField = "工程", bool demo = true, bool noPeriod = false)
+    private string WriteConfig(string stateField = "Status", string groupField = "工程", bool demo = true, bool noPeriod = false,
+        IReadOnlyList<string>? notStartedStatuses = null)
     {
         var project = new JsonObject
         {
             ["url"] = "https://github.com/users/demo/projects/1", ["name"] = "デモ", ["stateField"] = stateField, ["groupField"] = groupField,
         };
+        if (notStartedStatuses is not null) project["notStartedStatuses"] = new JsonArray(notStartedStatuses.Select(status => (JsonNode)status).ToArray());
         if (!noPeriod)
         {
             project["periodStart"] = "2026-10-13";
@@ -195,11 +201,79 @@ internal sealed class ManagementSiteTests
         return path;
     }
 
-    private string BuildSite(string stateField = "Status", string groupField = "工程", bool demo = true)
+    private string BuildSite(string stateField = "Status", string groupField = "工程", bool demo = true,
+        IReadOnlyList<string>? notStartedStatuses = null)
     {
         var output = Path.Combine(root, "site");
-        SiteBuilder.Build(root, WriteConfig(stateField, groupField, demo), output);
+        SiteBuilder.Build(root, WriteConfig(stateField, groupField, demo, notStartedStatuses: notStartedStatuses), output);
         return output;
+    }
+
+    // The GraphQL timeline node shape the recorder maps into the record's compact events.
+    private static JsonObject Actor(string login, bool automated = false)
+        => new() { ["__typename"] = automated ? "Bot" : "User", ["login"] = login };
+
+    private static JsonObject StatusEvent(string at, string? from, string to, string actor = "yamada", bool automated = false)
+        => new()
+        {
+            ["__typename"] = "ProjectV2ItemStatusChangedEvent",
+            ["createdAt"] = at,
+            ["actor"] = Actor(actor, automated),
+            ["project"] = new JsonObject { ["id"] = "PVT_1" },
+            ["previousStatus"] = from,
+            ["status"] = to,
+        };
+
+    private static JsonObject ClosedEvent(string at, string stateReason = "COMPLETED", string actor = "yamada")
+        => new()
+        {
+            ["__typename"] = "ClosedEvent",
+            ["createdAt"] = at,
+            ["actor"] = Actor(actor),
+            ["stateReason"] = stateReason,
+        };
+
+    private sealed record CsvFile(string[] Headers, List<string[]> Rows);
+
+    private static CsvFile ReadCsv(string path)
+    {
+        var bytes = File.ReadAllBytes(path);
+        Assert.That(bytes.Take(3), Is.EqualTo(new byte[] { 0xEF, 0xBB, 0xBF }), "Excel needs the UTF-8 BOM.");
+        var text = new UTF8Encoding(false).GetString(bytes, 3, bytes.Length - 3);
+        var rows = new List<string[]>();
+        var cells = new List<string>();
+        var cell = new StringBuilder();
+        var quoted = false;
+        for (var n = 0; n < text.Length; n++)
+        {
+            var c = text[n];
+            if (quoted)
+            {
+                if (c != '"') { cell.Append(c); continue; }
+                if (n + 1 < text.Length && text[n + 1] == '"') { cell.Append('"'); n++; }
+                else quoted = false;
+            }
+            else if (c == '"') quoted = true;
+            else if (c == ',') { cells.Add(cell.ToString()); cell.Clear(); }
+            else if (c == '\r' && n + 1 < text.Length && text[n + 1] == '\n')
+            {
+                cells.Add(cell.ToString());
+                cell.Clear();
+                rows.Add(cells.ToArray());
+                cells.Clear();
+                n++;
+            }
+            else cell.Append(c);
+        }
+        Assert.That(rows, Is.Not.Empty, "a CSV file holds at least its header row.");
+        return new(rows[0], rows.Skip(1).ToList());
+    }
+
+    private static string CsvCell(CsvFile csv, string[] row, string header)
+    {
+        var index = Array.IndexOf(csv.Headers, header);
+        Assert.That(index, Is.GreaterThanOrEqualTo(0), "the CSV has the " + header + " column.");
+        return row[index];
     }
 
     // ---- behavior ----
@@ -368,6 +442,68 @@ internal sealed class ManagementSiteTests
             Assert.That(wrongType.Message, Does.Contain("デモ").And.Contain("見積").And.Contain("単一選択"));
             var empty = Assert.Throws<InvalidOperationException>(() => SiteAnalysis.Compute(Config(number: 9), root))!;
             Assert.That(empty.Message, Does.Contain("デモ").And.Contain("記録がありません"));
+        }
+    }
+
+    // #308: the CSV prints 着手日 and 完了日 from the latest record's Issue history, with the actor and the local day.
+    [Test]
+    public void TheCsvPrintsTheActualStartAndFinishFromTheRecordedHistory()
+    {
+        var project = Project(Select("Status", StatusOptions), Select("工程", PhaseOptions));
+        WriteDay(project, new DateOnly(2026, 10, 23),
+            Item("a", 1, status: "Done", state: "CLOSED", closedAt: "2026-10-22T09:00:00Z", stateReason: "COMPLETED", events:
+            [
+                StatusEvent("2026-10-20T01:00:00Z", null, "In progress"),
+                StatusEvent("2026-10-21T01:00:00Z", "In progress", "In review"),
+                ClosedEvent("2026-10-22T09:00:00Z"),
+            ]));
+        var csv = ReadCsv(Path.Combine(BuildSite(), "p", "demo-1", "items.csv"));
+        var row = csv.Rows.Single();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(csv.Headers.Skip(8).Take(4), Is.EqualTo(new[] { "着手日", "着手した人", "完了日", "完了した人" }),
+                "The four columns follow 閉じた日 in the fixed order.");
+            Assert.That(CsvCell(csv, row, "着手日"), Is.EqualTo("2026-10-20"), "01:00 UTC is 10:00 JST on 10-20.");
+            Assert.That(CsvCell(csv, row, "着手した人"), Is.EqualTo("yamada"));
+            Assert.That(CsvCell(csv, row, "完了日"), Is.EqualTo("2026-10-22"), "09:00 UTC is 18:00 JST on 10-22.");
+            Assert.That(CsvCell(csv, row, "完了した人"), Is.EqualTo("yamada"));
+        }
+    }
+
+    [Test]
+    public void TheConfiguredNotStartedStatusesDecideTheCsvStart()
+    {
+        var project = Project(Select("Status", ["待機", "作業中", "完了"]), Select("工程", PhaseOptions));
+        WriteDay(project, new DateOnly(2026, 10, 23),
+            Item("a", 1, status: null, custom: ("Status", 1, "作業中"), events: [StatusEvent("2026-10-20T01:00:00Z", "待機", "作業中")]));
+
+        var byDefault = ReadCsv(Path.Combine(BuildSite(), "p", "demo-1", "items.csv"));
+        var configured = ReadCsv(Path.Combine(BuildSite(notStartedStatuses: ["待機"]), "p", "demo-1", "items.csv"));
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(CsvCell(byDefault, byDefault.Rows.Single(), "着手日"), Is.Empty, "待機 is not a default not-started option.");
+            Assert.That(CsvCell(configured, configured.Rows.Single(), "着手日"), Is.EqualTo("2026-10-20"), "The Project configures 待機 as not started.");
+        }
+    }
+
+    [Test]
+    public void NotStartedStatusesAreValidatedLikeTheOtherConfigurationValues()
+    {
+        var defaults = SiteConfigReader.Parse("""{"title":"x","projects":[{"url":"https://github.com/users/demo/projects/1","name":"n","groupField":"工程"}]}""");
+        var empty = SiteConfigReader.Parse("""{"title":"x","projects":[{"url":"https://github.com/users/demo/projects/1","name":"n","groupField":"工程","notStartedStatuses":[]}]}""");
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(defaults.Projects[0].NotStartedStatuses, Is.EqualTo(new[] { "Backlog", "Todo", "Ready" }));
+            Assert.That(empty.Projects[0].NotStartedStatuses, Is.Empty, "An explicit empty list is a valid choice.");
+            foreach (var invalid in new[] { "\"Backlog\"", "[\"Backlog\",\"\"]", "[\"Backlog\",\"Backlog\"]", "[1]" })
+            {
+                var error = Assert.Throws<InvalidOperationException>(() => SiteConfigReader.Parse(
+                    $$"""{"title":"x","projects":[{"url":"https://github.com/users/demo/projects/1","name":"n","groupField":"工程","notStartedStatuses":{{invalid}}}]}"""))!;
+                Assert.That(error.Message, Does.Contain("n").And.Contain("notStartedStatuses"), invalid);
+            }
         }
     }
 

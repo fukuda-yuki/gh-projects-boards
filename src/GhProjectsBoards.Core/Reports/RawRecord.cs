@@ -79,6 +79,21 @@ internal static class RawRecord
         fragment F on ProjectV2FieldConfiguration { ... on ProjectV2FieldCommon { id name } }
         """.Replace("CONTENT", ContentFields);
 
+    // #308: the Issue timeline facts kept with the item line. Status changes, closes and reopens are the only kinds
+    // the record stores; itemTypes keeps a page to those three. GitHub returns the timeline oldest first.
+    private const string TimelineFields = "totalCount pageInfo { hasNextPage endCursor } nodes { __typename ... on ProjectV2ItemStatusChangedEvent { createdAt actor { __typename login } project { id } previousStatus status } ... on ClosedEvent { createdAt actor { __typename login } stateReason } ... on ReopenedEvent { createdAt actor { __typename login } } }";
+    internal static readonly string HistoriesQuery = """
+        query RawIssueHistories($ids: [ID!]!, $after: String) {
+          nodes(ids: $ids) {
+            __typename
+            ... on Issue {
+              id
+              timelineItems(first: 100, itemTypes: [PROJECT_V2_ITEM_STATUS_CHANGED_EVENT, CLOSED_EVENT, REOPENED_EVENT], after: $after) { TIMELINE }
+            }
+          }
+        }
+        """.Replace("TIMELINE", TimelineFields);
+
     // Reads the whole Project on a read-only lease. A page that fails transiently is retried; anything that would make
     // the record incomplete (a truncated list, an item count that moved during the read) fails the run, because a
     // missing item would be stored as removed.
@@ -114,9 +129,11 @@ internal static class RawRecord
             var distinct = items.Select(i => i.GetProperty("id").GetString()).Distinct(StringComparer.Ordinal).Count();
             if (counts.Distinct().Count() == 1)
             {
+                var node = projectData.GetProperty("node");
+                var histories = await ReadHistories(lease, node.GetProperty("id").GetString()!, items, token);
                 var readAt = clock();
                 var date = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(readAt, timeZone).DateTime);
-                return Build(projectData.GetProperty("node"), items, readAt, date, timeZone.Id, counts[0]);
+                return Build(node, WithHistories(items, histories), readAt, date, timeZone.Id, counts[0]);
             }
             if (attempt == 3) throw new InvalidOperationException($"読み込み中にアイテム数が変わり続けました（{string.Join(" / ", counts.Distinct())} 件、取得 {distinct} 件）。");
         }
@@ -133,6 +150,101 @@ internal static class RawRecord
             await Task.Delay(TimeSpan.FromSeconds(5 * attempt), token);
         }
     }
+
+    private const int HistoryBatch = 25;
+
+    // #308: reads every Issue's timeline in batches of at most 25 Issues. A batch shares its first page; an Issue
+    // with more than 100 events continues from its own cursor, because a cursor belongs to one connection. A count
+    // that moves or does not add up fails the run: a partial history is never recorded as a complete one.
+    private static async Task<Dictionary<string, JsonObject>> ReadHistories(GhConnectionService.OperationLease lease, string projectId,
+        IReadOnlyList<JsonElement> items, CancellationToken token)
+    {
+        var histories = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
+        var ids = items.Where(IsIssue).Select(ContentId).OfType<string>().Distinct(StringComparer.Ordinal).ToArray();
+        if (ids.Length == 0) return histories;
+        var nodes = new Dictionary<string, List<JsonElement>>(StringComparer.Ordinal);
+        var totals = new Dictionary<string, int>(StringComparer.Ordinal);
+        var cursors = new Queue<(string Id, string Cursor)>();
+        foreach (var batch in ids.Chunk(HistoryBatch))
+        {
+            var body = await Send(lease, HistoriesQuery, new Dictionary<string, object?> { ["ids"] = batch, ["after"] = null }, token);
+            var read = body.GetProperty("nodes");
+            if (read.ValueKind != JsonValueKind.Array || read.GetArrayLength() != batch.Length)
+                throw new InvalidOperationException("Issue の履歴を全部読めませんでした。");
+            for (var n = 0; n < batch.Length; n++)
+            {
+                var (id, page, total, cursor) = HistoryPage(read[n], batch[n]);
+                nodes[id] = page;
+                totals[id] = total;
+                if (cursor is not null) cursors.Enqueue((id, cursor));
+            }
+        }
+        while (cursors.Count > 0)
+        {
+            var (id, after) = cursors.Dequeue();
+            var body = await Send(lease, HistoriesQuery, new Dictionary<string, object?> { ["ids"] = new[] { id }, ["after"] = after }, token);
+            var read = body.GetProperty("nodes");
+            if (read.ValueKind != JsonValueKind.Array || read.GetArrayLength() != 1)
+                throw new InvalidOperationException("Issue の履歴を全部読めませんでした: " + id);
+            var (readId, page, total, cursor) = HistoryPage(read[0], id);
+            if (readId != id) throw new InvalidOperationException("別の Issue の履歴が返されました: " + id);
+            if (total != totals[id]) throw new InvalidOperationException("読み込み中に Issue の履歴が変わりました: " + id);
+            nodes[id].AddRange(page);
+            if (nodes[id].Count > totals[id]) throw new InvalidOperationException("Issue の履歴を全部読めませんでした: " + id);
+            if (cursor is not null) cursors.Enqueue((id, cursor));
+        }
+        foreach (var (id, page) in nodes)
+        {
+            if (page.Count != totals[id]) throw new InvalidOperationException("Issue の履歴を全部読めませんでした: " + id);
+            histories[id] = new JsonObject
+            {
+                ["totalCount"] = page.Count,
+                ["nodes"] = new JsonArray(page.Select(eventNode => (JsonNode)JsonNode.Parse(eventNode.GetRawText())!).ToArray()),
+            };
+        }
+        return histories;
+    }
+
+    private static (string Id, List<JsonElement> Page, int Total, string? Cursor) HistoryPage(JsonElement node, string expected)
+    {
+        if (node.ValueKind != JsonValueKind.Object || node.GetProperty("__typename").GetString() != "Issue"
+            || node.GetProperty("id").GetString() != expected)
+            throw new InvalidOperationException("Issue の履歴を読めませんでした: " + expected);
+        var timeline = node.GetProperty("timelineItems");
+        var total = timeline.GetProperty("totalCount").GetInt32();
+        var page = timeline.GetProperty("nodes").EnumerateArray().Select(e => e.Clone()).ToList();
+        var info = timeline.GetProperty("pageInfo");
+        var cursor = info.GetProperty("hasNextPage").GetBoolean()
+            ? info.GetProperty("endCursor").GetString() ?? throw new InvalidOperationException("Issue の履歴の続きを取得できませんでした: " + expected)
+            : null;
+        return (expected, page, total, cursor);
+    }
+
+    // The history read runs after the item pages, so it is merged into the item JSON the builder already consumes. An
+    // Issue without events is left unchanged, so a quiet history keeps its item line byte-identical to the day before.
+    private static IEnumerable<JsonElement> WithHistories(IReadOnlyList<JsonElement> items, IReadOnlyDictionary<string, JsonObject> histories)
+    {
+        foreach (var item in items)
+        {
+            if (ContentId(item) is not { } id || !histories.TryGetValue(id, out var history) || history["totalCount"]!.GetValue<int>() == 0)
+            {
+                yield return item;
+                continue;
+            }
+            var node = JsonNode.Parse(item.GetRawText())!.AsObject();
+            node["content"]!.AsObject()["timelineItems"] = history.DeepClone();
+            yield return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
+        }
+    }
+
+    private static bool IsIssue(JsonElement item)
+        => item.GetProperty("type").GetString() == "ISSUE" && item.TryGetProperty("content", out var content)
+            && content.ValueKind == JsonValueKind.Object && content.TryGetProperty("__typename", out var type)
+            && type.ValueKind == JsonValueKind.String && type.GetString() == "Issue";
+
+    private static string? ContentId(JsonElement item)
+        => item.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Object
+            && content.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String ? id.GetString() : null;
 
     internal static RawSnapshot Build(JsonElement project, IEnumerable<JsonElement> items, DateTimeOffset readAt, DateOnly date, string timeZone, int? totalCount = null)
     {
@@ -167,7 +279,8 @@ internal static class RawRecord
             ["itemsTotalCount"] = totalCount,
         });
         var lines = new SortedDictionary<string, string>(StringComparer.Ordinal);
-        foreach (var item in items) lines[item.GetProperty("id").GetString()!] = Line(Item(item, valueFields));
+        var projectId = project.GetProperty("id").GetString()!;
+        foreach (var item in items) lines[item.GetProperty("id").GetString()!] = Line(Item(item, valueFields, projectId));
         return new(date, owner, number, projectLine, lines);
     }
 
@@ -198,7 +311,7 @@ internal static class RawRecord
         return o;
     }
 
-    private static JsonObject Item(JsonElement item, IReadOnlyDictionary<string, JsonElement> valueFields)
+    private static JsonObject Item(JsonElement item, IReadOnlyDictionary<string, JsonElement> valueFields, string projectId)
     {
         var o = new JsonObject
         {
@@ -208,7 +321,12 @@ internal static class RawRecord
             ["archived"] = item.GetProperty("isArchived").GetBoolean(),
             ["addedAt"] = item.GetProperty("createdAt").GetString(),
         };
-        if (item.GetProperty("content") is { ValueKind: JsonValueKind.Object } content) o["content"] = Content(content);
+        if (item.GetProperty("content") is { ValueKind: JsonValueKind.Object } content)
+        {
+            o["content"] = Content(content, projectId);
+            if (content.TryGetProperty("__typename", out var contentType) && contentType.GetString() == "Issue"
+                && Timeline(content, projectId) is { Count: > 0 } events) o["events"] = events;
+        }
         var values = item.GetProperty("fieldValues");
         var nodes = values.GetProperty("nodes").EnumerateArray().ToArray();
         if (nodes.Length != values.GetProperty("totalCount").GetInt32()) throw new InvalidOperationException("アイテムの列の値を全部読めませんでした: " + o["id"]);
@@ -251,7 +369,7 @@ internal static class RawRecord
         return value.TryGetProperty("value", out var v) ? JsonNode.Parse(v.GetRawText()) : null;
     }
 
-    private static JsonObject Content(JsonElement c)
+    private static JsonObject Content(JsonElement c, string projectId)
     {
         var type = c.GetProperty("__typename").GetString()!;
         var o = new JsonObject { ["type"] = type, ["id"] = c.GetProperty("id").GetString(), ["title"] = c.GetProperty("title").GetString(), ["createdAt"] = c.GetProperty("createdAt").GetString() };
@@ -284,6 +402,86 @@ internal static class RawRecord
         o["blockedBy"] = Names("blockedBy", Reference);
         return o;
     }
+
+    // #308: GitHub's timeline nodes become the record's own compact events, so the file does not depend on GitHub's
+    // GraphQL shape. Only Status changes in this Project belong to this Project's item line; closes and reopens are
+    // the Issue's own facts and stay the same in every Project that holds it. A timeline that does not add up or
+    // reports another page fails the run like any other incomplete read.
+    private static JsonArray Timeline(JsonElement content, string projectId)
+    {
+        var events = new JsonArray();
+        if (!content.TryGetProperty("timelineItems", out var timeline) || timeline.ValueKind != JsonValueKind.Object) return events;
+        var nodes = timeline.TryGetProperty("nodes", out var list) && list.ValueKind == JsonValueKind.Array
+            ? list.EnumerateArray().ToArray() : [];
+        if (!timeline.TryGetProperty("totalCount", out var total) || total.ValueKind != JsonValueKind.Number || nodes.Length != total.GetInt32())
+            throw new InvalidOperationException("Issue の履歴を全部読めませんでした。");
+        if (timeline.TryGetProperty("pageInfo", out var page) && page.ValueKind == JsonValueKind.Object
+            && page.TryGetProperty("hasNextPage", out var next) && next.ValueKind == JsonValueKind.True)
+            throw new InvalidOperationException("Issue の履歴を全部読めませんでした。");
+        var mapped = new List<(DateTimeOffset At, JsonObject Event)>(nodes.Length);
+        foreach (var node in nodes)
+        {
+            if (node.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("Issue の履歴を読めませんでした。");
+            var at = Stamp(node, "createdAt") ?? throw new InvalidOperationException("Issue の履歴の時刻を読めませんでした。");
+            var (actor, automated) = Actor(node);
+            switch (node.GetProperty("__typename").GetString())
+            {
+                case "ProjectV2ItemStatusChangedEvent":
+                    if (node.TryGetProperty("project", out var project) && project.ValueKind == JsonValueKind.Object
+                        && project.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+                    {
+                        if (id.GetString() != projectId) continue;
+                        mapped.Add((at, Event("status", at, actor, automated, new JsonObject
+                        {
+                            ["from"] = Optional(node, "previousStatus"),
+                            ["to"] = Optional(node, "status"),
+                        })));
+                        break;
+                    }
+                    throw new InvalidOperationException("Issue の履歴のプロジェクトを読めませんでした。");
+                case "ClosedEvent":
+                    mapped.Add((at, Event("closed", at, actor, automated, new JsonObject { ["stateReason"] = Optional(node, "stateReason") })));
+                    break;
+                case "ReopenedEvent":
+                    mapped.Add((at, Event("reopened", at, actor, automated, new JsonObject())));
+                    break;
+                default:
+                    throw new InvalidOperationException("Issue の履歴に知らないイベントがあります。");
+            }
+        }
+        foreach (var (_, change) in mapped.OrderBy(pair => pair.At)) events.Add(change);
+        return events;
+    }
+
+    private static JsonObject Event(string kind, DateTimeOffset at, string? actor, bool automated, JsonObject fields)
+    {
+        var change = new JsonObject
+        {
+            ["kind"] = kind,
+            ["at"] = at.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
+            ["actor"] = actor,
+            ["automated"] = automated,
+        };
+        foreach (var (name, value) in fields) change[name] = value?.DeepClone();
+        return change;
+    }
+
+    // GitHub reports Project automation as a bot or app actor; the site names that 「自動（Project のワークフロー）」.
+    private static (string? Actor, bool Automated) Actor(JsonElement node)
+    {
+        if (!node.TryGetProperty("actor", out var actor) || actor.ValueKind != JsonValueKind.Object) return (null, false);
+        var login = Optional(actor, "login");
+        var type = Optional(actor, "__typename");
+        return (login, type is "Bot" or "App" || login == "github-project-automation");
+    }
+
+    private static string? Optional(JsonElement node, string name)
+        => node.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.GetString() is { Length: > 0 } text
+            ? text : null;
+
+    private static DateTimeOffset? Stamp(JsonElement node, string name)
+        => node.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            && DateTimeOffset.TryParse(value.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var at) ? at : null;
 
     // One line per record, keys in ordinal order at every level, so the same values always give the same line and
     // Git stores a day's changes as a few changed lines.

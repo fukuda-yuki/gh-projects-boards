@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Text.Json;
 using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
@@ -317,16 +317,23 @@ internal sealed partial class PlanPublisherTests
     }
 
     [Test]
-    public async Task ClosedIssuePublishesRemainingAndCloseDayAndRefreshClearsTheirDifferences()
+    public async Task ClosedIssuePublishesRemainingOnlyAndRefreshKeepsThePlanEnd()
     {
         await Start(1, state => state with { Issues = state.Issues.Select(i => i with {
             Row = i.Row with { Closed = true, CloseDate = Today, Remaining = 8, End = Today.AddDays(2) }
         }).ToImmutableArray() });
-        Assert.That(session.Changes(Today).Fields["I1"], Is.EquivalentTo(new[] { PlanField.Remaining, PlanField.End }));
+        // #308: a closed Issue publishes its calculated remaining work; its 終了日 is a plan value.
+        Assert.That(session.Changes(Today).Fields["I1"], Is.EquivalentTo(new[] { PlanField.Remaining }));
         var published = await publisher.PublishAsync(session, Today);
         Assert.That(published.Succeeded, Is.True, published.Error);
         var row = FakePlanEditor.Load(root).Issues.Single().Row;
-        Assert.That((row.Remaining, row.End, row.CloseDate), Is.EqualTo((0m, Today, Today)));
+        Assert.That((row.Remaining, row.End), Is.EqualTo((0m, Today.AddDays(2))), "the close day is not written into 終了日");
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        var refreshed = await publisher.RefreshAsync(session, Today);
+        Assert.That(refreshed.Succeeded, Is.True, refreshed.Error);
+        var state = session.Document.State.Rows.Single();
+        Assert.That((state.End, state.CloseDate), Is.EqualTo(((DateOnly?)Today.AddDays(2), (DateOnly?)Today)),
+            "a refresh keeps the plan end and adopts the close record");
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
 
@@ -544,12 +551,17 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
     [Test]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task FieldRequestsRunFourAtATime()
     {
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(mutationDelayMs: 50);
+        // Hold the first response so all four slots are dispatched before any response lands; a loaded CI host
+        // can otherwise complete a 50 ms request while the fourth is still being prepared.
+        Scenario(mutationDelayMs: 50, firstMutationDelayMs: 2000);
         var reports = new List<RemoteProgress>();
         var result = await publisher.PublishAsync(session, Today, progressReporter: new InlineProgress<RemoteProgress>(reports.Add));
         Assert.That(result.Succeeded, Is.True, result.Error);
@@ -563,6 +575,9 @@ internal sealed partial class PlanPublisherTests
     }
 
     [Test]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task FieldRequestsStayFourInFlightAndStartTheNextOnCompletion()
     {
         await Start(65);
@@ -593,12 +608,15 @@ internal sealed partial class PlanPublisherTests
     [TestCase("field-pushback")]
     [TestCase("field-rate-rejected")]
     [TestCase("field-rate-no-delay")]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task FieldPushbackMakesRemainingRequestsSerial(string fault)
     {
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(fault, mutationDelayMs: 50);
+        Scenario(fault, mutationDelayMs: 50, firstMutationDelayMs: 2000);
         var deadlines = new List<DateTimeOffset?>();
         runner.MutationStarting = () => deadlines.Add(session.Document.Sync.NotBefore);
         var result = await publisher.PublishAsync(session, Today);
@@ -624,6 +642,9 @@ internal sealed partial class PlanPublisherTests
     }
 
     [Test]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task UnknownWindowPersistsTheLongestRetryDeadlineAndAllSiblingOutcomes()
     {
         await Start(65);
@@ -645,12 +666,17 @@ internal sealed partial class PlanPublisherTests
 
     [TestCase("gateway")]
     [TestCase("gateway-json")]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task FieldGatewayFailureSplitsAndRetainsTheReducedCeiling(string body)
     {
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(body, gatewayAliasLimit: 6, mutationDelayMs: 50);
+        // Hold the first response until all four slots are dispatched: the gateway error is the contract, and a
+        // 50 ms delay let a loaded runner answer it before the fourth request existed.
+        Scenario(body, gatewayAliasLimit: 6, mutationDelayMs: 300, firstMutationDelayMs: 2000);
 
         var result = await publisher.PublishAsync(session, Today);
 
@@ -1225,13 +1251,15 @@ internal sealed partial class PlanPublisherTests
         Assert.That(sent, Does.Contain("closeIssue"));
         Assert.That(sent, Does.Contain("COMPLETED"));
         Assert.That(sent, Does.Contain("NOT_PLANNED"));
-        // The closed-task follow-up writes (the close-day End and Remaining 0) are planned from the close
-        // day the read reports and sent by the same publish, so one publish leaves nothing behind.
+        // #308: the close also publishes the calculated Remaining 0, but no plan date from the close day:
+        // 開始日 and 終了日 stay plan values.
         Assert.That(sent, Does.Contain("updateProjectV2ItemFieldValue"));
+        Assert.That(sent, Does.Not.Contain("F-Start"));
+        Assert.That(sent, Does.Not.Contain("F-End"));
         Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(0));
-        // The end written is the day GitHub reports the close, not the provisional 基準日.
         var closedRow = FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I1").Row;
-        Assert.That(closedRow.End, Is.EqualTo(closedRow.CloseDate));
+        Assert.That(closedRow.End, Is.Null, "the plan end stays the plan value (none here)");
+        Assert.That(closedRow.CloseDate, Is.Not.Null, "the Issue records the close day");
     }
 
     [Test]
@@ -1690,6 +1718,9 @@ internal sealed partial class PlanPublisherTests
     [TestCase("global-resource-unknown")]
     [TestCase("missing-alias")]
     [TestCase("unknown-and-resource")]
+    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
+    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
+    [NonParallelizable]
     public async Task UnresolvedResponseStopsLaterFieldsAndRelationshipsAndSurvivesReopen(string fault)
     {
         await Start(51);

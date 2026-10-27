@@ -284,10 +284,34 @@ internal sealed class PlanColumnSettingsTests
         d=d with {State=d.State with {Settings=PlanSheetColumns.Change(d,"Project:T",name:"",rename:true)}};
         Assert.That(PlanSheetColumns.All(d)[0].Name,Is.EqualTo("Notes"));
         d=d with {State=d.State with {Settings=d.State.Settings with {SheetColumns=[]}}};
-        // The default visible set is ID through 先行, with the read-only 見込終了 after 終了日 (#236 part B).
-        Assert.That(PlanSheetColumns.All(d).Where(c=>c.Visible).Count(),Is.EqualTo(12));
+        // The default visible set is ID through 先行, with the read-only 見込終了 after 終了日 (#236 part B)
+        // and the two read-only Issue-history records after 終了日 (#308).
+        Assert.That(PlanSheetColumns.All(d).Where(c=>c.Visible).Select(c=>c.Key), Is.EqualTo(new[] {
+            "Id", "Indicator", "Title", "Phase", "Assignees", "Estimate", "Remaining", "Actual", "Start", "End",
+            "ActualStart", "ActualFinish", "ForecastEnd", "Predecessors" }));
+        Assert.That(PlanSheetColumns.All(d).Where(c=>c.Visible).Count(),Is.EqualTo(14));
         Assert.That(PlanSheetColumns.All(d).Single(c => c.Key == "ForecastEnd").Name, Is.EqualTo("見込終了"));
         Assert.That(d.State.Rows[0].ExtraValues.Count,Is.EqualTo(2));
+    }
+
+    [Test]
+    public void RecordColumnsFollowTheEndStayReadOnlyAndRemainRenameable()
+    {
+        var d = ExtraDocument();
+        var keys = PlanSheetColumns.All(d).Select(c => c.Key).ToArray();
+        Assert.That(keys.Skip(Array.IndexOf(keys, PlanField.End) + 1).Take(2), Is.EqualTo(new[] { "ActualStart", "ActualFinish" }),
+            "着手日 and 完了日 follow 終了日 (#308 R8)");
+        foreach (var (key, name) in new[] { ("ActualStart", "着手日"), ("ActualFinish", "完了日") })
+        {
+            var column = PlanSheetColumns.All(d).Single(c => c.Key == key);
+            Assert.That((column.Visible, column.Name, column.Editability, column.Type), Is.EqualTo((true, name, "読み取りのみ", "日付")));
+            Assert.That(PlanSheetColumns.IsReadOnlyColumn(key, d.State.Settings), Is.True);
+            Assert.That(() => PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell, [new("I1", key, name)]), Day),
+                Throws.ArgumentException.With.Message.EqualTo("Issue の履歴から読み取ります（編集不可）"));
+        }
+        var hidden = PlanSheetColumns.Change(d, "ActualStart", visible: false, name: "実開始", rename: true);
+        var changed = PlanSheetColumns.All(d with { State = d.State with { Settings = hidden } }).Single(c => c.Key == "ActualStart");
+        Assert.That((changed.Visible, changed.Name), Is.EqualTo((false, "実開始")), "the record columns hide and rename like other columns");
     }
 
     [Test]

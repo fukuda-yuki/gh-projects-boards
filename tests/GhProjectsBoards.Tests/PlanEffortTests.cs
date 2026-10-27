@@ -22,14 +22,16 @@ internal sealed class PlanEffortTests
         Assert.That(tasks[0].Warnings, Is.Empty);
         Assert.That(tasks[0].StartReason, Is.Not.EqualTo("入力エラー"));
         Assert.That(tasks[0].Remaining, Is.Zero);
-        Assert.That(tasks[0].End.Value, Is.EqualTo(close));
+        // #308 R9: the closed task keeps its plan dates; the close day is only its effective end.
+        Assert.That((tasks[0].Start.Value, tasks[0].End.Value), Is.EqualTo(((DateOnly?)row.Start, (DateOnly?)row.End)));
         Assert.That(tasks[1].Warnings, Is.Empty);
-        // The closed predecessor's end is its close day, and a successor may start on that day (#236).
+        // A successor waits for the close day and may start on it (#236, R10).
         Assert.That(tasks[1].Start.Value, Is.EqualTo(close));
         Assert.That(tasks[1].End.Value, Is.EqualTo(close));
         var review = PlanPublishPlan.Build(d, Remote(d), Day, Guid.NewGuid().ToString("N"));
         Assert.That(review.Changes.Select(c => c.Field), Is.EquivalentTo(mapped
-            ? new[] { PlanField.End, PlanField.Remaining } : new[] { PlanField.End }));
+            ? new[] { PlanField.Remaining } : Array.Empty<string>()),
+            "The plan end already matches the baseline end, so a close publishes no date.");
         var writes = review.Writes.Where(w => {
             using var json = JsonDocument.Parse(w.Input);
             return json.RootElement.GetProperty("fieldId").GetString() == "R";
@@ -42,7 +44,7 @@ internal sealed class PlanEffortTests
         Assert.That(d.State.Rows[0].Remaining, Is.EqualTo(-5), "Keep the retrieved input intact.");
     }
     [Test]
-    public void EarlyClosureCapsStartAndPublishesCalculatedPair()
+    public void EarlyClosureKeepsThePlanDatesAndTheSuccessorUsesTheCloseDay()
     {
         var close = new DateOnly(2026, 10, 9);
         var row = new PlanRow("I1", "Work", "acme/repo") { Closed = true, CloseDate = close,
@@ -50,19 +52,18 @@ internal sealed class PlanEffortTests
         var d = Document(row);
         d = d with { State = d.State with { Settings = d.State.Settings with { Columns = d.State.Settings.Columns.Add(new(PlanField.Start, "S", "Start", "DATE")) } } };
         var scheduled = PlanOperations.Schedule(d, Day).Single();
-        Assert.That((scheduled.Start.Value, scheduled.End.Value), Is.EqualTo(((DateOnly?)close, (DateOnly?)close)));
-        Assert.That((scheduled.Start.Origin, scheduled.End.Origin), Is.EqualTo((DateOrigin.Calculated, DateOrigin.Calculated)));
+        // #308 R9: closing early no longer caps the start or substitutes the close day; the plan dates stay.
+        Assert.That((scheduled.Start.Value, scheduled.End.Value), Is.EqualTo(((DateOnly?)new DateOnly(2026, 10, 12), (DateOnly?)new DateOnly(2026, 10, 16))));
+        Assert.That((scheduled.Start.Origin, scheduled.End.Origin), Is.EqualTo((DateOrigin.Kept, DateOrigin.Kept)));
         Assert.That(scheduled.Warnings, Is.Empty);
-        Assert.That(PlanOperations.Changes(d, Day).RecalculatedFields, Is.EquivalentTo(new[] { ("I1", PlanField.Start), ("I1", PlanField.End) }));
+        var changes = PlanOperations.Changes(d, Day);
+        Assert.That(changes.Fields, Is.Empty, "Closing adds no plan date difference.");
+        Assert.That(changes.RecalculatedFields, Is.Empty);
         var review = PlanPublishPlan.Build(d, Remote(d), Day, Guid.NewGuid().ToString("N"));
-        Assert.That(review.Writes, Has.Length.EqualTo(2));
-        foreach (var write in review.Writes) {
-            using var json = JsonDocument.Parse(write.Input);
-            Assert.That(json.RootElement.GetProperty("value").GetProperty("date").GetString(), Is.EqualTo("2026-10-09"));
-        }
+        Assert.That(review.Writes, Is.Empty, "A close publishes no date derived from the close day.");
         var successor = PlanScheduler.Calculate([PlanOperations.TaskInput(row), new("I2", 2) { Estimate = 8, Remaining = 0, Predecessors = ["I1"] }], new(), Day)[1];
-        Assert.That(successor.Start.Value, Is.EqualTo(close));
-        Assert.That(successor.End.Value, Is.EqualTo(close));
+        Assert.That((successor.Start.Value, successor.End.Value), Is.EqualTo(((DateOnly?)close, (DateOnly?)close)),
+            "The close day remains the effective end for the successor (R10).");
     }
     [TestCase(false)]
     [TestCase(true)]
@@ -139,10 +140,10 @@ internal sealed class PlanEffortTests
         Assert.That(result.End.Value, Is.EqualTo(Day.AddDays(3)));
         Assert.That(result.PlannedHours!.Values.Sum(), Is.EqualTo(8));
     }
-    private static PlanDocument Document(PlanRow row)
+    private static PlanDocument Document(params PlanRow[] rows)
     {
-        ImmutableArray<PlanRow> rows = [row];
-        return new(new(new("github.com", 42), "P1"), new(rows, []), new(rows, new() {
+        ImmutableArray<PlanRow> values = [.. rows];
+        return new(new(new("github.com", 42), "P1"), new(values, []), new(values, new() {
             StatusDate = Day, Columns = [new(PlanField.Remaining, "R", "Remaining", "NUMBER"), new(PlanField.End, "E", "End", "DATE")]
         }));
     }
@@ -207,13 +208,15 @@ internal sealed class PlanEffortTests
         // not an unpublished change.
         d = Laid(d);
         var scheduled = PlanOperations.Schedule(d, Day).Single();
-        Assert.That(scheduled.Start.Value, Is.EqualTo(Day));
+        // #308 R9: a closed task keeps its plan start and end; its remaining work still leaves the schedule.
+        Assert.That(scheduled.Start.Value, Is.EqualTo(closed ? Day.AddDays(7) : Day));
         // #236 rule 2: an in-progress task consumes Actual + Remaining from its plan start, so 8h done plus
         // 32h left at 8h a day reaches 10/9.
-        Assert.That(scheduled.End.Value, Is.EqualTo(closed ? Day : Day.AddDays(4)));
+        Assert.That(scheduled.End.Value, Is.EqualTo(closed ? Day.AddDays(11) : Day.AddDays(4)));
         Assert.That(scheduled.Remaining, Is.EqualTo(closed ? 0 : 32));
         // #236: the open row keeps the plan start it already has, so its end is the automatic field here.
-        var expected = mapped ? closed ? new[] { PlanField.Title, PlanField.Start, PlanField.End, PlanField.Remaining }
+        // The closed row's plan dates match its baseline, so only the close's calculated remaining is a change.
+        var expected = mapped ? closed ? new[] { PlanField.Title, PlanField.Remaining }
             : new[] { PlanField.Title, PlanField.End } : new[] { PlanField.Title };
         var changes = PlanOperations.Changes(d, Day);
         Assert.That(changes.Fields["I1"], Is.EquivalentTo(expected));
@@ -265,7 +268,7 @@ internal sealed class PlanEffortTests
     [TestCase(null, true)]
     [TestCase(8, true)]
     [TestCase(0, false)]
-    public void ClosedTaskPublishesOnlyCalculatedRemainingAndCloseDate(int? remaining, bool remainingChanged)
+    public void ClosedTaskPublishesOnlyCalculatedRemaining(int? remaining, bool remainingChanged)
     {
         var row = new PlanRow("I1", "Work", "acme/repo") { Closed = true, CloseDate = Day, Estimate = 40,
             Remaining = remaining, Actual = 56, Start = Day.AddDays(-7), End = Day.AddDays(2) };
@@ -273,27 +276,68 @@ internal sealed class PlanEffortTests
         var scheduled = PlanOperations.Schedule(d, Day).Single();
         Assert.That(scheduled.Input.IsComplete, Is.True);
         Assert.That(scheduled.Remaining, Is.Zero);
-        Assert.That(scheduled.End.Value, Is.EqualTo(Day));
+        Assert.That(scheduled.End.Value, Is.EqualTo(row.End), "The plan end stays a plan value (#308 R9).");
         Assert.That(scheduled.Start.Value, Is.EqualTo(row.Start));
         var changes = PlanOperations.Changes(d, Day);
-        var expected = remainingChanged ? new[] { PlanField.Remaining, PlanField.End } : new[] { PlanField.End };
-        Assert.That(changes.Fields["I1"], Is.EquivalentTo(expected));
+        var expected = remainingChanged ? new[] { PlanField.Remaining } : Array.Empty<string>();
+        Assert.That(changes.Fields.GetValueOrDefault("I1", []), Is.EquivalentTo(expected), "A close publishes no date change of its own.");
         Assert.That(changes.RecalculatedFields, Is.EquivalentTo(expected.Select(f => ("I1", f))));
         var review = PlanPublishPlan.Build(d, Remote(d), Day, Guid.NewGuid().ToString("N"));
         Assert.That(review.Changes.Select(c => c.Field), Is.EquivalentTo(expected));
         Assert.That(review.Writes, Has.Length.EqualTo(expected.Length));
+        Assert.That(review.Writes.All(write => write.Mutation == "updateProjectV2ItemFieldValue"), Is.True);
         foreach (var write in review.Writes) {
-            Assert.That(write.Mutation, Is.EqualTo("updateProjectV2ItemFieldValue"));
             using var json = JsonDocument.Parse(write.Input);
-            var value = json.RootElement.GetProperty("value");
-            if (json.RootElement.GetProperty("fieldId").GetString() == "R") Assert.That(value.GetProperty("number").GetDecimal(), Is.Zero);
-            else Assert.That(value.GetProperty("date").GetString(), Is.EqualTo("2026-10-05"));
+            Assert.That(json.RootElement.GetProperty("fieldId").GetString(), Is.EqualTo("R"));
+            Assert.That(json.RootElement.GetProperty("value").GetProperty("number").GetDecimal(), Is.Zero);
         }
     }
     [Test]
+    public void ClosedTaskPublishesItsStoredPlanEndAsAPlanDate()
+    {
+        // #308 R9: the end is a plan value even after the close, so a difference from GitHub publishes the
+        // plan end, never the close day.
+        var row = new PlanRow("I1", "Work", "acme/repo") { Closed = true, CloseDate = Day, Estimate = 8, Remaining = 8,
+            Start = Day.AddDays(-2), End = Day.AddDays(2) };
+        var d = Document(row);
+        d = d with { Baseline = d.Baseline with { Rows = [row with { End = Day.AddDays(4) }] } };
+        var scheduled = PlanOperations.Schedule(d, Day).Single();
+        Assert.That((scheduled.Start.Value, scheduled.End.Value), Is.EqualTo(((DateOnly?)row.Start, (DateOnly?)row.End)));
+        Assert.That(PlanOperations.Changes(d, Day).Fields["I1"], Does.Contain(PlanField.End));
+        var review = PlanPublishPlan.Build(d, Remote(d), Day, Guid.NewGuid().ToString("N"));
+        var end = review.Writes.Single(w => {
+            using var json = JsonDocument.Parse(w.Input);
+            return json.RootElement.GetProperty("fieldId").GetString() == "E";
+        });
+        using var input = JsonDocument.Parse(end.Input);
+        Assert.That(input.RootElement.GetProperty("value").GetProperty("date").GetString(), Is.EqualTo("2026-10-07"),
+            "The plan end is published, not the 2026-10-05 close day.");
+    }
+
+    [Test]
+    public void ClosedTaskWithoutAPlanEndPublishesNoDateAndKeepsSuccessorsOnTheCloseDay()
+    {
+        var close = Day.AddDays(2);
+        var closed = new PlanRow("I1", "Work", "acme/repo") { Closed = true, CloseDate = close, Estimate = 8,
+            Remaining = 8, Start = Day };
+        // A read invents no dates, so the successor holds the plan start a PMO edit gave it; the close
+        // day still pushes it (#236 rule 5, #308 R10).
+        var successor = new PlanRow("I2", "Next", "acme/repo") { Estimate = 8, Remaining = 8, Predecessors = ["I1"], Start = Day, End = Day };
+        var d = Document(closed, successor);
+        var scheduled = PlanOperations.Schedule(d, Day).ToDictionary(t => t.Input.Identity);
+        Assert.That(scheduled["I1"].End.Value, Is.Null, "The plan holds no end to publish.");
+        Assert.That(scheduled["I2"].Start.Value, Is.EqualTo(close), "The close day is still the effective end (R10).");
+        var changes = PlanOperations.Changes(d, Day);
+        Assert.That(changes.Fields.GetValueOrDefault("I1", []), Does.Not.Contain(PlanField.End));
+        var review = PlanPublishPlan.Build(d, Remote(d), Day, Guid.NewGuid().ToString("N"));
+        Assert.That(review.Writes.Any(w => w.Identity == "I1" && w.Input.Contains("\"date\"", StringComparison.Ordinal)), Is.False,
+            "No date write is sent for a close.");
+    }
+
+    [Test]
     public void CalculatedDefaultFeedsPeopleWithoutBeingPublished()
     {
-        var d = Document(new("I1", "Work", "acme/repo") { Estimate = 40, Actual = 8, Start = Day, End = Day.AddDays(3) });
+        var d = Document(new PlanRow("I1", "Work", "acme/repo") { Estimate = 40, Actual = 8, Start = Day, End = Day.AddDays(3) });
         var people = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Week, 1).People.Single(p => p.Identity == PlanPeople.Unassigned);
         Assert.That((people.Remaining, people.Forecast), Is.EqualTo((32m, 40m)));
         Assert.That(people.Missing, Does.Not.Contain("見込み残存工数が未入力"));
@@ -304,7 +348,7 @@ internal sealed class PlanEffortTests
     [Test]
     public void ReopeningClearsCloseDateAndSchedulesAgain()
     {
-        var d = Document(new("I1", "Work", "acme/repo") { Closed = true, CloseDate = Day.AddDays(-3), Remaining = 16, Start = Day });
+        var d = Document(new PlanRow("I1", "Work", "acme/repo") { Closed = true, CloseDate = Day.AddDays(-3), Remaining = 16, Start = Day });
         var remote = d.Baseline with { Rows = [d.Baseline.Rows[0] with { Closed = false, CloseDate = null }] };
         var merged = PlanMerge.Merge(d, remote);
         Assert.That(merged.State.Rows[0].CloseDate, Is.Null);

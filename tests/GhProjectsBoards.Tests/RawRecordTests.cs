@@ -33,8 +33,10 @@ internal sealed class RawRecordTests
            {"__typename":"ProjectV2Field","id":"F_labels","name":"Labels","dataType":"LABELS","isIssueField":false,"issueField":null}]}}
         """);
 
-    private static JsonElement Issue(string id, int number, string state = "OPEN", decimal estimate = 8, string? iteration = "i2")
+    private static JsonElement Issue(string id, int number, string state = "OPEN", decimal estimate = 8, string? iteration = "i2",
+        string? timeline = null)
     {
+        var events = timeline is null ? "" : ",\"timelineItems\":" + timeline;
         var iterationValue = iteration is null ? "" :
             """{"__typename":"ProjectV2ItemFieldIterationValue","title":"Sprint 2","iterationId":"@IT@","startDate":"2026-10-19","duration":14,"field":{"id":"F_it","name":"Iteration"}},""".Replace("@IT@", iteration, StringComparison.Ordinal);
         return Json("""
@@ -43,7 +45,7 @@ internal sealed class RawRecordTests
            "state":"@STATE@","stateReason":@REASON@,"createdAt":"2026-10-20T00:00:00Z","closedAt":@CLOSED@,
            "repository":{"nameWithOwner":"u/r"},"assignees":{"totalCount":2,"nodes":[{"login":"zed"},{"login":"amy"}]},
            "labels":{"totalCount":0,"nodes":[]},"milestone":null,"issueType":{"name":"Task"},
-           "parent":{"number":1,"repository":{"nameWithOwner":"u/r"}},"blockedBy":{"totalCount":1,"nodes":[{"number":2,"repository":{"nameWithOwner":"u/r"}}]}},
+           "parent":{"number":1,"repository":{"nameWithOwner":"u/r"}},"blockedBy":{"totalCount":1,"nodes":[{"number":2,"repository":{"nameWithOwner":"u/r"}}]}@TIMELINE@},
          "fieldValues":{"totalCount":@VALUES@,"nodes":[
            {"__typename":"ProjectV2ItemFieldTextValue","text":"Task @N@","field":{"id":"F_title","name":"Title"}},
            {"__typename":"ProjectV2ItemFieldNumberValue","number":@EST@,"field":{"id":"F_est","name":"見積"}},
@@ -58,8 +60,42 @@ internal sealed class RawRecordTests
             .Replace("@CLOSED@", state == "CLOSED" ? "\"2026-10-24T03:00:00Z\"" : "null", StringComparison.Ordinal)
             .Replace("@EST@", estimate.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal)
             .Replace("@VALUES@", iteration is null ? "6" : "7", StringComparison.Ordinal)
-            .Replace("@ITERATION@", iterationValue, StringComparison.Ordinal));
+            .Replace("@ITERATION@", iterationValue, StringComparison.Ordinal)
+            .Replace("@TIMELINE@", events, StringComparison.Ordinal));
     }
+
+    private static string Timeline(params JsonObject[] nodes)
+        => "{\"totalCount\":" + nodes.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            + ",\"nodes\":[" + string.Join(",", nodes.Select(node => node.ToJsonString())) + "]}";
+
+    private static JsonObject StatusEvent(string at, string? from, string to, string project = "PVT_1", string login = "yamada",
+        string actorType = "User")
+        => new()
+        {
+            ["__typename"] = "ProjectV2ItemStatusChangedEvent",
+            ["createdAt"] = at,
+            ["actor"] = new JsonObject { ["__typename"] = actorType, ["login"] = login },
+            ["project"] = new JsonObject { ["id"] = project },
+            ["previousStatus"] = from,
+            ["status"] = to,
+        };
+
+    private static JsonObject ClosedEvent(string at, string stateReason, string login = "yamada", string actorType = "User")
+        => new()
+        {
+            ["__typename"] = "ClosedEvent",
+            ["createdAt"] = at,
+            ["actor"] = new JsonObject { ["__typename"] = actorType, ["login"] = login },
+            ["stateReason"] = stateReason,
+        };
+
+    private static JsonObject ReopenedEvent(string at, string login = "yamada")
+        => new()
+        {
+            ["__typename"] = "ReopenedEvent",
+            ["createdAt"] = at,
+            ["actor"] = new JsonObject { ["__typename"] = "User", ["login"] = login },
+        };
 
     private static RawSnapshot Snapshot(DateOnly date, params JsonElement[] items) => RawRecord.Build(Project, items, ReadAt, date, "Asia/Tokyo");
 
@@ -147,5 +183,113 @@ internal sealed class RawRecordTests
 
         Assert.That(Path.GetFileName(november.Path), Is.EqualTo("full-2026-11-01.jsonl"));
         Assert.Throws<InvalidOperationException>(() => RawStore.Write(root, Snapshot(new(2026, 10, 30), Issue("PVTI_a", 10))));
+    }
+
+    // #308: the item line keeps the Issue timeline's Status changes, closes and reopens as compact events, oldest
+    // first, so a copy of the history survives a transfer or deletion of the Issue.
+    [Test]
+    public void IssueTimelineEventsAreRecordedOldestFirstOnTheItemLine()
+    {
+        var timeline = Timeline(
+            ClosedEvent("2026-10-22T09:00:00Z", "COMPLETED", "github-project-automation", "Bot"),
+            StatusEvent("2026-10-20T01:00:00Z", null, "In progress"),
+            ReopenedEvent("2026-10-23T01:00:00Z"),
+            StatusEvent("2026-10-19T01:00:00Z", "Backlog", "Done", project: "PVT_other"));
+        var snapshot = Snapshot(new(2026, 10, 25), Issue("PVTI_a", 10, state: "CLOSED", timeline: timeline));
+        var line = snapshot.Items["PVTI_a"];
+        var events = JsonNode.Parse(line)!["events"]!.AsArray();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(line, Does.Not.Contain("timelineItems"), "The record keeps its own compact shape, not GitHub's.");
+            Assert.That(events, Has.Count.EqualTo(3), "The Status change of another Project is not this Project's event.");
+            Assert.That(events.Select(change => change!["kind"]!.GetValue<string>()), Is.EqualTo(new[] { "status", "closed", "reopened" }));
+            Assert.That(events[0]!["at"]!.GetValue<string>(), Is.EqualTo("2026-10-20T01:00:00Z"), "Oldest first, as UTC.");
+            Assert.That(events[0]!["actor"]!.GetValue<string>(), Is.EqualTo("yamada"));
+            Assert.That(events[0]!["automated"]!.GetValue<bool>(), Is.False);
+            Assert.That(events[0]!["from"], Is.Null, "No previous Status is no Status.");
+            Assert.That(events[0]!["to"]!.GetValue<string>(), Is.EqualTo("In progress"));
+            Assert.That(events[1]!["automated"]!.GetValue<bool>(), Is.True, "GitHub's Project automation reads automated.");
+            Assert.That(events[1]!["stateReason"]!.GetValue<string>(), Is.EqualTo("COMPLETED"));
+            Assert.That(events[2]!["actor"]!.GetValue<string>(), Is.EqualTo("yamada"));
+        }
+    }
+
+    [Test]
+    public void AStatusChangeInAnotherProjectIsNotRecorded()
+    {
+        var other = Timeline(StatusEvent("2026-10-20T01:00:00Z", "Backlog", "In progress", project: "PVT_other"));
+        var snapshot = Snapshot(new(2026, 10, 25), Issue("PVTI_a", 10, timeline: other));
+        var item = JsonNode.Parse(snapshot.Items["PVTI_a"])!.AsObject();
+
+        Assert.That(item.ContainsKey("events"), Is.False, "An Issue carried by several Projects keeps each history apart.");
+    }
+
+    [Test]
+    public void AQuietHistoryLeavesTheItemLineWithoutEvents()
+    {
+        var snapshot = Snapshot(new(2026, 10, 25), Issue("PVTI_a", 10, timeline: Timeline()));
+        var item = JsonNode.Parse(snapshot.Items["PVTI_a"])!.AsObject();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(item.ContainsKey("events"), Is.False, "An empty history writes no key, so a quiet day keeps the line unchanged.");
+            Assert.That(RawDay.ParseItem(snapshot.Items["PVTI_a"]).Events, Is.Empty);
+        }
+    }
+
+    [Test]
+    public void ATruncatedHistoryFailsInsteadOfRecordingTooLittle()
+    {
+        var truncated = "{\"totalCount\":2,\"nodes\":["
+            + StatusEvent("2026-10-20T01:00:00Z", null, "In progress").ToJsonString() + "]}";
+        Assert.Throws<InvalidOperationException>(() => Snapshot(new(2026, 10, 25), Issue("PVTI_a", 10, timeline: truncated)));
+    }
+
+    [Test]
+    public void AHistoryThatReportsAnotherPageFailsInsteadOfRecordingTooLittle()
+    {
+        var paged = "{\"totalCount\":1,\"pageInfo\":{\"hasNextPage\":true,\"endCursor\":\"c\"},\"nodes\":["
+            + StatusEvent("2026-10-20T01:00:00Z", null, "In progress").ToJsonString() + "]}";
+        Assert.Throws<InvalidOperationException>(() => Snapshot(new(2026, 10, 25), Issue("PVTI_a", 10, timeline: paged)));
+    }
+
+    // #308: records written before the events key existed still read; the site prints no actual dates for them.
+    [Test]
+    public void RecordsWrittenBeforeTheEventsKeyReadAsNoHistory()
+    {
+        var snapshot = Snapshot(new(2026, 10, 25), Issue("PVTI_a", 10));
+
+        Assert.That(RawDay.ParseItem(snapshot.Items["PVTI_a"]).Events, Is.Empty);
+    }
+
+    [Test]
+    public void UnknownEventKeysAndKindsAreToleratedByTheParser()
+    {
+        var line = RawRecord.Line(new JsonObject
+        {
+            ["kind"] = "item",
+            ["id"] = "PVTI_p",
+            ["type"] = "ISSUE",
+            ["archived"] = false,
+            ["addedAt"] = "2026-10-20T00:00:00Z",
+            ["content"] = null,
+            ["fields"] = new JsonObject(),
+            ["events"] = new JsonArray(
+                JsonNode.Parse("""{"kind":"status","at":"2026-10-20T01:00:00Z","unknownKey":1}"""),
+                JsonNode.Parse("""{"kind":"future","at":"2026-10-21T01:00:00Z"}"""),
+                JsonNode.Parse("""{"kind":"closed","at":"not-a-time"}"""),
+                JsonValue.Create("junk")),
+        });
+        var item = RawDay.ParseItem(line);
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(item.Events.Select(change => change.Kind), Is.EqualTo(new[] { "status", "future" }),
+                "A missing key reads as absent and an unknown kind is kept; an event without a usable time is skipped.");
+            Assert.That(item.Events[0].At, Is.EqualTo(new DateTimeOffset(2026, 10, 20, 1, 0, 0, TimeSpan.Zero)));
+            (string? Actor, bool Automated, string? From, string? To) expected = (null, false, null, null);
+            Assert.That((item.Events[0].Actor, item.Events[0].Automated, item.Events[0].From, item.Events[0].To), Is.EqualTo(expected));
+        }
     }
 }

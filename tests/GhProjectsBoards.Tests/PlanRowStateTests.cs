@@ -43,13 +43,16 @@ internal sealed class PlanRowStateTests
     [Test]
     public async Task CompletingATaskClosesItOnTheStatusDateAsOneUndoStep()
     {
-        var session = await Start(Initial(Open("A") with { Estimate = 16 }));
+        var session = await Start(Laid(Initial(Open("A") with { Estimate = 16 })));
+        var planEnd = Task(session.Document, "A").End.Value;
+        Assert.That(planEnd, Is.Not.Null, "The edit that placed the task laid its plan end out.");
         var result = await session.Execute(new ClosePlanRows(["A"]), Today);
         Assert.That(result.Succeeded, Is.True, result.Error);
         var row = session.Document.State.Rows.Single(r => r.Identity == "A");
         Assert.That((row.Closed, row.Cancelled, row.CloseDate), Is.EqualTo((true, false, Today)), "The close day is provisional until the publish reads closedAt back.");
         Assert.That(Task(session.Document, "A").Remaining, Is.EqualTo(0), "The remaining work leaves the schedule.");
-        Assert.That(Task(session.Document, "A").End.Value, Is.EqualTo(Today));
+        Assert.That(Task(session.Document, "A").End.Value, Is.EqualTo(planEnd), "Closing keeps the plan end; the close day is not a plan date (#308 R9).");
+        Assert.That(Task(session.Document, "A").Input.ActualFinish, Is.Null, "The provisional close day is never 完了日 (R7).");
         Assert.That(session.Changes(Today).Fields["A"], Does.Contain(PlanField.Closed));
         Assert.That(session.UndoCount, Is.EqualTo(1));
         Assert.That((await session.Undo(Today)).Succeeded, Is.True);

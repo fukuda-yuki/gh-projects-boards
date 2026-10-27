@@ -401,6 +401,11 @@ internal sealed class PlanSession
         var rows = updated.State.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
         return updated with { Sync = updated.Sync with {
             ProgressUpdatedAt = remote.ProgressUpdatedAt.Where(pair => rows.Contains(pair.Key)).ToImmutableDictionary(StringComparer.Ordinal),
+            // #308: a read history replaces the stored one for the rows it covered and leaves the rest alone; a
+            // row that left the plan or whose item the read no longer returns loses its history.
+            IssueHistory = updated.Sync.IssueHistory.Where(pair => rows.Contains(pair.Key) && !remote.IssueHistory.ContainsKey(pair.Key))
+                .ToImmutableDictionary(StringComparer.Ordinal)
+                .SetItems(remote.IssueHistory.Where(pair => rows.Contains(pair.Key))),
             LastRead = remote.Scoped ? original.Sync.LastRead : new(ReadTime(today), reset ? [] : PlanRefreshResult.FindAdded(original, updated)) } };
     }
     // The read time on the read day: the evaluation fixes the day, and a real read day is the local date.

@@ -52,6 +52,7 @@ internal static class DemoData
     private const string IterationFieldId = "F_ITERATION";
 
     private const int IterationDuration = 14;
+    private const int TasksPerIteration = 5;
     private static readonly DateOnly FirstIterationStart = new(2026, 4, 6);
 
     // Every demo Project records its latest day on the same Friday, so the list page reads as one comparable snapshot.
@@ -200,9 +201,6 @@ internal static class DemoData
             throw new ArgumentException($"プロジェクト {Number} は {day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)} を記録していません。");
         }
 
-        // The recorder runs early in the morning; the demo records the end of its day at 21:00 JST, which is also the
-        // time zone the close dates are expressed in, so a day's close is visible in that day's record.
-        private static DateTimeOffset ReadAt(DateOnly day) => new(day.Year, day.Month, day.Day, 21, 0, 0, TimeSpan.FromHours(9));
     }
 
     // The tracked evaluation plans are the source of the waterfall shapes. The demo relies on their exact counts,
@@ -267,6 +265,16 @@ internal static class DemoData
             var lastActual = new decimal[tasks.Length];
             var mergeDay = days.Length / 2;
             var pullRequestCloseDay = latest - 6;
+            var taskTimeline = tasks.Select(task => SteadyTimeline(Number, task, days)).ToArray();
+            var parentTimeline = parents.Select((parent, index) =>
+            {
+                var day = days[parentClose[index]];
+                return (IReadOnlyList<Timeline>)
+                [
+                    ClosedEvent(Number, day, 9, parent.Assignees[0]),
+                    StatusEvent(Number, day, 9, "Backlog", "Done", "github-project-automation", automated: true),
+                ];
+            }).ToArray();
 
             for (var d = 0; d <= latest; d++)
             {
@@ -281,14 +289,15 @@ internal static class DemoData
                     var startDay = Math.Max(0, task.CloseIndex - 4);
                     items[ItemId(Number, "task", t)] = SteadyTaskItem(Number, task, parents[task.ParentIndex],
                         days[startDay], days[task.CloseIndex], status, actual, remaining, d >= task.CloseIndex,
-                        days[task.CloseIndex], SteadyAddedAt, SteadyCreatedAt);
+                        days[task.CloseIndex], SteadyAddedAt, SteadyCreatedAt, TimelineValue(taskTimeline[t], days[d]));
                 }
                 for (var p = 0; p < parents.Length; p++)
                 {
                     if (d != 0 && d != parentClose[p]) continue;
                     var closed = d >= parentClose[p];
                     items[ItemId(Number, "parent", p)] = WaterfallParentItem(Number, parents[p],
-                        closed ? WaterfallDone : WaterfallBacklog, closed, days[parentClose[p]], SteadyAddedAt, SteadyCreatedAt);
+                        closed ? WaterfallDone : WaterfallBacklog, closed, days[parentClose[p]], SteadyAddedAt, SteadyCreatedAt,
+                        closed ? TimelineValue(parentTimeline[p], days[d]) : null);
                 }
                 if (d == 0)
                 {
@@ -333,6 +342,7 @@ internal static class DemoData
                 index, row.Title, PhaseOf(row), parentIndexes[row.Parent!], row.Person, parents.Length + index + 1)).ToArray();
             var firstBatchDay = days.Length - ClosesBeforeDay.Length;
             var closeDays = tasks.Select(task => BatchCloseDay(task.Index, firstBatchDay)).ToArray();
+            var timeline = tasks.Select(task => BatchTimeline(Number, task, days, closeDays[task.Index])).ToArray();
 
             var project = WaterfallProject(Number, plan.Title, withNumbers: false, withBuiltIns: false);
             var items = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -354,7 +364,7 @@ internal static class DemoData
                     lastStatus[t] = status;
                     lastClosed[t] = closed;
                     items[ItemId(Number, "task", t)] = BatchTaskItem(Number, task, parents[task.ParentIndex], status, closed,
-                        days[Math.Max(0, closeDays[t])], BatchAddedAt, BatchCreatedAt);
+                        days[Math.Max(0, closeDays[t])], BatchAddedAt, BatchCreatedAt, TimelineValue(timeline[t], days[d]));
                 }
                 yield return new Record(days[d], project, new Dictionary<string, string>(items, StringComparer.Ordinal));
             }
@@ -367,15 +377,38 @@ internal static class DemoData
             return -1;
         }
 
-        // Before the final week only a small handful of tasks are away from Backlog.
-        private static int BatchOpenStatus(int taskIndex) => taskIndex switch
-        {
-            >= 500 and < 530 => WaterfallReady,
-            >= 530 and < 550 => WaterfallInProgress,
-            _ => WaterfallBacklog,
-        };
+    }
 
-        private static int BatchClosedStatus(int taskIndex) => taskIndex is >= 530 and < 542 ? WaterfallInProgress : WaterfallDone;
+    // Before the final week only a small handful of tasks are away from Backlog.
+    private static int BatchOpenStatus(int taskIndex) => taskIndex switch
+    {
+        >= 500 and < 530 => WaterfallReady,
+        >= 530 and < 550 => WaterfallInProgress,
+        _ => WaterfallBacklog,
+    };
+
+    private static int BatchClosedStatus(int taskIndex) => taskIndex is >= 530 and < 542 ? WaterfallInProgress : WaterfallDone;
+
+    // #308: the final-week batch closes from wherever the task sat. The batch itself is automation, so its close and
+    // closed Status write name 「自動（Project のワークフロー）」.
+    private static IReadOnlyList<Timeline> BatchTimeline(int project, BatchTask task, DateOnly[] days, int closeDay)
+    {
+        var actor = PersonLogin(task.Person);
+        var before = task.Index switch
+        {
+            >= 500 and < 530 => "Ready",
+            >= 530 and < 550 => "In progress",
+            _ => "Backlog",
+        };
+        var list = new List<Timeline>();
+        if (before != "Backlog") list.Add(StatusEvent(project, days[0], 1, null, before, actor));
+        if (closeDay >= 0)
+        {
+            list.Add(ClosedEvent(project, days[closeDay], 9, "github-project-automation", automated: true));
+            if (BatchClosedStatus(task.Index) == WaterfallDone)
+                list.Add(StatusEvent(project, days[closeDay], 9, before, "Done", "github-project-automation", automated: true));
+        }
+        return list;
     }
 
     // Scenario 3: agile with iteration-end batches. 84 flat Issues (a leaf Issue is a task, so all of them are
@@ -385,7 +418,6 @@ internal static class DemoData
     private sealed class AgileIterations : DemoProject
     {
         private const int IssueCount = 84;
-        private const int TasksPerIteration = 5;
         private const int CurrentIteration = 15;
         internal override int Number => 3;
 
@@ -398,6 +430,7 @@ internal static class DemoData
             var lastStatus = Enumerable.Repeat(-1, issues.Length).ToArray();
             var lastClosed = new bool[issues.Length];
             var items = new Dictionary<string, string>(StringComparer.Ordinal);
+            var timeline = issues.Select(issue => AgileTimeline(Number, issue)).ToArray();
 
             for (var d = 0; d < days.Length; d++)
             {
@@ -409,7 +442,7 @@ internal static class DemoData
                     if (lastStatus[i] == status && lastClosed[i] == closed) continue;
                     lastStatus[i] = status;
                     lastClosed[i] = closed;
-                    items[ItemId(Number, "issue", i)] = AgileIssueItem(Number, issue, status, closed);
+                    items[ItemId(Number, "issue", i)] = AgileIssueItem(Number, issue, status, closed, TimelineValue(timeline[i], day));
                 }
                 var offset = (day.DayNumber - FirstIterationStart.DayNumber) / IterationDuration;
                 var project = ProjectDefinition(Number, "改善バックログ", [
@@ -441,6 +474,30 @@ internal static class DemoData
             if (rank < 3) return (AgileDoing, false);
             return week == 0 ? (AgileTodo, false) : (AgileReview, false);
         }
+
+        // #308: the iteration's work moves Todo to Doing or Review at its start. Most Issues close on the iteration's
+        // last working day, which only the next working day's record observes; one straggles into the next iteration.
+        // The item-closed workflow writes Done after ClosedEvent, so that write is not a start.
+        private static IReadOnlyList<Timeline> AgileTimeline(int project, AgileIssue issue)
+        {
+            var start = IterationStart(issue.Iteration);
+            var rank = issue.Index % TasksPerIteration;
+            var actor = issue.Assignees[0];
+            var automated = issue.Index % 7 == 0;
+            var list = new List<Timeline>
+            {
+                rank < 3
+                    ? StatusEvent(project, start, 1, issue.Iteration > 1 ? "Todo" : null, "Doing", actor, automated)
+                    : StatusEvent(project, start.AddDays(7), 1, "Todo", "Review", actor, automated),
+            };
+            if (issue.Iteration >= CurrentIteration) return list;
+            var closed = AgileClosedDay(issue);
+            var utcHour = rank == TasksPerIteration - 1 ? 1 : 13;
+            list.Add(ClosedEvent(project, closed, utcHour, actor));
+            list.Add(StatusEvent(project, closed, utcHour, rank < 3 ? "Doing" : "Review", "Done", "github-project-automation", automated: true));
+            return list;
+        }
+
     }
 
     // Scenario 4: a waterfall Project that never closes anything, with two isolated missing days and one whole
@@ -449,6 +506,10 @@ internal static class DemoData
     {
         private const int ParentCount = 8;
         private const int TasksPerParent = 6;
+        // Six tasks were started and moved back to Backlog, so the Project keeps 着手日 records without closing.
+        private const int PausedTaskCount = 6;
+        private const int PausedStartDay = 10;
+        private const int PausedBackDay = 20;
         private static readonly DateOnly Start = new(2026, 8, 3);
         private static readonly DateOnly End = new(2026, 10, 23);
         private static readonly HashSet<DateOnly> Skipped =
@@ -481,7 +542,31 @@ internal static class DemoData
                         phase, closed: false, null, JanuaryAddedAt, JanuaryCreatedAt);
                 }
             }
-            foreach (var day in days) yield return new Record(day, project, items);
+            var timeline = Enumerable.Range(0, PausedTaskCount).Select(_ => new List<Timeline>()).ToArray();
+            for (var d = 0; d < days.Length; d++)
+            {
+                if (d is PausedStartDay or PausedBackDay)
+                {
+                    var started = d == PausedStartDay;
+                    for (var index = 0; index < timeline.Length; index++)
+                    {
+                        var actor = People[index % People.Length];
+                        timeline[index].Add(started
+                            ? StatusEvent(Number, days[d], 1, "Backlog", "In progress", actor)
+                            : StatusEvent(Number, days[d], 1, "In progress", "Backlog", actor));
+                        var p = index / TasksPerParent;
+                        var repository = Repositories[p % Repositories.Length];
+                        var phase = Phases[index % Phases.Length];
+                        // The recorded Status follows the event: In progress between the two changes, Backlog after.
+                        var status = started ? WaterfallStatuses[WaterfallInProgress] : WaterfallStatuses[WaterfallBacklog];
+                        items[ItemId(Number, "task", index)] = SimpleTaskItem(Number, index, repository, ParentCount + index + 1,
+                            TaskTitle(p, phase, index % TasksPerParent), 3 + index % 7 * 2, (repository, p + 1),
+                            status, phase, closed: false, null, JanuaryAddedAt, JanuaryCreatedAt,
+                            TimelineValue(timeline[index], days[d]));
+                    }
+                }
+                yield return new Record(days[d], project, items);
+            }
         }
     }
 
@@ -511,6 +596,7 @@ internal static class DemoData
                     RequirementTitle(p), WaterfallBacklog, closed: false, null, NewProjectAddedAt, NewProjectCreatedAt);
             var lastStatus = Enumerable.Repeat(-1, TaskCount).ToArray();
             var lastClosed = new bool[TaskCount];
+            var timeline = Enumerable.Range(0, TaskCount).Select(t => StartedTimeline(Number, t, days)).ToArray();
 
             for (var d = 0; d < days.Length; d++)
             {
@@ -525,10 +611,29 @@ internal static class DemoData
                     items[ItemId(Number, "task", t)] = SimpleTaskItem(Number, t, Repositories[p % Repositories.Length],
                         ParentCount + t + 1, TaskTitle(p, phase, t % TasksPerParent), null, (Repositories[p % Repositories.Length], p + 1),
                         status is { } chosen ? WaterfallStatuses[chosen] : null, phase, closed,
-                        closed ? days[CloseDays[t]] : null, NewProjectAddedAt, NewProjectCreatedAt);
+                        closed ? days[CloseDays[t]] : null, NewProjectAddedAt, NewProjectCreatedAt, TimelineValue(timeline[t], days[d]));
                 }
                 yield return new Record(days[d], project, new Dictionary<string, string>(items, StringComparer.Ordinal));
             }
+        }
+
+        // #308: four tasks are already In progress at the first record and close as completed; task 8 starts and
+        // stays open, so it keeps 着手日 without 完了日. The item-closed workflow writes Done after ClosedEvent.
+        private static IReadOnlyList<Timeline> StartedTimeline(int project, int taskIndex, DateOnly[] days)
+        {
+            var actor = People[taskIndex % People.Length];
+            var list = new List<Timeline>();
+            if (taskIndex < CloseDays.Length)
+            {
+                list.Add(StatusEvent(project, days[0], 1, null, "In progress", actor));
+                list.Add(ClosedEvent(project, days[CloseDays[taskIndex]], 9, actor));
+                list.Add(StatusEvent(project, days[CloseDays[taskIndex]], 9, "In progress", "Done", "github-project-automation", automated: true));
+            }
+            else if (taskIndex == 8)
+            {
+                list.Add(StatusEvent(project, days[0], 1, null, "In progress", actor));
+            }
+            return list;
         }
 
         // Returns a Status option index, or null for a task that has no Status value at all.
@@ -600,8 +705,55 @@ internal static class DemoData
 
     private static string DateText(DateOnly day) => day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    // Close times are 18:00 JST so the site's close date (the record's time zone) is the recorded day.
-    private static string ClosedStamp(DateOnly day) => DateText(day) + "T09:00:00Z";
+    // The recorder runs early in the morning; the demo records the end of its day at 21:00 JST, which is also the
+    // time zone the close dates are expressed in, so a day's close is visible in that day's record.
+    private static DateTimeOffset ReadAt(DateOnly day) => new(day.Year, day.Month, day.Day, 21, 0, 0, TimeSpan.FromHours(9));
+
+    // Close times are 18:00 JST by default so the site's close date (the record's time zone) is the recorded day.
+    private static string ClosedStamp(DateOnly day) => ClosedStamp(day, 9);
+    private static string ClosedStamp(DateOnly day, int utcHour) => Stamp(day, utcHour);
+
+    // #308: a recorded timeline event in GitHub's node shape, so a demo line goes through the same RawRecord.Build
+    // mapping as a real read. An event at or before the day's 21:00 JST read is part of that day's record; a later
+    // event (an iteration-end batch the recorder reads on the next working day) waits for the next record.
+    private sealed record Timeline(DateTimeOffset At, JsonObject Node);
+
+    private static Timeline StatusEvent(int project, DateOnly day, int utcHour, string? from, string to, string actor, bool automated = false)
+        => new(EventAt(day, utcHour), new JsonObject
+        {
+            ["__typename"] = "ProjectV2ItemStatusChangedEvent",
+            ["createdAt"] = Stamp(day, utcHour),
+            ["actor"] = Actor(actor, automated),
+            ["project"] = new JsonObject { ["id"] = ProjectId(project) },
+            ["previousStatus"] = from,
+            ["status"] = to,
+        });
+
+    private static Timeline ClosedEvent(int project, DateOnly day, int utcHour, string actor, bool automated = false)
+        => new(EventAt(day, utcHour), new JsonObject
+        {
+            ["__typename"] = "ClosedEvent",
+            ["createdAt"] = Stamp(day, utcHour),
+            ["actor"] = Actor(actor, automated),
+            ["stateReason"] = "COMPLETED",
+        });
+
+    private static JsonObject Actor(string login, bool automated)
+        => new() { ["__typename"] = automated ? "Bot" : "User", ["login"] = login };
+
+    private static DateTimeOffset EventAt(DateOnly day, int utcHour) => new(day.Year, day.Month, day.Day, utcHour, 0, 0, TimeSpan.Zero);
+
+    private static string Stamp(DateOnly day, int utcHour)
+        => DateText(day) + "T" + utcHour.ToString("D2", CultureInfo.InvariantCulture) + ":00:00Z";
+
+    private static string ProjectId(int project) => "PVT_demo_" + project.ToString(CultureInfo.InvariantCulture);
+
+    // The part of an Issue's history a read on that day has observed; a later event must not appear earlier.
+    private static JsonObject? TimelineValue(IReadOnlyList<Timeline> events, DateOnly day)
+    {
+        var observed = events.Where(item => item.At <= ReadAt(day)).Select(item => (JsonNode)item.Node.DeepClone()).ToArray();
+        return observed.Length == 0 ? null : new JsonObject { ["totalCount"] = observed.Length, ["nodes"] = new JsonArray(observed) };
+    }
 
     // The shape GitHub's GraphQL returns for one Project, which is what RawRecord.Build consumes.
     private static JsonObject ProjectDefinition(int number, string title, IEnumerable<JsonObject> fields)
@@ -735,7 +887,8 @@ internal static class DemoData
     }
 
     private static JsonObject IssueContent(string repository, int number, string title, string state, string? closedAt,
-        string? issueType, (string Repository, int Number)? parent, IReadOnlyList<string> assignees, string createdAt) => new()
+        string? issueType, (string Repository, int Number)? parent, IReadOnlyList<string> assignees, string createdAt,
+        JsonObject? timeline = null) => new()
     {
         ["__typename"] = "Issue",
         ["id"] = "I_" + repository.Replace('/', '_') + "_" + number.ToString(CultureInfo.InvariantCulture),
@@ -759,6 +912,7 @@ internal static class DemoData
             }
             : null,
         ["blockedBy"] = new JsonObject { ["totalCount"] = 0, ["nodes"] = new JsonArray() },
+        ["timelineItems"] = timeline,
     };
 
     private static JsonObject PullRequestContent(string repository, int number, string title, string state, string? closedAt,
@@ -827,6 +981,24 @@ internal static class DemoData
         return ProjectDefinition(number, title, fields);
     }
 
+    // #308: the recorded history of a steady task. Ready before the work, In progress when it starts, In review
+    // before the close. The item-closed workflow writes Done after ClosedEvent, so that write is not a start.
+    private static IReadOnlyList<Timeline> SteadyTimeline(int project, SteadyTask task, DateOnly[] days)
+    {
+        var close = task.CloseIndex;
+        var actor = PersonLogin(task.Person);
+        // A linked pull request moving the item to In progress gives that day as 着手日, like the app's R6.
+        var automated = task.Index % 37 == 0;
+        return
+        [
+            StatusEvent(project, days[Math.Max(0, close - 5)], 1, close - 5 > 0 ? "Backlog" : null, "Ready", actor),
+            StatusEvent(project, days[Math.Max(0, close - 3)], 1, "Ready", "In progress", actor, automated),
+            StatusEvent(project, days[Math.Max(0, close - 1)], 1, "In progress", "In review", actor),
+            ClosedEvent(project, days[close], 9, actor),
+            StatusEvent(project, days[close], 9, "In review", "Done", "github-project-automation", automated: true),
+        ];
+    }
+
     private static int SteadyStatus(int day, int closeIndex)
     {
         if (day >= closeIndex) return WaterfallDone;
@@ -847,11 +1019,12 @@ internal static class DemoData
     }
 
     private static string SteadyTaskItem(int project, SteadyTask task, ParentPlan parent, DateOnly start, DateOnly end,
-        int status, decimal actual, decimal remaining, bool closed, DateOnly closeDay, string addedAt, string createdAt)
+        int status, decimal actual, decimal remaining, bool closed, DateOnly closeDay, string addedAt, string createdAt,
+        JsonObject? timeline = null)
     {
         var content = IssueContent(parent.Repository, task.Number, task.Title, closed ? "CLOSED" : "OPEN",
             closed ? ClosedStamp(closeDay) : null, "Task", (parent.Repository, parent.Number), [PersonLogin(task.Person)],
-            createdAt);
+            createdAt, timeline);
         return Item(ItemId(project, "task", task.Index), "ISSUE", addedAt, content,
             SingleSelectValue(StatusFieldId, "Status", WaterfallStatuses[status]),
             SingleSelectValue(PhaseFieldId, "工程", PhaseOption(task.Phase)),
@@ -863,21 +1036,21 @@ internal static class DemoData
     }
 
     private static string BatchTaskItem(int project, BatchTask task, ParentPlan parent, int status, bool closed,
-        DateOnly closeDay, string addedAt, string createdAt)
+        DateOnly closeDay, string addedAt, string createdAt, JsonObject? timeline = null)
     {
         var content = IssueContent(parent.Repository, task.Number, task.Title, closed ? "CLOSED" : "OPEN",
             closed ? ClosedStamp(closeDay) : null, "Task", (parent.Repository, parent.Number), [PersonLogin(task.Person)],
-            createdAt);
+            createdAt, timeline);
         return Item(ItemId(project, "task", task.Index), "ISSUE", addedAt, content,
             SingleSelectValue(StatusFieldId, "Status", WaterfallStatuses[status]),
             SingleSelectValue(PhaseFieldId, "工程", PhaseOption(task.Phase)));
     }
 
     private static string WaterfallParentItem(int project, ParentPlan parent, int status, bool closed, DateOnly closeDay,
-        string addedAt, string createdAt)
+        string addedAt, string createdAt, JsonObject? timeline = null)
     {
         var content = IssueContent(parent.Repository, parent.Number, parent.Title, closed ? "CLOSED" : "OPEN",
-            closed ? ClosedStamp(closeDay) : null, "Requirement", null, parent.Assignees, createdAt);
+            closed ? ClosedStamp(closeDay) : null, "Requirement", null, parent.Assignees, createdAt, timeline);
         return Item(ItemId(project, "parent", parent.Index), "ISSUE", addedAt, content,
             SingleSelectValue(StatusFieldId, "Status", WaterfallStatuses[status]));
     }
@@ -889,30 +1062,33 @@ internal static class DemoData
             ? NextWorkingDay(NextWorkingDay(IterationStart(issue.Iteration + 1)))
             : IterationStart(issue.Iteration).AddDays(11);
 
-    private static string AgileIssueItem(int project, AgileIssue issue, int status, bool closed)
+    private static string AgileIssueItem(int project, AgileIssue issue, int status, bool closed, JsonObject? timeline = null)
     {
+        // The iteration-end batch closes on the Friday evening after that day's read, so it appears in the next
+        // recorded day; the straggler closes in the next iteration's first Wednesday morning.
+        var utcHour = issue.Index % TasksPerIteration == 4 ? 1 : 13;
         var content = IssueContent(issue.Repository, issue.Number, issue.Title, closed ? "CLOSED" : "OPEN",
-            closed ? ClosedStamp(AgileClosedDay(issue)) : null, "Task", null, issue.Assignees, AgileCreatedAt);
+            closed ? ClosedStamp(AgileClosedDay(issue), utcHour) : null, "Task", null, issue.Assignees, AgileCreatedAt, timeline);
         return Item(ItemId(project, "issue", issue.Index), "ISSUE", AgileAddedAt, content,
             SingleSelectValue(StatusFieldId, "Status", AgileStatuses[status]),
             IterationValue(issue.Iteration));
     }
 
     private static string SimpleParentItem(int project, int index, string repository, int number, string title, int status,
-        bool closed, DateOnly? closeDay, string addedAt, string createdAt)
+        bool closed, DateOnly? closeDay, string addedAt, string createdAt, JsonObject? timeline = null)
     {
         var content = IssueContent(repository, number, title, closed ? "CLOSED" : "OPEN",
-            closed ? ClosedStamp(closeDay!.Value) : null, "Requirement", null, [People[index % People.Length]], createdAt);
+            closed ? ClosedStamp(closeDay!.Value) : null, "Requirement", null, [People[index % People.Length]], createdAt, timeline);
         return Item(ItemId(project, "parent", index), "ISSUE", addedAt, content,
             SingleSelectValue(StatusFieldId, "Status", WaterfallStatuses[status]));
     }
 
     private static string SimpleTaskItem(int project, int index, string repository, int number, string title, decimal? estimate,
         (string Repository, int Number) parent, (string Id, string Name)? status, string phase, bool closed, DateOnly? closeDay,
-        string addedAt, string createdAt)
+        string addedAt, string createdAt, JsonObject? timeline = null)
     {
         var content = IssueContent(repository, number, title, closed ? "CLOSED" : "OPEN",
-            closed ? ClosedStamp(closeDay!.Value) : null, "Task", parent, [People[index % People.Length]], createdAt);
+            closed ? ClosedStamp(closeDay!.Value) : null, "Task", parent, [People[index % People.Length]], createdAt, timeline);
         var values = new List<JsonObject>();
         if (status is { } option) values.Add(SingleSelectValue(StatusFieldId, "Status", option));
         values.Add(SingleSelectValue(PhaseFieldId, "工程", PhaseOption(phase)));

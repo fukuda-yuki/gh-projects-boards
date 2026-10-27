@@ -36,6 +36,13 @@ internal sealed class PlanSheetEditingTests
         Assert.That(() => PlanSheetEditing.Parse(Document, PlanField.Start, input, Day), Throws.ArgumentException
             .With.Message.EqualTo("日付は 2026-10-14、2026/10/14 または 10/14 の形で入力してください。"));
     }
+    [Test]
+    public void PastedActualDatesRefuseWithTheHistoryReason()
+    {
+        foreach (var field in new[] { "ActualStart", "ActualFinish" })
+            Assert.That(() => PlanSheetEditing.Parse(Document, field, "2026-10-14", Day), Throws.ArgumentException
+                .With.Message.EqualTo("Issue の履歴から読み取ります（編集不可）"));
+    }
     [TestCase("8", 8)]
     [TestCase("8h", 8)]
     [TestCase("8H", 8)]

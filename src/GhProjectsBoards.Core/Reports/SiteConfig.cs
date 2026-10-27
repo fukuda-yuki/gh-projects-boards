@@ -7,7 +7,7 @@ namespace GhProjectsBoards.Core.Reports;
 // whose values the pages present; everything else (options, order, iteration dates) comes from the record itself.
 internal sealed record SiteProjectConfig(
     string Url, string Owner, int Number, string Name, string StateField, string GroupField,
-    DateOnly? PeriodStart, DateOnly? PeriodEnd)
+    DateOnly? PeriodStart, DateOnly? PeriodEnd, IReadOnlyList<string> NotStartedStatuses)
 {
     internal string FolderName => Owner + "-" + Number.ToString(CultureInfo.InvariantCulture);
 }
@@ -18,6 +18,8 @@ internal static class SiteConfigReader
 {
     internal const string DefaultStateField = "Status";
     internal static readonly string DefaultTitle = "プロジェクト進捗";
+    // #308 R3: the Status option names that mean not started, matched by name. No Status is always not started.
+    internal static readonly string[] DefaultNotStartedStatuses = ["Backlog", "Todo", "Ready"];
 
     internal static SiteConfig Parse(string json)
     {
@@ -61,7 +63,7 @@ internal static class SiteConfigReader
                     throw new InvalidOperationException($"プロジェクト {label} の期間は periodStart と periodEnd の両方を指定してください。");
                 list.Add(new SiteProjectConfig(
                     url!, owner, number, name!, string.IsNullOrWhiteSpace(stateField) ? DefaultStateField : stateField!,
-                    groupField!, periodStart, periodEnd));
+                    groupField!, periodStart, periodEnd, NotStarted(project, label)));
                 index++;
             }
             return new SiteConfig(title!, demo, list);
@@ -71,6 +73,27 @@ internal static class SiteConfigReader
     private static string? Text(JsonElement element, string name)
         => element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString() : null;
+
+    // The list is matched by option name, so it needs no validation against the record: a Project whose Status
+    // option was renamed keeps the site readable. An explicit empty list is a valid choice of "nothing means not
+    // started" (only no Status does).
+    private static IReadOnlyList<string> NotStarted(JsonElement project, string label)
+    {
+        if (!project.TryGetProperty("notStartedStatuses", out var value)) return DefaultNotStartedStatuses;
+        if (value.ValueKind != JsonValueKind.Array)
+            throw new InvalidOperationException($"プロジェクト {label} の notStartedStatuses が文字列の配列ではありません。");
+        var names = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var option in value.EnumerateArray())
+        {
+            if (option.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(option.GetString()))
+                throw new InvalidOperationException($"プロジェクト {label} の notStartedStatuses に空の値があります。");
+            var name = option.GetString()!;
+            if (!seen.Add(name)) throw new InvalidOperationException($"プロジェクト {label} の notStartedStatuses が重複しています: {name}");
+            names.Add(name);
+        }
+        return names;
+    }
 
     private static DateOnly? Period(JsonElement project, string name, string label)
     {

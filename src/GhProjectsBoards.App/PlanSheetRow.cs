@@ -79,7 +79,7 @@ public sealed class PlanSheetRow : Grid
     private string? lastTag;
     private double chartOffset = double.NaN;
     private sealed record ChartPresentation(string Identity, int Number, int RowIndex, DateOnly? Start, DateOnly? End,
-        bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? ForecastEnd,
+        bool FromRecord, bool FromActualStart, bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? ForecastEnd,
         bool ShowLabels, DateOnly FirstDay, double DateInset, double DayWidth, double Viewport, double Height, ElementTheme Theme, Brush ThemeBrush);
     private sealed class DependencyVisual
     {
@@ -341,7 +341,10 @@ public sealed class PlanSheetRow : Grid
             var cell = Cells[i]; var field = cell.Field; var column = owner.ConfiguredColumns.FirstOrDefault(c => c.Field == field) ?? new(field, field, 140);
             var visible = !owner.VisibleColumns.Any(c => c.Field == field) ? Visibility.Collapsed : Visibility.Visible;
             frames[i].Width = column.Width; frames[i].Visibility = visible;
-            cell.Visibility = summary && field != PlanField.Title ? Visibility.Collapsed : visible;
+            // #308: the records belong to the row's own Issue and are not rolled up, so a requirement row
+            // shows them instead of hiding them behind a summary cell.
+            var recordField = IsRecordField(field);
+            cell.Visibility = summary && field != PlanField.Title && !recordField ? Visibility.Collapsed : visible;
             var selected = owner.IsSelected(Identity, field);
             var conflict = owner.BlockingConflicts.Any(c => c.Identity == Identity && c.Field == field);
             // An untitled inserted row cannot be published, so its title carries the same critical
@@ -395,7 +398,9 @@ public sealed class PlanSheetRow : Grid
             // ordinary date colours (the mark and the wording carry those cases).
             cell.Foreground = PlanSheetView.Brush(field == PlanField.End && late is { Level: PlanLatenessLevel.Overdue, OverdueKind: PlanOverdueKind.Finish } ? "SystemFillColorCriticalBrush"
                 : field == PlanField.Title && owner.IsDimmed(Identity) ? "TextFillColorSecondaryBrush"
-                : owner.IsCalculated(Identity, field) ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
+                // #308: a record is an observation, not an editable plan value; secondary text keeps the
+                // read-only values readable as different from 開始日 and 終了日 at rest.
+                : owner.IsCalculated(Identity, field) || recordField ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
             cell.FontWeight = owner.Schedule.GetValueOrDefault(Identity)?.IsSummary == true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
             cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict || untitled ? 4 : 1);
             cell.Padding = field == PlanField.Title ? new(24 + depth * 12, 1, 4, 1) : new(4, 1, 4, 1);
@@ -417,6 +422,10 @@ public sealed class PlanSheetRow : Grid
             // #264: the 見積 h cell carries the overrun figure; the sentence travels with the cell's name.
             var overrunWording = field == PlanField.Estimate && owner.Schedule.GetValueOrDefault(Identity) is { } estimateTask
                 ? PlanSheetText.EstimateOverrunWording(estimateTask, owner.Marks) : null;
+            // #308: the record's actor and time ride in the cell's accessible name and tooltip; the cell text
+            // stays the short date. A row without the record has neither.
+            var recordWording = recordField && owner.Schedule.GetValueOrDefault(Identity) is { } recordTask
+                ? PlanSheetText.RecordWording(recordTask, field) : null;
             if (cell.EstimateDisplay is { } estimateDisplay) {
                 AutomationProperties.SetAutomationId(estimateDisplay, summary ? "" : "PlanEstimateDisplay" + number);
                 estimateDisplay.Visibility = summary ? Visibility.Collapsed : Visibility.Visible;
@@ -428,13 +437,16 @@ public sealed class PlanSheetRow : Grid
             }
             AutomationProperties.SetAutomationId(cell, $"PlanCell{number}_{field}");
             AutomationProperties.SetName(cell, $"{name} {PlanSheetView.FullName(column)}"
-                + (overrunWording is not null ? " " + overrunWording
+                + (recordWording is not null ? " " + recordWording
+                    : overrunWording is not null ? " " + overrunWording
                     : field == "ForecastEnd" ? (owner.ForecastAccessibleValue(Identity) is { Length: > 0 } forecastName ? " " + forecastName : "")
                     : owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
-            AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? overrunWording ?? stateHint ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
-            ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? overrunWording ?? stateHint ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
+            AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem)
+                : problem ?? overrunWording ?? stateHint ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値"
+                    : recordWording is not null ? owner.ReadOnlyReason(Identity, field) ?? "" : ""));
+            ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? recordWording ?? overrunWording ?? stateHint ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
                 : field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : text)));
-            if (summary && field != PlanField.Title) {
+            if (summary && field != PlanField.Title && !recordField) {
                 if (!summaryCells.TryGetValue(field, out var display)) {
                     display = new PlanSummaryCell(this, field);
                     summaryCells.Add(field, display);
@@ -545,8 +557,11 @@ public sealed class PlanSheetRow : Grid
         dependencyChart.Height = taskChart.Height = owner.RowHeight;
         DrawDependencies(owner, number, rowIndex);
         decimal? completeFraction = !task.IsSummary && task.Input.IsComplete ? 1m : task.WorkCompleteFraction;
-        var presentation = new ChartPresentation(Identity, number, rowIndex, task.Start.Value, task.End.Value,
-            task.IsSummary, task.IsMilestone, completeFraction, owner.LatenessOf(Identity), owner.ForecastEndOf(Identity),
+        // #308 R11: a complete task's bar is drawn from its records, so the presentation keys on them too.
+        var bar = BarDates(task);
+        // FromActualStart names the bar's start as 着手日 rather than 開始日, so it is part of what a redraw shows.
+        var presentation = new ChartPresentation(Identity, number, rowIndex, bar?.Start, bar?.End, bar?.FromRecord ?? false,
+            task.Input.ActualStart is not null, task.IsSummary, task.IsMilestone, completeFraction, owner.LatenessOf(Identity), owner.ForecastEndOf(Identity),
             owner.ShowLatenessLabels, owner.FirstDay, owner.ChartDateInset, owner.DayWidth, owner.ChartViewport, owner.RowHeight,
             ActualTheme, PlanSheetView.Brush("GanttTaskBrush"));
         if (presentation != chartPresentation) {
@@ -764,9 +779,33 @@ public sealed class PlanSheetRow : Grid
             ToolTipService.SetToolTip(shape, null);
         }
     }
+    // #308 R8: the two read-only record columns after 終了日. Their value is the row Issue's history, never a
+    // plan value or a rolled-up summary, so they keep the leaf cell on a requirement row too.
+    private static bool IsRecordField(string field) => field is "ActualStart" or "ActualFinish";
+    // #308 R11: a complete non-summary task's bar is its record — from 着手日, or from the plan 開始日 when
+    // it has none (capped at 完了日), to 完了日. A task with neither 着手日 nor plan start uses 完了日 alone.
+    // An open task and a summary keep the plan bar; a closed task without a 完了日 record keeps it too.
+    private static (DateOnly Start, DateOnly End, bool FromRecord)? BarDates(ScheduledTask task)
+    {
+        if (!task.IsSummary && task.Input.IsComplete && task.Input.ActualFinish is { } finish)
+        {
+            var start = task.Input.ActualStart?.Day ?? task.Start.Value ?? finish.Day;
+            return (start > finish.Day ? finish.Day : start, finish.Day, true);
+        }
+        return task.Start.Value is { } plannedStart && task.End.Value is { } plannedEnd ? (plannedStart, plannedEnd, false) : null;
+    }
+    // The dates the bar was drawn from, named as the record or plan value they came from. They ride in the
+    // accessible name and the tooltip, so the chart never presents a recorded range as the plan.
+    private static string BarDatesText(ScheduledTask task, DateOnly start, DateOnly end, bool fromRecord)
+    {
+        if (!fromRecord) return $"{start:yyyy-MM-dd} – {end:yyyy-MM-dd}";
+        if (task.Input.ActualStart is not null) return $"着手日 {start:yyyy-MM-dd} – 完了日 {end:yyyy-MM-dd}";
+        if (task.Start.Value is { } planned && planned <= end) return $"開始日 {start:yyyy-MM-dd} – 完了日 {end:yyyy-MM-dd}";
+        return $"完了日 {end:yyyy-MM-dd}";
+    }
     private void DrawTask(PlanSheetView owner, int number, ScheduledTask task)
     {
-        if (task.Start.Value is not { } start || task.End.Value is not { } end)
+        if (BarDates(task) is not { } barDates)
         {
             if ((task.Start.Value ?? task.End.Value) is { } known)
             {
@@ -778,6 +817,7 @@ public sealed class PlanSheetRow : Grid
             }
             return;
         }
+        var (start, end, fromRecord) = barDates;
         if (end < start) return;
         var x = ChartX(owner, start); var width = Math.Max(2, (end.DayNumber - start.DayNumber + 1) * owner.DayWidth);
         var milestone = task.IsMilestone && start == end;
@@ -801,7 +841,7 @@ public sealed class PlanSheetRow : Grid
         var lateness = owner.LatenessOf(Identity);
         var late = lateness?.DaysLater;
         var overdue = lateness?.Level == PlanLatenessLevel.Overdue;
-        var barName = $"{owner.TaskNames[Identity]} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
+        var barName = $"{owner.TaskNames[Identity]} {BarDatesText(task, start, end, fromRecord)}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
             + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" {(overdue ? "期限超過" : "予定より遅れ")} +{days}日" : "");
         AutomationProperties.SetAutomationId(bar, "PlanBar" + number);
         AutomationProperties.SetName(bar, barName);

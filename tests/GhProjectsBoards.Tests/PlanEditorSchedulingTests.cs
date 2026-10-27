@@ -104,8 +104,31 @@ internal sealed class PlanEditorSchedulingTests
         var result = Run(Task(work: estimate) with { Closed = closed, CloseDate = closed ? D("2026-10-02") : null, Remaining = remaining, Start = D("2026-10-01"), End = D("2026-10-02") });
         Dates(result, "2026-10-01", "2026-10-02");
         Assert.That(result.StartReason, Is.EqualTo(reason));
-        Assert.That(result.Start.Origin, Is.EqualTo(DateOrigin.Kept));
-        Assert.That(result.End.Origin, Is.EqualTo(closed ? DateOrigin.Calculated : DateOrigin.Kept));
+        Assert.That((result.Start.Origin, result.End.Origin), Is.EqualTo((DateOrigin.Kept, DateOrigin.Kept)),
+            "A closed task keeps its plan dates; the close day is not a plan date (#308 R9).");
+    }
+
+    [Test]
+    public void ClosedTaskKeepsItsPlanEndWhileTheCloseDayOnlyConstrainsTheSuccessor()
+    {
+        var predecessor = Task(work: 8) with { Closed = true, CloseDate = Monday.AddDays(4), Start = Monday.AddDays(-2), End = Monday.AddDays(2) };
+        var results = Calculate([predecessor, Task(2) with { Predecessors = [predecessor.Identity] }], Settings);
+        Dates(results[0], "2026-10-03", "2026-10-07");
+        Assert.That((results[0].Start.Origin, results[0].End.Origin), Is.EqualTo((DateOrigin.Kept, DateOrigin.Kept)));
+        Assert.That(results[0].StartReason, Is.EqualTo("完了"));
+        Dates(results[1], "2026-10-09", "2026-10-09");
+        Assert.That(results[1].StartReason, Is.EqualTo("1 の終了後"), "The successor still waits for the close day (R10).");
+    }
+
+    [Test]
+    public void ClosedTaskWithoutAPlanEndKeepsSuccessorsOnTheCloseDay()
+    {
+        var predecessor = Task(work: 8) with { Closed = true, CloseDate = Monday.AddDays(1) };
+        var results = Calculate([predecessor, Task(2) with { Predecessors = [predecessor.Identity] }], Settings);
+        Dates(results[0], null, null);
+        Assert.That(results[0].Input.IsComplete, Is.True);
+        Dates(results[1], "2026-10-06", "2026-10-06");
+        Assert.That(results[1].StartReason, Is.EqualTo("1 の終了後"));
     }
 
     [TestCase(null, "2026-10-05", true)]
@@ -158,7 +181,9 @@ internal sealed class PlanEditorSchedulingTests
     [TestCase("2026-10-05", true)]
     public void KeptStartWarnsOnlyBeforePredecessorEndDayWithoutMovingDates(string start, bool warning)
     {
-        var predecessor = Task() with { Closed = true, Start = Monday, CloseDate = Monday.AddDays(1) };
+        // #308: a closed task keeps its plan dates, so this fixture holds the plan end the close day
+        // also records; the successor warns only when its own kept start is before that day.
+        var predecessor = Task() with { Closed = true, Start = Monday, End = Monday.AddDays(1), CloseDate = Monday.AddDays(1) };
         var successor = Task(2) with
         {
             Actual = 4, Remaining = 4,
@@ -423,7 +448,7 @@ internal sealed class PlanEditorSchedulingTests
         Assert.That(result.IsZeroRemainingOpen, Is.EqualTo(!closed && !milestone));
         Assert.That(result.IsMilestone, Is.EqualTo(milestone));
         Assert.That(result.StartReason, Is.EqualTo(closed ? "完了" : "開始日を維持"));
-        Assert.That(result.End.Origin, Is.EqualTo(DateOrigin.Calculated));
+        Assert.That(result.End.Origin, Is.EqualTo(closed ? DateOrigin.Kept : DateOrigin.Calculated));
     }
 
     [TestCase("Estimate", "工数が負の値")]
