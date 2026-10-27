@@ -133,7 +133,11 @@ internal static class PlanSnapshot
         return new(new(rows, Columns(p)) {
                 RepositoryMilestones = p.Milestones.Select(m => new PlanRepositoryOption(Repository(p, m.RepositoryId), m.Id.NodeId, m.Title)).ToImmutableArray(),
                 RepositoryLabels = p.Labels.Select(l => new PlanRepositoryOption(Repository(p, l.RepositoryId), l.Id, l.Name)).ToImmutableArray(),
-                Milestones = Milestones(p) },
+                Milestones = Milestones(p),
+                // #319: the plan keeps the Project's Issue type catalog so editing resolves a name to a write
+                // target without another read, and the repositories whose Issues can carry one.
+                IssueTypes = IssueTypes(p),
+                IssueTypeRepositories = p.IssueTypeRepositories.ToImmutableArray() },
             items, p.Fields.ToImmutableArray(), p.Items.Count(i => i.Kind == ProjectItemKind.Draft), p.Items.Count(i => i.Kind == ProjectItemKind.PullRequest))
         { InaccessibleCount = p.UndeliveredItemCount + p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable),
           IssueLinks = p.Issues.Values.ToImmutableDictionary(i => i.Id.NodeId, i => new PlanIssueLink($"{i.Repository.NameWithOwner}#{i.Number}", i.Url)),
@@ -174,7 +178,14 @@ internal static class PlanSnapshot
                 RepositoryMilestones = document.Baseline.RepositoryMilestones.Where(m => !repositories.Contains(m.Repository))
                     .Concat(p.Milestones.Select(m => Repository(p, m.RepositoryId) is { Length: > 0 } name ? new PlanRepositoryOption(name, m.Id.NodeId, m.Title) : null).Where(m => m is not null).Select(m => m!)).ToImmutableArray(),
                 RepositoryLabels = document.Baseline.RepositoryLabels.Where(l => !repositories.Contains(l.Repository))
-                    .Concat(p.Labels.Select(l => Repository(p, l.RepositoryId) is { Length: > 0 } name ? new PlanRepositoryOption(name, l.Id, l.Name) : null).Where(l => l is not null).Select(l => l!)).ToImmutableArray() },
+                    .Concat(p.Labels.Select(l => Repository(p, l.RepositoryId) is { Length: > 0 } name ? new PlanRepositoryOption(name, l.Id, l.Name) : null).Where(l => l is not null).Select(l => l!)).ToImmutableArray(),
+                // #319: a scoped read observes only the written rows' organizations, so it extends the stored
+                // catalog instead of replacing it. A removed type simply stops being offered on the next
+                // complete read; keeping it cannot damage a plan because the publish resolves names it offers.
+                IssueTypes = document.Baseline.IssueTypes.Concat(p.IssueTypes
+                    .Where(t => !document.Baseline.IssueTypes.Any(b => b.Id == t.Id)).Select(t => new PlanIssueType(t.Id, t.Name))).ToImmutableArray(),
+                IssueTypeRepositories = document.Baseline.IssueTypeRepositories.Concat(p.IssueTypeRepositories
+                    .Where(r => !document.Baseline.IssueTypeRepositories.Contains(r, StringComparer.OrdinalIgnoreCase))).ToImmutableArray() },
             items, p.Fields.ToImmutableArray(), document.Sync.DraftCount, document.Sync.PullRequestCount)
         { Scoped = true,
           InaccessibleCount = document.Sync.InaccessibleCount,
@@ -204,7 +215,7 @@ internal static class PlanSnapshot
             .Select(i => i.Id.NodeId).Distinct(StringComparer.Ordinal).ToImmutableArray();
     private static ProjectReadModel RequireComplete(ProjectReadResult result, string message)
     {
-        if (result.Outcome != ProjectReadOutcome.Complete || result.Project is not { FieldsComplete: true, ItemsComplete: true, MilestonesComplete: true } p)
+        if (result.Outcome != ProjectReadOutcome.Complete || result.Project is not { FieldsComplete: true, ItemsComplete: true, MilestonesComplete: true, IssueTypesComplete: true } p)
         {
             // #246: a read that never reached GitHub is a connection problem, not a read defect.
             if (IsConnectionLost(result)) throw new ConnectionLostException();
@@ -220,6 +231,8 @@ internal static class PlanSnapshot
     private static ImmutableArray<PlanColumnDefinition> Columns(ProjectReadModel p)
         => p.Fields.Where(f => f.Availability == ValueAvailability.Present).Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType)
             { Options = f.Options.Select(o => o.Name).ToImmutableArray(), IssueField = f.IssueFieldId is not null }).ToImmutableArray();
+    private static ImmutableArray<PlanIssueType> IssueTypes(ProjectReadModel p)
+        => p.IssueTypes.Select(t => new PlanIssueType(t.Id, t.Name)).ToImmutableArray();
     private static ImmutableArray<PlanMilestone> Milestones(ProjectReadModel p)
         => p.Milestones.GroupBy(m => m.Title, StringComparer.Ordinal).Select(g => new PlanMilestone(g.Key,
             g.Max(m => m.DueDate), g.All(m => m.Closed), g.Select(m => m.DueDate).Distinct().Count() > 1)).ToImmutableArray();
@@ -243,11 +256,15 @@ internal static class PlanSnapshot
             if (item.ContentId is null || !p.Issues.TryGetValue(item.ContentId, out var issue) || !item.ValuesComplete ||
                 issue.Native is not { Complete: true } native || issue.Labels.Availability is not (ValueAvailability.Empty or ValueAvailability.Present) || issue.Milestone.Availability is not (ValueAvailability.Empty or ValueAvailability.Present) || issue.Title.Availability != ValueAvailability.Present ||
                 issue.State.Availability != ValueAvailability.Present ||
-                issue.State.Value == IssueState.Closed && (issue.ClosedAt.Availability != ValueAvailability.Present || issue.ClosedAt.Value is null) || native.Parent.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
+                issue.State.Value == IssueState.Closed && (issue.ClosedAt.Availability != ValueAvailability.Present || issue.ClosedAt.Value is null) ||
+                issue.IssueType.Availability == ValueAvailability.Unavailable ||
+                native.Parent.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
                 throw new InvalidOperationException("Issue の取得が不完全です。");
             var row = new PlanRow(issue.Id.NodeId, issue.Title.Value!, issue.Repository.NameWithOwner)
             {
                 MilestoneTitle = issue.Milestone.Value?.Title,
+                // #319: the type name is the plan value; the catalog ID is a write target resolved at publish.
+                IssueType = issue.IssueType.Value?.Name,
                 Labels = (issue.Labels.Value ?? []).Select(l => l.Name).Order(StringComparer.Ordinal).ToImmutableArray(),
                 Closed = issue.State.Value == IssueState.Closed,
                 // #231: NOT_PLANNED and DUPLICATE read as 中止; COMPLETED (or a closed Issue with no

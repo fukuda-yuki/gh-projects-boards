@@ -393,19 +393,6 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test, Category("PlanSheetNative")]
-    public async Task OverflowColumnCommandHasOneNavigationEntryAndNoToggleFlyout()
-    {
-        await Select(2, PlanField.Remaining);
-        await SheetNativeInput.Click("PlanSheetMore");
-        await Ui.Ready<MenuFlyoutItem>("PlanSheetColumns");
-        await Ui.Run(() => {
-            Assert.That(Ui.Popup<MenuFlyoutItem>("PlanSheetColumns")!.IsEnabled,Is.True);
-            Assert.That(Ui.CommandButton("PlanSheetColumns").Flyout,Is.Null);
-        });
-        await SheetNativeInput.Press(VirtualKey.Escape);
-    }
-
-    [Test, Category("PlanSheetNative")]
     public async Task OverflowKeyboardCopyUsesTheSelectedCellAndRestoresFocus()
     {
         clipboard = new("not copied", null);

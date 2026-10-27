@@ -1033,7 +1033,8 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     private async Task MountPresentation(ImmutableArray<PlanRow> rows, ImmutableArray<PlanRow> baseline,
-        ImmutableArray<PlanResource> people = default, ImmutableDictionary<string, string>? logins = null, ImmutableArray<PlanColumnDefinition> columns = default)
+        ImmutableArray<PlanResource> people = default, ImmutableDictionary<string, string>? logins = null, ImmutableArray<PlanColumnDefinition> columns = default,
+        ImmutableArray<PlanIssueType> issueTypes = default, ImmutableArray<string> issueTypeRepositories = default)
     {
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var settings = session.Document.State.Settings;
@@ -1045,7 +1046,10 @@ internal sealed partial class PlanSheetHostedTests
         var github = baseline.ToDictionary(row => row.Identity);
         rows = rows.Select(row => github.TryGetValue(row.Identity, out var source)
             ? row with { Start = row.Start ?? source.Start, End = row.End ?? source.End } : row).ToImmutableArray();
-        var document = new PlanDocument(session.Document.Project, new(baseline, columns.IsDefault ? [] : columns), new(rows, settings)) {
+        var document = new PlanDocument(session.Document.Project, new(baseline, columns.IsDefault ? [] : columns) {
+            // #319: the 種類 column's default visibility and its editable values come from this catalog.
+            IssueTypes = issueTypes.IsDefault ? ImmutableArray<PlanIssueType>.Empty : issueTypes,
+            IssueTypeRepositories = issueTypeRepositories.IsDefault ? ImmutableArray<string>.Empty : issueTypeRepositories }, new(rows, settings)) {
             Sync = new() { PeopleNames = logins ?? ImmutableDictionary<string, string>.Empty,
                 IssueLinks = ImmutableDictionary<string, PlanIssueLink>.Empty.Add("I1", new("acme/repo#1", "https://github.com/acme/repo/issues/1")) } };
         session = await PlanSession.CreateAsync(new(Path.Combine(root, "presentation")), document, Today);
@@ -1397,7 +1401,7 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test, Category("PlanSheetPhase2")]
-    public async Task LabelledCommandsStayReachableInNarrowNativeOverflowIncludingColumnChoices()
+    public async Task LabelledCommandsStayReachableInNarrowNativeOverflow()
     {
         await Ui.Run(() => { sheetHost.Width = 760; sheetHost.Height = 600; }); await Ui.Idle();
         // CommandBar moves primary commands into the overflow on a later layout pass than the resize,
@@ -1407,7 +1411,9 @@ internal sealed partial class PlanSheetHostedTests
             var bar = Ui.Find<CommandBar>("PlanSheetCommands");
             Assert.That(bar.DefaultLabelPosition, Is.EqualTo(CommandBarDefaultLabelPosition.Right));
             var buttons = bar.PrimaryCommands.Concat(bar.SecondaryCommands).OfType<AppBarButton>().ToArray();
-            Assert.That(buttons.Select(b => b.Label), Is.SupersetOf(new[] { "行を挿入", "インデント", "アウトデント", "先行タスクを追加…", "タスクをリンク", "リンクを解除", "すべて折りたたむ", "すべて展開", "選択タスクの日程へ移動", "コピー", "貼り付け", "下へコピー", "クリア", "表示列" }));
+            Assert.That(buttons.Select(b => b.Label), Is.SupersetOf(new[] { "行を挿入", "インデント", "アウトデント", "先行タスクを追加…", "タスクをリンク", "リンクを解除", "すべて折りたたむ", "すべて展開", "選択タスクの日程へ移動", "コピー", "貼り付け", "下へコピー", "クリア" }));
+            // #319: columns are configured only in 設定 › 列, so the overflow has no 表示列 command.
+            Assert.That(buttons.Select(b => b.Label), Does.Not.Contain("表示列"));
             Assert.That(bar.SecondaryCommands.OfType<AppBarButton>().Where(b => b.Label == "コピー").Single().KeyboardAcceleratorTextOverride, Is.EqualTo("Ctrl+C"));
             Ui.Click("PlanSheetMore");
         });
@@ -1425,7 +1431,6 @@ internal sealed partial class PlanSheetHostedTests
                 Assert.That(accessible.Count(), Is.EqualTo(1), id);
             }
         });
-        await Ui.Run(() => Assert.That(Ui.CommandButton("PlanSheetColumns").Flyout, Is.Null));
     }
     [Test, Category("PlanSheetPhase2")]
     public async Task StandardHeadersAndShortDatesExposeMappedFieldsAndFullDates()
@@ -2629,5 +2634,106 @@ internal sealed partial class PlanSheetHostedTests
             }
         });
         await Ui.Run(async () => await RenderedEvidence.Capture(sheet, "sheet-gantt-" + zoom));
+    }
+
+    // #319 D2: 種類 follows 工程, is 64 effective pixels wide by default and names no GitHub Project field.
+    [Test]
+    public async Task IssueTypeColumnFollowsPhaseAtItsDefaultWidthAndNamesNoGitHubField()
+    {
+        var task = new PlanRow("I1", "Task", "acme/repo") { IssueType = "Bug" };
+        await MountPresentation([task], [task], issueTypes: [new("IT-1", "Task"), new("IT-2", "Bug")], issueTypeRepositories: ["acme/repo"]);
+        await Ui.Ready<TextBlock>("PlanHeaderIssueType");
+        await Ui.Run(() => {
+            var keys = sheet.VisibleColumns.Select(column => column.Field).ToArray();
+            Assert.That(keys.Skip(Array.IndexOf(keys, PlanField.Phase) + 1).First(), Is.EqualTo(PlanField.IssueType));
+            var header = Ui.Find<TextBlock>("PlanHeaderIssueType");
+            Assert.That(header.Text, Is.EqualTo("種類"));
+            Assert.That(header.RenderSize.Width, Is.EqualTo(64), "種類 is 64 effective pixels wide by default.");
+            var phase = Ui.Find<TextBlock>("PlanHeaderPhase");
+            Assert.That(header.TransformToVisual(sheet).TransformPoint(new()).X,
+                Is.EqualTo(phase.TransformToVisual(sheet).TransformPoint(new()).X + phase.RenderSize.Width).Within(1));
+            Assert.That(AutomationProperties.GetName(header), Is.EqualTo("種類"));
+            Assert.That(AutomationProperties.GetHelpText(header), Is.Empty, "The Issue type names no GitHub Project field.");
+            Assert.That(ToolTipService.GetToolTip(header), Is.Null);
+            Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBlock>("PlanHeaderStart")), Is.EqualTo("GitHub: Start date"),
+                "A mapped column keeps naming its GitHub field.");
+            Assert.That(sheet.Display("I1", PlanField.IssueType), Is.EqualTo("Bug"));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_IssueType").Text, Is.EqualTo("Bug"));
+        });
+    }
+
+    // #319 D2: a requirement row shows its baseline type read-only like the other summary values.
+    [Test]
+    public async Task IssueTypeOnARequirementRowShowsTheBaselineTypeReadOnly()
+    {
+        var parent = new PlanRow("I1", "Requirement", "acme/repo") { IssueType = "Task" };
+        var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1" };
+        await MountPresentation([parent, child], [parent, child], issueTypes: [new("IT-1", "Task")], issueTypeRepositories: ["acme/repo"]);
+        await Ui.Ready<PlanSummaryCell>("PlanCell1_IssueType");
+        await Ui.Run(() => {
+            var display = Ui.Find<PlanSummaryCell>("PlanCell1_IssueType");
+            Assert.That(display.Text.Text, Is.EqualTo("Task"));
+            Assert.That(AutomationProperties.GetName(display), Does.Contain("要求事項の行では編集できません"));
+        });
+    }
+
+    // #319 D2: typing, Delete, Ctrl+D and an unknown name all use the ordinary cell path; only Core's parse decides.
+    [Test]
+    public async Task IssueTypeTaskCellsEditThroughTheOrdinaryCellPathAndRefuseAnUnknownName()
+    {
+        var first = new PlanRow("I1", "First", "acme/repo") { IssueType = "Task" };
+        var second = new PlanRow("I2", "Second", "acme/repo");
+        await MountPresentation([first, second], [first, second],
+            issueTypes: [new("IT-1", "Task"), new("IT-2", "Bug"), new("IT-3", "Feature")], issueTypeRepositories: ["acme/repo"]);
+        await Ui.Ready<TextBox>("PlanCell2_IssueType");
+        var undo = session.UndoCount;
+        await Edit(2, PlanField.IssueType, "feature");
+        await Ui.Until(() => session.Document.State.Rows.Single(row => row.Identity == "I2").IssueType == "Feature");
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
+        // Delete clears the type through the same parse, one operation.
+        await Select(2, PlanField.IssueType);
+        await Ui.Run(async () => await sheet.KeyboardCommand(Windows.System.VirtualKey.Delete));
+        await Ui.Until(() => session.Document.State.Rows.Single(row => row.Identity == "I2").IssueType is null);
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 2));
+        // Ctrl+D fills the type down the selected column through the same parse.
+        await Select(1, PlanField.IssueType);
+        await Select(2, PlanField.IssueType, extend: true);
+        await Ui.Run(async () => await sheet.KeyboardCommand(Windows.System.VirtualKey.D));
+        await Ui.Until(() => session.Document.State.Rows.Single(row => row.Identity == "I2").IssueType == "Task");
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 3));
+        // An unknown name refuses at the cell and writes nothing.
+        await Edit(2, PlanField.IssueType, "Epic");
+        await Ui.Run(() => {
+            Assert.That(Ui.Popup<Border>("SheetInputProblem")?.Child, Is.TypeOf<TextBlock>());
+            Assert.That(((TextBlock)Ui.Popup<Border>("SheetInputProblem")!.Child).Text,
+                Is.EqualTo("種類は Task, Bug, Feature のどれかを入力してください。"));
+            Assert.That(session.Document.State.Rows.Single(row => row.Identity == "I2").IssueType, Is.EqualTo("Task"));
+        });
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 3));
+    }
+
+    // #319 D2: a personal-repository Project has no Issue types, so the column is read-only and says why.
+    [Test]
+    public async Task IssueTypeCellsWithoutIssueTypesAreReadOnlyAndSayWhy()
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo");
+        await MountPresentation([row], [row]);
+        await SetColumnVisible(PlanField.IssueType, true);
+        await Ui.Ready<TextBox>("PlanCell1_IssueType");
+        await Select(1, PlanField.IssueType);
+        await Ui.Idle();
+        var undo = session.UndoCount;
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PlanCell1_IssueType");
+            Assert.That(cell.IsReadOnly, Is.True);
+            Assert.That(ToolTipService.GetToolTip(cell), Is.EqualTo("このリポジトリには Issue の種類がありません"));
+            Assert.That(AutomationProperties.GetHelpText(cell), Is.EqualTo("このリポジトリには Issue の種類がありません"));
+            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("このリポジトリには Issue の種類がありません"));
+        });
+        // A read-only cell takes no edit and writes nothing.
+        await Ui.Run(async () => await sheet.KeyboardCommand(Windows.System.VirtualKey.Delete));
+        await Ui.Idle();
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+        Assert.That(session.Document.State.Rows.Single().IssueType, Is.Null);
     }
 }

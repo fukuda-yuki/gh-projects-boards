@@ -28,6 +28,8 @@ internal static class PlanPublishPlan
                 "createIssue" => (PlanPublishStage.Create, "issue { id }"),
                 "addProjectV2ItemById" => (PlanPublishStage.Add, "item { id }"),
                 "updateIssue" => (PlanPublishStage.Fields, "issue { id }"),
+                // #319: the Issue's own type is written on the Issue, in the field phase.
+                "updateIssueIssueType" => (PlanPublishStage.Fields, "issue { id }"),
                 "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" => (PlanPublishStage.Fields, "projectV2Item { id }"),
                 "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => (PlanPublishStage.Fields, "assignable { __typename }"),
                 "addLabelsToLabelable" or "removeLabelsFromLabelable" => (PlanPublishStage.Fields, "labelable { __typename }"),
@@ -45,6 +47,7 @@ internal static class PlanPublishPlan
                 document.State.Rows.Any(r => r.Identity == write.Identity), "発行操作の対象または形式が不正です。");
             PlanOperations.Require(write.Field is null || write.Field == PlanField.MilestoneTitle && write.Mutation == "updateIssue"
                 || write.Field == PlanField.Labels && write.Mutation is "addLabelsToLabelable" or "removeLabelsFromLabelable"
+                || write.Field == PlanField.IssueType && write.Mutation == "updateIssueIssueType"
                 || (write.Field == PlanField.Status || PlanSheetColumns.IsExtra(write.Field)) && write.Mutation is "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue"
                 || (PlanSheetColumns.IsExtra(write.Field) || PlanColumnMatching.Roles.Any(r => r.Role == write.Field)) && write.Mutation == "setIssueFieldValue", "発行列の指定が不正です。");
             PlanOperations.Require(write.Mutation != "setIssueFieldValue" || write.Field is not null, "発行列の指定が不正です。");
@@ -59,7 +62,7 @@ internal static class PlanPublishPlan
                 "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => "assignableId",
                 "addBlockedBy" or "removeBlockedBy" => "issueId",
                 "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" => "subIssueId",
-                "closeIssue" or "reopenIssue" or "setIssueFieldValue" => "issueId",
+                "closeIssue" or "reopenIssue" or "setIssueFieldValue" or "updateIssueIssueType" => "issueId",
                 "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" or "updateProjectV2ItemPosition" or "archiveProjectV2Item" => "itemId", _ => null
             };
             if (target is not null) PlanOperations.Require(input.RootElement.GetProperty(target).GetString() == (target == "itemId" ? "item:" : "") + write.Identity, "発行対象が行と一致しません。");
@@ -209,6 +212,19 @@ internal static class PlanPublishPlan
                         var statusAt = Add(row.Identity, PlanPublishStage.Fields, row.Status is null ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue",
                             row.Status is null ? "ClearProjectV2ItemFieldValueInput" : "UpdateProjectV2ItemFieldValueInput", statusInput, "projectV2Item { id }");
                         if (statusAt >= 0) writes[statusAt] = writes[statusAt] with { Field = PlanField.Status };
+                        break;
+                    case PlanField.IssueType:
+                        // #319: the type belongs to the Issue, so it is one Issue-level write in this phase;
+                        // a null local value clears it. The catalog ID observed with the Project is the target.
+                        if (remote.CannotUpdate.Contains(row.Identity))
+                            throw new InvalidOperationException($"「{row.Title}」の種類を変更する権限がありません。この変更を元に戻してから発行してください。");
+                        string? issueTypeId = null;
+                        if (row.IssueType is not null)
+                            issueTypeId = remote.Baseline.IssueTypes.FirstOrDefault(t => string.Equals(t.Name, row.IssueType, StringComparison.OrdinalIgnoreCase))?.Id
+                                ?? throw new InvalidOperationException("種類を確認してください。");
+                        var typeAt = Add(row.Identity, PlanPublishStage.Fields, "updateIssueIssueType", "UpdateIssueIssueTypeInput",
+                            new Dictionary<string, object?> { ["issueId"] = row.Identity, ["issueTypeId"] = issueTypeId }, "issue { id }");
+                        if (typeAt >= 0) writes[typeAt] = writes[typeAt] with { Field = field };
                         break;
                     case PlanField.Title:
                         // A published Issue must keep a title; only a new row may be left untitled, and

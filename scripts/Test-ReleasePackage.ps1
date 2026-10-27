@@ -28,7 +28,7 @@ foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -File) {
     if ($relative -ne 'distribution-manifest.json' -and -not $paths.Contains($relative)) { throw "Unexpected payload: $relative" }
 }
 foreach ($required in @('GhProjectsBoards.App.exe', 'GhProjectsBoards.App.dll', 'coreclr.dll', 'hostpolicy.dll',
-    'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'マニュアル.md', 'templates/new-tasks.csv',
+    'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'マニュアル.md',
     'runtimes/win-x64/native/copilot-runtime.exe', 'runtimes/win-x64/native/runtime.node',
     'notices/GitHub.Copilot.CLI-1.0.98-LICENSE.md', 'notices/GitHub.Copilot.SDK-1.0.22-MIT.txt')) {
     if (-not $paths.Contains($required)) { throw "Required payload missing: $required" }

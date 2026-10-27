@@ -16,10 +16,13 @@ internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { pub
     public DateTimeOffset? ItemUpdatedAt { get; init; }
     public DateTimeOffset? IssueUpdatedAt { get; init; } }
 internal sealed record PlanFakeMilestone(string Id, string Repository, string Title, DateOnly? DueDate, bool Closed = false);
+// #319: one organization Issue type the fixture's repositories can use. A disabled type stays on an Issue
+// that already has it but is not offered for editing.
+internal sealed record PlanFakeIssueType(string Id, string Name, bool Enabled = true);
 // #253: a repository's assignable people for the on-demand resolver. A fixture declares them, so it can
 // stand for a 1,000-user repository that the resolver searches like GitHub does.
 internal sealed record PlanFakeUser(string Id, string Login);
-internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanColumnDefinition> ExtraFields { get; init; } = []; public ImmutableArray<PlanRepositoryOption> Labels { get; init; } = []; public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public ImmutableArray<PlanFakeUser> AssignableUsers { get; init; } = []; public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public int OtherProjects { get; init; } public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanColumnDefinition> ExtraFields { get; init; } = []; public ImmutableArray<PlanRepositoryOption> Labels { get; init; } = []; public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public ImmutableArray<PlanFakeUser> AssignableUsers { get; init; } = []; public ImmutableArray<PlanFakeIssueType> IssueTypes { get; init; } = []; public bool OrganizationRepositories { get; init; } public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public int OtherProjects { get; init; } public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -188,6 +191,14 @@ internal static class FakePlanEditor
         }
         object Milestone(PlanFakeMilestone m) => new { id = m.Id, title = m.Title,
             dueOn = m.DueDate.HasValue ? m.DueDate.Value.ToString("yyyy-MM-dd") + "T00:00:00Z" : null, state = m.Closed ? "CLOSED" : "OPEN" };
+        // #319: an Issue's type is the catalog entry with that name; a personal repository's Issues have none.
+        object? IssueType(string? name)
+        {
+            if (!state.OrganizationRepositories || name is null) return null;
+            var definition = state.IssueTypes.SingleOrDefault(t => t.Name == name)
+                ?? throw new InvalidOperationException("Unknown fake Issue type: " + name);
+            return new { id = definition.Id, name = definition.Name };
+        }
         object Item(PlanFakeIssue issue)
         {
             var row = issue.Row;
@@ -203,7 +214,10 @@ internal static class FakePlanEditor
                     updatedAt = (issue.IssueUpdatedAt ?? ObservedAt).ToUniversalTime().ToString("O"),
                     // #231: only this fault denies Issue update permission, so the ordinary fixtures stay writable.
                     viewerCanUpdate = !(fault == "no-update-permission" && row.Identity == "I1"),
-                    viewerCanSetFields = !(fault == "no-set-fields" && row.Identity == "I1"), repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository, owner = new { id = "O1" } },
+                    viewerCanSetFields = !(fault == "no-set-fields" && row.Identity == "I1"),
+                    issueType = IssueType(row.IssueType),
+                    repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository,
+                        owner = new { id = "O1", __typename = state.OrganizationRepositories ? "Organization" : "User" } },
                     assignees = Page(row.Assignees.Select(id => (object)new { id, login = workspace ? "person-" + id : id }), row.Assignees.Length),
                     blockedBy = Page(row.Predecessors.Select(id => (object)new { id }), row.Predecessors.Length),
                     subIssues = query.Contains("subIssues(", StringComparison.Ordinal) ? Children(row.Identity) : null,
@@ -318,6 +332,24 @@ internal static class FakePlanEditor
             node = new { __typename = "Repository", id, milestones = Page(all.Skip(offset).Take(100).Select(Milestone),
                 all.Length + (fault == "milestones-incomplete" ? 1 : 0), offset + 100 < all.Length,
                 offset + 100 < all.Length ? (offset + 100).ToString() : null) };
+        }
+        else if (query.Contains("ProjectIssueTypes"))
+        {
+            if (fault == "issue-types-incomplete") { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
+            // #319: one organization catalog per distinct repository owner; a personal owner reports that it
+            // has no Issue types at all.
+            var id = variables.GetProperty("id").GetString()!;
+            if (!state.OrganizationRepositories)
+                node = new { __typename = "User", id, issueTypes = (object?)null };
+            else
+            {
+                var offset = variables.TryGetProperty("after", out var cursor) && cursor.ValueKind == JsonValueKind.String ? int.Parse(cursor.GetString()!, CultureInfo.InvariantCulture) : 0;
+                var page = state.IssueTypes.Skip(offset).Take(100).ToArray();
+                var next = offset + page.Length < state.IssueTypes.Length;
+                node = new { __typename = "Organization", id, issueTypes = Page(
+                    page.Select(t => (object)new { id = t.Id, name = t.Name, isEnabled = t.Enabled }), state.IssueTypes.Length, next,
+                    next ? (offset + page.Length).ToString(CultureInfo.InvariantCulture) : null) };
+            }
         }
         else if (query.Contains("PlanIssueHistor"))
         {
@@ -455,6 +487,14 @@ internal static class FakePlanEditor
                         input.TryGetProperty("labelableId", out var labelable) ? labelable.GetString()! : input.TryGetProperty("id", out var issueId) ? issueId.GetString()! : input.TryGetProperty("assignableId", out var assignable) ? assignable.GetString()! : input.GetProperty("issueId").GetString()!;
                     var index = issues.FindIndex(i => i.Row.Identity == identity); var issue = issues[index]; var row = issue.Row;
                     if (mutation == "updateIssue") row = input.TryGetProperty("milestoneId", out var milestone) ? row with { MilestoneTitle = milestone.ValueKind == JsonValueKind.Null ? null : state.Milestones.Single(m => m.Id == milestone.GetString() && m.Repository == row.Repository).Title } : row with { Title = input.GetProperty("title").GetString()! };
+                    // #319: the Issue's own type; a null issueTypeId clears it.
+                    else if (mutation == "updateIssueIssueType")
+                    {
+                        var typeId = input.TryGetProperty("issueTypeId", out var typeNode) && typeNode.ValueKind == JsonValueKind.String ? typeNode.GetString() : null;
+                        // A fixture can accept the write without applying it, to prove the read-back verification.
+                        if (fault != "type-mismatch")
+                            row = row with { IssueType = typeId is null ? null : state.IssueTypes.Single(t => t.Id == typeId).Name };
+                    }
                     else if (mutation is "addLabelsToLabelable" or "removeLabelsFromLabelable")
                     {
                         var names = input.GetProperty("labelIds").EnumerateArray().Select(n => state.Labels.Single(l => l.Repository == row.Repository && l.Id == n.GetString()).Name).ToArray();
@@ -562,7 +602,7 @@ internal static class FakePlanEditor
                         { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "INVALID", message = "Argument 'projectId' on InputObject 'ArchiveProjectV2ItemInput' is required." })); data[alias] = null; continue; }
                         issue = issue with { Archived = true }; selection = "item"; id = ItemId("T-" + identity);
                     }
-                    else if (mutation is not ("updateIssue" or "addLabelsToLabelable" or "removeLabelsFromLabelable" or "updateProjectV2ItemPosition"
+                    else if (mutation is not ("updateIssue" or "updateIssueIssueType" or "addLabelsToLabelable" or "removeLabelsFromLabelable" or "updateProjectV2ItemPosition"
                         or "addAssigneesToAssignable" or "removeAssigneesFromAssignable" or "addBlockedBy" or "removeBlockedBy"
                         or "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" or "setIssueFieldValue") && !mutation.Contains("ItemFieldValue"))
                         throw new InvalidOperationException("Unsupported fake mutation: " + mutation);

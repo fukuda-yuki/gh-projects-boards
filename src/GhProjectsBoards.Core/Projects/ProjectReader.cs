@@ -37,6 +37,15 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         private readonly List<RepositoryLabel> labels = [];
         private readonly Dictionary<ScopedId, (string Cursor, int Total)> labelPages = [];
         private readonly Dictionary<ScopedId, HashSet<string>> labelCursors = [];
+        // #319: the organization Issue type catalog of each repository owner, and the repositories whose Issues
+        // can carry a type. Both are read once per read (or adopted from an earlier read), never per row.
+        private bool issueTypesComplete = true;
+        private readonly List<SelectOption> issueTypes = [];
+        private readonly HashSet<string> issueTypeIds = new(StringComparer.Ordinal);
+        private readonly List<string> issueTypeRepositories = [];
+        private readonly HashSet<string> issueTypeRepositoryIds = new(StringComparer.Ordinal);
+        // A repository's owner __typename from the item detail: only an Organization has Issue types.
+        private readonly Dictionary<ScopedId, string> repositoryOwnerTypes = [];
         private ApiOutcome? interruption;
 
         private async Task<ApiResult> SendAsync(string query, object variables)
@@ -98,6 +107,18 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     foreach (var issue in issues.Values)
                         if (issue.Milestone.Value is { } member && (!milestones.TryGetValue(member.Id, out var catalog) || member != catalog))
                         { milestonesComplete = false; problems.Add(new(ReadProblemKind.ConcurrentChange, "milestones")); }
+                // #319: Issue types belong to the repository owner organization, so one catalog per distinct
+                // organization is enough. A personal owner has none and contributes nothing.
+                var cataloguedOwners = metadata is null
+                    ? new HashSet<ScopedId>()
+                    : metadata.Issues.Values.Select(issue => issue.Repository.OwnerId).ToHashSet();
+                foreach (var owner in issues.Values.Select(issue => issue.Repository.OwnerId).Distinct())
+                {
+                    if (stopped) { issueTypesComplete = false; break; }
+                    if (metadata is not null && cataloguedOwners.Contains(owner)) continue;
+                    if (repositoryOwnerTypes.GetValueOrDefault(owner) != "Organization") continue;
+                    issueTypesComplete &= await ReadIssueTypeCatalogAsync(owner);
+                }
             }
             catch (ReadException error)
             {
@@ -109,7 +130,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 interruption = ApiOutcome.Cancelled;
                 problems.Add(new(ReadProblemKind.Api, "read", FailureKind.Cancelled, ApiOutcome.Cancelled));
             }
-            var complete = fieldsComplete && itemsComplete && milestonesComplete && items.Values.All(item => item.Complete) && problems.Count == 0;
+            var complete = fieldsComplete && itemsComplete && milestonesComplete && issueTypesComplete && items.Values.All(item => item.Complete) && problems.Count == 0;
             var outcome = interruption switch
             {
                 ApiOutcome.Cancelled => ProjectReadOutcome.Cancelled,
@@ -123,7 +144,9 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     Issues = new ReadOnlyDictionary<ScopedId, IssueReadModel>(issues),
                     Items = items.Values.Select(item => BuildItem(item, complete)).ToArray(),
                     FieldsComplete = fieldsComplete, ItemsComplete = itemsComplete, UndeliveredItemCount = undeliveredItems,
-                    Labels = labels.ToArray(), MilestonesComplete = milestonesComplete && !stopped, Milestones = complete ? milestones.Values.ToArray() : []
+                    Labels = labels.ToArray(), MilestonesComplete = milestonesComplete && !stopped, Milestones = complete ? milestones.Values.ToArray() : [],
+                    IssueTypes = issueTypes.ToArray(), IssueTypesComplete = issueTypesComplete && !stopped,
+                    IssueTypeRepositories = issueTypeRepositories.ToArray()
                 };
             return new(outcome, project, problems.ToArray());
         }
@@ -360,8 +383,12 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             foreach (var field in source.Fields) fields.Add(field.Id, field);
             foreach (var milestone in source.Milestones) milestones.TryAdd(milestone.Id, milestone);
             labels.AddRange(source.Labels);
+            foreach (var type in source.IssueTypes) { issueTypes.Add(type); issueTypeIds.Add(type.Id); }
+            issueTypeRepositories.AddRange(source.IssueTypeRepositories);
+            issueTypeRepositoryIds.UnionWith(source.IssueTypeRepositories);
             fieldsComplete = true;
             milestonesComplete = source.MilestonesComplete;
+            issueTypesComplete = source.IssueTypesComplete;
         }
 
         private void AddField(JsonElement node)
@@ -455,16 +482,23 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 if (item.Kind == ProjectItemKind.Issue)
                 {
                     var repository = Property(content, "repository");
-                    var issue = new IssueReadModel(item.ContentId, new(Id(repository), Id(Property(repository, "owner")),
-                        Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
+                    var owner = Property(repository, "owner");
+                    var repositoryModel = new RepositoryReadModel(Id(repository), Id(owner), Text(repository, "nameWithOwner"));
+                    // #319: only an organization repository can carry an Issue type; a personal owner's
+                    // __typename keeps the read from asking for a catalog that cannot exist.
+                    repositoryOwnerTypes.TryAdd(repositoryModel.OwnerId, OptionalText(owner, "__typename") ?? "");
+                    var issue = new IssueReadModel(item.ContentId, repositoryModel,
+                        PositiveInt(content, "number"), SameHostUrl(content, "url"),
                         ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content), UpdatedAt = UpdatedAt(content),
                             StateReason = ReadStateReason(content),
+                            IssueType = ReadIssueType(content),
                             CanSetFields = Optional(content, "viewerCanSetFields").ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, _ => null },
                             Labels = ReadIssueLabels(content),
                             Milestone = Property(content, "milestone").ValueKind == JsonValueKind.Null ? new(ValueAvailability.Empty)
                                 : new(ValueAvailability.Present, ReadMilestone(Property(content, "milestone"), Id(repository))) };
                     if (!issues.TryAdd(issue.Id, issue)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
                     if (issue.Title.Availability != ValueAvailability.Present || issue.State.Availability != ValueAvailability.Present
+                        || issue.IssueType.Availability == ValueAvailability.Unavailable
                         || issue.State.Value == IssueState.Closed && (issue.ClosedAt.Availability != ValueAvailability.Present || issue.ClosedAt.Value is null))
                         problems.Add(new(ReadProblemKind.IncompleteTraversal, "issue"));
                 }
@@ -585,6 +619,63 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 }
             }
         }
+        // #319: the Issue's own type. A null type is an Issue without one, not a failed observation; a response
+        // that does not carry the field is an observation this read did not make, never an empty value.
+        private static ReadValue<SelectOption> ReadIssueType(JsonElement node)
+        {
+            var value = Optional(node, "issueType");
+            return value.ValueKind switch
+            {
+                JsonValueKind.Null => new(ValueAvailability.Empty),
+                JsonValueKind.Object => new(ValueAvailability.Present, new SelectOption(Text(value, "id"), Text(value, "name"))),
+                JsonValueKind.Undefined => new(ValueAvailability.NotLoaded),
+                _ => new(ValueAvailability.Unavailable)
+            };
+        }
+
+        // #319: one organization's Issue type catalog, read once per distinct repository owner. Only enabled
+        // types are offered; a null connection means the organization offers no Issue types at all.
+        private async Task<bool> ReadIssueTypeCatalogAsync(ScopedId owner)
+        {
+            var response = await SendAsync(ProjectQueries.IssueTypes, new { id = owner.NodeId, after = (string?)null });
+            if (!response.IsSuccess)
+            {
+                stopped = true;
+                interruption = response.Outcome;
+                problems.Add(new(ReadProblemKind.Api, "issue-types", response.Failure, response.Outcome, response.HttpStatus, response.RetryAfter));
+                return false;
+            }
+            var node = Property(Property(response.Data ?? default, "data"), "node");
+            if (node.ValueKind == JsonValueKind.Null)
+            {
+                problems.Add(new(ReadProblemKind.Api, "issue-types", FailureKind.NotFoundOrInaccessible));
+                stopped = true;
+                return false;
+            }
+            if (Text(node, "__typename") != "Organization" || Text(node, "id") != owner.NodeId)
+                throw new ReadException(ReadProblemKind.ScopeMismatch);
+            var catalog = Optional(node, "issueTypes");
+            if (catalog.ValueKind == JsonValueKind.Null) return true;
+            if (catalog.ValueKind != JsonValueKind.Object) throw new ReadException(ReadProblemKind.InvalidResponse);
+            var read = await WalkAsync("issue-types", ProjectQueries.IssueTypes, owner.NodeId,
+                page => { MatchNode(page, owner.NodeId, "Organization"); return Property(page, "issueTypes"); },
+                typeNode => { AddIssueType(typeNode); return Task.CompletedTask; }, catalog);
+            if (!read) return false;
+            foreach (var repository in issues.Values.Where(issue => issue.Repository.OwnerId == owner)
+                .Select(issue => issue.Repository.NameWithOwner).Distinct(StringComparer.Ordinal))
+                if (issueTypeRepositoryIds.Add(repository)) issueTypeRepositories.Add(repository);
+            return true;
+        }
+
+        private void AddIssueType(JsonElement node)
+        {
+            var id = Text(node, "id");
+            var name = Text(node, "name", allowEmpty: true);
+            var enabled = Boolean(node, "isEnabled");
+            if (!issueTypeIds.Add(id)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
+            if (enabled) issueTypes.Add(new(id, name));
+        }
+
         private MilestoneReadModel ReadMilestone(JsonElement node, ScopedId repository)
         {
             var due = Property(node, "dueOn");

@@ -9,6 +9,8 @@ internal static class PlanField
     public const string Repository = "Repository";
     public const string Status = "Status";
     public const string Phase = "Phase";
+    // #319: the organization Issue type, an Issue-level value shown as the standard column 種類.
+    public const string IssueType = "IssueType";
     public const string Closed = "Closed";
     public const string Assignees = "Assignees";
     public const string Estimate = "Estimate";
@@ -26,7 +28,7 @@ internal static class PlanField
     // #231: a task that is 中止 rather than 完了, and a task the PMO has taken out of this version.
     public const string Cancelled = "Cancelled";
     public const string Removed = "Removed";
-    public static readonly string[] All = [Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, NewTask, SubIssueOrder, Labels, MilestoneTitle, Cancelled, Removed];
+    public static readonly string[] All = [Title, Repository, Status, Phase, IssueType, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, NewTask, SubIssueOrder, Labels, MilestoneTitle, Cancelled, Removed];
     public static bool IsDefined(string value) => All.Contains(value) || PlanSheetColumns.IsExtra(value);
 }
 
@@ -72,6 +74,8 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
     public string? CsvSourceHash { get; init; }
     public string? Status { get; init; }
     public string? Phase { get; init; }
+    // #319: the name of the Issue's organization Issue type; null when it has none or its repository has none.
+    public string? IssueType { get; init; }
     public bool Closed { get; init; }
     public DateOnly? CloseDate { get; init; }
     // #231: 中止 (closed as not planned) and この版から外す (pending archive). Both leave the schedule,
@@ -90,10 +94,15 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
 }
 internal sealed record PlanMilestone(string Title, DateOnly? DueDate, bool Closed, bool ConflictingDates);
 internal sealed record PlanRepositoryOption(string Repository, string Id, string Name);
+// #319: one organization Issue type this Project can use. The name is the plan value; the ID is the write target.
+internal sealed record PlanIssueType(string Id, string Name);
 internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray<PlanColumnDefinition> Columns)
 { public ImmutableArray<PlanMilestone> Milestones { get; init; } = [];
   public ImmutableArray<PlanRepositoryOption> RepositoryMilestones { get; init; } = [];
-  public ImmutableArray<PlanRepositoryOption> RepositoryLabels { get; init; } = []; }
+  public ImmutableArray<PlanRepositoryOption> RepositoryLabels { get; init; } = [];
+  public ImmutableArray<PlanIssueType> IssueTypes { get; init; } = [];
+  // The repositories whose Issues can carry a type: their owner organization has Issue types.
+  public ImmutableArray<string> IssueTypeRepositories { get; init; } = []; }
 internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings)
 {
     // #231: verified Project-item archives this plan performed. A later read that returns one of these

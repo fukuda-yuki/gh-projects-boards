@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 using System.Text.Json;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
@@ -540,6 +541,32 @@ internal sealed class PlanWorkspaceTests
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"planFault\":\"csv-network\"}");
             Assert.ThrowsAsync<InvalidOperationException>(() => workspace.PreviewCsv(PlanCsvImportTests.Read("a,A,8,,,,,")));
             Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Test]
+    public async Task CsvTemplateFollowsTheOpenDocumentsShownEditableColumnsWithoutReadingOrWritingGitHub()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-csv-template-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
+            var day = new DateOnly(2026, 10, 13);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open((await workspace.Listings("fixture-user"))[0].Choice);
+            var session = workspace.Session!;
+            var settings = PlanSheetColumns.Change(session.Document, "Status", visible: true);
+            Assert.That((await session.Execute(new ReplacePlanSettings(settings), day)).Succeeded, Is.True);
+            File.WriteAllText(Path.Combine(root, "calls.jsonl"), "");
+            var bytes = workspace.CsvTemplate();
+            Assert.That(bytes.Take(3), Is.EqualTo(new byte[] { 0xef, 0xbb, 0xbf }));
+            Assert.That(Encoding.UTF8.GetString(bytes).TrimStart('\uFEFF'),
+                Is.EqualTo("キー,親,タスク名,工程,担当者,見積 h,残 h,実績 h,開始日,終了日,先行,ステータス,リポジトリ\r\n"));
+            Assert.That(File.ReadAllText(Path.Combine(root, "calls.jsonl")), Is.Empty, "Writing the template reads and writes no GitHub.");
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         }
         finally { Directory.Delete(root, true); }

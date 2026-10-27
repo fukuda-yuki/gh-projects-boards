@@ -37,7 +37,7 @@ internal sealed partial class PlanWorkspaceView
         settingsArea.Children.Add(settingsNav);
     }
 
-    // Opens the page at one section from elsewhere in the app: 表示列, the summary's 設定を開く, the assist pane.
+    // Opens the page at one section from elsewhere in the app: the summary's 設定を開く and the assist pane.
     private void OpenSettingsPage(string section, string? returnPage = null)
     {
         if (returnPage is not null) settingsReturnPage = returnPage;
@@ -625,17 +625,23 @@ internal sealed partial class PlanWorkspaceView
                 toggle.Checked += Changed; toggle.Unchecked += Changed; Cell(line, toggle, 1);
             }
             TextBox? widthInput = null;
-            string CurrentName() => PlanSheetColumns.All(session.Document).Single(c => c.Key == column.Key).Name;
-            // The box shows the current name as text; clearing it, or typing the default name, restores the default.
-            var name = TextSetting("表示名", "PlanColumnName" + column.Key, column.Name, async text => {
-                await ChangeSettings(_ => PlanSheetColumns.Change(session.Document, column.Key, name: text.Trim() == column.DefaultName ? null : text, rename: true));
-                var display = CurrentName();
-                if (toggle is not null) AutomationProperties.SetName(toggle, display + " を表示");
-                if (widthInput is not null) AutomationProperties.SetName(widthInput, display + " の幅");
-            }, CurrentName);
-            name.Header = null; name.MinWidth = 0; name.MinHeight = 32; name.Padding = new(8, 4, 8, 4);
-            name.PlaceholderText = column.DefaultName; AutomationProperties.SetName(name, column.DefaultName + " の表示名");
-            Cell(line, name, 2);
+            if (column.NameEditable)
+            {
+                string CurrentName() => PlanSheetColumns.All(session.Document).Single(c => c.Key == column.Key).Name;
+                // The box shows the current name as text; clearing it, or typing the GitHub name, restores the default.
+                var name = TextSetting("表示名", "PlanColumnName" + column.Key, column.Name, async text => {
+                    await ChangeSettings(_ => PlanSheetColumns.Change(session.Document, column.Key, name: text.Trim() == column.DefaultName ? null : text, rename: true));
+                    var display = CurrentName();
+                    if (toggle is not null) AutomationProperties.SetName(toggle, display + " を表示");
+                    if (widthInput is not null) AutomationProperties.SetName(widthInput, display + " の幅");
+                }, CurrentName);
+                name.Header = null; name.MinWidth = 0; name.MinHeight = 32; name.Padding = new(8, 4, 8, 4);
+                name.PlaceholderText = column.DefaultName; AutomationProperties.SetName(name, column.DefaultName + " の表示名");
+                Cell(line, name, 2);
+            }
+            else
+                // #319 D1: an app column keeps its standard name, so it reads as plain text with no box and no placeholder.
+                Cell(line, Id(Label(column.Name), "PlanColumnName" + column.Key), 2);
             if (column.Key == "Indicator") Cell(line, Label("—"), 3);
             else {
                 widthInput = TextSetting("幅", "PlanColumnWidth" + column.Key, column.Width?.ToString(CultureInfo.CurrentCulture) ?? "", async text => {
@@ -652,7 +658,7 @@ internal sealed partial class PlanWorkspaceView
                 widthInput.PlaceholderText = PlanSheetView.DefaultColumnWidth(column.Key).ToString(CultureInfo.CurrentCulture);
                 AutomationProperties.SetName(widthInput, column.Name + " の幅"); Cell(line, widthInput, 3);
             }
-            var source = new TextBlock { Text = column.GitHub, TextTrimming = TextTrimming.CharacterEllipsis };
+            var source = Id(new TextBlock { Text = column.GitHub, TextTrimming = TextTrimming.CharacterEllipsis }, "PlanColumnSource" + column.Key);
             ToolTipService.SetToolTip(source, column.GitHub); Cell(line, source, 4);
             Cell(line, Id(Label(column.Type), "PlanColumnType" + column.Key), 5);
             var mode = Id(Label(column.Editability), "PlanColumnMode" + column.Key);

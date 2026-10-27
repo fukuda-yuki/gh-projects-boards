@@ -10,7 +10,7 @@ Describe 'Extracted release package' {
         $script:Root = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory $script:Root | Out-Null
         $files = foreach ($name in @('GhProjectsBoards.App.exe', 'GhProjectsBoards.App.dll', 'coreclr.dll', 'hostpolicy.dll',
-            'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'マニュアル.md', 'manual/images/01-help.png', 'templates/new-tasks.csv', 'notices/license.txt',
+            'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'マニュアル.md', 'manual/images/01-help.png', 'notices/license.txt',
             'runtimes/win-x64/native/copilot-runtime.exe', 'runtimes/win-x64/native/runtime.node',
             'notices/GitHub.Copilot.CLI-1.0.98-LICENSE.md', 'notices/GitHub.Copilot.SDK-1.0.22-MIT.txt')) {
             $path = Join-Path $script:Root $name

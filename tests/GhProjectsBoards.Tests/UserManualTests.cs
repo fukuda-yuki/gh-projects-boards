@@ -7,12 +7,7 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class UserManualTests
 {
-    internal static string RepositoryRoot()
-    {
-        var root = new DirectoryInfo(TestContext.CurrentContext.TestDirectory);
-        while (root is not null && !File.Exists(Path.Combine(root.FullName, "GhProjectsBoards.sln"))) root = root.Parent;
-        return root?.FullName ?? throw new InvalidOperationException("Run from a build inside the repository.");
-    }
+    internal static string RepositoryRoot() => RepositoryLocator.Root();
 
     [Test]
     public void ManualRelativeLinksResolveInsideInstalledPackage()
@@ -36,7 +31,7 @@ internal sealed class UserManualTests
             var target = Uri.UnescapeDataString(link.Groups["target"].Value);
             if (target.StartsWith('#') || Uri.TryCreate(target, UriKind.Absolute, out _)) continue;
             var path = target.Split('#')[0];
-            Assert.That(path == "使い方.md" || path.StartsWith("templates/", StringComparison.Ordinal) || path.StartsWith("manual/images/", StringComparison.Ordinal), Is.True, target);
+            Assert.That(path == "使い方.md" || path.StartsWith("manual/images/", StringComparison.Ordinal), Is.True, target);
             Assert.That(shipped.TryGetValue(path, out var source), Is.True, "Not in the package: " + target);
             Assert.That(File.Exists(source), Is.True, "Missing package source: " + target);
         }

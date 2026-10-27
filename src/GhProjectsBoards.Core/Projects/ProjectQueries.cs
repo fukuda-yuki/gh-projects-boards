@@ -5,6 +5,9 @@ internal static class ProjectQueries
     private const string PageInfo = "totalCount pageInfo { hasNextPage endCursor }";
     public static readonly string Milestones = "query ProjectMilestones($id:ID!,$after:String){node(id:$id){__typename ... on Repository{id milestones(first:100,after:$after,states:[OPEN,CLOSED]){" + PageInfo + " nodes{id title dueOn state}}}}}";
     public static readonly string Labels = "query ProjectLabels($id:ID!,$after:String){node(id:$id){__typename ... on Repository{id labels(first:100,after:$after){" + PageInfo + " nodes{id name}}}}}";
+    // #319: Issue types are organization-scoped, so the read resolves each distinct repository owner that is
+    // an Organization through node(id:) and pages its catalog. A personal owner has no such connection.
+    public static readonly string IssueTypes = "query ProjectIssueTypes($id:ID!,$after:String){node(id:$id){__typename ... on Organization{id issueTypes(first:100,after:$after){" + PageInfo + " nodes{id name isEnabled}}}}}";
     private const string Native = "assignees(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id login } } blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id } } parent { id }";
     public static readonly string Assignees = "query PlanningAssignees($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id assignees(first:100, after:$after) { " + PageInfo + " nodes { id login } } } } }";
     public static readonly string Predecessors = "query PlanningPredecessors($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id blockedBy(first:100, after:$after) { " + PageInfo + " nodes { id } } } } }";
@@ -66,8 +69,8 @@ internal static class ProjectQueries
           __typename
           ... on Node { id }
           ... on Issue {
-            labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt updatedAt viewerCanUpdate viewerCanSetFields milestone { id title dueOn state } NATIVE
-            repository { id nameWithOwner owner { id } }
+            labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state stateReason closedAt updatedAt viewerCanUpdate viewerCanSetFields milestone { id title dueOn state } issueType { id name } NATIVE
+            repository { id nameWithOwner owner { __typename id } }
           }
         }
         fieldValues(first: 100) { PAGE_INFO VALUES }

@@ -54,6 +54,7 @@ internal static class PlanCsvExport
                     PlanField.Predecessors => Text(taskNames.List(row.Predecessors)),
                     PlanField.Labels => Text(string.Join(", ", row.Labels)),
                     PlanField.Phase => Text(document.State.Settings.Columns.Any(c => c.Role == field) ? row.Phase ?? "" : ""),
+                    PlanField.IssueType => Text(row.IssueType ?? ""),
                     _ => Text(PlanOperations.Value(row, field)?.ToString() ?? "")
                 };
             }

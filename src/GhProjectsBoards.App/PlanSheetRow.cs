@@ -408,6 +408,9 @@ public sealed class PlanSheetRow : Grid
             // reason would mislead. This is information, not a cell error, so it never colours the frame (#231).
             var stateHint = problem is null && cell.IsReadOnly && owner.IsPendingClose(Identity) && field is PlanField.Remaining or PlanField.End
                 ? owner.Rows[Identity].Closed ? "完了にする を発行すると確定します（未発行）" : "未完了に戻す を発行すると編集できます（未発行）" : null;
+            // #319 D2: a repository without Issue types leaves the cell read-only, so the reason rides with the
+            // tooltip and accessible description instead of a value the PMO might try to edit.
+            var typeWording = field == PlanField.IssueType && cell.IsReadOnly ? owner.ReadOnlyReason(Identity, field) : null;
             if (cell.CalendarButton is { } calendar)
             {
                 cell.CalendarAllowed = !summary && owner.IsDateField(field) && !owner.ReadOnly(Identity, field) && owner.IsRangeEnd(Identity, field);
@@ -441,9 +444,9 @@ public sealed class PlanSheetRow : Grid
                     : field == "ForecastEnd" ? (owner.ForecastAccessibleValue(Identity) is { Length: > 0 } forecastName ? " " + forecastName : "")
                     : owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
             AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem)
-                : problem ?? overrunWording ?? stateHint ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値"
+                : problem ?? overrunWording ?? stateHint ?? typeWording ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値"
                     : recordWording is not null ? owner.ReadOnlyReason(Identity, field) ?? "" : ""));
-            ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? recordWording ?? overrunWording ?? stateHint ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
+            ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? typeWording ?? recordWording ?? overrunWording ?? stateHint ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
                 : field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : text)));
             if (summary && field != PlanField.Title && !recordField) {
                 if (!summaryCells.TryGetValue(field, out var display)) {

@@ -26,6 +26,9 @@ internal sealed record IssueReadModel(ScopedId Id, RepositoryReadModel Repositor
   public ReadValue<MilestoneReadModel> Milestone { get; init; } = new(ValueAvailability.NotLoaded);
   public ReadValue<DateTimeOffset?> ClosedAt { get; init; } = new(ValueAvailability.NotLoaded);
   public ReadValue<IssueStateReason?> StateReason { get; init; } = new(ValueAvailability.NotLoaded);
+  // #319: the Issue's organization Issue type. Empty means the Issue has no type; the value belongs to the
+  // Issue, so every Project holding it shows the same name.
+  public ReadValue<SelectOption> IssueType { get; init; } = new(ValueAvailability.NotLoaded);
   // #258: organization Issue Field values are written on the Issue; this is GitHub's permission for that.
   public bool? CanSetFields { get; init; }
   // #308: the other half of the history change observation (see ProjectItemReadModel.UpdatedAt).
@@ -66,7 +69,12 @@ internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string Ow
 { public IReadOnlyList<RepositoryLabel> Labels { get; init; } = [];
   public IReadOnlyList<MilestoneReadModel> Milestones { get; init; } = [];
   public bool MilestonesComplete { get; init; }
-  public int UndeliveredItemCount { get; init; } }
+  public int UndeliveredItemCount { get; init; }
+  // #319: the enabled organization Issue types this Project can use and the repositories whose Issues can
+  // carry one. Read once per read from each repository owner organization, never per row.
+  public IReadOnlyList<SelectOption> IssueTypes { get; init; } = [];
+  public bool IssueTypesComplete { get; init; }
+  public IReadOnlyList<string> IssueTypeRepositories { get; init; } = []; }
 internal sealed record ReadProblem(ReadProblemKind Kind, string Stage, FailureKind Failure = FailureKind.None,
     ApiOutcome? ApiOutcome = null, int? HttpStatus = null, TimeSpan? RetryAfter = null);
 internal sealed record ProjectReadResult(ProjectReadOutcome Outcome, ProjectReadModel? Project,
