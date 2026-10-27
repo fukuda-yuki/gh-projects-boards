@@ -838,6 +838,10 @@ internal sealed class PlanOverviewHostedTests
     public async Task DebouncedTitleSearchKeepsKeyboardFocusInTheSearchBox()
     {
         await Filter("OT-001", ["I2", "I5", ""]);
+        // The helper's visible-row predicate is also satisfied before the filter applies, so wait for the
+        // 300 ms debounce to accept the search and select its first match before asserting the retained focus.
+        await Ui.Until(() => sheet.FilterActive && Ui.Find<TextBlock>("PlanSheetFilterCount").Text == "2 件");
+        await Ui.Idle();
         await Ui.Run(() => {
             var filter = Ui.Find<TextBox>("PlanSheetFilter");
             Assert.That(filter.FocusState, Is.Not.EqualTo(FocusState.Unfocused),
