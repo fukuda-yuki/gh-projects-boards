@@ -43,7 +43,8 @@ internal sealed class PlanActualDatesIntegrationTests
         => new(row, "", true) { History = history.ToImmutableArray(), ItemUpdatedAt = FakePlanEditor.ObservedAt, IssueUpdatedAt = FakePlanEditor.ObservedAt };
     private static PlanHistoryEvent Changed(string at, string previous, string next)
         => new(PlanHistoryEventKind.StatusChanged, Stamp(at), "fukuda-yuki", false, previous, next);
-    private static PlanHistoryEvent Closed(string at) => new(PlanHistoryEventKind.Closed, Stamp(at), "fukuda-yuki", false, StateReason: "COMPLETED");
+    private static PlanHistoryEvent Closed(string at, string? reason = "COMPLETED")
+        => new(PlanHistoryEventKind.Closed, Stamp(at), "fukuda-yuki", false, StateReason: reason);
     private static PlanHistoryEvent Reopened(string at) => new(PlanHistoryEventKind.Reopened, Stamp(at), "fukuda-yuki", false);
     private static DateTimeOffset Stamp(string text) => DateTimeOffset.Parse(text, System.Globalization.CultureInfo.InvariantCulture,
         System.Globalization.DateTimeStyles.RoundtripKind);
@@ -155,6 +156,22 @@ internal sealed class PlanActualDatesIntegrationTests
         Assert.That(Task("I2").Input.ActualStart!.Day, Is.EqualTo(new DateOnly(2026, 10, 3)));
         Assert.That(session.Document.Sync.IssueHistory["I1"].ItemUpdatedAt, Is.EqualTo(FakePlanEditor.ObservedAt),
             "the unchanged row kept the history from its own read");
+    }
+
+    [Test]
+    public async Task ACloseWithNoRecordedReasonGivesTheFinishAndNeedsNoSecondHistoryRead()
+    {
+        var start = Today.AddDays(-5);
+        var end = Today.AddDays(-2);
+        await Start(Row("I1", WithDates("I1", start, end) with { Closed = true, CloseDate = Today.AddDays(-1) },
+            Changed("2026-09-29T10:00:00+09:00", "Ready", "In progress"), Closed("2026-10-04T17:00:00+09:00", null)));
+        Assert.That(Task("I1").Input.ActualFinish!.Day, Is.EqualTo(new DateOnly(2026, 10, 4)),
+            "a recorded close with no state reason reads as completed, as the row's state already does");
+        var afterFirstRefresh = HistoryRequests();
+
+        Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(HistoryRequests(), Is.EqualTo(afterFirstRefresh),
+            "a reasonless completed close is settled history, not re-read on every refresh");
     }
 
     [Test]

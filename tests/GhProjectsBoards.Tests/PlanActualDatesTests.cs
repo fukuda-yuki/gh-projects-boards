@@ -108,12 +108,34 @@ internal sealed class PlanActualDatesTests
 
         Assert.That(PlanActualDates.Finish(History(Closed("2026-10-10T06:00:00Z", "NOT_PLANNED")), true, Jst), Is.Null,
             "a 中止 close gives no 完了日 (R5)");
+        Assert.That(PlanActualDates.Finish(History(Closed("2026-10-10T06:00:00Z", "DUPLICATE")), true, Jst), Is.Null,
+            "a duplicate close is a 中止 close too");
         Assert.That(PlanActualDates.Finish(History(Closed("2026-10-10T06:00:00Z"), Reopened("2026-10-12T06:00:00Z")), true, Jst), Is.Null,
             "a reopen clears the record");
         Assert.That(PlanActualDates.Finish(completed, closed: false, Jst), Is.Null, "an open Issue has no 完了日");
         Assert.That(PlanActualDates.Finish(null, true, Jst), Is.Null);
-        Assert.That(PlanActualDates.Finish(History(Closed("2026-10-10T06:00:00Z", null)), true, Jst), Is.Null,
-            "only a completed close counts");
+    }
+
+    [Test]
+    public void ACloseWithNoStateReasonStillGivesTheFinishDay()
+    {
+        // GitHub can leave a close's state reason empty; the row still reads as 完了 (#231), so its record must keep
+        // the day and every refresh must not read that history again.
+        var noReason = PlanActualDates.Finish(History(Closed("2026-10-10T06:00:00Z", null)), true, Jst);
+        Assert.That(noReason, Is.Not.Null);
+        Assert.That(noReason!.Day, Is.EqualTo(new DateOnly(2026, 10, 10)));
+        var empty = PlanActualDates.Finish(History(Closed("2026-10-11T06:00:00Z", "")), true, Jst);
+        Assert.That(empty!.Day, Is.EqualTo(new DateOnly(2026, 10, 11)), "an empty reason is the same as no reason");
+    }
+
+    [Test]
+    public void TheLatestCloseDecidesTheFinishAndAReopenClearsEvenAReasonlessClose()
+    {
+        var history = History(Closed("2026-10-08T06:00:00Z", "NOT_PLANNED"), Reopened("2026-10-09T06:00:00Z"),
+            Closed("2026-10-10T06:00:00Z", null));
+        Assert.That(PlanActualDates.Finish(history, true, Jst)!.Day, Is.EqualTo(new DateOnly(2026, 10, 10)));
+        var reopened = History(Closed("2026-10-10T06:00:00Z", null), Reopened("2026-10-12T06:00:00Z"));
+        Assert.That(PlanActualDates.Finish(reopened, true, Jst), Is.Null);
     }
 
     [Test]

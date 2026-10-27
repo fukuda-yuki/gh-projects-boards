@@ -79,7 +79,7 @@ internal static class PlanSnapshot
             PlanHistoryEvent? latest = null;
             foreach (var change in history.Events)
                 if (change.Kind is PlanHistoryEventKind.Closed or PlanHistoryEventKind.Reopened && (latest is null || change.At >= latest.At)) latest = change;
-            return latest is { Kind: PlanHistoryEventKind.Closed, StateReason: "COMPLETED" };
+            return latest is { Kind: PlanHistoryEventKind.Closed } close && PlanActualDates.IsCompletedClose(close.StateReason);
         }
     }
     // #308: the history read for the given Issues, retried under the same bounded concurrent-change policy as the

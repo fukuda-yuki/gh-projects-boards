@@ -283,6 +283,26 @@ internal sealed class SiteCsvTests
     }
 
     [Test]
+    public void ACloseWithNoStateReasonStillGivesItsFinish()
+    {
+        // GitHub can leave the close reason empty; the row reads as 完了, so the CSV prints its 完了日 too.
+        var item = Issue("PVTI_a", 10, state: "CLOSED", closedAt: Moment(2026, 10, 20, 9),
+            events: [Closed(Moment(2026, 10, 20, 9), null)]);
+        var row = Read(Render(item)).Rows[0];
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Cell(row, "閉じた理由"), Is.Empty);
+            Assert.That(Cell(row, "完了日"), Is.EqualTo("2026-10-20"));
+            Assert.That(Cell(row, "完了した人"), Is.EqualTo("yamada"));
+        }
+
+        var duplicate = Issue("PVTI_b", 11, state: "CLOSED", stateReason: "DUPLICATE", closedAt: Moment(2026, 10, 21, 9),
+            events: [Closed(Moment(2026, 10, 21, 9), "DUPLICATE")]);
+        Assert.That(Cell(Read(Render(duplicate)).Rows[0], "完了日"), Is.Empty, "a duplicate close is 中止, not 完了.");
+    }
+
+    [Test]
     public void ActualDatesUseTheRecordTimeZone()
     {
         var item = Issue("PVTI_a", 10, state: "CLOSED", stateReason: "COMPLETED", closedAt: Moment(2026, 10, 25, 15),
