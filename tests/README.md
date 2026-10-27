@@ -131,12 +131,13 @@ Each needs a stated reason and separate evidence.
 | Full 200-step history sequences (routine runs use 20 seeds × 30 operations) | `dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --no-build --no-restore --filter 'TestCategory=HistorySequence'` | Time |
 | Plan sheet frame timing and Core/storage timing | See [performance measurement](../docs/performance.md) | Idle machine |
 | Live GitHub connection and Project read | `./scripts/Test-LiveGitHub.ps1`, `./scripts/Test-ProjectRead.ps1` | Sandbox authorization |
+| Live organization Issue type catalog read (read-only, no mutation) | `dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter 'FullyQualifiedName~OrgIssueTypeReadLiveTests'` with `GHPB_RUN_ORG_TYPE_READ=1`, `GHPB_ORG_TYPE_READ_ARTIFACTS` and `GHPB_ORG_TYPE_READ_GH` set | Sandbox authorization and the organization Project authorization in the owning Issue |
 | Live publisher proof | Below | Sandbox authorization |
 | Live AI assist against OpenCode Go | `dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --no-build --no-restore --filter 'FullyQualifiedName~AssistLiveTests'` | Explicit `LiveAssist` fixture; `OPENCODE_GO_API_KEY`, `OPENCODE_GO_BASE_URL` and `GHPB_ASSIST_RUNTIME_PATH` (the cached 1.0.98 stdio wrapper beside `runtime.node`) in the process environment. Never print the key. Uses only the offline evaluation plan and does not publish. Excluded from ordinary runs by NUnit `Explicit`. |
 
 ### Live GitHub
 
-Live checks touch only the sandbox named in [AGENTS.md](../AGENTS.md#authorized-github-sandbox), and the current task must authorize them. The publisher proof uses the product publisher, exact sandbox identities and independent readback. It creates up to 250 owned Issues, measures three refreshes, three 300-cell updates and three 50-Issue creations, then deletes only its owned resources and verifies the original baseline. Budget and stop rules are printed before any mutation.
+Live checks touch only the sandbox named in [AGENTS.md](../AGENTS.md#authorized-github-sandbox), and the current task must authorize them. The read-only organization Issue type catalog check (#319) is the one exception and reads the organization Project that Issue names, without any write. The publisher proof uses the product publisher, exact sandbox identities and independent readback. It creates up to 250 owned Issues, measures three refreshes, three 300-cell updates and three 50-Issue creations, then deletes only its owned resources and verifies the original baseline. Budget and stop rules are printed before any mutation.
 
 ```powershell
 # ArtifactsRoot must be absolute and, for Run, must not exist yet.
