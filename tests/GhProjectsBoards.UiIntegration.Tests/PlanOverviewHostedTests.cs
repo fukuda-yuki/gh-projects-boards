@@ -828,6 +828,28 @@ internal sealed class PlanOverviewHostedTests
         Assert.That(session.UndoCount, Is.Zero, "Folding changes the view without adding plan edits.");
     }
 
+    // #316 / #155: the 300 ms pause can apply the title search between two typed keys, and at the 700 ms
+    // rhythm the word is not finished yet. Moving keyboard focus to the first match at that point sends the
+    // remaining characters to its title cell and can begin editing that title, so this case lets the debounce
+    // alone apply the search, with no Enter or Escape, and requires the search box to keep keyboard focus and
+    // its full text while the first match stays selected and in view. Before the fix the selection follows the
+    // filter but keyboard focus moves to PlanCell2_Title, so the focus assertion fails; after it, both hold.
+    [Test]
+    public async Task DebouncedTitleSearchKeepsKeyboardFocusInTheSearchBox()
+    {
+        await Filter("OT-001", ["I2", "I5", ""]);
+        await Ui.Run(() => {
+            var filter = Ui.Find<TextBox>("PlanSheetFilter");
+            Assert.That(filter.FocusState, Is.Not.EqualTo(FocusState.Unfocused),
+                "Applying the search by pause must keep typing focus in the search box.");
+            Assert.That(filter.Text, Is.EqualTo("OT-001"), "Applying the search keeps the complete typed text.");
+            Assert.That(sheet.IsSelectedRow("I2"), Is.True, "The first match is still selected.");
+            Assert.That(sheet.IsSelected("I2", PlanField.Title), Is.True, "The first match's title cell is the selection end.");
+            Assert.That(sheet.Realized.Any(row => row.Identity == "I2" && row.IsLoaded), Is.True,
+                "The first match is brought into view.");
+        });
+    }
+
     [Test]
     public async Task InvalidChildInputRefusesFoldingAndKeepsTheEditorReachable()
     {

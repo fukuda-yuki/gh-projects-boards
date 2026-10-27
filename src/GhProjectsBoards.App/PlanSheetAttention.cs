@@ -330,13 +330,20 @@ internal sealed partial class PlanSheetView
         SelectFirstMatch();
     }
     // Applying or changing a filter selects the first matching row and brings it into view (#260 / #227).
+    // The 300 ms pause can apply a title search while the PMO is still typing, so moving keyboard focus to the
+    // match's title cell would send the next characters there and could start editing that title; while the
+    // search box holds focus only the view follows the match, and a queued cell-focus request or a row jump's
+    // bring-into-view hold must not override that. A filter applied from another surface moves keyboard focus
+    // to its first match as before.
     private void SelectFirstMatch()
     {
         if (!FilterActive || filterResult.Matches.Length == 0) return;
         var first = filterResult.Matches[0];
         if (!RowIds.Contains(first)) return;
         Select(first, PlanField.Title, false);
-        FocusCell(first, PlanField.Title, scrollIntoView: true);
+        if (filter.FocusState == FocusState.Unfocused) { FocusCell(first, PlanField.Title, scrollIntoView: true); return; }
+        CancelRequestedFocus(); HoldingView = false;
+        List.ScrollIntoView(first);
     }
     // The match set and the dimmed requirement parents for the active filter. Called from RefreshVisibleRows
     // once the document's effective rows are known.
