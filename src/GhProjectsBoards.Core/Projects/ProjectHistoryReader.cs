@@ -21,7 +21,7 @@ internal sealed class ProjectHistoryReader(GhConnectionService service, GhConnec
     private const int BatchSize = 25;
     private const int Concurrency = 6;
     private const int MaxPages = 20;
-    private const string Events = "timelineItems(first: 100, itemTypes: [PROJECT_V2_ITEM_STATUS_CHANGED_EVENT, CLOSED_EVENT, REOPENED_EVENT])";
+    private const string EventArguments = "first: 100, itemTypes: [PROJECT_V2_ITEM_STATUS_CHANGED_EVENT, CLOSED_EVENT, REOPENED_EVENT]";
     private const string EventSelection = """
         nodes {
           __typename
@@ -30,10 +30,11 @@ internal sealed class ProjectHistoryReader(GhConnectionService service, GhConnec
           ... on ReopenedEvent { createdAt actor { __typename login } }
         }
         """;
-    private static readonly string Histories = "query PlanIssueHistories($ids:[ID!]!){nodes(ids:$ids){__typename ... on Issue{id updatedAt " + Events +
-        " { totalCount pageInfo { hasNextPage endCursor } " + EventSelection + "}}}}";
-    private static readonly string Page = "query PlanIssueHistoryPage($id:ID!,$after:String){node(id:$id){__typename ... on Issue{id " + Events +
-        "(after:$after) { totalCount pageInfo { hasNextPage endCursor } " + EventSelection + "}}}}";
+    private static readonly string Histories = "query PlanIssueHistories($ids:[ID!]!){nodes(ids:$ids){__typename ... on Issue{id updatedAt timelineItems(" + EventArguments +
+        ") { totalCount pageInfo { hasNextPage endCursor } " + EventSelection + "}}}}";
+    // GitHub rejects a second argument list written as timelineItems(...)(after:). after belongs with the other field arguments.
+    private static readonly string Page = "query PlanIssueHistoryPage($id:ID!,$after:String){node(id:$id){__typename ... on Issue{id timelineItems(" + EventArguments +
+        ", after:$after) { totalCount pageInfo { hasNextPage endCursor } " + EventSelection + "}}}}";
 
     public async Task<ProjectHistoryResult> ReadAsync(ConnectionContext context, ScopedId project, IReadOnlyList<string> issueIds,
         CancellationToken cancellationToken = default)

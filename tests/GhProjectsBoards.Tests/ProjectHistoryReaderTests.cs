@@ -7,7 +7,8 @@ using NUnit.Framework;
 namespace GhProjectsBoards.Tests;
 
 // #308: the bounded read of the Issue timeline. The reader owns filtering to this Project, actor/automation,
-// pagination and completeness; these cases assert those observable results, not the query text.
+// pagination and completeness. The continuation request is checked at the gh boundary: GitHub rejects a
+// second argument list written as timelineItems(...)(after:).
 [TestFixture]
 internal sealed class ProjectHistoryReaderTests
 {
@@ -106,6 +107,12 @@ internal sealed class ProjectHistoryReaderTests
         Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete), string.Join(", ", result.Problems));
         Assert.That(result.History!["I1"].StatusChanges.Count, Is.EqualTo(1));
         Assert.That(result.History!["I1"].Closes.Count, Is.EqualTo(1));
+        var page = runner.Commands.Single(c => c.StandardInput?.Contains("PlanIssueHistoryPage") == true);
+        using var sent = JsonDocument.Parse(page.StandardInput!);
+        var query = sent.RootElement.GetProperty("query").GetString();
+        Assert.That(query, Does.Contain("timelineItems(first: 100, itemTypes: [PROJECT_V2_ITEM_STATUS_CHANGED_EVENT, CLOSED_EVENT, REOPENED_EVENT], after:$after)"));
+        Assert.That(query, Does.Not.Contain(")(after:"));
+        Assert.That(sent.RootElement.GetProperty("variables").GetProperty("after").GetString(), Is.EqualTo("c1"));
     }
 
     [Test]
