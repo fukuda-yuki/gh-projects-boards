@@ -63,6 +63,7 @@ One JSON file names the site and the Projects to show. The configuration supplie
 | `projects[].stateField` | no | Project field whose values the 状態の推移 chart presents | `Status`; must be `SINGLE_SELECT` in the record |
 | `projects[].groupField` | yes | Project field whose options form the group rows and the table title | Must be `SINGLE_SELECT` or `ITERATION` in the record |
 | `projects[].periodStart`, `periodEnd` | no | Period management assigns to the Project, `yyyy-MM-dd` | Both or neither; without a period the list shows `—` and sorts the Project last |
+| `projects[].notStartedStatuses` | no | Status option names that mean not started, used to read 着手日 for the CSV (#308) | Default no Status, `Backlog`, `Todo`, `Ready`; matched by option name |
 
 - The raw records for a Project live at `<data>/<owner>/<number>/`, using the owner and number in the Project URL. The host and any path prefix before `users/` or `orgs/` are not part of the folder layout, so the same configuration works with GitHub Enterprise Cloud.
 - Configuration and data errors fail the command with a message that names the Project (its `name`, or `projects[<i>]` when the name itself is missing) and the field. Examples:
@@ -78,10 +79,15 @@ One JSON file names the site and the Projects to show. The configuration supplie
 | --- | --- |
 | Task (タスク) | A leaf Issue: an Issue item that is not the parent of another item in the same Project on that day. Archived items count like any other item. Pull requests, drafts, REDACTED items and parent Issues (requirements) are not tasks. |
 | 完了 | A task whose Issue state is `CLOSED`, whatever the close reason (completed or not planned). A reopened Issue is not complete. The close date is `closedAt` as a date in JST. The header, the list and the group table use this definition. |
+| 着手日 / 完了日 | The records the app shows on its plan sheet (#308): the latest Status change from a not-started option to a started option in this Project, and the latest close as completed while the Issue is closed. Both are dates in JST taken from the recorded Issue timeline; the CSV prints them with who made the change. |
 | 状態 | The recorded value of the Project's configured state field. Tasks are counted in the field definition's own option order; a task with no value is 未設定 and comes after the options. Every task, open or closed, is stacked by its recorded Status, so 完了 and Status may disagree; the page does not explain the difference. |
 | Group (グループ) | One configured `SINGLE_SELECT` or `ITERATION` field per Project: 工程 for a waterfall Project, an Iteration or Status field for an agile one. Rows follow the field's option order, iterations by start date; tasks with no value form a final 未設定 row. The table title uses the field's name. |
 | Day / week | Days and weeks are JST; a week runs Monday–Sunday. The chart covers the first recorded week through the latest record. A week's bar is the last recorded day in that week, and the current week is the latest record. Weeks before the first record are not drawn. A week without a record is an empty slot: it has no bar and values are not carried forward. |
 | Latest record | The newest raw record for the Project. It supplies the counts, the state composition bar, the group table and the CSV. The chart uses every record. |
+
+## Recorded Issue history (#308)
+
+The raw record keeps each Issue's Status-change, close and reopen events from the Issue timeline — time, actor, previous and new Status, Project and close reason — on that Issue's item line, so a copy of the history survives a transfer or deletion of the Issue. The site's pages do not chart this history; the CSV reads it to print 着手日, 完了日 and the two actor columns with the same not-started options the planning editor uses. The recorder reads the events with the day's Project read; because the record still stores one line per item, an Issue whose events did not change is stored by the monthly full copy and the daily change files exactly as before.
 
 ## Pages
 
@@ -117,9 +123,9 @@ The detail page has no cumulative line chart, daily completion chart, plan line,
 - One file per Project, from the latest record only. No history and no aggregation.
 - Location: `p/<owner>-<number>/items.csv`. The download name is `<display name>_<record date>.csv`.
 - One row per item, not only tasks: parent Issues, pull requests, drafts and REDACTED items are included. Rows are ordered by repository, then number; drafts and REDACTED items come last.
-- Fixed columns, in this order: 種類, タスク, リポジトリ, 番号, タイトル, 状態, 閉じた理由, 閉じた日, 親, 担当者, ラベル, マイルストーン, Issue の種類, ブロック元, アーカイブ, 追加日, URL.
+- Fixed columns, in this order: 種類, タスク, リポジトリ, 番号, タイトル, 状態, 閉じた理由, 閉じた日, 着手日, 着手した人, 完了日, 完了した人, 親, 担当者, ラベル, マイルストーン, Issue の種類, ブロック元, アーカイブ, 追加日, URL.
 - After the fixed columns, one column per Project value field in the record's `fields[]` order, for `TEXT`, `NUMBER`, `DATE`, `SINGLE_SELECT` and `ITERATION` fields. Built-in columns are not repeated.
-- Values are printed as recorded: dates as `yyyy-MM-dd` (JST where the record carries a time), numbers in invariant notation, a single-select option by its name and an iteration by its title; a missing value is blank. タスク and アーカイブ print はい or いいえ, 種類 prints Issue, PR, 下書き or 非公開, a merged pull request prints `MERGED` as its state, and assignees, labels and blocked-by Issues join with `; `.
+- Values are printed as recorded: dates as `yyyy-MM-dd` (JST where the record carries a time), numbers in invariant notation, a single-select option by its name and an iteration by its title; a missing value is blank. 着手日 is computed from the latest recorded Status change from a not-started option to a started option, 完了日 from the latest completed close while the Issue is closed, by the same rules as the app (#308); the person columns name the actor, or `自動（Project のワークフロー）` for GitHub's automation. タスク and アーカイブ print はい or いいえ, 種類 prints Issue, PR, 下書き or 非公開, a merged pull request prints `MERGED` as its state, and assignees, labels and blocked-by Issues join with `; `.
 - Format: UTF-8 with BOM, CRLF line endings and RFC 4180 quoting, so Excel opens the file without an import step.
 - A cell whose recorded text starts with `=`, `+`, `-` or `@` is printed unchanged, so Excel may read it as a formula. The site does not escape data: the values stay as recorded.
 
@@ -133,7 +139,7 @@ The detail page has no cumulative line chart, daily completion chart, plan line,
 
 ## Demo scenarios
 
-`demo` writes five fictional Projects in the #272 raw format plus a site configuration, generated at build time and not committed. Each recorded day goes through the recorder's own storage layout (monthly full copy plus daily changes), so the site reads demo data on the same path as real data. The waterfall Projects derive from the tracked version plans (40 requirements × 25 tasks, 9 phases); the other scenarios add synthetic Projects. Owners and repositories are fictional (`demo/order-system`, `demo/portal`, `demo/mobile-app`). Every Project's latest record is the same day, 2026-10-23 (Friday), and the waterfall plans are shifted by whole weeks from the tracked plans, so the list page compares all Projects at one point in time. The table lists the Projects in configuration order; the list page sorts them by period end.
+`demo` writes five fictional Projects in the #272 raw format plus a site configuration, generated at build time and not committed. Each recorded day goes through the recorder's own storage layout (monthly full copy plus daily changes), so the site reads demo data on the same path as real data. Each demo Issue line carries its recorded events, so the demo CSV shows 着手日 and 完了日. The waterfall Projects derive from the tracked version plans (40 requirements × 25 tasks, 9 phases); the other scenarios add synthetic Projects. Owners and repositories are fictional (`demo/order-system`, `demo/portal`, `demo/mobile-app`). Every Project's latest record is the same day, 2026-10-23 (Friday), and the waterfall plans are shifted by whole weeks from the tracked plans, so the list page compares all Projects at one point in time. The table lists the Projects in configuration order; the list page sorts them by period end.
 
 | Project | Group field | Scenario and what the pages show |
 | --- | --- | --- |
@@ -158,7 +164,7 @@ The Pages workflow runs `demo` and `site` and deploys the result; the demo folde
 - The WinUI planning editor.
 - The previous snapshot pipeline (`ghpb-progress-snapshot/1`) and its [`progress-report.yml`](../.github/workflows/progress-report.yml) workflow.
 - Production hosting: an organisation data repository, private Pages and a GitHub App.
-- A backfill of Status history from GitHub's Status change events; the chart draws only the recorded weeks.
+- A backfill of Status history into the weekly chart; it still draws only the recorded weeks. The raw record keeps the events for the CSV (#308).
 - Lateness, forecasts, current phase, verdicts and other judgements.
 
 ## Related

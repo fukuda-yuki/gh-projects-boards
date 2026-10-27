@@ -258,6 +258,11 @@ internal sealed partial class PlanSheetView
             reason.Text = "競合: GitHub では " + PlanWorkspaceView.ReviewValue(Session.Document, selectedField, conflict.Remote);
         if (ReadOnlyReason(selected, selectedField) is { } readOnlyReason)
             reason.Text = readOnlyReason + (reason.Text.Length > 0 ? " · " + reason.Text : "");
+        // #308: selecting 着手日 or 完了日 names the record behind the displayed date, then why it cannot be
+        // edited, before the row's plan dates.
+        if (selectedField is "ActualStart" or "ActualFinish" && Schedule.GetValueOrDefault(selected) is { } recordTask
+            && PlanSheetText.RecordWording(recordTask, selectedField) is { } recordWording)
+            reason.Text = recordWording + (reason.Text.Length > 0 ? " · " + reason.Text : "");
         // #231: the selected row's pending state command belongs on the selection line too, so the state is
         // readable without hunting for the tag in the title cell.
         if (RowStateTag(selected) is { } stateTag)

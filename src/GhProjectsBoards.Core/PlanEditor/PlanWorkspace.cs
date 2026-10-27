@@ -218,11 +218,15 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
                 var people = names.Select(p => new PlanResource(p.Key, p.Value, 100, null)).ToImmutableArray();
                 var settings = new ProjectPlanSettings { StatusDate = today(), Columns = PlanColumnMatching.Match(fields), People = people,
                     DefaultRepository = repositories.Length == 1 ? repositories[0] : null };
-                var remote = PlanSnapshot.From(read, settings);
+                // #308: a first open reads every Issue's history; a saved plan fills it on its next refresh.
+                var history = await PlanSnapshot.ReadHistoriesAsync(Service, lease, Context, choice.Id,
+                    read.Project.Items.Where(i => i.Kind == ProjectItemKind.Issue && !i.IsArchived && i.ContentId is not null)
+                        .Select(i => i.ContentId!.NodeId).ToImmutableArray(), token);
+                var remote = PlanSnapshot.From(read, settings, history: history);
                 settings = PlanInitialSettings.From(remote.Baseline, settings);
                 var document = new PlanDocument(choice.Id, remote.Baseline, new(remote.Baseline.Rows, settings))
                 { Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names.ToImmutable(),
-                    ProgressUpdatedAt = remote.ProgressUpdatedAt, LastRead = new(PlanSession.ReadTime(today()), []) } };
+                    ProgressUpdatedAt = remote.ProgressUpdatedAt, IssueHistory = remote.IssueHistory, LastRead = new(PlanSession.ReadTime(today()), []) } };
                 progress?.Report(new("日程を計算"));
                 token.ThrowIfCancellationRequested();
                 adoptionStarted = true;

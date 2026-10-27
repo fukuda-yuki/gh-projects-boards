@@ -27,7 +27,9 @@ internal sealed record IssueReadModel(ScopedId Id, RepositoryReadModel Repositor
   public ReadValue<DateTimeOffset?> ClosedAt { get; init; } = new(ValueAvailability.NotLoaded);
   public ReadValue<IssueStateReason?> StateReason { get; init; } = new(ValueAvailability.NotLoaded);
   // #258: organization Issue Field values are written on the Issue; this is GitHub's permission for that.
-  public bool? CanSetFields { get; init; } }
+  public bool? CanSetFields { get; init; }
+  // #308: the other half of the history change observation (see ProjectItemReadModel.UpdatedAt).
+  public DateTimeOffset? UpdatedAt { get; init; } }
 internal sealed record MilestoneReadModel(ScopedId Id, ScopedId RepositoryId, string Title, DateOnly? DueDate, bool Closed);
 internal sealed record NativeLabel(string Id, string Name);
 internal sealed record RepositoryLabel(ScopedId RepositoryId, string Id, string Name);
@@ -51,7 +53,12 @@ internal sealed record ProjectFieldValue(ScopedId? FieldId, string? ValueId, str
     public DateTimeOffset? UpdatedAt { get; init; }
 }
 internal sealed record ProjectItemReadModel(ScopedId Id, ProjectItemKind Kind, string TypeName,
-    ScopedId? ContentId, bool IsArchived, IReadOnlyList<ProjectFieldValue> Values, bool ValuesComplete);
+    ScopedId? ContentId, bool IsArchived, IReadOnlyList<ProjectFieldValue> Values, bool ValuesComplete)
+{
+    // #308: GitHub's change time of the item itself. A Status write changes it while the Issue's own
+    // updatedAt does not, so a refresh compares both to decide which rows need their history re-read.
+    public DateTimeOffset? UpdatedAt { get; init; }
+}
 internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number,
     string Url, string Title, IReadOnlyList<ProjectFieldDefinition> Fields,
     IReadOnlyDictionary<ScopedId, IssueReadModel> Issues, IReadOnlyList<ProjectItemReadModel> Items,

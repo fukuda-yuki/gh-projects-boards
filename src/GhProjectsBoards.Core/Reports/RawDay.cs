@@ -30,9 +30,14 @@ internal sealed record RawContent(
     IReadOnlyList<string> Assignees, IReadOnlyList<string> Labels, RawMilestone? Milestone,
     string? StateReason, string? IssueType, string? Parent, IReadOnlyList<string> BlockedBy, DateTimeOffset? MergedAt);
 
+// #308: one recorded Issue timeline fact. The record keeps what the CSV needs (who, when, which Status moved where,
+// why an Issue closed); a line written before this change has no events and reads as no recorded history.
+internal sealed record RawEvent(
+    string Kind, DateTimeOffset At, string? Actor, bool Automated, string? From, string? To, string? StateReason);
+
 internal sealed record RawItem(
     string Id, string Type, bool Archived, DateTimeOffset AddedAt, RawContent? Content,
-    IReadOnlyDictionary<string, JsonNode?> Fields);
+    IReadOnlyDictionary<string, JsonNode?> Fields, IReadOnlyList<RawEvent> Events);
 
 // The values the site uses. Value types only; anything else in the record is a built-in column or unknown to the site.
 internal static class RawDay
@@ -77,7 +82,24 @@ internal static class RawDay
             item.GetProperty("id").GetString()!, item.GetProperty("type").GetString()!, item.GetProperty("archived").GetBoolean(),
             Stamp(item.GetProperty("addedAt")) ?? default,
             item.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Object ? Content(content) : null,
-            Values(item));
+            Values(item), Events(item));
+    }
+
+    // #308: events are optional in a line. Missing keys read as absent values and an unknown kind still parses, so a
+    // record written by this build stays readable if a later build adds a kind or a key; the site ignores both.
+    private static IReadOnlyList<RawEvent> Events(JsonElement item)
+    {
+        if (!item.TryGetProperty("events", out var events) || events.ValueKind != JsonValueKind.Array) return [];
+        var list = new List<RawEvent>();
+        foreach (var change in events.EnumerateArray())
+        {
+            if (change.ValueKind != JsonValueKind.Object) continue;
+            if (Text(change, "kind") is not { } kind || Stamp(change, "at") is not { } at) continue;
+            list.Add(new RawEvent(kind, at, Text(change, "actor"),
+                change.TryGetProperty("automated", out var automated) && automated.ValueKind == JsonValueKind.True,
+                Text(change, "from"), Text(change, "to"), Text(change, "stateReason")));
+        }
+        return list;
     }
 
     private static RawField Field(JsonElement field)
@@ -148,6 +170,12 @@ internal static class RawDay
 
     private static DateTimeOffset? Stamp(JsonElement element)
         => element.ValueKind == JsonValueKind.String ? Stamp(element.GetString()) : null;
+
+    private static DateTimeOffset? Stamp(JsonElement element, string name)
+        => element.TryGetProperty(name, out var value) ? Stamp(value) : null;
+
+    private static string? Text(JsonElement element, string name)
+        => element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
     // The site's task rule: a leaf Issue, meaning no other item in the same Project on that day carries it as its
     // parent. Parent Issues, PRs, drafts and REDACTED items are therefore not tasks; archived items are.

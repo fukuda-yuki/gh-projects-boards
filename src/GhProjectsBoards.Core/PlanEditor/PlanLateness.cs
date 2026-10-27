@@ -63,7 +63,8 @@ internal static class PlanLateness
             if (!row.IsSummary && !input.IsComplete)
             {
                 if (row.End.Value is { } plannedEnd && plannedEnd < statusDate) { kind = PlanOverdueKind.Finish; missed = plannedEnd; }
-                else if (input.Actual is null or 0 && row.Start.Value is { } plannedStart && plannedStart < statusDate) { kind = PlanOverdueKind.Start; missed = plannedStart; }
+                // #308: a task whose Issue history shows 着手 is not 未着手, even with no Actual entered.
+                else if (input.Actual is null or 0 && input.ActualStart is null && row.Start.Value is { } plannedStart && plannedStart < statusDate) { kind = PlanOverdueKind.Start; missed = plannedStart; }
             }
             var days = PlanScheduler.WorkingDaysBetween(row.End.Value, row.ForecastEnd, calendar);
             var cause = days is null ? (PlanLateCause?)null : row.ForecastStartReason?.EndsWith(" の終了後", StringComparison.Ordinal) == true

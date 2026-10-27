@@ -30,7 +30,8 @@ internal static class SiteRenderer
         {
             var folder = "p/" + project.Config.FolderName + "/";
             outputs.Add(new(folder + "index.html", Utf8.GetBytes(DetailPage(config, project))));
-            outputs.Add(new(folder + "items.csv", SiteCsv.Render(project.Project, project.LatestItems, project.LatestTaskIds)));
+            outputs.Add(new(folder + "items.csv", SiteCsv.Render(project.Project, project.LatestItems, project.LatestTaskIds,
+                project.Config.NotStartedStatuses)));
         }
         return outputs;
     }

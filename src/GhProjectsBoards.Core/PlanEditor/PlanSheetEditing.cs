@@ -75,7 +75,8 @@ internal static class PlanSheetEditing
             case PlanField.Title: case PlanField.Status:
                 if (text.IndexOfAny(['\t', '\r', '\n']) >= 0) throw new ArgumentException("セルは1行で入力してください。");
                 return text;
-            default: throw new ArgumentException("この列は編集できません。");
+            default: throw new ArgumentException(field is "ActualStart" or "ActualFinish"
+                ? "Issue の履歴から読み取ります（編集不可）" : "この列は編集できません。");
         }
     }
     // The people a typed login can resolve to. The 担当者 candidate list (#225) offers this same source, so a

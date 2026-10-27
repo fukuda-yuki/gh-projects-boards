@@ -107,6 +107,9 @@ internal sealed partial class PlanWorkspaceView
 
             SettingsGroup(workspace.Selected?.Title ?? "このプロジェクト", "project");
             RenderPeriodSettings(SettingsSection("period", "期間"), session, generation);
+            // #308: which Status options mean not started for 着手日. The records are read from the history, so
+            // their dates change without another GitHub read.
+            RenderRecordSettings(SettingsSection("records", "記録"), session, generation);
             var phases = SettingsSection("phases", "工程と目標日");
             var people = SettingsSection("people", "担当者");
             RenderPeopleSettings(people, session, generation);
@@ -274,6 +277,74 @@ internal sealed partial class PlanWorkspaceView
             Show();
             return panel;
         }
+    }
+
+    // #308 R3: one check box per Status option of this Project's field. Checked options mean not started: a
+    // Status change from one of them (or from no Status) to any other option is a 着手日. The list follows the
+    // plan's stored observation, so toggling a box needs no remote read and is one settings Undo step. A list
+    // equal to the defaults stores null (#308).
+    private void RenderRecordSettings(StackPanel section, PlanSession session, int generation)
+    {
+        section.Children.Add(Id(Label("Status なしは常に着手前に数えます。"), "PlanRecordNotStartedNote"));
+        var field = StatusField(session);
+        if (field is null)
+        {
+            // The Project's Status field cannot be read: the defaults stay and the page says why there are no
+            // boxes to change (#308 R3).
+            section.Children.Add(Label("Status のフィールドを読み取れないため、既定（" + string.Join("・", PlanActualDates.DefaultNotStarted) + "）のままです。"));
+            return;
+        }
+        var notStarted = PlanActualDates.NotStarted(session.Document.State.Settings).ToHashSet(StringComparer.Ordinal);
+        var boxes = new StackPanel { Spacing = 4 };
+        foreach (var option in field.Options)
+        {
+            var box = Id(new CheckBox { Content = option, IsChecked = notStarted.Contains(option), MinWidth = 0 }, "PlanRecordNotStarted" + option);
+            AutomationProperties.SetName(box, option);
+            var help = "チェックすると「" + option + "」を着手前に数えます。";
+            AutomationProperties.SetHelpText(box, help);
+            ToolTipService.SetToolTip(box, help);
+            var current = option;
+            async void Changed(object sender, RoutedEventArgs args)
+            {
+                if (rendering || generation != settingsGeneration) return;
+                var on = box.IsChecked == true;
+                await Run(async () => {
+                    await ChangeSettings(s => RecordNotStarted(session, current, on));
+                    RenderSettings();
+                });
+                if (generation != settingsGeneration) return;
+                // A failed save leaves the old page; put the box back on the accepted setting.
+                rendering = true;
+                try { box.IsChecked = PlanActualDates.NotStarted(session.Document.State.Settings).Contains(current, StringComparer.Ordinal); }
+                finally { rendering = false; }
+            }
+            box.Checked += Changed; box.Unchecked += Changed;
+            boxes.Children.Add(box);
+        }
+        section.Children.Add(boxes);
+    }
+    private static PlanColumnDefinition? StatusField(PlanSession session)
+    {
+        var settings = session.Document.State.Settings;
+        var mapping = settings.Columns.FirstOrDefault(c => c.Role == PlanField.Status);
+        return mapping is not null
+            ? session.Document.Baseline.Columns.FirstOrDefault(c => c.Id == mapping.FieldId)
+            : session.Document.Baseline.Columns.FirstOrDefault(c => c.Name == "Status" && c.DataType == "SINGLE_SELECT");
+    }
+    // The stored option names one check box change means: the effective list with the option added or removed,
+    // in the Status field's option order, keeping a stored name whose option is not in this Project's field so a
+    // field change keeps the PMO's intent. A list equal to the defaults is stored as null (#308).
+    private static ProjectPlanSettings RecordNotStarted(PlanSession session, string option, bool notStarted)
+    {
+        var settings = session.Document.State.Settings;
+        var names = StatusField(session)?.Options ?? ImmutableArray<string>.Empty;
+        var current = PlanActualDates.NotStarted(settings);
+        var wanted = current.ToHashSet(StringComparer.Ordinal);
+        if (notStarted) wanted.Add(option); else wanted.Remove(option);
+        var stored = names.Where(wanted.Contains)
+            .Concat(current.Where(name => !names.Contains(name) && wanted.Contains(name)))
+            .Distinct(StringComparer.Ordinal).ToArray();
+        return settings with { NotStartedStatuses = stored.ToHashSet(StringComparer.Ordinal).SetEquals(PlanActualDates.DefaultNotStarted) ? null : stored };
     }
 
     private void RenderPhaseSettings(StackPanel section, PlanSession session, int generation, ComboBox phaseMap)

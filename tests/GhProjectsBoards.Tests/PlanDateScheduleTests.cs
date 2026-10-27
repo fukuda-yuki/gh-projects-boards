@@ -228,14 +228,14 @@ internal sealed class PlanDateScheduleTests
     }
 
     [Test]
-    public void ARefreshAdoptsTheCloseDayAsTheOnlyDateChange()
+    public void ARefreshAdoptsTheClosedStateWithoutMovingAPlanDate()
     {
         ImmutableArray<PlanRow> rows = [
             new("I1", "Closing", "acme/repo") { Start = D("2026-10-05"), End = D("2026-10-05"), Estimate = 8, Remaining = 8 },
             new("I2", "Open", "acme/repo") { Start = D("2026-10-06"), End = D("2026-10-07"), Estimate = 16, Remaining = 16 }];
         var document = Document(rows);
         var closed = D("2026-10-08");
-        var remote = document.Baseline.Rows.SetItem(0, document.Baseline.Rows[0] with { Closed = true, CloseDate = closed, Predecessors = [] });
+        var remote = document.Baseline.Rows.SetItem(0, document.Baseline.Rows[0] with { Closed = true, CloseDate = closed });
         var merged = document with
         {
             Baseline = document.Baseline with { Rows = remote },
@@ -244,11 +244,17 @@ internal sealed class PlanDateScheduleTests
 
         var changes = PlanOperations.Changes(merged, closed);
 
+        Assert.That((merged.State.Rows[0].Closed, merged.State.Rows[0].CloseDate), Is.EqualTo((true, (DateOnly?)closed)),
+            "The complete read's close is adopted as the row's state and provisional day.");
         Assert.Multiple(() =>
         {
-            Assert.That(Dates(merged, "I1", closed).End, Is.EqualTo(closed), "Closing is a fact from GitHub; its end becomes the close day.");
-            Assert.That(changes.Fields["I1"], Does.Contain(PlanField.End));
+            // #308 R9: the close is a fact from GitHub, but the plan dates stay the plan values.
+            Assert.That(Dates(merged, "I1", closed), Is.EqualTo((D("2026-10-05"), D("2026-10-05"))),
+                "Closing no longer substitutes the close day for the plan end.");
+            Assert.That(Dates(merged, "I2", closed), Is.EqualTo((D("2026-10-06"), D("2026-10-07"))));
+            Assert.That(changes.Fields.GetValueOrDefault("I1", []), Does.Not.Contain(PlanField.Start).And.Not.Contain(PlanField.End));
             Assert.That(changes.Fields.GetValueOrDefault("I2", []), Does.Not.Contain(PlanField.Start).And.Not.Contain(PlanField.End));
+            Assert.That(changes.RecalculatedFields, Is.Empty, "A close creates no recalculated date difference.");
         });
     }
 }

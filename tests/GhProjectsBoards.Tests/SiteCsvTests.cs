@@ -15,8 +15,9 @@ internal sealed class SiteCsvTests
     private static readonly byte[] Bom = [0xEF, 0xBB, 0xBF];
     private static readonly string[] FixedHeaders =
     [
-        "種類", "タスク", "リポジトリ", "番号", "タイトル", "状態", "閉じた理由", "閉じた日", "親",
-        "担当者", "ラベル", "マイルストーン", "Issue の種類", "ブロック元", "アーカイブ", "追加日", "URL",
+        "種類", "タスク", "リポジトリ", "番号", "タイトル", "状態", "閉じた理由", "閉じた日",
+        "着手日", "着手した人", "完了日", "完了した人",
+        "親", "担当者", "ラベル", "マイルストーン", "Issue の種類", "ブロック元", "アーカイブ", "追加日", "URL",
     ];
     private static readonly DateTimeOffset DefaultAddedAt = new(2026, 10, 20, 0, 0, 0, TimeSpan.Zero);
 
@@ -39,7 +40,7 @@ internal sealed class SiteCsvTests
         var first = Issue("PVTI_a", 10);
         var second = Issue("PVTI_b", 11);
         var items = new[] { first, second };
-        var bytes = SiteCsv.Render(Project(items), items, new HashSet<string>(StringComparer.Ordinal));
+        var bytes = SiteCsv.Render(Project(items), items, new HashSet<string>(StringComparer.Ordinal), NotStarted);
 
         Assert.That(bytes.Take(3), Is.EqualTo(Bom), "Excel needs the UTF-8 BOM.");
         var text = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
@@ -58,7 +59,7 @@ internal sealed class SiteCsvTests
         using (Assert.EnterMultipleScope())
         {
             Assert.That(sheet.Headers, Is.EqualTo(expected), "built-in Title and Assignees definitions add no column.");
-            Assert.That(sheet.Headers, Has.Count.EqualTo(22));
+            Assert.That(sheet.Headers, Has.Count.EqualTo(26));
             Assert.That(sheet.Headers, Does.Not.Contain("Title"));
             Assert.That(sheet.Headers, Does.Not.Contain("Assignees"));
         }
@@ -75,7 +76,7 @@ internal sealed class SiteCsvTests
         var hidden = Redacted("PVTI_hidden");
         // Deliberately not in the file's order: the renderer sorts and never drops an item.
         var items = new[] { ten, seven, two, one, draft, hidden };
-        var sheet = Read(SiteCsv.Render(Project(items), items, new HashSet<string>(StringComparer.Ordinal)));
+        var sheet = Read(SiteCsv.Render(Project(items), items, new HashSet<string>(StringComparer.Ordinal), NotStarted));
 
         using (Assert.EnterMultipleScope())
         {
@@ -111,7 +112,7 @@ internal sealed class SiteCsvTests
         var merged = PullRequest("PVTI_merged", 13, mergedAt: Moment(2026, 10, 23, 1));
         var draft = Draft("PVTI_draft");
         var items = new[] { open, closed, merged, draft };
-        var sheet = Read(SiteCsv.Render(Project(items), items, new HashSet<string>(StringComparer.Ordinal)));
+        var sheet = Read(SiteCsv.Render(Project(items), items, new HashSet<string>(StringComparer.Ordinal), NotStarted));
 
         using (Assert.EnterMultipleScope())
         {
@@ -155,7 +156,7 @@ internal sealed class SiteCsvTests
         var parent = Issue("PVTI_parent", 2);
         var items = new[] { task, parent };
         var tasks = new HashSet<string>(StringComparer.Ordinal) { task.Id };
-        var sheet = Read(SiteCsv.Render(Project(items), items, tasks));
+        var sheet = Read(SiteCsv.Render(Project(items), items, tasks, NotStarted));
 
         using (Assert.EnterMultipleScope())
         {
@@ -205,9 +206,206 @@ internal sealed class SiteCsvTests
         }
     }
 
+    // #308: 着手日/完了日 come from the recorded Issue history, not from a Project field, so the CSV tests feed the
+    // same optional events array the raw record writes and read the columns back through the real parser.
+    [Test]
+    public void StartAndFinishColumnsPrintTheRecordedDaysAndPeople()
+    {
+        var item = Issue("PVTI_a", 10, state: "CLOSED", stateReason: "COMPLETED", closedAt: Moment(2026, 10, 23, 9),
+            events: [Status(Moment(2026, 10, 20, 1), null, "In progress"), Closed(Moment(2026, 10, 23, 9))]);
+        var row = Read(Render(item)).Rows[0];
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Cell(row, "着手日"), Is.EqualTo("2026-10-20"));
+            Assert.That(Cell(row, "着手した人"), Is.EqualTo("yamada"));
+            Assert.That(Cell(row, "完了日"), Is.EqualTo("2026-10-23"));
+            Assert.That(Cell(row, "完了した人"), Is.EqualTo("yamada"));
+            Assert.That(Cell(row, "閉じた日"), Is.EqualTo("2026-10-23"), "The existing close day column stays as it was.");
+        }
+    }
+
+    [Test]
+    public void TheLatestStartWinsAndAStatusWriteWhileClosedIsNotAStart()
+    {
+        var item = Issue("PVTI_a", 10, state: "CLOSED", stateReason: "COMPLETED", closedAt: Moment(2026, 10, 22, 9),
+            events:
+            [
+                Status(Moment(2026, 10, 19, 1), null, "Ready"),
+                Status(Moment(2026, 10, 20, 1), "Ready", "In progress"),
+                Status(Moment(2026, 10, 21, 1), "In progress", "In review"),
+                Closed(Moment(2026, 10, 22, 9)),
+                // The item-closed workflow writes the closed Status after the close; that is not a start.
+                Status(Moment(2026, 10, 22, 10), "In review", "Done"),
+            ]);
+        var row = Read(Render(item)).Rows[0];
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Cell(row, "着手日"), Is.EqualTo("2026-10-20"), "Started→started changes keep the start day.");
+            Assert.That(Cell(row, "完了日"), Is.EqualTo("2026-10-22"));
+        }
+    }
+
+    [Test]
+    public void AReopenClearsTheFinishUntilTheNextCompletedClose()
+    {
+        var again = Issue("PVTI_a", 10, state: "CLOSED", stateReason: "COMPLETED", closedAt: Moment(2026, 10, 24, 9),
+            events:
+            [
+                Closed(Moment(2026, 10, 20, 9)),
+                Reopened(Moment(2026, 10, 21, 1)),
+                Closed(Moment(2026, 10, 24, 9)),
+            ]);
+        var open = Issue("PVTI_b", 11, events: [Closed(Moment(2026, 10, 20, 9)), Reopened(Moment(2026, 10, 21, 1))]);
+        var sheet = Read(Render(again, open));
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Cell(sheet.Rows[0], "完了日"), Is.EqualTo("2026-10-24"), "A reopen clears the earlier finish.");
+            Assert.That(Cell(sheet.Rows[1], "完了日"), Is.Empty, "An open Issue has no finish.");
+        }
+    }
+
+    [Test]
+    public void ANotPlannedCloseGivesNoFinish()
+    {
+        var item = Issue("PVTI_a", 10, state: "CLOSED", stateReason: "NOT_PLANNED", closedAt: Moment(2026, 10, 20, 9),
+            events: [Closed(Moment(2026, 10, 20, 9), "NOT_PLANNED")]);
+        var row = Read(Render(item)).Rows[0];
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Cell(row, "閉じた日"), Is.EqualTo("2026-10-20"), "The close day still prints.");
+            Assert.That(Cell(row, "完了日"), Is.Empty, "Only a completed close is 完了日.");
+            Assert.That(Cell(row, "完了した人"), Is.Empty);
+        }
+    }
+
+    [Test]
+    public void ActualDatesUseTheRecordTimeZone()
+    {
+        var item = Issue("PVTI_a", 10, state: "CLOSED", stateReason: "COMPLETED", closedAt: Moment(2026, 10, 25, 15),
+            events:
+            [
+                Status(Moment(2026, 10, 24, 20), null, "In progress"),
+                Closed(Moment(2026, 10, 25, 15)),
+            ]);
+        var row = Read(Render(item)).Rows[0];
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Cell(row, "着手日"), Is.EqualTo("2026-10-25"), "20:00 UTC is 05:00 JST on the next day.");
+            Assert.That(Cell(row, "完了日"), Is.EqualTo("2026-10-26"), "15:00 UTC is midnight on the next day in JST.");
+        }
+    }
+
+    [Test]
+    public void AutomatedChangesAreNamedAsTheProjectWorkflow()
+    {
+        var item = Issue("PVTI_a", 10, state: "CLOSED", stateReason: "COMPLETED", closedAt: Moment(2026, 10, 23, 9),
+            events:
+            [
+                Status(Moment(2026, 10, 20, 1), null, "In progress", "github-project-automation", automated: true),
+                Closed(Moment(2026, 10, 23, 9), actor: "github-project-automation", automated: true),
+            ]);
+        var row = Read(Render(item)).Rows[0];
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Cell(row, "着手した人"), Is.EqualTo("自動（Project のワークフロー）"));
+            Assert.That(Cell(row, "完了した人"), Is.EqualTo("自動（Project のワークフロー）"));
+        }
+    }
+
+    [Test]
+    public void NotStartedStatusOptionsComeFromTheConfiguration()
+    {
+        // Custom options: 待機 is not started, so 待機→作業中 starts the task and 作業中→完了 keeps that start day.
+        var custom = Issue("PVTI_custom", 10, fields: new JsonObject { ["状態"] = new JsonObject { ["name"] = "完了", ["optionId"] = "o3" } },
+            events: [Status(Moment(2026, 10, 21, 1), "待機", "作業中"), Status(Moment(2026, 10, 22, 1), "作業中", "完了")]);
+        var customSheet = Read(SiteCsv.Render(Project(custom), [custom], new HashSet<string>(StringComparer.Ordinal), ["待機"]));
+        Assert.That(Cell(customSheet.Rows[0], "着手日"), Is.EqualTo("2026-10-21"));
+
+        // Default not-started options: Backlog→In progress is a start; the same change is not a start when the
+        // configuration says Backlog already counts as started. No Status always counts as not started.
+        var fromBacklog = Issue("PVTI_backlog", 11, events: [Status(Moment(2026, 10, 20, 1), "Backlog", "In progress")]);
+        var fromNothing = Issue("PVTI_nothing", 12, events: [Status(Moment(2026, 10, 20, 1), null, "In progress")]);
+        var defaults = Read(Render(fromBacklog, fromNothing));
+        var everythingStarted = Read(Render([], fromBacklog, fromNothing));
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Cell(defaults.Rows[0], "着手日"), Is.EqualTo("2026-10-20"), "Backlog is not started by default.");
+            Assert.That(Cell(defaults.Rows[1], "着手日"), Is.EqualTo("2026-10-20"));
+            Assert.That(Cell(everythingStarted.Rows[0], "着手日"), Is.Empty, "An explicit empty list means every option is started.");
+            Assert.That(Cell(everythingStarted.Rows[1], "着手日"), Is.EqualTo("2026-10-20"), "No Status is always not started.");
+        }
+    }
+
+    [Test]
+    public void ItemsThatAreNotIssuesPrintBlankActualColumns()
+    {
+        var pullRequest = Item("PVTI_pr", "PULL_REQUEST", new JsonObject
+        {
+            ["type"] = "PullRequest",
+            ["id"] = "PR_7",
+            ["title"] = "Fix",
+            ["createdAt"] = Stamp(DefaultAddedAt),
+            ["repository"] = "u/r",
+            ["number"] = 7,
+            ["url"] = "https://github.com/u/r/pull/7",
+            ["state"] = "CLOSED",
+            ["closedAt"] = Stamp(Moment(2026, 10, 23, 9)),
+            ["assignees"] = new JsonArray(),
+            ["labels"] = new JsonArray(),
+            ["milestone"] = null,
+            ["mergedAt"] = null,
+        }, null, null, false, [Status(Moment(2026, 10, 20, 1), null, "In progress"), Closed(Moment(2026, 10, 23, 9))]);
+        var sheet = Read(Render(pullRequest, Draft("PVTI_draft"), Redacted("PVTI_redacted")));
+
+        foreach (var row in sheet.Rows)
+            foreach (var header in new[] { "着手日", "着手した人", "完了日", "完了した人" })
+                Assert.That(Cell(row, header), Is.Empty, "Only Issues carry the recorded history: " + header);
+    }
+
+    [Test]
+    public void AClosedIssueWithoutRecordedEventsPrintsBlankActualColumns()
+    {
+        var item = Issue("PVTI_a", 10, state: "CLOSED", stateReason: "COMPLETED", closedAt: Moment(2026, 10, 23, 9));
+        var row = Read(Render(item)).Rows[0];
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(Cell(row, "完了日"), Is.Empty, "A record written before the events key has no history to print.");
+            Assert.That(Cell(row, "着手日"), Is.Empty);
+        }
+    }
+
+    private static RawEvent Status(DateTimeOffset at, string? from, string to, string actor = "yamada", bool automated = false)
+        => new("status", at, actor, automated, from, to, null);
+
+    private static RawEvent Closed(DateTimeOffset at, string? stateReason = "COMPLETED", string actor = "yamada", bool automated = false)
+        => new("closed", at, actor, automated, null, null, stateReason);
+
+    private static RawEvent Reopened(DateTimeOffset at, string actor = "yamada")
+        => new("reopened", at, actor, false, null, null, null);
+
+    private static byte[] Render(IReadOnlyList<string> notStarted, params RawItem[] items)
+        => SiteCsv.Render(Project(items), items, new HashSet<string>(StringComparer.Ordinal), notStarted);
+
+    private static string Cell(IReadOnlyList<string> row, string header)
+    {
+        var index = Array.IndexOf(FixedHeaders, header);
+        Assert.That(index, Is.GreaterThanOrEqualTo(0), "the CSV has the " + header + " column.");
+        return row[index];
+    }
+
     private sealed record Sheet(IReadOnlyList<string> Headers, IReadOnlyList<IReadOnlyList<string>> Rows);
 
-    private static byte[] Render(params RawItem[] items) => SiteCsv.Render(Project(items), items, new HashSet<string>(StringComparer.Ordinal));
+    private static readonly string[] NotStarted = SiteConfigReader.DefaultNotStartedStatuses;
+
+    private static byte[] Render(params RawItem[] items) => SiteCsv.Render(Project(items), items, new HashSet<string>(StringComparer.Ordinal), NotStarted);
 
     private static RawProject Project(params RawItem[] items)
         => new("PVT_1", "u", 3, "Sandbox", "https://github.com/users/u/projects/3", false,
@@ -217,7 +415,8 @@ internal sealed class SiteCsvTests
         string state = "OPEN", string? stateReason = null, DateTimeOffset? closedAt = null,
         JsonObject? fields = null, DateTimeOffset? addedAt = null, bool archived = false,
         IReadOnlyList<string>? assignees = null, IReadOnlyList<string>? labels = null, string? milestone = null,
-        string? issueType = null, string? parent = null, IReadOnlyList<string>? blockedBy = null)
+        string? issueType = null, string? parent = null, IReadOnlyList<string>? blockedBy = null,
+        IReadOnlyList<RawEvent>? events = null)
         => Item(id, "ISSUE", new JsonObject
         {
             ["type"] = "Issue",
@@ -237,7 +436,7 @@ internal sealed class SiteCsvTests
             ["parent"] = parent,
             ["blockedBy"] = Strings(blockedBy),
             ["mergedAt"] = null,
-        }, fields, addedAt, archived);
+        }, fields, addedAt, archived, events);
 
     private static RawItem PullRequest(string id, int number, string title = "Fix", string repository = "u/r",
         DateTimeOffset? mergedAt = null, JsonObject? fields = null, DateTimeOffset? addedAt = null, bool archived = false)
@@ -271,7 +470,7 @@ internal sealed class SiteCsvTests
         => Item(id, "REDACTED", null, null, addedAt, archived);
 
     private static RawItem Item(string id, string type, JsonObject? content, JsonObject? fields,
-        DateTimeOffset? addedAt, bool archived)
+        DateTimeOffset? addedAt, bool archived, IReadOnlyList<RawEvent>? events = null)
         => RawDay.ParseItem(RawRecord.Line(new JsonObject
         {
             ["kind"] = "item",
@@ -281,7 +480,20 @@ internal sealed class SiteCsvTests
             ["addedAt"] = Stamp(addedAt ?? DefaultAddedAt),
             ["content"] = content,
             ["fields"] = fields ?? new JsonObject(),
+            ["events"] = events is null ? null : new JsonArray(events.Select(Event).ToArray()),
         }));
+
+    private static JsonNode Event(RawEvent change)
+        => new JsonObject
+        {
+            ["kind"] = change.Kind,
+            ["at"] = Stamp(change.At),
+            ["actor"] = change.Actor,
+            ["automated"] = change.Automated,
+            ["from"] = change.From,
+            ["to"] = change.To,
+            ["stateReason"] = change.StateReason,
+        };
 
     private static JsonArray Strings(IReadOnlyList<string>? values)
     {

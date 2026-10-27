@@ -59,6 +59,9 @@ internal sealed record ProjectPlanSettings
     public DateOnly? ProjectEnd { get; init; }
     public string? DefaultRepository { get; init; }
     public DateOnly? StatusDate { get; init; }
+    // #308: the Status option names that mean not started when 着手日 is read from the Issue history. Null
+    // means the defaults (no Status, Backlog, Todo, Ready); an explicit empty list means every option starts.
+    public string[]? NotStartedStatuses { get; init; }
 }
 internal sealed record PlanExtraValue(ValueAvailability Availability, string? Json);
 internal sealed record PlanRow(string Identity, string Title, string Repository)

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace GhProjectsBoards.Core.PlanEditor;
 
@@ -16,6 +16,20 @@ internal static class PlanSheetText
     // One 遅れ on the bar. Red is a passed 終了日; ochre is the forecast. The stored sets stay Overdue and Later.
     internal static string BarLateness(bool datePassed, int days)
         => datePassed ? $"遅れ +{days.ToString(CultureInfo.InvariantCulture)}日（終了日を過ぎた）" : $"遅れ +{days.ToString(CultureInfo.InvariantCulture)}日（見込）";
+    // #308: the read-only record columns after 終了日. Blank without the record; the tooltip and the accessible
+    // name carry who changed the Status and when (the App draws the same text).
+    internal static string Record(ScheduledTask task, string field) => field switch
+    {
+        "ActualStart" => task.Input.ActualStart is { } start ? Date(start.Day) : "",
+        "ActualFinish" => task.Input.ActualFinish is { } finish ? Date(finish.Day) : "",
+        _ => ""
+    };
+    internal static string? RecordWording(ScheduledTask task, string field) => field switch
+    {
+        "ActualStart" => task.Input.ActualStart is { } start ? PlanActualDates.StartWording(start) : null,
+        "ActualFinish" => task.Input.ActualFinish is { } finish ? PlanActualDates.FinishWording(finish) : null,
+        _ => null
+    };
     // 見込終了 (#236 part B): the read-only column after 終了日. Blank without a forecast; a later forecast
     // carries its working-day count.
     internal static string ForecastEnd(ScheduledTask task, PlanTaskLateness? late)

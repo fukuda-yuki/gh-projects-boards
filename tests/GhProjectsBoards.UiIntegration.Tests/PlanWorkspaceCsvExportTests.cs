@@ -31,8 +31,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         var bytes = await File.ReadAllBytesAsync(path);
         Assert.That(bytes.Take(3), Is.EqualTo(new byte[] { 0xef, 0xbb, 0xbf }));
         var lines = Encoding.UTF8.GetString(bytes).Split("\r\n");
-        // #236 part B adds the read-only 見込終了 column, and the CSV shares the sheet's column text.
-        Assert.That(lines[0], Is.EqualTo("\uFEFFID,状態,タスク名,工程,担当者,見積 h,残 h,実績 h,開始日,終了日,見込終了,先行,要求事項,リポジトリ,Issue 番号,URL,未発行"));
+        // #236 part B adds the read-only 見込終了 column and #308 the 着手日 / 完了日 records; the CSV shares
+        // the sheet's column text.
+        Assert.That(lines[0], Is.EqualTo("\uFEFFID,状態,タスク名,工程,担当者,見積 h,残 h,実績 h,開始日,終了日,着手日,完了日,見込終了,先行,要求事項,リポジトリ,Issue 番号,URL,未発行"));
         Assert.That(lines[1], Does.StartWith("#1,").And.Contain(",設計,").And.Contain("https://github.com/acme/repo/issues/1"));
         Assert.That(lines[2], Does.Contain(",要求事項,").And.EndsWith(",新規"));
         Assert.That(lines[3], Does.Contain(",隠れた子,").And.EndsWith(",新規"));

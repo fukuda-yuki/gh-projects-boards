@@ -101,11 +101,13 @@ internal sealed partial class PlanSheetView : Grid
     internal static readonly Column[] Columns = [
         new(null, "ID", 76), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 200), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
         new(PlanField.Estimate, "見積 h", 72), new(PlanField.Remaining, "残 h", 72), new(PlanField.Actual, "実績 h", 56),
-        new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ForecastEnd", "見込終了", 108), new(PlanField.Predecessors, "先行", 64),
+        new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ActualStart", "着手日", 92), new("ActualFinish", "完了日", 92),
+        new("ForecastEnd", "見込終了", 108), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.Status, "ステータス", 100)];
     internal bool IndicatorVisible { get; private set; } = true;
     internal readonly HashSet<string?> Hidden = [PlanField.Status];
-    internal Column[] VisibleColumns { get; private set; } = Columns.Take(12).ToArray();
+    // #308: the two record columns follow 終了日, so the default view ends at 先行.
+    internal Column[] VisibleColumns { get; private set; } = Columns.Take(14).ToArray();
     internal double RowHeight { get; private set; } = 28;
     private double? dividerWidth;
     private PlanSheetDivider divider = null!;
@@ -829,6 +831,10 @@ internal sealed partial class PlanSheetView : Grid
     internal static string EffortPrefix(Column column) => column.Field is PlanField.Estimate or PlanField.Actual or PlanField.Remaining ? FullName(column) + " · " : "";
     private string HeaderHelp(Column column)
     {
+        // #308: the record columns carry no GitHub field: their header says where the value comes from instead
+        // of the generic 未設定.
+        if (column.Field is "ActualStart" or "ActualFinish")
+            return column.Label + "（Issue の履歴から読み取ります）";
         var source = PlanSheetColumns.All(Session.Document).First(c => c.Key == (column.Indicator ? "Indicator" : column.Field ?? "Id")).GitHub;
         return EffortPrefix(column) + (source == "—" && column.Field is not null ? "未設定" : "GitHub: " + source)
             + (column.Field is { } field && PlanSheetColumns.IsIssueField(Session.Document, field) ? "\n" + PlanSheetColumns.IssueFieldShared : "");
@@ -867,6 +873,9 @@ internal sealed partial class PlanSheetView : Grid
         return field switch {
             PlanField.Labels => string.Join(", ", row.Labels),
             PlanField.Start => Date(computed.Start.Value), PlanField.End => Date(computed.End.Value),
+            // #308: the records of the Issue history, blank without the record. They are never plan values.
+            "ActualStart" => PlanSheetText.Record(computed, "ActualStart"),
+            "ActualFinish" => PlanSheetText.Record(computed, "ActualFinish"),
             // 見込終了 is read-only and derived (#236 part B): the date plus the working days it is later.
             "ForecastEnd" => computed.ForecastEnd is { } forecast ? DateText(forecast)
                 + (lateness.Tasks.GetValueOrDefault(identity)?.DaysLater is { } later ? " +" + later + "日" : "") : "",

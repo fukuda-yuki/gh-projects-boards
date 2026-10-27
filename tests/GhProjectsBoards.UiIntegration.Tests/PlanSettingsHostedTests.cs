@@ -15,7 +15,8 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 internal sealed partial class PlanWorkspaceHostedTests
 {
     private static readonly (string Key, string Title, string Heading)[] Sections = [
-        ("period", "期間", "PlanSettingsHeading_period"), ("phases", "工程と目標日", "PlanSettingsHeading_phases"),
+        ("period", "期間", "PlanSettingsHeading_period"), ("records", "記録", "PlanSettingsHeading_records"),
+        ("phases", "工程と目標日", "PlanSettingsHeading_phases"),
         ("people", "担当者", "PlanSettingsHeading_people"), ("calendar", "カレンダー", "PlanSettingsHeading_calendar"),
         ("columns", "列", "PlanColumnSettings"), ("fields", "GitHub のフィールド", "PlanSettingsHeading_fields"),
         ("issues", "新しい Issue", "PlanSettingsHeading_issues"), ("connection", "接続", "PlanSettingsHeading_connection"), ("display", "表示", "PlanSettingsHeading_display"),

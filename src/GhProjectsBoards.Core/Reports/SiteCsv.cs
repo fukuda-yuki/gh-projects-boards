@@ -12,20 +12,25 @@ internal static class SiteCsv
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
     private static readonly string[] FixedHeaders =
     [
-        "種類", "タスク", "リポジトリ", "番号", "タイトル", "状態", "閉じた理由", "閉じた日", "親",
-        "担当者", "ラベル", "マイルストーン", "Issue の種類", "ブロック元", "アーカイブ", "追加日", "URL",
+        "種類", "タスク", "リポジトリ", "番号", "タイトル", "状態", "閉じた理由", "閉じた日",
+        "着手日", "着手した人", "完了日", "完了した人",
+        "親", "担当者", "ラベル", "マイルストーン", "Issue の種類", "ブロック元", "アーカイブ", "追加日", "URL",
     ];
     private static readonly char[] NeedsQuotes = ['"', ',', '\r', '\n'];
+    private const string AutomatedActor = "自動（Project のワークフロー）";
 
-    internal static byte[] Render(RawProject project, IReadOnlyList<RawItem> items, IReadOnlySet<string> taskIds)
+    internal static byte[] Render(RawProject project, IReadOnlyList<RawItem> items, IReadOnlySet<string> taskIds,
+        IReadOnlyList<string> notStartedStatuses)
     {
         var zone = RawDay.Zone(project);
+        var notStarted = new HashSet<string>(notStartedStatuses, StringComparer.Ordinal);
         var fields = project.Fields.Where(field => RawDay.ValueTypes.Contains(field.DataType)).ToArray();
         var csv = new StringBuilder();
         AppendRow(csv, FixedHeaders.Concat(fields.Select(field => field.Name)));
         foreach (var item in InOrder(items))
         {
             var content = item.Content;
+            var actual = Actual(item, zone, notStarted);
             // FixedHeaders order, then the Project fields in the record's order.
             var cells = new List<string?>(FixedHeaders.Length + fields.Length)
             {
@@ -37,6 +42,10 @@ internal static class SiteCsv
                 State(content),
                 content?.StateReason,
                 RawDay.CloseDate(content, zone)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                actual.Start,
+                actual.StartBy,
+                actual.Finish,
+                actual.FinishBy,
                 content?.Parent,
                 Joined(content?.Assignees),
                 Joined(content?.Labels),
@@ -52,6 +61,55 @@ internal static class SiteCsv
         }
         return [0xEF, 0xBB, 0xBF, .. Utf8.GetBytes(csv.ToString())];
     }
+
+    private sealed record ActualDates(string? Start, string? StartBy, string? Finish, string? FinishBy)
+    {
+        internal static readonly ActualDates None = new(null, null, null, null);
+    }
+
+    // #308: 着手日 and 完了日 from the recorded Issue timeline, with the same rules the planning editor uses. The
+    // latest Status change from not started to started decides the start while the Issue was open; the close and
+    // reopen events bound that state, so the item-closed workflow's own Status write is not a start. 完了日 is the
+    // latest close as completed while the Issue is closed; a reopen or a not-planned close gives none. Days are the
+    // record's time zone, as the close day already is. Items that are not Issues keep no history and print blanks.
+    private static ActualDates Actual(RawItem item, TimeZoneInfo zone, IReadOnlySet<string> notStarted)
+    {
+        if (item.Content is not { Type: "Issue" } content || item.Events.Count == 0) return ActualDates.None;
+        RawEvent? start = null;
+        var closed = false;
+        foreach (var change in item.Events.OrderBy(change => change.At))
+        {
+            switch (change.Kind)
+            {
+                case "closed":
+                    closed = true;
+                    break;
+                case "reopened":
+                    closed = false;
+                    break;
+                case "status" when !closed:
+                    if (NotStarted(change.From, notStarted) && !NotStarted(change.To, notStarted)) start = change;
+                    break;
+            }
+        }
+        var finish = content.State == "CLOSED"
+            ? item.Events.Where(change => change.Kind is "closed" or "reopened").OrderBy(change => change.At).LastOrDefault()
+                is { Kind: "closed", StateReason: "COMPLETED" } close ? close : null
+            : null;
+        return new(Day(start, zone), Who(start), Day(finish, zone), Who(finish));
+    }
+
+    // No Status always means not started, whatever options a Project configures.
+    private static bool NotStarted(string? option, IReadOnlySet<string> notStarted)
+        => string.IsNullOrEmpty(option) || notStarted.Contains(option);
+
+    private static string? Day(RawEvent? change, TimeZoneInfo zone)
+        => change is null ? null : TimeZoneInfo.ConvertTime(change.At, zone).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static string? Who(RawEvent? change)
+        => change is null ? null
+            : change.Automated ? AutomatedActor
+            : string.IsNullOrWhiteSpace(change.Actor) ? null : change.Actor;
 
     // Items with a repository and number sort by repository ordinal then number; drafts and REDACTED items, which
     // have neither, follow by item id. The order is total, so the same record always gives the same file.

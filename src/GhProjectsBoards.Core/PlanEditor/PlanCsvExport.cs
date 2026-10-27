@@ -47,6 +47,7 @@ internal static class PlanCsvExport
                         PlanSheetText.RemoteProblem(document.Sync, row.Identity),
                         marks ?? PlanMarkVisibility.All).Text),
                     "ForecastEnd" => Text(PlanSheetText.ForecastEnd(task, lateness.Tasks.GetValueOrDefault(row.Identity))),
+                    "ActualStart" => Date(task.Input.ActualStart?.Day), "ActualFinish" => Date(task.Input.ActualFinish?.Day),
                     PlanField.Estimate => Number(task.Estimate), PlanField.Remaining => Number(task.Remaining), PlanField.Actual => Number(task.Actual),
                     PlanField.Start => Date(task.Start.Value), PlanField.End => Date(task.End.Value),
                     PlanField.Assignees => Text(string.Join(", ", row.Assignees.Select(Assignee))),

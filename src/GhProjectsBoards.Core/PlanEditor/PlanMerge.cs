@@ -34,6 +34,9 @@ internal sealed record PlanSync
     // #238: when GitHub last changed each row's 実績 or 残, from the latest read; null when GitHub holds
     // neither value, absent when unknown. Only the latest observation is kept, never a read history.
     public ImmutableDictionary<string, DateTimeOffset?> ProgressUpdatedAt { get; init; } = ImmutableDictionary<string, DateTimeOffset?>.Empty;
+    // #308: each row's Issue history, kept as a read observation. Item/Issue updatedAt inside the record say
+    // which read produced it, so a refresh re-reads only rows that changed since. Not part of Undo.
+    public ImmutableDictionary<string, PlanIssueHistory> IssueHistory { get; init; } = ImmutableDictionary<string, PlanIssueHistory>.Empty;
     // #238: the latest complete read of the Project and the Issues it placed in the plan for the first time.
     public PlanLastRead? LastRead { get; init; }
     public int InaccessibleCount { get; init; }
