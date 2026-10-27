@@ -19,7 +19,7 @@ internal sealed partial class PlanSheetView
     // The strip's order is the agreed order of the attention sets (#260 / #122 terms).
     private static readonly ToggleSpec[] ToggleSpecs = [
         new(PlanToggle.Late, "遅れ", "PlanAttentionLate",
-            "遅れ: 終了日を過ぎて未完了、または予定より遅れているタスク（赤: 終了日を過ぎた、黄: それ以外）"),
+            "遅れ: 終了日を過ぎて未完了、または見込終了が終了日より後ろのタスク（赤: 終了日を過ぎた、黄: 見込）"),
         new(PlanToggle.Cause, "遅れの原因", "PlanAttentionCause",
             "遅れの原因: 終了日か開始日を過ぎた遅れと、自分の残で見込終了が終了日より後ろのタスク。先行タスクの遅れだけが原因のタスクは含まない"),
         new(PlanToggle.OverEstimate, "見積超過", "PlanAttentionOverEstimate",
@@ -39,7 +39,6 @@ internal sealed partial class PlanSheetView
     private HashSet<string> filterContext = [];
     private List<PlanChaseGroup> chaseGroups = [];
     internal bool FilterActive => activeFilter.IsActive;
-    internal int FilterMatchCount => filterResult.Matches.Length;
     internal IReadOnlyList<PlanChaseGroup> FilterChase => chaseGroups;
 
     private readonly List<Control> attentionControls = [];
@@ -310,7 +309,6 @@ internal sealed partial class PlanSheetView
         return options;
     }
     private void ClearPart(Func<PlanFilter, PlanFilter> change) => AssignFilter(change(activeFilter));
-    internal void ClearIdentityFilter() => ClearFilters();
     internal void ClearFilters() => AssignFilter(PlanFilter.None);
     // A named task set another surface hands in: the summary drill-down, a milestone or 後続を表示 (#260 4).
     internal void FilterTasks(IReadOnlySet<string> identities, string label, bool includeSummaries = false)
@@ -332,13 +330,20 @@ internal sealed partial class PlanSheetView
         SelectFirstMatch();
     }
     // Applying or changing a filter selects the first matching row and brings it into view (#260 / #227).
+    // The 300 ms pause can apply a title search while the PMO is still typing, so moving keyboard focus to the
+    // match's title cell would send the next characters there and could start editing that title; while the
+    // search box holds focus only the view follows the match, and a queued cell-focus request or a row jump's
+    // bring-into-view hold must not override that. A filter applied from another surface moves keyboard focus
+    // to its first match as before.
     private void SelectFirstMatch()
     {
         if (!FilterActive || filterResult.Matches.Length == 0) return;
         var first = filterResult.Matches[0];
         if (!RowIds.Contains(first)) return;
         Select(first, PlanField.Title, false);
-        FocusCell(first, PlanField.Title, scrollIntoView: true);
+        if (filter.FocusState == FocusState.Unfocused) { FocusCell(first, PlanField.Title, scrollIntoView: true); return; }
+        CancelRequestedFocus(); HoldingView = false;
+        List.ScrollIntoView(first);
     }
     // The match set and the dimmed requirement parents for the active filter. Called from RefreshVisibleRows
     // once the document's effective rows are known.
@@ -355,8 +360,6 @@ internal sealed partial class PlanSheetView
         filterContext = filterResult.Context.ToHashSet(StringComparer.Ordinal);
         chaseGroups = PlanChase.Groups(document, filterResult.Matches, SummaryIds).ToList();
     }
-    private bool IsFilterMatch(string identity) => filterContext.Count == 0 && filterResult.Matches.Length == 0 ? false
-        : filterResult.Matches.Contains(identity) || filterContext.Contains(identity);
     // Restores the accepted filter text after a cancelled or unaccepted edit of the search box (#227).
     internal void CancelPendingFilter()
     {

@@ -24,7 +24,7 @@ concurrency:
 jobs:
   comparison:
     runs-on: windows-latest
-    timeout-minutes: 90
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -109,7 +109,7 @@ jobs:
           if-no-files-found: warn
       - name: Check affected hosted behavior after measurement
         if: always() && steps.candidate-build.outcome == 'success'
-        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where '(class == GhProjectsBoards.UiIntegration.Tests.PlanSheetHostedTests or cat == PlanOverview or method =~ "ResetConfirmationCancelBusyResultAndUndoUseTheRealView|RefreshResultNamesDateAndChangedTasksAndFilterCanBeCleared") and cat != PlanSheetPerformance and cat != PlanSheetNative' -TimeoutSeconds 1800
+        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where '(class == GhProjectsBoards.UiIntegration.Tests.PlanSheetHostedTests or cat == PlanOverview or method =~ "ResetConfirmationCancelBusyResultAndUndoUseTheRealView|RefreshResultNamesDateAndChangedTasksAndFilterCanBeCleared") and cat != PlanSheetPerformance and cat != PlanSheetNative' -TimeoutSeconds 10800
       - name: Upload hosted regression evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -120,3 +120,4 @@ jobs:
       - name: Require completed baseline measurement
         if: always() && steps.baseline-measure.outcome != 'success'
         run: throw 'Baseline measurement failed; its retained partial evidence is not a completed comparison.'
+

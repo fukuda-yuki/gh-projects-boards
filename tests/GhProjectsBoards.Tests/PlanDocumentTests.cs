@@ -806,7 +806,7 @@ internal sealed class PlanDocumentTests
         double Returned(Func<Task<PlanSaveResult>> action) { var watch = Stopwatch.StartNew(); action(); return watch.Elapsed.TotalMilliseconds; }
         await Edit(0);
         var early = Enumerable.Range(1, 10).Select(i => Returned(() => Edit(i))).ToArray();
-        for (var i = 11; i < 195; i++) Edit(i);
+        for (var i = 11; i < 195; i++) _ = Edit(i);
         var late = Enumerable.Range(195, 10).Select(i => Returned(() => Edit(i))).ToArray();
         Assert.That(session.UndoCount, Is.EqualTo(200));
         var undo = Enumerable.Range(0, 10).Select(_ => Returned(() => session.Undo(Today))).ToArray();

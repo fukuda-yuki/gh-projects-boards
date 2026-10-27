@@ -32,7 +32,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         var cellId = summary ? "PlanCell1_Estimate" : "PlanCell1_Title";
         await SheetNativeInput.ActivateWindow();
         await Ui.Run(() => { var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single(); sheet.Select("I1", summary ? PlanField.Estimate : PlanField.Title, false); sheet.FocusSelected(); });
-        await Ui.Until(() => Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(view.XamlRoot) == Ui.Find<Control>(cellId));
+        await Ui.Until(() => ReferenceEquals(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(view.XamlRoot), Ui.Find<Control>(cellId)));
         await SheetNativeInput.Press(Windows.System.VirtualKey.F6, reverse ? [Windows.System.VirtualKey.Shift] : []);
         await Ui.Run(() => Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(view.XamlRoot),
             Is.SameAs(Ui.Find<SelectorBarItem>("PlanShowTasks"))));

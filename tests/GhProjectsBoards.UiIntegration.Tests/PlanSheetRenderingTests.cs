@@ -54,7 +54,9 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(estimate.Editing, Is.EqualTo(editing));
             Assert.That(title.Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(TextCentre(assignee), Is.EqualTo(TextCentre(title)).Within(1));
-            Assert.That(EditorTextCentre(estimate), Is.EqualTo(TextCentre(title)).Within(1), "Estimate text must share the display overlays' vertical centre.");
+            // Not editing, the overlay is the visible estimate. Editing shows the text host again.
+            var estimateCentre = editing ? EditorTextCentre(estimate) : TextCentre(estimate.EstimateDisplay!);
+            Assert.That(estimateCentre, Is.EqualTo(TextCentre(title)).Within(1), "Estimate text must share the display overlays' vertical centre.");
         });
     }
 

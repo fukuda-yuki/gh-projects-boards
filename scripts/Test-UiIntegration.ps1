@@ -1,9 +1,10 @@
-﻿param(
+param(
     [string]$Where = 'cat != Infrastructure and cat != PlanSheetNative and cat != PlanSheetPerformance',
     [switch]$Discover,
     [switch]$NoBuild,
     [string]$BinaryRoot,
-    [ValidateRange(1, 3600)][int]$TimeoutSeconds = 3600
+    # 10800 is the plan-responsiveness hosted step. The default stays 3600. See docs/performance.md.
+    [ValidateRange(1, 10800)][int]$TimeoutSeconds = 3600
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent

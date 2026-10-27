@@ -533,12 +533,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
             RenderTasks(); RenderSettings();
         }
     }
-    private bool showingRecalculation;
     // A settings change reschedules the plan, so it keeps its own bar and reports the moved tasks. A refresh
     // opens no bar: its result is the strip's right end (#238).
     private void ShowRecalculationResult(PlanRefreshResult result)
     {
-        showingRecalculation = true;
         var culture = CultureInfo.GetCultureInfo("ja-JP");
         refreshResult.ActionButton = null; refreshResult.Content = null;
         refreshResult.Title = "日程を再計算しました";
@@ -553,7 +551,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void CloseRefreshResult()
     {
-        showingRecalculation = false;
         refreshResult.IsOpen = false;
     }
     private void UpdateCommandAvailability()

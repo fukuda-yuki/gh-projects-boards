@@ -23,19 +23,12 @@ internal sealed class ProjectDiscovery(GhConnectionService service)
 {
     private const string Identity = "id number url title owner { id __typename ... on User { login } ... on Organization { login } }";
     private const string PageInfo = "pageInfo { hasNextPage endCursor }";
-    private const string Repository = "id nameWithOwner owner { id }";
 
     public async Task<IReadOnlyList<OwnerChoice>> OwnersAsync(ConnectionContext context, CancellationToken token)
     {
         var nodes = await Pages(context, "query RegistrationOwners($after:String) { viewer { organizations(first:100,after:$after) { nodes { login } " + PageInfo + " } } }",
             new(), ["viewer", "organizations"], token);
         return new[] { new OwnerChoice(context.Login, "User") }.Concat(nodes.Select(n => new OwnerChoice(Text(n, "login"), "Organization"))).ToArray();
-    }
-    public async Task<IReadOnlyList<RepositoryReadModel>> RepositoriesAsync(ConnectionContext context, string owner, CancellationToken token)
-    {
-        var nodes = await Pages(context, "query RegistrationRepositories($owner:String!,$after:String) { repositoryOwner(login:$owner) { repositories(first:100,after:$after) { nodes { " + Repository + " } " + PageInfo + " } } }",
-            new() { ["owner"] = owner }, ["repositoryOwner", "repositories"], token);
-        return nodes.Select(n => ReadRepository(context, n)).ToArray();
     }
     public async Task<IReadOnlyList<ProjectListing>> ListingsAsync(ConnectionContext context, string owner, CancellationToken token)
     {
@@ -75,13 +68,6 @@ internal sealed class ProjectDiscovery(GhConnectionService service)
         if (choice.Number != number || !choice.OwnerLogin.Equals(match.Groups[2].Value, StringComparison.OrdinalIgnoreCase)
             || choice.OwnerType != (type == "user" ? "User" : "Organization")) throw new DiscoveryException(FailureKind.InvalidResponse);
         return choice;
-    }
-    public async Task<IReadOnlyList<RepositoryReadModel>> LinksAsync(ConnectionContext context, ScopedId project, CancellationToken token)
-    {
-        if (project.Scope != ConnectionScope.From(context)) throw new DiscoveryException(FailureKind.IdentityChanged);
-        var nodes = await Pages(context, "query RegistrationLinks($id:ID!,$after:String) { node(id:$id) { ... on ProjectV2 { repositories(first:100,after:$after) { nodes { " + Repository + " } " + PageInfo + " } } } }",
-            new() { ["id"] = project.NodeId }, ["node", "repositories"], token);
-        return nodes.Select(n => ReadRepository(context, n)).ToArray();
     }
     private async Task<List<JsonElement>> Pages(ConnectionContext context, string query, Dictionary<string, object?> variables, string[] path, CancellationToken token)
     {
@@ -123,11 +109,6 @@ internal sealed class ProjectDiscovery(GhConnectionService service)
     }
     private static string Text(JsonElement node, string property) => At(node, property).ValueKind == JsonValueKind.String && At(node, property).GetString() is { Length: > 0 } text
         ? text : throw new DiscoveryException(FailureKind.InvalidResponse);
-    private static RepositoryReadModel ReadRepository(ConnectionContext context, JsonElement n)
-    {
-        var scope = ConnectionScope.From(context);
-        return new(new(scope, Text(n, "id")), new(scope, Text(At(n, "owner"), "id")), Text(n, "nameWithOwner"));
-    }
     private static ProjectChoice Choice(ConnectionContext context, JsonElement n)
     {
         var owner = At(n, "owner");

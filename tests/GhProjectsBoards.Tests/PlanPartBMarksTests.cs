@@ -12,6 +12,13 @@ internal sealed class PlanPartBMarksTests
         new(rows.ToImmutableArray(), []), new(rows.ToImmutableArray(), new() { StatusDate = Day }));
 
     [Test]
+    public void ABarNamesOneLatenessAndTheCase()
+    {
+        Assert.That(PlanSheetText.BarLateness(true, 21), Is.EqualTo("遅れ +21日（終了日を過ぎた）"));
+        Assert.That(PlanSheetText.BarLateness(false, 2), Is.EqualTo("遅れ +2日（見込）"));
+    }
+
+    [Test]
     public void HidingAMarkLeavesItsSetAndCountIntact()
     {
         var document = Document(new PlanRow("I1", "Late", "a/b") { Start = Day.AddDays(-3), End = Day.AddDays(-3), Remaining = 8 });

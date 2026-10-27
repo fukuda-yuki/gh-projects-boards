@@ -708,8 +708,9 @@ internal sealed class PlanOverviewHostedTests
                 else Assert.That(segment.Fill is null || segment.Fill is SolidColorBrush { Color.A: 0 }, Is.True);
                 Assert.That(Ui.Tree(sheet).Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PlanLateLabel" + number), Is.EqualTo(overdue && scale == "週"));
                 var bar = Ui.Find<Shape>("PlanBar" + number);
-                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain($"+{days}日"));
-                Assert.That(ToolTipService.GetToolTip(bar)?.ToString(), Does.Contain($"+{days}日"));
+                var wording = PlanSheetText.BarLateness(overdue, days);
+                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(bar), Does.Contain(wording));
+                Assert.That(ToolTipService.GetToolTip(bar)?.ToString(), Does.Contain(wording));
                 if (overdue && scale == "週") {
                     var label = Ui.Find<TextBlock>("PlanLateLabel" + number);
                     Assert.That(label.Text, Is.EqualTo($"+{days}日"));
@@ -825,6 +826,32 @@ internal sealed class PlanOverviewHostedTests
         await Ui.ClickCommand("PlanSheetCollapseAll", focus: true);
         await Ui.Until(() => RowIsFocused(4));
         Assert.That(session.UndoCount, Is.Zero, "Folding changes the view without adding plan edits.");
+    }
+
+    // #316 / #155: the 300 ms pause can apply the title search between two typed keys, and at the 700 ms
+    // rhythm the word is not finished yet. Moving keyboard focus to the first match at that point sends the
+    // remaining characters to its title cell and can begin editing that title, so this case lets the debounce
+    // alone apply the search, with no Enter or Escape, and requires the search box to keep keyboard focus and
+    // its full text while the first match stays selected and in view. Before the fix the selection follows the
+    // filter but keyboard focus moves to PlanCell2_Title, so the focus assertion fails; after it, both hold.
+    [Test]
+    public async Task DebouncedTitleSearchKeepsKeyboardFocusInTheSearchBox()
+    {
+        await Filter("OT-001", ["I2", "I5", ""]);
+        // The helper's visible-row predicate is also satisfied before the filter applies, so wait for the
+        // 300 ms debounce to accept the search and select its first match before asserting the retained focus.
+        await Ui.Until(() => sheet.FilterActive && Ui.Find<TextBlock>("PlanSheetFilterCount").Text == "2 件");
+        await Ui.Idle();
+        await Ui.Run(() => {
+            var filter = Ui.Find<TextBox>("PlanSheetFilter");
+            Assert.That(filter.FocusState, Is.Not.EqualTo(FocusState.Unfocused),
+                "Applying the search by pause must keep typing focus in the search box.");
+            Assert.That(filter.Text, Is.EqualTo("OT-001"), "Applying the search keeps the complete typed text.");
+            Assert.That(sheet.IsSelectedRow("I2"), Is.True, "The first match is still selected.");
+            Assert.That(sheet.IsSelected("I2", PlanField.Title), Is.True, "The first match's title cell is the selection end.");
+            Assert.That(sheet.Realized.Any(row => row.Identity == "I2" && row.IsLoaded), Is.True,
+                "The first match is brought into view.");
+        });
     }
 
     [Test]

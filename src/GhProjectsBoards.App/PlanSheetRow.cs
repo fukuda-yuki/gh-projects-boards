@@ -95,7 +95,6 @@ public sealed class PlanSheetRow : Grid
     // the current task does not draw is collapsed and loses its automation id, so no stale bar is found.
     private static readonly string[] TaskShapeOrder = ["endpoint", "task", "summary", "milestone", "progress", "lateTask", "lateSummary", "lateLabel"];
     private readonly Dictionary<string, FrameworkElement> taskShapes = [];
-    private static readonly FontFamily IconFont = new("Segoe Fluent Icons");
     private NativePath? crossingPath;
     // #264: the reused off-screen predecessor stub (`#1204 →`) in the Gantt row.
     private TextBlock? predecessorStub;
@@ -842,7 +841,7 @@ public sealed class PlanSheetRow : Grid
         var late = lateness?.DaysLater;
         var overdue = lateness?.Level == PlanLatenessLevel.Overdue;
         var barName = $"{owner.TaskNames[Identity]} {BarDatesText(task, start, end, fromRecord)}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
-            + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" {(overdue ? "期限超過" : "予定より遅れ")} +{days}日" : "");
+            + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? " " + PlanSheetText.BarLateness(overdue, days) : "");
         AutomationProperties.SetAutomationId(bar, "PlanBar" + number);
         AutomationProperties.SetName(bar, barName);
         ToolTipService.SetToolTip(bar, barName);
@@ -882,10 +881,11 @@ internal sealed class PlanSheetCell : TextBox
 {
     private readonly PlanSheetRow row;
     internal string Field { get; }
-    internal bool Composing { get; private set; }
+    internal bool Composing { get => composing; private set { composing = value; ApplyContentHost(); } }
+    private bool composing;
     // While editing, the text box keeps its own menu for the characters being typed; otherwise a right click
     // opens the row menu (#231).
-    internal bool Editing { get => editing; private set { editing = value; ContextFlyout = value ? textMenu : null; } }
+    internal bool Editing { get => editing; private set { editing = value; ContextFlyout = value ? textMenu : null; ApplyContentHost(); } }
     private bool editing;
     // #225: Escape closes the 担当者 candidate list for the rest of this edit; typing after that does not
     // reopen it until the edit starts again.
@@ -1004,6 +1004,22 @@ internal sealed class PlanSheetCell : TextBox
         AddHandler(PointerPressedEvent, new PointerEventHandler((_, args) => {
             if (!Editing && row.Owner is { } owner) owner.BeginRange(row.Identity, Field, this, args);
         }), true);
+    }
+    private ScrollViewer? contentHost;
+    protected override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        contentHost = GetTemplateChild("ContentElement") as ScrollViewer;
+        ApplyContentHost();
+    }
+    // Title, forecast, estimate and assignee cells already paint with an overlay. The text host
+    // still measures its hidden text on every refresh, so it stays collapsed until editing or an
+    // IME composition needs the caret. The TextBox value, focus and input path stay.
+    private void ApplyContentHost()
+    {
+        if (contentHost is null) return;
+        if (TitleDisplay is null && ForecastDisplay is null && EstimateDisplay is null && AssigneeDisplay is null) return;
+        contentHost.Visibility = Editing || Composing ? Visibility.Visible : Visibility.Collapsed;
     }
     private string EditOriginal()
     {
@@ -1128,14 +1144,17 @@ internal sealed class PlanSheetCell : TextBox
         }
         if (CalendarButton is { } calendar)
             calendar.Visibility = CalendarAllowed && !Editing && Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
-        if (TitleDisplay is not { } display) return;
-        // Keep the full TextBox value, focus, hit testing and native input path intact.
-        // Only its paint is hidden while the ellipsized display owns presentation.
-        Opacity = Editing ? 1 : 0;
-        display.Visibility = Editing ? Visibility.Collapsed : Visibility.Visible;
-        display.Text = shownText; display.FontSize = FontSize; display.FontFamily = FontFamily;
-        display.FontWeight = FontWeight; display.Foreground = Foreground;
-        display.Margin = new(Padding.Left, Padding.Top, Padding.Right + TagReserve, Padding.Bottom);
+        if (TitleDisplay is { } display)
+        {
+            // Keep the full TextBox value, focus, hit testing and native input path intact.
+            // Only its paint is hidden while the ellipsized display owns presentation.
+            Opacity = Editing ? 1 : 0;
+            display.Visibility = Editing ? Visibility.Collapsed : Visibility.Visible;
+            display.Text = shownText; display.FontSize = FontSize; display.FontFamily = FontFamily;
+            display.FontWeight = FontWeight; display.Foreground = Foreground;
+            display.Margin = new(Padding.Left, Padding.Top, Padding.Right + TagReserve, Padding.Bottom);
+        }
+        ApplyContentHost();
     }
     protected override void OnPreviewKeyDown(KeyRoutedEventArgs args)
     {

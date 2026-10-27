@@ -1727,7 +1727,7 @@ internal sealed partial class PlanPublisherTests
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m))
             .Append(new("I51", PlanField.Predecessors, new[] { "I1" })).ToImmutableArray()), Today);
-        Scenario(fault);
+        Scenario(fault, firstMutationDelayMs: 2000);
 
         var result = await publisher.PublishAsync(session, Today);
 

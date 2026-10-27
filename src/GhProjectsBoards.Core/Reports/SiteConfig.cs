@@ -17,7 +17,6 @@ internal sealed record SiteConfig(string Title, bool Demo, IReadOnlyList<SitePro
 internal static class SiteConfigReader
 {
     internal const string DefaultStateField = "Status";
-    internal static readonly string DefaultTitle = "プロジェクト進捗";
     // #308 R3: the Status option names that mean not started, matched by name. No Status is always not started.
     internal static readonly string[] DefaultNotStartedStatuses = ["Backlog", "Todo", "Ready"];
 

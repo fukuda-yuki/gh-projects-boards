@@ -52,6 +52,90 @@ public sealed class PlanScreenPerformanceTests
     public void VersionWheelScrollingRecordsOrdinaryAppPixelsWithoutEditing()
         => RecordVersionPerformance(scrollOnly: true);
 
+    [Test]
+    public void EditSample_SelectsTheFirstOpenLeafWithAnEstimate()
+    {
+        var chosen = PlanEditSampleReader.Select("""
+            {
+              "document": { "state": { "rows": [
+                {"identity":"I1","title":"Req","closed":false,"parent":null,"estimate":null},
+                {"identity":"I2","title":"Done","closed":true,"parent":"I1","estimate":8},
+                {"identity":"I3","title":"Open","closed":false,"parent":"I1","estimate":16}
+              ]}}
+            }
+            """);
+        Assert.Multiple(() =>
+        {
+            Assert.That(chosen.Number, Is.EqualTo(3));
+            Assert.That(chosen.Identity, Is.EqualTo("I3"));
+            Assert.That(chosen.Title, Is.EqualTo("Open"));
+            Assert.That(chosen.RowCount, Is.EqualTo(3));
+        });
+
+        var noEstimate = PlanEditSampleReader.Select("""
+            {
+              "document": { "state": { "rows": [
+                {"identity":"I1","title":"No estimate","closed":false,"parent":null,"estimate":null},
+                {"identity":"I2","title":"Zero","closed":false,"parent":null,"estimate":0},
+                {"identity":"I3","title":"Next","closed":false,"parent":null,"estimate":4}
+              ]}}
+            }
+            """);
+        Assert.That(noEstimate.Identity, Is.EqualTo("I3"), "A leaf without a positive estimate is skipped.");
+
+        var summary = PlanEditSampleReader.Select("""
+            {
+              "document": { "state": { "rows": [
+                {"identity":"I1","title":"Summary","closed":false,"parent":null,"estimate":8},
+                {"identity":"I2","title":"Leaf","closed":false,"parent":"I1","estimate":2}
+              ]}}
+            }
+            """);
+        Assert.That(summary.Identity, Is.EqualTo("I2"), "An open summary with an estimate is not a leaf.");
+
+        var childFirst = PlanEditSampleReader.Select("""
+            {
+              "document": { "state": { "rows": [
+                {"identity":"I2","title":"Leaf","closed":false,"parent":"I1","estimate":5},
+                {"identity":"I1","title":"Summary","closed":false,"parent":null,"estimate":8}
+              ]}}
+            }
+            """);
+        Assert.That(childFirst.Number, Is.EqualTo(1));
+        Assert.That(childFirst.Identity, Is.EqualTo("I2"), "Parenthood is the whole list, even when the child is stored first.");
+
+        var missing = Assert.Throws<InvalidOperationException>(() => PlanEditSampleReader.Select("""
+            {"document":{"state":{"rows":[{"identity":"I1","title":"Closed","closed":true,"parent":null,"estimate":8}]}}}
+            """))!;
+        Assert.That(missing.Message, Does.Contain("no open leaf task with an estimate"));
+
+        Assert.That(PlanEditSampleReader.ScrollPercent(144, 1040), Is.EqualTo(143 * 100d / 1039).Within(1e-9));
+        Assert.That(PlanEditSampleReader.ScrollPercent(1, 1040), Is.EqualTo(0));
+        Assert.That(PlanEditSampleReader.ScrollPercent(1040, 1040), Is.EqualTo(100));
+
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-edit-sample-" + Guid.NewGuid().ToString("N"));
+        var directory = Path.Combine(root, "PlanningEditor", "v1");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            const string Plan = """
+                {"document":{"state":{"rows":[
+                  {"identity":"I1","title":"Req","closed":false,"parent":null,"estimate":null},
+                  {"identity":"I2","title":"Open","closed":false,"parent":"I1","estimate":16}
+                ]}}}
+                """;
+            File.WriteAllText(Path.Combine(directory, "plan.json.bak"), "not a plan");
+            File.WriteAllText(Path.Combine(directory, "plan.json.unreadable-1"), "not a plan");
+            File.WriteAllText(Path.Combine(directory, "AABBCC.json"), Plan);
+            var read = PlanEditSampleReader.Read(root);
+            Assert.That(read.Identity, Is.EqualTo("I2"));
+            Assert.That(read.Number, Is.EqualTo(2));
+            File.WriteAllText(Path.Combine(directory, "second.json"), Plan);
+            Assert.Throws<InvalidOperationException>(() => PlanEditSampleReader.Read(root));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private void RecordVersionPerformance(bool scrollOnly)
     {
         if (Environment.GetEnvironmentVariable("GHPB_RUN_E2E") != "1")
@@ -61,6 +145,8 @@ public sealed class PlanScreenPerformanceTests
         var root = Path.Combine(Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!, scrollOnly ? "plan-scroll" : "plan-screen");
         var data = Path.Combine(root, "data");
         Directory.CreateDirectory(root);
+        PlanEditSample? editSample = null;
+        double editScrollPercent = 0;
         var repo = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(fake)!, "..", "..", "..", "..", ".."));
         var prepare = new ProcessStartInfo("pwsh") { UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden };
         foreach (var argument in new[] { "-NoProfile", "-File", Path.Combine(repo, "scripts", "Start-Evaluation.ps1"), "-NoBuild", "-Configuration", new DirectoryInfo(Path.GetDirectoryName(fake)!).Parent!.Name, "-PrepareOnly", "-DataRoot", data })
@@ -70,6 +156,8 @@ public sealed class PlanScreenPerformanceTests
             Assert.That(fixture.WaitForExit(30000), Is.True, "Evaluation preparation must finish.");
             Assert.That(fixture.ExitCode, Is.Zero);
         }
+        editSample = PlanEditSampleReader.Read(data);
+        editScrollPercent = PlanEditSampleReader.ScrollPercent(editSample.Value.Number, editSample.Value.RowCount);
         var fixtureContext = JsonDocument.Parse(File.ReadAllText(Path.Combine(data, "evaluation.json"))).RootElement.Clone();
         var referenceDay = fixtureContext.GetProperty("statusDate").GetString()!;
         using var dpi = new DesktopDpiScope();
@@ -160,24 +248,26 @@ public sealed class PlanScreenPerformanceTests
             // Record the native return position above, then reset outside the edit measurement.
             list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
             Wait(() => list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value == 0);
-            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 13);
-            Wait(() => Find("PlanCell144_Remaining").IsOffscreen == false);
+            var task = editSample!.Value;
+            string Cell(string field) => "PlanCell" + task.Number + "_" + field;
+            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, editScrollPercent);
+            Wait(() => Find(Cell("Remaining")).IsOffscreen == false);
             Thread.Sleep(500);
             using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "before-edits.png"));
-            var firstEditor = Find("PlanCell144_Remaining").AsTextBox();
+            var firstEditor = Find(Cell("Remaining")).AsTextBox();
             firstEditor.Focus();
             Wait(() => firstEditor.Properties.HasKeyboardFocus.ValueOrDefault);
             Keyboard.Type(VirtualKeyShort.F2);
             Wait(() => double.TryParse(firstEditor.Text, out _));
             var original = firstEditor.Text;
-            Assert.That(double.TryParse(original, out var remaining), Is.True, "ID 144 must expose numeric Remaining in edit mode.");
+            Assert.That(double.TryParse(original, out var remaining), Is.True, $"ID {task.Number} ({task.Identity}) must expose numeric Remaining in edit mode.");
             for (var index = 0; index < 6; index++)
             {
-                var editor = Find("PlanCell144_Remaining").AsTextBox();
+                var editor = Find(Cell("Remaining")).AsTextBox();
                 editor.Focus();
                 Wait(() => editor.Properties.HasKeyboardFocus.ValueOrDefault);
                 editor.Text = index % 2 == 0 ? (remaining + 24).ToString(System.Globalization.CultureInfo.CurrentCulture) : original;
-                var endCell = Find("PlanCell144_End").AsTextBox();
+                var endCell = Find(Cell("End")).AsTextBox();
                 var before = endCell.Text;
                 var bounds = endCell.BoundingRectangle;
                 // Exclude selection borders/changed markers. The date text is read independently through UIA.
@@ -186,11 +276,11 @@ public sealed class PlanScreenPerformanceTests
                 Thread.Sleep(200);
                 var recording = RecordPixels(Path.Combine(root, $"edit-{index + 1}"), region,
                     mark => { mark("Enter"); Keyboard.Type(VirtualKeyShort.RETURN); }, TimeSpan.FromSeconds(3));
-                var finalEndCell = Find("PlanCell144_End").AsTextBox();
+                var finalEndCell = Find(Cell("End")).AsTextBox();
                 var after = finalEndCell.Text;
                 var unchangedBounds = finalEndCell.BoundingRectangle == bounds;
                 var valid = before != after && unchangedBounds && recording.ScreenChanged && recording.FinalStateStable;
-                samples.Add(new { sample = index + 1, row = 144, title = Find("PlanCell144_Title").AsTextBox().Text,
+                samples.Add(new { sample = index + 1, row = task.Number, identity = task.Identity, title = Find(Cell("Title")).AsTextBox().Text,
                     remaining = editor.Text, before, after, unchangedBounds, valid,
                     recording.FirstFinalPixelsMs, recording.FirstFinalFrameStartMs, recording.PreviousFrameMs,
                     recording.PreviousFrameStartMs, recording.MaxCaptureIntervalMs,
@@ -206,32 +296,79 @@ public sealed class PlanScreenPerformanceTests
             filterRegion.Height = Math.Min(450, filterRegion.Height);
             var filterResults = new List<object>();
             AutomationElement? countElement = null;
+            const string FilterBoundary = "Native typing at 200 and 700 ms intervals, per-key focus evidence and raw desktop pixel frames. The product applies the title filter after a 300 ms debounce and then moves keyboard focus from PlanSheetFilter to the first match's title cell; the unchanged main baseline does this. The harness must not depend on either behaviour, so it records whether the filter still held keyboard focus before each character and re-acquires it through UI Automation before typing when focus moved. A key that cannot be re-acquired is recorded with its observed text and stops the probe before it is injected into the grid. The 200 ms rhythm finishes inside the debounce and must record no focus loss or re-acquisition; the 700 ms rhythm crosses the debounce on each later key and records whether it had to re-acquire. injectedAtMs is the harness stopwatch time immediately before the native key injection; textAfter is the filter text after waiting up to the shorter of the pause and 250 ms for that character to appear through UI Automation. Re-acquisition is harness compensation, not a product assertion; inspect character delivery and result replacement separately.";
+            void WriteFilterEvidence(object? aborted = null)
+            {
+                var results = new List<object>(filterResults);
+                if (aborted is not null) results.Add(aborted);
+                File.WriteAllText(Path.Combine(root, "filter-result.json"),
+                    JsonSerializer.Serialize(new { results, boundary = FilterBoundary }));
+            }
             foreach (var pauseMs in new[] { 200, 700 })
             {
                 filter.Focus();
                 Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
                 var recordingName = pauseMs == 200 ? "filter-fast" : "filter-slow";
+                var keys = new List<object>();
+                var focusLostKeys = 0;
+                var reacquiredKeys = 0;
+                var cadence = Stopwatch.StartNew();
                 RecordPixels(Path.Combine(root, recordingName), filterRegion, mark => {
-                    var cadence = Stopwatch.StartNew();
                     var index = 0;
                     foreach (var character in "PS-00") {
                         // FlaUI includes input-processing time. Schedule key starts
                         // absolutely so that overhead does not lengthen each pause.
-                        var remaining = TimeSpan.FromMilliseconds(index++ * pauseMs) - cadence.Elapsed;
+                        var remaining = TimeSpan.FromMilliseconds(index * pauseMs) - cadence.Elapsed;
                         if (remaining > TimeSpan.Zero) Thread.Sleep(remaining);
+                        // After the debounce the product applies the typed text and moves keyboard focus
+                        // from the box to the first match's title cell. This harness also runs against the
+                        // unchanged main baseline, so a later key must re-acquire the box; a key delivered
+                        // to the grid would measure lost keystrokes instead of result replacement. The fast
+                        // rhythm stays inside the debounce and must record no loss, while the slow rhythm
+                        // records the re-acquisition so both builds stay measurable.
+                        var focusBefore = filter.Properties.HasKeyboardFocus.ValueOrDefault;
+                        var focusReacquired = false;
+                        if (!focusBefore) {
+                            focusLostKeys++;
+                            filter.Focus();
+                            focusReacquired = WaitForKeyboardFocus(filter, TimeSpan.FromSeconds(5));
+                            if (!focusReacquired) {
+                                var text = filter.Text;
+                                var failedKeys = new List<object>(keys) {
+                                    new { character = character.ToString(), injectedAtMs = cadence.Elapsed.TotalMilliseconds,
+                                        focusBefore, focusReacquired = false, textAfter = text }
+                                };
+                                mark("refocus:" + character + ":failed");
+                                WriteFilterEvidence(new { pauseMs, recordingName, text,
+                                    count = countElement is null ? null : countElement.Properties.Name.ValueOrDefault,
+                                    focusLostKeys, reacquiredKeys, abortedAfterCharacter = character.ToString(), keys = failedKeys });
+                                // Stop before the character reaches the focused title cell; a later key would
+                                // edit the grid and turn a focus defect into unrelated sheet mutations.
+                                throw new AssertionException(
+                                    $"PlanSheetFilter lost keyboard focus before '{character}' and could not be re-acquired; its text was '{text}'.");
+                            }
+                            reacquiredKeys++;
+                            mark("refocus:" + character);
+                        }
+                        var injectedAtMs = cadence.Elapsed.TotalMilliseconds;
                         mark("key:" + character);
                         Keyboard.Type(character.ToString());
+                        // Do not let evidence collection stretch the fast rhythm across the debounce.
+                        var textAfter = WaitForFilterText(filter, "PS-00"[..(index + 1)],
+                            TimeSpan.FromMilliseconds(Math.Min(pauseMs, 250)));
+                        keys.Add(new { character = character.ToString(), injectedAtMs, focusBefore, focusReacquired, textAfter });
+                        index++;
                     }
                 }, TimeSpan.FromSeconds(2));
                 countElement ??= Find("PlanSheetFilterCount");
                 var count = countElement.Properties.Name.ValueOrDefault;
-                filterResults.Add(new { pauseMs, recordingName, text = filter.Text, count });
-                File.WriteAllText(Path.Combine(root, "filter-result.json"), JsonSerializer.Serialize(new {
-                    results = filterResults,
-                    boundary = "Native typing at 200 and 700 ms intervals and raw desktop pixel frames; inspect character delivery and result replacement separately."
-                }));
+                filterResults.Add(new { pauseMs, recordingName, text = filter.Text, count, focusLostKeys, reacquiredKeys, keys });
+                WriteFilterEvidence();
                 Assert.That(filter.Text, Is.EqualTo("PS-00"));
                 Assert.That(count, Is.EqualTo("120 件"));
+                // A fast-rhythm focus loss is a typing defect; re-acquiring it would conceal the lost key.
+                if (pauseMs == 200) Assert.That(focusLostKeys, Is.Zero,
+                    "The fast rhythm must finish inside the 300 ms debounce without losing keyboard focus.");
                 var clearEvidence = Path.Combine(root, $"filter-clear-{pauseMs}.json");
                 var clearTimer = Stopwatch.StartNew();
                 File.WriteAllText(clearEvidence, JsonSerializer.Serialize(new { phase = "started", utc = DateTime.UtcNow }));
@@ -261,19 +398,28 @@ public sealed class PlanScreenPerformanceTests
                 mark("type:ST-002"); Keyboard.Type("ST-002");
                 mark("Enter"); Keyboard.Type(VirtualKeyShort.RETURN);
             }, TimeSpan.FromSeconds(3));
-            File.WriteAllText(Path.Combine(root, "filter-enter-result.json"), JsonSerializer.Serialize(new {
-                text = filter.Text, count = countElement!.Properties.Name.ValueOrDefault, enterRecording,
-                boundary = "Native Enter starts filter application without the debounce delay; screen frames bound visible result timing."
-            }));
             Assert.That(filter.Text, Is.EqualTo("ST-002"));
             Assert.That(countElement!.Properties.Name.ValueOrDefault, Is.EqualTo("40 件"));
+            // Enter applies the search without the debounce; the unchanged main baseline then moves keyboard
+            // focus to the first match's title cell, so clearing must re-acquire the box first. The candidate
+            // keeps focus, and the recorded flag separates the two behaviours on both sides of the comparison.
+            var enterFocusLost = !filter.Properties.HasKeyboardFocus.ValueOrDefault;
+            if (enterFocusLost) {
+                filter.Focus();
+                Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
+            }
+            File.WriteAllText(Path.Combine(root, "filter-enter-result.json"), JsonSerializer.Serialize(new {
+                text = filter.Text, count = countElement.Properties.Name.ValueOrDefault, enterRecording,
+                focusLostAfterEnter = enterFocusLost, focusReacquiredAfterEnter = enterFocusLost,
+                boundary = "Native Enter starts filter application without the debounce delay; screen frames bound visible result timing. The unchanged main baseline moves keyboard focus from PlanSheetFilter to the first match's title cell when Enter applies the search; the probe records whether focus was lost and re-acquires the box through UI Automation before clearing it. The candidate keeps focus, so a lost focus here is baseline behaviour, not a candidate assertion."
+            }));
             // Return to the edited task before the independent popup probes.
             using (Keyboard.Pressing(VirtualKeyShort.CONTROL)) Keyboard.Type(VirtualKeyShort.KEY_A);
             Keyboard.Type(VirtualKeyShort.BACK);
             Wait(() => filter.Text.Length == 0 && countElement.IsOffscreen);
-            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 13);
-            Wait(() => Find("PlanCell144_Title").IsOffscreen == false);
-            var selectedEditor = Find("PlanCell144_Title");
+            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, editScrollPercent);
+            Wait(() => Find(Cell("Title")).IsOffscreen == false);
+            var selectedEditor = Find(Cell("Title"));
             selectedEditor.Focus();
             Wait(() => selectedEditor.Properties.HasKeyboardFocus.ValueOrDefault);
             var commands = Find("PlanSheetCommands");
@@ -487,7 +633,9 @@ public sealed class PlanScreenPerformanceTests
         }
         void WriteSummary() => File.WriteAllText(Path.Combine(root, "plan-screen.json"), JsonSerializer.Serialize(new {
             schemaVersion = 1, outcome, failure, scope = scrollOnly ? "wheel-only" : "scroll-edit-filter-flyouts",
-            rows = 1040, version = "2027.04", environment, wheelRecordings, flyoutRecordings, samples,
+            rows = editSample?.RowCount ?? 1040, version = "2027.04",
+            editedTask = editSample is { } chosen ? new { number = chosen.Number, identity = chosen.Identity, title = chosen.Title, rowCount = chosen.RowCount, scrollPercent = editScrollPercent } : null,
+            environment, wheelRecordings, flyoutRecordings, samples,
             processExited = process.HasExited, processExitCode = process.HasExited ? (int?)process.ExitCode : null,
             targetMs = scrollOnly ? (int?)null : 200, boundary = scrollOnly
                 ? "Native wheel input and desktop copies; inspect recorded row identities, blank strips and recovery separately. Completion verifies acquisition and unchanged unpublished count, not smoothness or physical-display acceptance."
@@ -655,4 +803,75 @@ public sealed class PlanScreenPerformanceTests
         }
         Assert.Fail("The ordinary version sheet did not reach the expected state.");
     }
+
+    // Bounded so a failed re-acquisition is recorded evidence rather than a hanging probe.
+    private static bool WaitForKeyboardFocus(AutomationElement element, TimeSpan timeout)
+    {
+        var timer = Stopwatch.StartNew();
+        while (true) {
+            if (element.Properties.HasKeyboardFocus.ValueOrDefault) return true;
+            if (timer.Elapsed >= timeout) return false;
+            Thread.Sleep(25);
+        }
+    }
+
+    // Read the text only after the injected character is observable; the caller caps the wait so the
+    // fast rhythm does not cross the product's debounce while collecting evidence.
+    private static string WaitForFilterText(TextBox filter, string expected, TimeSpan timeout)
+    {
+        var timer = Stopwatch.StartNew();
+        while (true) {
+            var text = filter.Text;
+            if (text == expected || timer.Elapsed >= timeout) return text;
+            Thread.Sleep(10);
+        }
+    }
+}
+
+internal readonly record struct PlanEditSample(int Number, string Identity, string Title, int RowCount);
+
+internal static class PlanEditSampleReader
+{
+    internal static PlanEditSample Read(string dataRoot)
+    {
+        var directory = Path.Combine(dataRoot, "PlanningEditor", "v1");
+        var files = Directory.EnumerateFiles(directory, "*.json").ToArray();
+        if (files.Length != 1)
+            throw new InvalidOperationException($"The version fixture must contain one plan JSON, found {files.Length}.");
+        return Select(File.ReadAllText(files[0]));
+    }
+
+    internal static PlanEditSample Select(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return Select(document.RootElement);
+    }
+
+    internal static PlanEditSample Select(JsonElement root)
+    {
+        var rows = root.GetProperty("document").GetProperty("state").GetProperty("rows");
+        var parents = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var row in rows.EnumerateArray())
+        {
+            if (row.TryGetProperty("parent", out var parent) && parent.ValueKind == JsonValueKind.String)
+            {
+                var value = parent.GetString();
+                if (!string.IsNullOrEmpty(value)) parents.Add(value);
+            }
+        }
+        var number = 0;
+        foreach (var row in rows.EnumerateArray())
+        {
+            number++;
+            var identity = row.GetProperty("identity").GetString() ?? "";
+            if (parents.Contains(identity)) continue;
+            if (row.TryGetProperty("closed", out var closed) && closed.ValueKind == JsonValueKind.True) continue;
+            if (!row.TryGetProperty("estimate", out var estimate) || estimate.ValueKind != JsonValueKind.Number || estimate.GetDecimal() <= 0) continue;
+            return new PlanEditSample(number, identity, row.GetProperty("title").GetString() ?? "", rows.GetArrayLength());
+        }
+        throw new InvalidOperationException("The version fixture has no open leaf task with an estimate.");
+    }
+
+    internal static double ScrollPercent(int number, int rowCount)
+        => Math.Clamp((number - 1) * 100d / Math.Max(1, rowCount - 1), 0, 100);
 }

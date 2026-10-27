@@ -1,170 +1,11 @@
-using System.ComponentModel;
 using System.IO;
-using System.Runtime.CompilerServices;
 using GhProjectsBoards.App.GitHub;
-using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.App;
 
-internal sealed class ConnectionViewModel(Func<string, string, GhConnectionService>? serviceFactory = null) : INotifyPropertyChanged
+// Only the gh.exe lookup and the failure sentences remain. The connection screen no longer has an instance.
+internal static class ConnectionViewModel
 {
-    private string executablePath = FindGh();
-    private string host = "github.com";
-    private string issueUrl = "";
-    private string projectUrl = "";
-    private ConnectionContext? binding;
-    private ConnectionScope? destination;
-    private string? savedAccountText;
-    private CancellationTokenSource? cancellation;
-    public event PropertyChangedEventHandler? PropertyChanged;
-    public string ExecutablePath { get => executablePath; set { if (executablePath == value) return; executablePath = value; InvalidateDisplay(); Changed(); } }
-    public string Host { get => host; set { if (host == value) return; host = value; InvalidateDisplay(); Changed(); } }
-    public string IssueUrl { get => issueUrl; set { if (issueUrl == value) return; issueUrl = value; Issue = new(); Changed(); Changed(nameof(IssueText)); } }
-    public string ProjectUrl { get => projectUrl; set { if (projectUrl == value) return; projectUrl = value; Project = new(); Changed(); Changed(nameof(ProjectText)); } }
-    public bool IsBusy { get; private set; }
-    public bool CanCheck => !IsBusy;
-    public bool CanSwitch => !IsBusy && (binding is not null || Connection?.Result.Failure == FailureKind.IdentityChanged);
-    public ConnectionReport? Connection { get; private set; }
-    internal GhConnectionService? Service { get; private set; }
-    public TargetReport Issue { get; private set; } = new();
-    public TargetReport Project { get; private set; } = new();
-    public string StatusText { get; private set; } = "接続は未確認です。接続先とgh.exeを確認してください。";
-    public string VersionText => Connection?.Version ?? "不明";
-    public string AccountText => Connection?.Context is { } context ? $"{context.Login}  /  ID {context.ViewerId}  /  {context.Host}"
-        : Connection is null ? savedAccountText ?? "未確認" : "不明";
-    public string StorageText => Connection?.Authentication is { } auth ? auth.Store switch
-    {
-        CredentialStore.Keyring => "Windows の資格情報ストア（keyring）",
-        CredentialStore.Plaintext => $"平文ファイル：{auth.StoragePath}（書き込み停止）",
-        _ => "不明（書き込み停止）"
-    } : "不明";
-    public string ScopeText => Connection?.Authentication is { } auth
-        ? $"repo：{State(auth.HasScope("repo"))}　project：{State(auth.HasScope("project"))}　read:org：{State(auth.HasScope("read:org"))}" : "不明";
-    public string IssueText => TargetText(Issue);
-    public string ProjectText => TargetText(Project);
-    public string EnvironmentText
-    {
-        get
-        {
-            var names = GhProcessRunner.TokenVariables.Where(name => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(name))).ToArray();
-            return names.Length == 0 ? "保存済みのgh認証を使用します。"
-                : $"{string.Join(", ", names)} が設定されています。このアプリのgh呼び出しからは除外します（値は表示しません）。";
-        }
-    }
-    public string LoginCommand => Command("login --web --skip-ssh-key --scopes 'repo,read:org,project'");
-    public string RefreshCommand => Command("refresh --scopes 'repo,read:org,project'");
-
-    internal void EnterWorkspace(ConnectionScope? scope, string? savedLogin = null)
-    {
-        destination = scope;
-        if (scope is not null) host = scope.Host;
-        // A cached destination supplies intent, never authentication. Keep the
-        // earlier binding so changing identity still needs explicit acceptance.
-        if (Connection is not { IsConnected: true } current || scope != ConnectionScope.From(current.Context!))
-            InvalidateDisplay(scope is null ? "接続は未確認です。接続先とgh.exeを確認してください。"
-                : "保存済みの接続先です。現在の接続状態を確認してください。",
-                scope is null || string.IsNullOrWhiteSpace(savedLogin) ? null
-                    : $"保存済み：{savedLogin}  /  ID {scope.ViewerId}  /  {scope.Host}\n現在の認証：未確認");
-        Changed(nameof(Host));
-    }
-
-    public async Task CheckAsync(bool newConnection = false)
-    {
-        if (IsBusy) return;
-        if (newConnection) { binding = null; destination = null; savedAccountText = null; }
-        using var currentCancellation = new CancellationTokenSource();
-        cancellation = currentCancellation;
-        IsBusy = true;
-        Issue = new();
-        Project = new();
-        StatusText = "接続を確認しています…";
-        Changed(null);
-        try
-        {
-            var path = ExecutablePath.Trim();
-            var selectedHost = Host;
-            var selectedIssue = IssueUrl;
-            var selectedProject = ProjectUrl;
-            if (path.Length == 0)
-            {
-                Connection = new ConnectionReport(new ApiResult(ApiOutcome.Failed, FailureKind.MissingExecutable));
-                StatusText = FailureText(FailureKind.MissingExecutable);
-                return;
-            }
-            var service = serviceFactory?.Invoke(path, selectedHost) ?? new GhConnectionService(path, selectedHost);
-            Service = service;
-            Connection = binding is null ? await service.ConnectAsync(currentCancellation.Token)
-                : await service.RecheckAsync(binding, currentCancellation.Token);
-            if (!Connection.IsConnected)
-            {
-                StatusText = FailureText(Connection.Result.Failure);
-                return;
-            }
-            if (destination is { } expected && ConnectionScope.From(Connection.Context!) != expected)
-            {
-                Connection = Connection with { Result = new ApiResult(ApiOutcome.Failed, FailureKind.IdentityChanged) };
-                StatusText = FailureText(FailureKind.IdentityChanged);
-                return;
-            }
-            binding = Connection.Context;
-            Changed(null);
-            var diagnostics = new TargetDiagnostics(service);
-            if (!string.IsNullOrWhiteSpace(selectedIssue))
-                Issue = await diagnostics.IssueAsync(binding!, Connection.Authentication!, selectedIssue, currentCancellation.Token);
-            currentCancellation.Token.ThrowIfCancellationRequested();
-            if (binding!.IsInvalidated)
-            {
-                Connection = Connection with { Result = new ApiResult(ApiOutcome.Failed, FailureKind.IdentityChanged) };
-                StatusText = FailureText(FailureKind.IdentityChanged);
-                return;
-            }
-            if (!string.IsNullOrWhiteSpace(selectedProject))
-                Project = await diagnostics.ProjectAsync(binding, Connection.Authentication!, selectedProject, currentCancellation.Token);
-            currentCancellation.Token.ThrowIfCancellationRequested();
-            if (binding.IsInvalidated)
-            {
-                Connection = Connection with { Result = new ApiResult(ApiOutcome.Failed, FailureKind.IdentityChanged) };
-                StatusText = FailureText(FailureKind.IdentityChanged);
-            }
-            else if (Connection.Authentication!.Store != CredentialStore.Keyring)
-                StatusText = FailureText(Connection.Authentication.Store == CredentialStore.Plaintext ? FailureKind.PlaintextCredentials : FailureKind.UnknownCredentialStore);
-            else
-                StatusText = Issue.Failure == FailureKind.None && Project.Failure == FailureKind.None
-                    ? "接続を確認しました。個別のプロジェクト・Issueのアクセス権限は、その作業で確認します。"
-                    : "接続を確認しました。対象の診断に取得できない項目があります。下の理由を確認してください。";
-        }
-        catch (OperationCanceledException)
-        {
-            StatusText = FailureText(FailureKind.Cancelled);
-        }
-        catch (Exception)
-        {
-            // This is the UI boundary: never surface exception messages containing
-            // request bodies, paths from remote errors, or raw process output.
-            Connection = new ConnectionReport(new ApiResult(ApiOutcome.Failed, FailureKind.InvalidResponse));
-            StatusText = FailureText(FailureKind.InvalidResponse);
-        }
-        finally
-        {
-            cancellation = null;
-            IsBusy = false;
-            Changed(null);
-        }
-    }
-
-    public void Cancel() => cancellation?.Cancel();
-    public void ShowClipboardFailure() { StatusText = "クリップボードへコピーできませんでした。コマンド欄を選択してコピーしてください。"; Changed(nameof(StatusText)); }
-
-    private void InvalidateDisplay(string statusText = "接続先の入力が変わりました。再確認してください。", string? savedAccount = null)
-    {
-        savedAccountText = savedAccount;
-        Connection = null;
-        Issue = new();
-        Project = new();
-        StatusText = statusText;
-        Changed(null);
-    }
-
     public static string FindGh()
     {
         var directories = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
@@ -181,14 +22,6 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
         return "";
     }
 
-    private string Command(string operation)
-        => !GitHubAddress.TryHost(Host, out var normalized) || string.IsNullOrWhiteSpace(ExecutablePath) ? "gh.exeとホストを指定してください。"
-            : $"& '{ExecutablePath.Replace("'", "''", StringComparison.Ordinal)}' auth {operation} --hostname '{normalized}'";
-    private static string State(bool? value) => value switch { true => "あり", false => "なし", null => "不明" };
-    private static string TargetText(TargetReport target)
-        => $"読み取り：{State(target.CanRead)}　更新権限：{State(target.CanUpdate)}"
-            + (target.RequiredWriteScope is null ? "" : $"　更新スコープ {target.RequiredWriteScope}：{State(target.HasWriteScope)}")
-            + (target.Failure == FailureKind.None ? "" : $"\n{FailureText(target.Failure)}");
     internal static string FailureText(FailureKind failure) => failure switch
     {
         FailureKind.InvalidInput => "入力を確認してください。URLは接続先と同じホストのIssue／プロジェクトを指定します。",
@@ -209,5 +42,4 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
         FailureKind.UnknownCredentialStore => "資格情報の保存方式が不明なため書き込みを停止しています。",
         _ => "確認できませんでした。"
     };
-    private void Changed([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

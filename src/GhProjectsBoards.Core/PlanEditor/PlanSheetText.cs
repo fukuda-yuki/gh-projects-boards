@@ -13,6 +13,9 @@ internal sealed record PlanRowMarkText(PlanRowMark Mark, string Text);
 internal static class PlanSheetText
 {
     internal static string Date(DateOnly day) => day.ToString("M/d", CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)day.DayOfWeek] + ")";
+    // One 遅れ on the bar. Red is a passed 終了日; ochre is the forecast. The stored sets stay Overdue and Later.
+    internal static string BarLateness(bool datePassed, int days)
+        => datePassed ? $"遅れ +{days.ToString(CultureInfo.InvariantCulture)}日（終了日を過ぎた）" : $"遅れ +{days.ToString(CultureInfo.InvariantCulture)}日（見込）";
     // #308: the read-only record columns after 終了日. Blank without the record; the tooltip and the accessible
     // name carry who changed the Status and when (the App draws the same text).
     internal static string Record(ScheduledTask task, string field) => field switch
