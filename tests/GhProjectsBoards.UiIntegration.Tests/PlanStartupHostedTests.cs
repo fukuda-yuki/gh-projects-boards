@@ -32,10 +32,12 @@ public sealed class PlanStartupHostedTests
         {
             var box = Ui.Find<TextBox>("PlanStartupDataRoot");
             Assert.That(box.IsReadOnly, Is.True);
+            Assert.That(box.Text, Is.EqualTo(root.Text));
             Assert.That(box.Text, Does.Contain(@"D:\missing\plans"));
             Assert.That(box.Text, Does.Contain("保存先を利用できません。"));
             Assert.That(Ui.Find<Button>("PlanStartupCopy").IsEnabled, Is.True);
         });
+        await Ui.Run(() => RenderedEvidence.Capture(rootPanel, "startup-data-root"));
         await Ui.Unmount(view, check: false);
         var failurePanel = default(FrameworkElement)!;
         await Ui.Run(() => failurePanel = PlanStartupView.Create(general));
@@ -45,6 +47,7 @@ public sealed class PlanStartupHostedTests
         await Ui.Run(async () =>
         {
             var box = Ui.Find<TextBox>("PlanStartupFailure");
+            Assert.That(box.Text, Is.EqualTo(general.Text));
             Assert.That(box.Text, Does.Contain("起動できませんでした。"));
             Assert.That(box.Text, Does.Contain("forced workspace failure"));
             Assert.That(box.Text, Does.Not.Contain("保存先を利用できません"));
@@ -54,5 +57,6 @@ public sealed class PlanStartupHostedTests
             copied = await content.GetTextAsync();
         });
         Assert.That(copied, Is.EqualTo(general.Text));
+        await Ui.Run(() => RenderedEvidence.Capture(failurePanel, "startup-general"));
     }
 }

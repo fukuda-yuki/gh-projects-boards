@@ -13,7 +13,8 @@ internal static class PlanStartupView
     {
         var text = new TextBox
         {
-            Text = notice.Text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, AcceptsReturn = true,
+            // Enable multiline input before assigning Text; otherwise WinUI drops everything after the first newline.
+            AcceptsReturn = true, Text = notice.Text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
             BorderThickness = new(0), Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent)
         };
         AutomationProperties.SetAutomationId(text, notice.Kind == PlanStartupKind.DataRoot ? "PlanStartupDataRoot" : "PlanStartupFailure");
