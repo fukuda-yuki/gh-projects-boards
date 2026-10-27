@@ -632,7 +632,9 @@ internal sealed partial class PlanPublisherTests
         Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 10, 10, 10, 10, 10, 5 }));
         // The ramp assertion needs the four slots to fill before the first response; holding that response
         // keeps the exact 1,2,3,4 sequence independent of how fast a host prepares and starts the requests.
-        Scenario(mutationDelayMs: 300, firstMutationDelayMs: 2000);
+        // Peers queue behind the held response, so its length only bounds the dispatch time: 2 s was not
+        // enough on a hosted runner (fourth request saw three in flight, PR #317), so allow 6 s.
+        Scenario(mutationDelayMs: 300, firstMutationDelayMs: 6000);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 4m)).ToImmutableArray()), Today);
         runner.MutationConcurrency.Clear();
