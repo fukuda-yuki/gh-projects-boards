@@ -296,32 +296,79 @@ public sealed class PlanScreenPerformanceTests
             filterRegion.Height = Math.Min(450, filterRegion.Height);
             var filterResults = new List<object>();
             AutomationElement? countElement = null;
+            const string FilterBoundary = "Native typing at 200 and 700 ms intervals, per-key focus evidence and raw desktop pixel frames. The product applies the title filter after a 300 ms debounce and then moves keyboard focus from PlanSheetFilter to the first match's title cell; the unchanged main baseline does this. The harness must not depend on either behaviour, so it records whether the filter still held keyboard focus before each character and re-acquires it through UI Automation before typing when focus moved. A key that cannot be re-acquired is recorded with its observed text and stops the probe before it is injected into the grid. The 200 ms rhythm finishes inside the debounce and must record no focus loss or re-acquisition; the 700 ms rhythm crosses the debounce on each later key and records whether it had to re-acquire. injectedAtMs is the harness stopwatch time immediately before the native key injection; textAfter is the filter text after waiting up to the shorter of the pause and 250 ms for that character to appear through UI Automation. Re-acquisition is harness compensation, not a product assertion; inspect character delivery and result replacement separately.";
+            void WriteFilterEvidence(object? aborted = null)
+            {
+                var results = new List<object>(filterResults);
+                if (aborted is not null) results.Add(aborted);
+                File.WriteAllText(Path.Combine(root, "filter-result.json"),
+                    JsonSerializer.Serialize(new { results, boundary = FilterBoundary }));
+            }
             foreach (var pauseMs in new[] { 200, 700 })
             {
                 filter.Focus();
                 Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
                 var recordingName = pauseMs == 200 ? "filter-fast" : "filter-slow";
+                var keys = new List<object>();
+                var focusLostKeys = 0;
+                var reacquiredKeys = 0;
+                var cadence = Stopwatch.StartNew();
                 RecordPixels(Path.Combine(root, recordingName), filterRegion, mark => {
-                    var cadence = Stopwatch.StartNew();
                     var index = 0;
                     foreach (var character in "PS-00") {
                         // FlaUI includes input-processing time. Schedule key starts
                         // absolutely so that overhead does not lengthen each pause.
-                        var remaining = TimeSpan.FromMilliseconds(index++ * pauseMs) - cadence.Elapsed;
+                        var remaining = TimeSpan.FromMilliseconds(index * pauseMs) - cadence.Elapsed;
                         if (remaining > TimeSpan.Zero) Thread.Sleep(remaining);
+                        // After the debounce the product applies the typed text and moves keyboard focus
+                        // from the box to the first match's title cell. This harness also runs against the
+                        // unchanged main baseline, so a later key must re-acquire the box; a key delivered
+                        // to the grid would measure lost keystrokes instead of result replacement. The fast
+                        // rhythm stays inside the debounce and must record no loss, while the slow rhythm
+                        // records the re-acquisition so both builds stay measurable.
+                        var focusBefore = filter.Properties.HasKeyboardFocus.ValueOrDefault;
+                        var focusReacquired = false;
+                        if (!focusBefore) {
+                            focusLostKeys++;
+                            filter.Focus();
+                            focusReacquired = WaitForKeyboardFocus(filter, TimeSpan.FromSeconds(5));
+                            if (!focusReacquired) {
+                                var text = filter.Text;
+                                var failedKeys = new List<object>(keys) {
+                                    new { character = character.ToString(), injectedAtMs = cadence.Elapsed.TotalMilliseconds,
+                                        focusBefore, focusReacquired = false, textAfter = text }
+                                };
+                                mark("refocus:" + character + ":failed");
+                                WriteFilterEvidence(new { pauseMs, recordingName, text,
+                                    count = countElement is null ? null : countElement.Properties.Name.ValueOrDefault,
+                                    focusLostKeys, reacquiredKeys, abortedAfterCharacter = character.ToString(), keys = failedKeys });
+                                // Stop before the character reaches the focused title cell; a later key would
+                                // edit the grid and turn a focus defect into unrelated sheet mutations.
+                                throw new AssertionException(
+                                    $"PlanSheetFilter lost keyboard focus before '{character}' and could not be re-acquired; its text was '{text}'.");
+                            }
+                            reacquiredKeys++;
+                            mark("refocus:" + character);
+                        }
+                        var injectedAtMs = cadence.Elapsed.TotalMilliseconds;
                         mark("key:" + character);
                         Keyboard.Type(character.ToString());
+                        // Do not let evidence collection stretch the fast rhythm across the debounce.
+                        var textAfter = WaitForFilterText(filter, "PS-00"[..(index + 1)],
+                            TimeSpan.FromMilliseconds(Math.Min(pauseMs, 250)));
+                        keys.Add(new { character = character.ToString(), injectedAtMs, focusBefore, focusReacquired, textAfter });
+                        index++;
                     }
                 }, TimeSpan.FromSeconds(2));
                 countElement ??= Find("PlanSheetFilterCount");
                 var count = countElement.Properties.Name.ValueOrDefault;
-                filterResults.Add(new { pauseMs, recordingName, text = filter.Text, count });
-                File.WriteAllText(Path.Combine(root, "filter-result.json"), JsonSerializer.Serialize(new {
-                    results = filterResults,
-                    boundary = "Native typing at 200 and 700 ms intervals and raw desktop pixel frames; inspect character delivery and result replacement separately."
-                }));
+                filterResults.Add(new { pauseMs, recordingName, text = filter.Text, count, focusLostKeys, reacquiredKeys, keys });
+                WriteFilterEvidence();
                 Assert.That(filter.Text, Is.EqualTo("PS-00"));
                 Assert.That(count, Is.EqualTo("120 件"));
+                // A fast-rhythm focus loss is a typing defect; re-acquiring it would conceal the lost key.
+                if (pauseMs == 200) Assert.That(focusLostKeys, Is.Zero,
+                    "The fast rhythm must finish inside the 300 ms debounce without losing keyboard focus.");
                 var clearEvidence = Path.Combine(root, $"filter-clear-{pauseMs}.json");
                 var clearTimer = Stopwatch.StartNew();
                 File.WriteAllText(clearEvidence, JsonSerializer.Serialize(new { phase = "started", utc = DateTime.UtcNow }));
@@ -746,6 +793,29 @@ public sealed class PlanScreenPerformanceTests
             Thread.Sleep(50);
         }
         Assert.Fail("The ordinary version sheet did not reach the expected state.");
+    }
+
+    // Bounded so a failed re-acquisition is recorded evidence rather than a hanging probe.
+    private static bool WaitForKeyboardFocus(AutomationElement element, TimeSpan timeout)
+    {
+        var timer = Stopwatch.StartNew();
+        while (true) {
+            if (element.Properties.HasKeyboardFocus.ValueOrDefault) return true;
+            if (timer.Elapsed >= timeout) return false;
+            Thread.Sleep(25);
+        }
+    }
+
+    // Read the text only after the injected character is observable; the caller caps the wait so the
+    // fast rhythm does not cross the product's debounce while collecting evidence.
+    private static string WaitForFilterText(TextBox filter, string expected, TimeSpan timeout)
+    {
+        var timer = Stopwatch.StartNew();
+        while (true) {
+            var text = filter.Text;
+            if (text == expected || timer.Elapsed >= timeout) return text;
+            Thread.Sleep(10);
+        }
     }
 }
 

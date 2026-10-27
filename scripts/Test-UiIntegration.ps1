@@ -3,8 +3,8 @@
     [switch]$Discover,
     [switch]$NoBuild,
     [string]$BinaryRoot,
-    # 5400 is the plan-responsiveness hosted step. The default stays 3600. See docs/performance.md.
-    [ValidateRange(1, 5400)][int]$TimeoutSeconds = 3600
+    # 7200 is the plan-responsiveness hosted step. The default stays 3600. See docs/performance.md.
+    [ValidateRange(1, 7200)][int]$TimeoutSeconds = 3600
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
