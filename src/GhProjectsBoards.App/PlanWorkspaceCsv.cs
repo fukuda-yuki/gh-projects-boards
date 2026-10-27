@@ -1,6 +1,7 @@
 using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Windows.Storage.Pickers;
 
 namespace GhProjectsBoards.App;
 
@@ -22,6 +23,52 @@ internal sealed partial class PlanWorkspaceView
         }
         csvExportResult.Message = $"{document.State.Rows.Length.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"))} 行を書き出しました。";
         csvExportResult.IsOpen = true;
+    }
+
+    // #324: the import template is a header-only file generated from the open Project's column settings. The
+    // sheet command runs through the ordinary command gate, so pending cell input is committed before this runs.
+    private async Task WriteTemplateCsv(PlanSession session)
+    {
+        if (await SelectTemplateFile() is not { } path) return;
+        var token = OperationToken;
+        token.ThrowIfCancellationRequested();
+        if (!ReferenceEquals(workspace.Session, session)) throw new InvalidOperationException("プロジェクトが変更されました。CSV を選び直してください。");
+        // The template is one header row; only the file write must stay off the UI thread, as the export does.
+        var template = workspace.CsvTemplate();
+        csvExportResult.IsOpen = false;
+        try { await Task.Run(async () => await File.WriteAllBytesAsync(path, template, token), token); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A template failure must not offer recovery for the plan's own durable save.
+            throw new InvalidOperationException("取り込み用 CSV を書き出せませんでした。 " + ex.Message, ex);
+        }
+        csvExportResult.Message = "取り込み用 CSV を書き出しました。";
+        csvExportResult.IsOpen = true;
+    }
+
+    // The suggested name of the template. A hosted UI test reads it while the picker is substituted, so the
+    // name the PMO sees is verifiable without opening a native save dialog.
+    internal string? CsvTemplateSuggestedFileName { get; private set; }
+
+    // The save picker for the template. It is separate from SelectFile because its suggested name carries the
+    // purpose of the file; a UI test substitutes the picker through PickFile with the same purpose.
+    private async Task<string?> SelectTemplateFile()
+    {
+        CsvTemplateSuggestedFileName = TemplateFileName(workspace.Selected?.Title);
+        if (PickFile is { } pick) return await pick("csv-template");
+        var picker = new FileSavePicker { SuggestedFileName = CsvTemplateSuggestedFileName };
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WindowHandle);
+        picker.FileTypeChoices.Add("CSV", [".csv"]);
+        return (await picker.PickSaveFileAsync())?.Path;
+    }
+
+    // 「<Project title> 取り込み用.csv」, with the characters a file name cannot hold replaced as the export
+    // does. A title that is empty after trimming falls back to Project.
+    internal static string TemplateFileName(string? projectTitle)
+    {
+        var title = string.Concat((string.IsNullOrWhiteSpace(projectTitle) ? "Project" : projectTitle)
+            .Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).TrimEnd(' ', '.');
+        return (title.Length == 0 ? "Project" : title) + " 取り込み用.csv";
     }
 
     private async Task ImportCsv(PlanSession session)

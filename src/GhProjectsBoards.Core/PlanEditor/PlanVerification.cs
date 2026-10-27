@@ -6,6 +6,8 @@ internal static class PlanVerification
     {
         "createIssue" or "addProjectV2ItemById" => PlanField.NewTask,
         "updateIssue" => PlanField.Title,
+        // #319: the Issue's own type.
+        "updateIssueIssueType" => PlanField.IssueType,
         "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => PlanField.Assignees,
         "addSubIssue" or "removeSubIssue" => PlanField.Parent,
         "addBlockedBy" or "removeBlockedBy" => PlanField.Predecessors,
@@ -75,6 +77,13 @@ internal static class PlanVerification
                     return option is not null && (PlanSheetColumns.IsExtra(role) ? PlanExtraEditing.Value(row, role) as string : role == PlanField.Phase ? row.Phase : row.Status) == option.Name;
                 }
                 return JsonNode.DeepEquals(JsonNode.Parse(PlanValues.Get(row, role)), value.Value);
+            // #319: the type is verified by the name the Issue reports back. A clear is verified only by an
+            // Issue without a type, and an ID this read's catalog does not know cannot be verified.
+            case "updateIssueIssueType":
+                var writtenType = Text("issueTypeId");
+                if (writtenType is null) return row.IssueType is null;
+                var typeName = remote.Baseline.IssueTypes.FirstOrDefault(t => t.Id == writtenType)?.Name;
+                return typeName is not null && string.Equals(row.IssueType, typeName, StringComparison.OrdinalIgnoreCase);
             // #258: an organization Issue Field write is verified by the value the Issue reports back.
             case "setIssueFieldValue":
                 var issueRole = Field(write, settings);

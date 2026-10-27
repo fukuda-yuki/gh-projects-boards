@@ -39,7 +39,8 @@ internal static class PlanOperations
             ExtraValues = baseline.GetValueOrDefault(r.Identity)?.ExtraValues ?? ImmutableDictionary<string, PlanExtraValue>.Empty,
             Labels = baseline.GetValueOrDefault(r.Identity)?.Labels ?? [],
             MilestoneTitle = baseline.GetValueOrDefault(r.Identity)?.MilestoneTitle,
-            Phase = baseline.GetValueOrDefault(r.Identity)?.Phase
+            Phase = baseline.GetValueOrDefault(r.Identity)?.Phase,
+            IssueType = baseline.GetValueOrDefault(r.Identity)?.IssueType
         }).ToImmutableArray();
     }
     internal static ImmutableArray<PlanConflict> BlockingConflicts(PlanDocument document)
@@ -120,6 +121,11 @@ internal static class PlanOperations
         Unique(d.Baseline.Milestones.Select(m => m.Title).ToImmutableArray());
         Require(d.Baseline.Milestones.All(m => !string.IsNullOrWhiteSpace(m.Title)), "マイルストーンの名前が不正です。");
         Unique(d.Baseline.Columns.Select(c => c.Id).ToImmutableArray());
+        Unique(d.Baseline.IssueTypes.Select(t => t.Id).ToImmutableArray());
+        Unique(d.Baseline.IssueTypes.Select(t => t.Name).ToImmutableArray());
+        Require(d.Baseline.IssueTypes.All(t => !string.IsNullOrWhiteSpace(t.Id) && !string.IsNullOrWhiteSpace(t.Name)), "Issue の種類の設定が不正です。");
+        Unique(d.Baseline.IssueTypeRepositories.Select(r => r).ToImmutableArray());
+        Require(d.Baseline.IssueTypeRepositories.All(Repository), "Issue の種類を持つリポジトリの設定が不正です。");
         Require(d.Baseline.Columns.All(c => !string.IsNullOrWhiteSpace(c.Id) && !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.DataType)), "列定義が不正です。");
         var currentIds = d.State.Rows.Select(r => r.Identity).ToHashSet();
         Require(d.Baseline.Rows.All(r => !r.Identity.StartsWith("local:", StringComparison.Ordinal) && currentIds.Contains(r.Identity)), "基準行を削除またはローカル行に変更できません。");
@@ -143,6 +149,7 @@ internal static class PlanOperations
             }
             Require(r.CsvSourceHash is null || System.Text.RegularExpressions.Regex.IsMatch(r.CsvSourceHash, "^[a-f0-9]{64}$"), "CSVの識別情報が不正です。");
             Require(r.Assignees.Concat(r.Predecessors).All(x => !string.IsNullOrWhiteSpace(x)) && (r.Parent is null || !string.IsNullOrWhiteSpace(r.Parent)), "関係の識別子が不正です。");
+            Require(r.IssueType is null || !string.IsNullOrWhiteSpace(r.IssueType), "Issue の種類が不正です。");
         }
     }
     private static bool IsLocal(string id) => id.StartsWith("local:", StringComparison.Ordinal) && Guid.TryParseExact(id[6..], "N", out _);
@@ -196,7 +203,7 @@ internal static class PlanOperations
                     if (PlanSheetColumns.IsExtra(c.Field) && PlanExtraEditing.ReadOnlyReason(d, byId[c.Identity], c.Field) is { } unavailable) throw new ArgumentException(unavailable);
                     if (ScheduleFields.Contains(c.Field)) rescheduled.Add(c.Identity);
                     if (c.Field == PlanField.End && c.Value is not null) typedEnds.Add(c.Identity);
-                    var value = c.Field is PlanField.Phase or PlanField.MilestoneTitle ? PlanSheetEditing.Parse(d, c.Field, String(c.Value) ?? "", today, c.Identity)
+                    var value = c.Field is PlanField.Phase or PlanField.IssueType or PlanField.MilestoneTitle ? PlanSheetEditing.Parse(d, c.Field, String(c.Value) ?? "", today, c.Identity)
                         : c.Field == PlanField.Labels ? PlanSheetEditing.Parse(d, c.Field, string.Join(",", Ids(c.Value)), today, c.Identity) : c.Value;
                     byId[c.Identity] = PlanSheetColumns.IsExtra(c.Field)
                         ? PlanValues.Set(byId[c.Identity], c.Field, PlanJson.Text(PlanExtraEditing.Validate(d, c.Field, c.Value)))
@@ -470,7 +477,8 @@ internal static class PlanOperations
     internal static object? Value(PlanRow r, string f) => PlanSheetColumns.IsExtra(f) ? PlanExtraEditing.Value(r, f) : f switch
     {
         PlanField.Labels => r.Labels, PlanField.MilestoneTitle => r.MilestoneTitle,
-        PlanField.Title => r.Title, PlanField.Repository => r.Repository, PlanField.Status => r.Status, PlanField.Phase => r.Phase, PlanField.Closed => r.Closed,
+        PlanField.Title => r.Title, PlanField.Repository => r.Repository, PlanField.Status => r.Status, PlanField.Phase => r.Phase,
+        PlanField.IssueType => r.IssueType, PlanField.Closed => r.Closed,
         PlanField.Cancelled => r.Cancelled, PlanField.Removed => r.Removed,
         PlanField.Assignees => r.Assignees, PlanField.Predecessors => r.Predecessors, PlanField.Parent => r.Parent,
         PlanField.Estimate => r.Estimate, PlanField.Remaining => r.Remaining, PlanField.Actual => r.Actual,
@@ -497,6 +505,7 @@ internal static class PlanOperations
             case PlanField.Repository: return r with { Repository = String(value) ?? "" };
             case PlanField.Status: return r with { Status = String(value) };
             case PlanField.Phase: return r with { Phase = String(value) };
+            case PlanField.IssueType: return r with { IssueType = String(value) };
             case PlanField.Parent: return r with { Parent = String(value) };
             case PlanField.Assignees: return r with { Assignees = Ids(value) };
             case PlanField.Predecessors: return r with { Predecessors = Ids(value) };
@@ -547,7 +556,7 @@ internal static class PlanOperations
         ? "子タスクから集計（編集不可）" : "要求事項の行では編集できません";
     internal static bool IsSummaryPublishExcluded(bool summary, string field) => summary && field is
         PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Assignees or PlanField.Predecessors
-        or PlanField.Status or PlanField.Phase or PlanField.Labels or PlanField.MilestoneTitle || summary && PlanSheetColumns.IsExtra(field);
+        or PlanField.Status or PlanField.Phase or PlanField.IssueType or PlanField.Labels or PlanField.MilestoneTitle || summary && PlanSheetColumns.IsExtra(field);
     internal static string? ReadOnlyReason(PlanRow row, bool summary, string field)
     {
         if (field == PlanField.Repository) return "この列は読み取り専用です。";
@@ -695,7 +704,7 @@ internal static class PlanOperations
             // A pending close or reopen carries the state write on its own: the closed end and the
             // remaining work follow the close day the read reports, not the provisional local day (#231).
             var pendingState = r.Closed != old.Closed;
-            foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Phase, PlanField.MilestoneTitle, PlanField.Closed, PlanField.Cancelled, PlanField.Removed, PlanField.Parent,
+            foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Phase, PlanField.IssueType, PlanField.MilestoneTitle, PlanField.Closed, PlanField.Cancelled, PlanField.Removed, PlanField.Parent,
                 PlanField.Estimate, PlanField.Remaining, PlanField.Actual })
                 if (!IsSummaryPublishExcluded(calculated.IsSummary, field) && !IsUnmappedCalculation(calculated, field, d.State.Settings)
                     && !(pendingState && field == PlanField.Remaining) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);

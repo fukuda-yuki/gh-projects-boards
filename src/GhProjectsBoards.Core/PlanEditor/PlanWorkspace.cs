@@ -109,6 +109,13 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         if (!ReferenceEquals(Session, session)) throw new InvalidOperationException("プロジェクトが変更されました。CSVを選び直してください。");
         return PlanCsvImport.Prepare(session.Document, file, repositories, today());
     }
+    // #324: the import template follows the open Project's column settings. Pending input is resolved through
+    // the ordinary command gate at the App boundary before this is called, exactly as for the CSV export.
+    public byte[] CsvTemplate()
+    {
+        var session = Session ?? throw new InvalidOperationException("プロジェクトを開いてください。");
+        return PlanCsvTemplate.Create(session.Document);
+    }
     // #253: verify one typed login against the row's repository on the read-only lease, so assigning a person
     // never needs the repository's whole assignable-user list. The response must be the connected viewer's and the
     // same repository; the search pages only while no node's login equals the typed text, which a typed login

@@ -61,6 +61,27 @@ internal sealed partial class PlanPublishReviewHostedTests
             timeout: TimeSpan.FromSeconds(versionScale ? 120 : 20));
         await Ui.Idle();
     }
+    // #319: an organization Project with Issue types and one organization Issue Field value, so a review can
+    // show how 種類 and an Issue Field share the destination note below the header.
+    private async Task OpenIssueTypeProject()
+    {
+        readDay = new(2026, 10, 6);
+        PlanRow Row(string id, string title, string type)
+            => PlanValues.Set(new PlanRow(id, title, "acme/repo") {
+                IssueType = type, Estimate = 8, Remaining = 8, Actual = 0, Start = readDay, End = readDay }, "Project:X-T", "\"original\"");
+        FakePlanEditor.Save(root, new([
+            new PlanFakeIssue(Row("I1", "要求タスク 1", "Task"), "", true),
+            new PlanFakeIssue(Row("I2", "要求タスク 2", "Bug"), "", true)], 3) {
+            OrganizationRepositories = true,
+            IssueTypes = [new PlanFakeIssueType("IT-1", "Task"), new PlanFakeIssueType("IT-2", "Bug"), new PlanFakeIssueType("IT-3", "Feature")],
+            ExtraFields = [new PlanColumnDefinition("X-T", "Note", "TEXT") { IssueField = true }] });
+        await Ui.Run(() => Ui.Click("PlanConnect"));
+        await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
+        await Ui.Run(() => { Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty); Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0; });
+        await Ui.Until(() => workspace.Session is not null);
+        await Ui.Ready<PlanSheetCell>("PlanCell1_Title");
+        await Ui.Idle();
+    }
     [TearDown]
     public async Task Cleanup()
     {
@@ -129,6 +150,64 @@ internal sealed partial class PlanPublishReviewHostedTests
         await Ui.Idle();
         await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanPublish").Style, Is.SameAs(Application.Current.Resources["AccentButtonStyle"])));
         Assert.That(workspace.Session!.Changes(Today).TaskCount, Is.EqualTo(2));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    // #319 D2: 種類 belongs to the Issue, so the review names the column and both type names, adds no
+    // （Issue フィールド） mark, and states the shared scope once below the destination line. Opening and closing
+    // the review is a local preview and sends no mutation.
+    [Test, Category("PublishOutcome")]
+    public async Task IssueTypeOnlyChangeNamesTheSharedIssueValueAndOpeningTheReviewWritesNothing()
+    {
+        await OpenIssueTypeProject();
+        await Ui.Run(async () => {
+            await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.IssueType, "Bug")]), Today);
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI1");
+        await Ui.Run(() => {
+            var lines = Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI1")).OfType<TextBlock>().Select(text => text.Text).ToArray();
+            Assert.That(lines, Does.Contain("種類  Task → Bug"));
+            Assert.That(string.Join("\n", lines), Does.Not.Contain("（Issue フィールド）"), "種類 is no organization Issue Field.");
+            var destinationY = Ui.Find<TextBlock>("PlanPublishDestination").TransformToVisual(view).TransformPoint(new()).Y;
+            var note = Ui.Find<TextBlock>("PlanPublishIssueFields");
+            Assert.That(note.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(note.Text, Is.EqualTo("「種類」の値（1 タスク）は Issue 自体に書き込みます。この Issue を含むほかのプロジェクトにも同じ値が表示されます。"));
+            Assert.That(note.TransformToVisual(view).TransformPoint(new()).Y, Is.GreaterThan(destinationY), "The shared-scope sentence sits below the destination line.");
+            Ui.Click("PlanPublishClose");
+        });
+        await Ui.Idle();
+        // A review is a local preview: no updateIssueIssueType (or any other) mutation reaches GitHub.
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        Assert.That(File.Exists(Path.Combine(root, "plan-mutations.jsonl")), Is.False);
+    }
+
+    // #258 and #319 share one destination-note helper, so an Issue Field change and a 種類 change in the same
+    // review keep their own sentence with their own label and task count.
+    [Test, Category("PublishOutcome")]
+    public async Task IssueFieldAndIssueTypeChangesRenderBothDestinationNotes()
+    {
+        await OpenIssueTypeProject();
+        await Ui.Run(async () => {
+            await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [
+                new("I1", PlanField.IssueType, "Feature"),
+                new("I2", "Project:X-T", "updated")]), Today);
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI1");
+        await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI2");
+        await Ui.Run(() => {
+            var typeLines = Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI1")).OfType<TextBlock>().Select(text => text.Text).ToArray();
+            Assert.That(typeLines, Does.Contain("種類  Task → Feature"));
+            Assert.That(string.Join("\n", typeLines), Does.Not.Contain("（Issue フィールド）"));
+            var fieldLines = Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI2")).OfType<TextBlock>().Select(text => text.Text).ToArray();
+            Assert.That(fieldLines, Has.Some.EqualTo("Note  original → updated（Issue フィールド）"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishIssueFields").Text, Is.EqualTo(
+                "「Issue フィールド」の値（1 タスク）は Issue 自体に書き込みます。この Issue を含むほかのプロジェクトにも同じ値が表示されます。" + "\n"
+                + "「種類」の値（1 タスク）は Issue 自体に書き込みます。この Issue を含むほかのプロジェクトにも同じ値が表示されます。"));
+            Ui.Click("PlanPublishClose");
+        });
+        await Ui.Idle();
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

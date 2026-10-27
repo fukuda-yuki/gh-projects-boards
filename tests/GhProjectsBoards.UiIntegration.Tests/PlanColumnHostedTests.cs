@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using GhProjectsBoards.App;
 using GhProjectsBoards.Core.PlanEditor;
+using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Automation;
@@ -16,7 +17,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         var session = workspace.Session!;
-        await OpenColumnSettingsThroughOverflow();
+        await OpenColumnSettings();
         await Ui.Ready<TextBox>("PlanColumnWidthTitle");
         await Ui.Run(() => {
             var input = Ui.Find<TextBox>("PlanColumnWidthTitle");
@@ -39,7 +40,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Ready<TextBlock>("PlanHeaderTitle");
         await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width == 200);
-        await OpenColumnSettingsThroughOverflow();
+        await OpenColumnSettings();
         // The page stays loaded while hidden; wait until the reopened settings can take focus.
         await Ui.Until(() => Ui.Find<TextBox>("PlanColumnWidthTitle").Focus(FocusState.Programmatic));
         await CommitText("PlanColumnWidthTitle", "320");
@@ -87,19 +88,26 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(session.Document.State.Rows.All(r => !r.ExtraValues.ContainsKey("Project:DeletedNote")), Is.True);
     }
 
-    private async Task OpenColumnSettingsThroughOverflow()
+    // #319: 表示列 left the overflow. The title-bar gear opens 設定 and its section list reaches 列, which is
+    // the only configuration route now.
+    private async Task OpenColumnSettings()
     {
-        await Ui.Run(() => Ui.Click("PlanSheetMore"));
-        await Ui.Ready<MenuFlyoutItem>("PlanSheetColumns");
-        await Ui.Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
-            Ui.Popup<MenuFlyoutItem>("PlanSheetColumns")!).GetPattern(PatternInterface.Invoke)).Invoke());
+        await Settings();
+        await Ui.Run(() => view.ShowSettingsSection("columns"));
+    }
+    // A project field's row can sit below the visible part of the settings page, as the last row already does in
+    // the compact-table case, so bring its input into view before driving it.
+    private async Task BringColumnIntoView(string id)
+    {
+        await Ui.Run(() => Ui.Find<TextBox>(id).StartBringIntoView(new() { AnimationDesired = false }));
+        await Ui.Idle();
     }
 
     [Test]
-    public async Task OverflowOpensTheCompactColumnsSectionAndItsAccessibleCommands()
+    public async Task SettingsGearOpensTheCompactColumnsSectionAndItsAccessibleCommands()
     {
         await Open();
-        await OpenColumnSettingsThroughOverflow();
+        await OpenColumnSettings();
         // The section list realizes its pane and content over the first layout passes after the page appears.
         await Ui.Ready<Button>("PlanSettingsBack");
         await Ui.Ready<TextBlock>("PlanColumnSettings");
@@ -113,10 +121,12 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanColumnSettings").Text,Is.EqualTo("列"));
             Assert.That(Ui.Tree(Ui.Root).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) is "PlanColumnIntro" or "PlanColumnFootnote"), Is.False);
             Assert.That(ToolTipService.GetToolTip(Ui.Find<TextBlock>("PlanColumnModeRepository")), Is.EqualTo("リポジトリを変えると Issue の移管になるため、読み取りのみです。"));
-            var input = Ui.Find<TextBox>("PlanColumnNameTitle");
-            Assert.That(input.Header,Is.Null);
-            Assert.That(input.Text,Is.EqualTo("タスク名"), "The box shows the current name as text, not as a placeholder.");
-            Assert.That(AutomationProperties.GetName(input),Is.EqualTo("タスク名 の表示名"));
+            // #319 D1: an app column shows its standard name as plain text, with no box and no placeholder.
+            Assert.That(Ui.Tree(view).OfType<TextBox>().Any(t => AutomationProperties.GetAutomationId(t) == "PlanColumnNameTitle"), Is.False);
+            Assert.That(Ui.Find<TextBlock>("PlanColumnNameTitle").Text, Is.EqualTo("タスク名"));
+            var width = Ui.Find<TextBox>("PlanColumnWidthTitle");
+            Assert.That(width.Header, Is.Null);
+            Assert.That(AutomationProperties.GetName(width), Is.EqualTo("タスク名 の幅"));
             Assert.That(AutomationProperties.GetName(Ui.Find<CheckBox>("PlanColumnEstimate")),Is.EqualTo("見積 h を表示"));
             Assert.That(Ui.Tree(view).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b).StartsWith("PlanColumnUp") || AutomationProperties.GetAutomationId(b).StartsWith("PlanColumnDown")), Is.False, "Reordering has one way: drag or Alt+arrow.");
             Assert.That(Ui.Find<TextBlock>("PlanColumnTypeEstimate").Text,Is.EqualTo("数値"));
@@ -134,13 +144,13 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(back.TransformToVisual(view).TransformPoint(new(back.ActualWidth, 0)).X, Is.LessThanOrEqualTo(viewport.TransformToVisual(view).TransformPoint(new()).X),
                 "計画に戻る sits in the section list beside the scrolling content.");
             Assert.That(((NavigationViewItem)((NavigationView)Ui.Find<FrameworkElement>("PlanSettingsSections")).SelectedItem).Tag, Is.EqualTo("columns"), "The list marks the opened section.");
-            Ui.Find<TextBox>("PlanColumnNameRepository").Focus(FocusState.Keyboard);
-            Ui.Find<TextBox>("PlanColumnNameRepository").StartBringIntoView(new() { AnimationDesired = false });
+            Ui.Find<TextBox>("PlanColumnWidthRepository").Focus(FocusState.Keyboard);
+            Ui.Find<TextBox>("PlanColumnWidthRepository").StartBringIntoView(new() { AnimationDesired = false });
         });
         // The compact table's last row is reachable inside the scrolling page. Whether that takes a scroll
         // depends on the window height, so assert reachability - and that the fixed 戻る button stays put.
         await Ui.Until(() => {
-            var input = Ui.Find<TextBox>("PlanColumnNameRepository");
+            var input = Ui.Find<TextBox>("PlanColumnWidthRepository");
             var viewport = Ui.Find<ScrollViewer>("PlanSettingsScroll");
             var top = input.TransformToVisual(viewport).TransformPoint(new()).Y;
             return top >= 0 && top + input.ActualHeight <= viewport.ViewportHeight;
@@ -155,18 +165,23 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test]
     public async Task ColumnSettingsNavigateRenameHideResetAndUndoRenderedHeaders()
     {
+        FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { ExtraFields = [new("X-notes", "Notes", "TEXT")] });
         await Open();
         var session=workspace.Session!;
         var undo=session.UndoCount;
-        await OpenColumnSettingsThroughOverflow();
-        await Ui.Ready<TextBox>("PlanColumnNameTitle");
+        await OpenColumnSettings();
+        await Ui.Ready<TextBox>("PlanColumnNameProject:X-notes");
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<CheckBox>().Any(c => AutomationProperties.GetAutomationId(c) is "PlanColumnId" or "PlanColumnTitle"),Is.False);
-            Assert.That(Ui.Find<TextBox>("PlanColumnNameTitle").Text,Is.EqualTo("タスク名"));
+            Assert.That(Ui.Find<TextBox>("PlanColumnNameProject:X-notes").Text,Is.EqualTo("Notes"));
         });
-        await CommitText("PlanColumnNameTitle","作業名");
-        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c=>c.Key==PlanField.Title && c.DisplayName=="作業名"));
-        Assert.That(session.UndoCount,Is.EqualTo(undo+1));
+        // #319 D1: only a Project field changes its header name; the app's own columns keep theirs.
+        await BringColumnIntoView("PlanColumnNameProject:X-notes");
+        await CommitText("PlanColumnNameProject:X-notes","メモ");
+        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c=>c.Key=="Project:X-notes" && c.DisplayName=="メモ"));
+        await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("PlanColumnProject:X-notes")));
+        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c=>c.Key=="Project:X-notes" && c.Visible));
+        Assert.That(session.UndoCount,Is.EqualTo(undo+2));
         // Reordering has one way in this page: drag the handle or Alt+↑/↓ on the focused row (native case), so
         // there is no up/down button to press here; the toggle below drives the re-rendered table.
         await Ui.Ready<CheckBox>("PlanColumnEstimate");
@@ -177,11 +192,11 @@ internal sealed partial class PlanWorkspaceHostedTests
         // Returning re-renders the header after the plan is loaded again.
         await Ui.Until(() => !Ui.Tree(view).OfType<TextBlock>().Any(t=>AutomationProperties.GetAutomationId(t)=="PlanHeaderEstimate"));
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Text,Is.EqualTo("作業名"));
-            Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBlock>("PlanHeaderTitle")),Does.Contain("Title"));
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderProject:X-notes").Text,Is.EqualTo("メモ"));
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Text,Is.EqualTo("タスク名"), "The app's own columns keep their standard name.");
             Assert.That(Ui.Tree(view).OfType<TextBlock>().Any(t=>AutomationProperties.GetAutomationId(t)=="PlanHeaderEstimate"),Is.False);
         });
-        await OpenColumnSettingsThroughOverflow();
+        await OpenColumnSettings();
         await Ui.Ready<Button>("PlanColumnReset");
         await Ui.Run(()=>Ui.Click("PlanColumnReset"));
         await Ui.Until(()=>session.Document.State.Settings.SheetColumns.IsEmpty);
@@ -205,7 +220,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await CommitText("PlanCell1_Remaining","invalid");
         var before = PlanJson.Text(workspace.Session!.Document);
         var undo = workspace.Session.UndoCount;
-        await OpenColumnSettingsThroughOverflow();
+        // #319: the only columns route starts at the title-bar gear, which validates the pending cell first.
+        await Ui.Run(() => Ui.Click("PlanShowSettings"));
         await Ui.Idle();
         await Ui.Run(()=> {
             Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text,Is.EqualTo("invalid"));
@@ -222,21 +238,28 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test]
-    public async Task ColumnDisplayNameShowsTheCurrentNameAndTheDefaultNameOrEmptyRestoresTheDefault()
+    public async Task ProjectFieldNameBoxShowsTheCurrentNameAndEmptyOrTheGitHubNameRestoresIt()
     {
+        FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { ExtraFields = [new("X-notes", "Notes", "TEXT")] });
         await Open();
         var session = workspace.Session!;
-        await OpenColumnSettingsThroughOverflow();
-        await Ui.Ready<TextBox>("PlanColumnNameTitle");
-        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameTitle").Text == "タスク名");
-        await CommitText("PlanColumnNameTitle", "作業名");
-        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c => c.Key == PlanField.Title && c.DisplayName == "作業名"));
-        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameTitle").Text == "作業名");
-        await CommitText("PlanColumnNameTitle", "タスク名");
-        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Single(c => c.Key == PlanField.Title).DisplayName is null);
-        await CommitText("PlanColumnNameTitle", "");
-        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Single(c => c.Key == PlanField.Title).DisplayName is null);
-        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameTitle").Text == "タスク名");
+        await OpenColumnSettings();
+        await Ui.Ready<TextBox>("PlanColumnNameProject:X-notes");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameProject:X-notes").Text == "Notes");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanColumnNameProject:X-notes").PlaceholderText, Is.EqualTo("Notes"),
+                "The GitHub name is the placeholder, seen only while the box is empty.");
+        });
+        await BringColumnIntoView("PlanColumnNameProject:X-notes");
+        await CommitText("PlanColumnNameProject:X-notes", "メモ");
+        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c => c.Key == "Project:X-notes" && c.DisplayName == "メモ"));
+        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameProject:X-notes").Text == "メモ");
+        // Typing the GitHub name, or clearing the box, restores the default.
+        await CommitText("PlanColumnNameProject:X-notes", "Notes");
+        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Single(c => c.Key == "Project:X-notes").DisplayName is null);
+        await CommitText("PlanColumnNameProject:X-notes", "");
+        await Ui.Until(() => session.Document.State.Settings.SheetColumns.Single(c => c.Key == "Project:X-notes").DisplayName is null);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnNameProject:X-notes").Text == "Notes");
     }
 
     [Test, Category("PlanSheetNative")]
@@ -245,10 +268,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         var session = workspace.Session!;
         var undo = session.UndoCount;
-        await OpenColumnSettingsThroughOverflow();
-        await Ui.Ready<TextBox>("PlanColumnNameTitle");
+        await OpenColumnSettings();
+        await Ui.Ready<TextBox>("PlanColumnWidthTitle");
         await SheetNativeInput.ActivateWindow();
-        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanColumnNameTitle").Focus(FocusState.Keyboard), Is.True));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanColumnWidthTitle").Focus(FocusState.Keyboard), Is.True));
         string[] Order() => PlanSheetColumns.All(session.Document).Select(c => c.Key).ToArray();
         var before = Order();
         var index = Array.IndexOf(before, PlanField.Title);
@@ -261,6 +284,83 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Array.IndexOf(Order(), PlanField.Title) == index);
         Assert.That(Order(), Is.EqualTo(before));
         Assert.That(GhProjectsBoards.Tests.FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    // #319 D1/D2: app columns show their standard name as text and only a Project field keeps a name box; the
+    // 種類 row follows the Project's repositories and a renamed field's header names its GitHub field.
+    [Test]
+    public async Task ColumnSettingsShowAppColumnNamesAsTextAndOnlyProjectFieldsWithANameBox()
+    {
+        FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { ExtraFields = [new("X-priority", "Priority", "TEXT")] });
+        await Open(); await OpenColumnSettings();
+        await Ui.Run(() => {
+            var nameBoxes = Ui.Tree(view).OfType<TextBox>()
+                .Select(input => AutomationProperties.GetAutomationId(input))
+                .Where(id => id.StartsWith("PlanColumnName", StringComparison.Ordinal)).ToArray();
+            Assert.That(nameBoxes, Is.EqualTo(new[] { "PlanColumnNameProject:X-priority" }),
+                "Only a GitHub Project field has a display-name box.");
+            Assert.That(Ui.Find<TextBlock>("PlanColumnNameTitle").Text, Is.EqualTo("タスク名"));
+            var box = Ui.Find<TextBox>("PlanColumnNameProject:X-priority");
+            Assert.That(box.Header, Is.Null);
+            Assert.That(box.Text, Is.EqualTo("Priority"));
+            Assert.That(box.PlaceholderText, Is.EqualTo("Priority"), "The GitHub name is the placeholder and the empty value restores it.");
+            Assert.That(AutomationProperties.GetName(box), Is.EqualTo("Priority の表示名"));
+            // The 種類 row is listed for a personal-repository Project, but hidden by default.
+            Assert.That(Ui.Find<TextBlock>("PlanColumnSourceIssueType").Text, Is.EqualTo("—"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnTypeIssueType").Text, Is.EqualTo("単一選択"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnModeIssueType").Text, Is.EqualTo("編集できる"));
+            Assert.That(Ui.Find<TextBox>("PlanColumnWidthIssueType").PlaceholderText, Is.EqualTo("64"), "The 種類 default width is 64 effective pixels.");
+            Assert.That(Ui.Find<CheckBox>("PlanColumnIssueType").IsChecked, Is.False);
+        });
+        // A renamed Project field names its GitHub field in the header, as 「優先度（GitHub: Priority）」.
+        await BringColumnIntoView("PlanColumnNameProject:X-priority");
+        await CommitText("PlanColumnNameProject:X-priority", "優先度");
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.SheetColumns.Any(c => c.Key == "Project:X-priority" && c.DisplayName == "優先度"));
+        await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("PlanColumnProject:X-priority")));
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.SheetColumns.Any(c => c.Key == "Project:X-priority" && c.Visible));
+        await Ui.Run(() => Ui.Click("PlanSettingsBack"));
+        await Ui.Ready<TextBlock>("PlanHeaderProject:X-priority");
+        await Ui.Run(() => {
+            var header = Ui.Find<TextBlock>("PlanHeaderProject:X-priority");
+            Assert.That(header.Text, Is.EqualTo("優先度"));
+            Assert.That(AutomationProperties.GetHelpText(header), Is.EqualTo("優先度（GitHub: Priority）"));
+            Assert.That(ToolTipService.GetToolTip(header), Is.EqualTo("優先度（GitHub: Priority）"));
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Text, Is.EqualTo("タスク名"), "An app column is never renamed.");
+        });
+    }
+
+    // #319 D2: a Project whose repositories can carry Issue types shows 種類 by default.
+    [Test]
+    public async Task IssueTypeIsShownByDefaultWhenTheProjectsRepositoriesCanCarryIssueTypes()
+    {
+        await Open();
+        var session = workspace.Session!;
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var baseline = session.Document.Baseline;
+        baseline = baseline with {
+            IssueTypes = [new("IT-1", "Task"), new("IT-2", "Bug"), new("IT-3", "Feature")],
+            IssueTypeRepositories = ["acme/repo"],
+            Rows = baseline.Rows.Select(row => row with { IssueType = "Task" }).ToImmutableArray() };
+        await session.AcceptRefresh(new(baseline, System.Collections.Immutable.ImmutableDictionary<string, string>.Empty, [], 0, 0), today, refresh: false);
+        await Ui.Run(() => Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh());
+        await Ui.Ready<TextBlock>("PlanHeaderIssueType");
+        await Ui.Ready<TextBox>("PlanCell1_IssueType");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderIssueType").Text, Is.EqualTo("種類"));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_IssueType").Text, Is.EqualTo("Task"));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_IssueType").IsReadOnly, Is.False);
+            // 種類 joins the fifteen default columns at its own 64-pixel width.
+            var shown = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            Assert.That(shown.VisibleColumns.Length, Is.EqualTo(15));
+            Assert.That(shown.VisibleColumns.Single(column => column.Field == PlanField.IssueType).Width, Is.EqualTo(64));
+        });
+        await OpenColumnSettings();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<CheckBox>("PlanColumnIssueType").IsChecked, Is.True, "An organization Project shows 種類 by default.");
+            Assert.That(Ui.Find<TextBlock>("PlanColumnSourceIssueType").Text, Is.EqualTo("—"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnTypeIssueType").Text, Is.EqualTo("単一選択"));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 }
 

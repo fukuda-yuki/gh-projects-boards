@@ -634,7 +634,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
             Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
                 Is.EqualTo(new[] { "コピー", "貼り付け", "下へコピー", "クリア", "|", "行を削除", "完了にする", "中止にする", "この版から外す", "未完了に戻す", "|",
-                    "上へ移動", "下へ移動", "階層順に並べ替え", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
+                    "上へ移動", "下へ移動", "階層順に並べ替え", "|", "CSV から追加…", "CSV に書き出し…" }));
             Assert.That(commands.OfType<AppBarButton>().Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
                 Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
             Assert.That(commands.OfType<AppBarButton>().Skip(9).Take(2).Select(b => b.KeyboardAcceleratorTextOverride), Is.EqualTo(new[] { "Alt+Shift+↑", "Alt+Shift+↓" }));
@@ -2607,13 +2607,16 @@ internal sealed partial class PlanWorkspaceHostedTests
     [Test, Category("PlanWorkspaceReview")]
     public async Task SaveRetryRecoversPendingSettingsAndAllowsRefreshAndNormalClose()
     {
+        // #319 D1: only a Project field can be renamed, so the pending settings edit is that field's name.
+        FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { ExtraFields = [new("X-notes", "Notes", "TEXT")] });
         await Open(); await Settings();
         var path = new PlanStore(root).FileFor(workspace.Selected!.Id);
         try
         {
             using (var writer = new FileStream(path + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                await CommitText("PlanColumnNameTitle", "作業名");
+                await BringColumnIntoView("PlanColumnNameProject:X-notes");
+                await CommitText("PlanColumnNameProject:X-notes", "メモ");
                 await Ui.Until(() => Ui.Find<InfoBar>("PlanSaveFailure").IsOpen);
                 await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.False));
             }
@@ -2621,7 +2624,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Run(() => Ui.Click("PlanRetrySave")); await Ui.Idle();
             await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty));
             var reopened = await PlanSession.OpenAsync(new(root), workspace.Selected!.Id, new(2026, 10, 6));
-            Assert.That(reopened.Session!.Document.State.Settings.SheetColumns.Single(c => c.Key == PlanField.Title).DisplayName, Is.EqualTo("作業名"));
+            Assert.That(reopened.Session!.Document.State.Settings.SheetColumns.Single(c => c.Key == "Project:X-notes").DisplayName, Is.EqualTo("メモ"));
             Assert.That(reopened.Session.UndoCount, Is.EqualTo(1));
             await Ui.Run(() => Ui.Click("PlanRefresh")); await Ui.Idle();
             await Ui.Run(async () => { Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty); Assert.That(await view.StopAsync(), Is.True); });

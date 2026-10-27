@@ -38,6 +38,16 @@ internal static class PlanSheetEditing
             return PlanInput.Fold(text).Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
                 .Select(label => PlanExtraEditing.Select(name, options, label, emptyMessage)!).Distinct().Order(StringComparer.Ordinal).ToImmutableArray();
         }
+        if (field == PlanField.IssueType)
+        {
+            // #319 D2: the value is the Issue's own type. A repository without Issue types cannot carry one, and
+            // the cell is read-only there; the refusal says which condition applies.
+            var repository = identity is null ? document.State.Settings.DefaultRepository ?? ""
+                : document.State.Rows.SingleOrDefault(r => r.Identity == identity)?.Repository ?? "";
+            if (!document.Baseline.IssueTypeRepositories.Contains(repository, StringComparer.OrdinalIgnoreCase))
+                throw new ArgumentException("このリポジトリには Issue の種類がありません");
+            return PlanExtraEditing.Select("種類", document.Baseline.IssueTypes.Select(t => t.Name), text);
+        }
         if (PlanSheetColumns.IsExtra(field)) return PlanExtraEditing.Parse(document, field, text, today);
         if (field == PlanField.Phase)
         {

@@ -41,13 +41,17 @@ internal sealed class PlanCsvExportTests
     }
 
     [Test]
-    public void HeadersFollowVisibleOrderAndDisplayNamesWithFixedIdentityColumns()
+    public void HeadersFollowVisibleOrderWithFixedAppColumnNamesAndProjectFieldNames()
     {
-        var document = Columns(Document(new PlanRow("I1", "設計", "acme/repo")), "Actual", "Id", "Title", "Repository");
-        document = document with { State = document.State with { Settings = PlanSheetColumns.Change(document, "Title", name: "作業名", rename: true) } };
+        // #319 D1: the app's own columns keep their standard names; only a Project field carries a display name.
+        var row = new PlanRow("I1", "設計", "acme/repo") { ExtraValues = ImmutableDictionary<string, PlanExtraValue>.Empty.Add("Project:F1", new(ValueAvailability.Empty, "null")) };
+        var source = Document(row);
+        source = source with { Baseline = source.Baseline with { Columns = [new("F1", "Notes", "TEXT")] } };
+        var document = Columns(source, "Actual", "Id", "Title", "Repository", "Project:F1");
+        document = document with { State = document.State with { Settings = PlanSheetColumns.Change(document, "Project:F1", name: "メモ", rename: true) } };
         var rows = Read(PlanCsvExport.Create(document, Today));
-        Assert.That(rows[0], Is.EqualTo(new[] { "ID", "実績 h", "作業名", "リポジトリ", "要求事項", "リポジトリ", "Issue 番号", "URL", "未発行" }));
-        Assert.That(rows[1], Is.EqualTo(new[] { "新1", "", "設計", "acme/repo", "", "acme/repo", "", "", "" }));
+        Assert.That(rows[0], Is.EqualTo(new[] { "ID", "実績 h", "タスク名", "リポジトリ", "メモ", "要求事項", "リポジトリ", "Issue 番号", "URL", "未発行" }));
+        Assert.That(rows[1], Is.EqualTo(new[] { "新1", "", "設計", "acme/repo", "", "", "acme/repo", "", "", "" }));
     }
 
     [Test]
@@ -76,10 +80,16 @@ internal sealed class PlanCsvExportTests
     [Test]
     public void UnpublishedUsesReviewNamesIncludingHiddenAndRenamedFields()
     {
-        var document = Columns(Document(new PlanRow("I1", "設計", "acme/repo") { Estimate = 16 }), "Title");
-        document = document with { State = document.State with { Rows = [document.State.Rows[0] with { Title = "変更", Estimate = 20, Actual = 2.5m }],
-            Settings = PlanSheetColumns.Change(document, "Actual", name: "消化工数", rename: true) } };
-        Assert.That(Read(PlanCsvExport.Create(document, Today))[1][^1], Is.EqualTo("タスク名, 見積工数, 消化工数"));
+        var row = new PlanRow("I1", "設計", "acme/repo") { Estimate = 16,
+            ExtraValues = ImmutableDictionary<string, PlanExtraValue>.Empty.Add("Project:F1", new(ValueAvailability.Empty, "null")) };
+        var source = Document(row);
+        source = source with { Baseline = source.Baseline with { Columns = [new("F1", "Notes", "TEXT")] } };
+        var document = Columns(source, "Title");
+        document = document with { State = document.State with {
+            Rows = [document.State.Rows[0] with { Title = "変更", Estimate = 20, Actual = 2.5m,
+                ExtraValues = document.State.Rows[0].ExtraValues.SetItem("Project:F1", new(ValueAvailability.Present, "\"x\"")) }],
+            Settings = PlanSheetColumns.Change(document, "Project:F1", name: "メモ", rename: true) } };
+        Assert.That(Read(PlanCsvExport.Create(document, Today))[1][^1], Is.EqualTo("タスク名, 見積工数, 実績工数, メモ"));
     }
 
     [Test]
@@ -132,6 +142,19 @@ internal sealed class PlanCsvExportTests
         var bytes = PlanCsvExport.Create(document, Today);
         Assert.That(bytes.Take(3), Is.EqualTo(new byte[] { 0xef, 0xbb, 0xbf }));
         Assert.That(Encoding.UTF8.GetString(bytes), Is.EqualTo("\uFEFFID,タスク名,要求事項,リポジトリ,Issue 番号,URL,未発行\r\n新1,\"設計,\"\"確認\"\"\r\n次\n最後\",,acme/repo,,,\r\n"));
+    }
+
+    [Test]
+    public void IssueTypeColumnExportsTheTypeNameIncludingOnARequirementRow()
+    {
+        // #319: a shown 種類 column exports the Issue's type name; a summary row exports its own baseline type.
+        var parent = new PlanRow("P", "親", "acme/repo") { IssueType = "Task" };
+        var child = new PlanRow("C", "子", "acme/repo") { Parent = "P", IssueType = "Bug" };
+        var document = Columns(Document(parent, child), "Title", PlanField.IssueType);
+        var rows = Read(PlanCsvExport.Create(document, Today));
+        Assert.That(rows[0][2], Is.EqualTo("種類"));
+        Assert.That(rows[1][2], Is.EqualTo("Task"));
+        Assert.That(rows[2][2], Is.EqualTo("Bug"));
     }
 
     [Test]

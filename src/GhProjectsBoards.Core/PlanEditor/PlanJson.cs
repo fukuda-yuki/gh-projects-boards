@@ -45,10 +45,13 @@ internal static class PlanJson
         // opens: the new observations are empty and the options keep their defaults until the file is next saved.
         var noHistory = span.IndexOf("\"issueHistory\""u8) < 0;
         var noNotStarted = span.IndexOf("\"notStartedStatuses\""u8) < 0;
-        if (!removed && !removedSettings && !readObservations && !noHistory && !noNotStarted) return null;
+        // #319: a plan saved before the 種類 column still opens; its row value and the type catalog read empty.
+        var noIssueTypes = span.IndexOf("\"issueTypes\""u8) < 0;
+        if (!removed && !removedSettings && !readObservations && !noHistory && !noNotStarted && !noIssueTypes) return null;
 
         var root = JsonNode.Parse(bytes);
         if (readObservations || noHistory || noNotStarted) AddReadObservations(root);
+        if (noIssueTypes) AddIssueTypes(root);
         if (removed || removedSettings) Strip(root);
         return root;
         static void AddReadObservations(JsonNode? node)
@@ -68,6 +71,22 @@ internal static class PlanJson
             }
             else if (node is JsonArray list)
                 foreach (var child in list.ToArray()) AddReadObservations(child);
+        }
+        // #319: the row value and the baseline catalog are new, so every stored row and baseline gains them.
+        static void AddIssueTypes(JsonNode? node)
+        {
+            if (node is JsonObject item)
+            {
+                if (item.ContainsKey("rows") && item.ContainsKey("columns"))
+                {
+                    if (!item.ContainsKey("issueTypes")) item["issueTypes"] = new JsonArray();
+                    if (!item.ContainsKey("issueTypeRepositories")) item["issueTypeRepositories"] = new JsonArray();
+                }
+                if (item.ContainsKey("identity") && item.ContainsKey("title") && !item.ContainsKey("issueType")) item["issueType"] = null;
+                foreach (var (_, child) in item.ToArray()) AddIssueTypes(child);
+            }
+            else if (node is JsonArray list)
+                foreach (var child in list.ToArray()) AddIssueTypes(child);
         }
         static void Strip(JsonNode? node)
         {

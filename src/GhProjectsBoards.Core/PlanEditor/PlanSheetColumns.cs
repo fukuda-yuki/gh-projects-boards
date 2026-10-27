@@ -4,7 +4,10 @@ namespace GhProjectsBoards.Core.PlanEditor;
 internal sealed record PlanSheetColumn(string Key, string DefaultName, string GitHub, string Editability, bool Visible, string? DisplayName, double? Width = null)
 {
     public string Type { get; init; } = "—";
-    public string Name => string.IsNullOrWhiteSpace(DisplayName) ? DefaultName : DisplayName;
+    // #319 D1: only a GitHub Project field can be renamed. The app's own columns always show the standard name,
+    // so a display name stored by an earlier build is ignored when read.
+    public bool NameEditable => Key.StartsWith("Project:", StringComparison.Ordinal);
+    public string Name => NameEditable && !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName : DefaultName;
     public bool Required => Key is "Id" or "Title";
 }
 internal static class PlanSheetColumns
@@ -19,7 +22,7 @@ internal static class PlanSheetColumns
             _ => column?.Name ?? Standard.FirstOrDefault(c => c.Key == field).Name ?? field
         };
     internal static readonly (string Key, string Name)[] Standard = [
-        ("Id", "ID"), ("Indicator", "状態"), ("Title", "タスク名"), ("Phase", "工程"), ("Assignees", "担当者"),
+        ("Id", "ID"), ("Indicator", "状態"), ("Title", "タスク名"), ("Phase", "工程"), ("IssueType", "種類"), ("Assignees", "担当者"),
         ("Estimate", "見積 h"), ("Remaining", "残 h"), ("Actual", "実績 h"), ("Start", "開始日"), ("End", "終了日"),
         ("ActualStart", "着手日"), ("ActualFinish", "完了日"),
         ("ForecastEnd", "見込終了"), ("Predecessors", "先行"), ("Status", "ステータス")];
@@ -75,10 +78,11 @@ internal static class PlanSheetColumns
             var source = mapping is not null && IsIssueField(document, key) ? mapping.Name + IssueFieldSuffix : mapping?.Name ?? key switch { "Title" => "Title", "Assignees" => "Assignees", "Predecessors" => "Blocked by", "Status" => "Status", _ => "—" };
             var type = key switch { "Title" => "テキスト", "Assignees" => "担当者", "Predecessors" => "関係",
                 "Estimate" or "Remaining" or "Actual" => "数値", "Start" or "End" or "ForecastEnd" or "ActualStart" or "ActualFinish" => "日付",
-                "Phase" or "Status" => "単一選択", _ => "—" };
+                "Phase" or "Status" or "IssueType" => "単一選択", _ => "—" };
             // #308: the two record columns follow 終了日, are visible by default and cannot be edited.
+            // #319 D2: 種類 is shown by default only when a repository of this Project can carry an Issue type.
             result.Add(new(key, name, source, key is "Indicator" or "ForecastEnd" ? "計算" : key is "Id" or "ActualStart" or "ActualFinish" ? "読み取りのみ" : "編集できる",
-                key != "Status", null) { Type = type });
+                key != "Status" && (key != "IssueType" || !document.Baseline.IssueTypeRepositories.IsDefaultOrEmpty), null) { Type = type });
         }
         var mapped = settings.Columns.Select(c => c.FieldId).ToHashSet();
         foreach (var f in document.Baseline.Columns.Where(f => !mapped.Contains(f.Id) && !(f.Name == "Status" && f.DataType == "SINGLE_SELECT") && f.DataType is "TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT" or "ITERATION"))
@@ -97,6 +101,21 @@ internal static class PlanSheetColumns
     {
         var columns = All(document);
         PlanOperations.Require(columns.Any(c => c.Key == key), "表示列が見つかりません。");
+        PlanOperations.Require(!rename || IsExtra(key), "この列の表示名は変更できません。");
+        if (rename)
+        {
+            var trimmed = name?.Trim();
+            // #324: the generated import template names one column per header, and two columns with one name are
+            // indistinguishable in the sheet too, so a display name stays unique. Restoring the default never fails.
+            if (!string.IsNullOrEmpty(trimmed))
+            {
+                PlanOperations.Require(columns.Where(c => c.Key != key).All(c => !string.Equals(c.Name, trimmed, StringComparison.Ordinal)),
+                    "ほかの列と同じ表示名は使えません。");
+                PlanOperations.Require(trimmed is not ("キー" or "親"),
+                    "キーと親は取り込み用 CSV の見出しに使うため、表示名にできません。");
+            }
+            name = trimmed;
+        }
         return document.State.Settings with { SheetColumns = columns.Select(c => new PlanSheetColumnChoice(c.Key,
             c.Key == key ? visible ?? c.Visible : c.Visible, c.Key == key && rename ? string.IsNullOrWhiteSpace(name) ? null : name : c.DisplayName,
             c.Key == key && resize ? width : c.Width)).ToImmutableArray() };

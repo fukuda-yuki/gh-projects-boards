@@ -1,4 +1,4 @@
-﻿#requires -Version 7.0
+#requires -Version 7.0
 [CmdletBinding()]
 param([switch]$NoBuild)
 $ErrorActionPreference = 'Stop'
@@ -232,7 +232,7 @@ public static class ManualCaptureWindow {
     Capture '13-milestones' 'PlanPhaseMilestone_SA'
     Ui invoke -Id PlanSettingsBack | Out-Null
     Ui select -Id PlanShowTasks | Out-Null
-    # 表示列 opens the same settings section; reach it through settings so the capture does not depend on the overflow popup.
+    # Columns are configured only in Settings › 列 (#319 D3), so the capture opens the section through the title-bar gear.
     Ui invoke -Id PlanShowSettings | Out-Null
     Show-Section columns
     Reveal @('PlanColumnReset')

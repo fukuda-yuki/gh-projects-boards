@@ -99,15 +99,18 @@ internal sealed partial class PlanSheetView : Grid
     internal bool IsUntitledNewRow(string identity) => untitledNewRows.Contains(identity);
     internal sealed record Column(string? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
-        new(null, "ID", 76), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 200), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
+        new(null, "ID", 76), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 200), new(PlanField.Phase, "工程", 48),
+        // #319 D2: 種類 follows 工程 at its own 64-pixel default and hides only when no repository carries Issue types.
+        new(PlanField.IssueType, "種類", 64), new(PlanField.Assignees, "担当者", 80),
         new(PlanField.Estimate, "見積 h", 72), new(PlanField.Remaining, "残 h", 72), new(PlanField.Actual, "実績 h", 56),
         new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new("ActualStart", "着手日", 92), new("ActualFinish", "完了日", 92),
         new("ForecastEnd", "見込終了", 108), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.Status, "ステータス", 100)];
     internal bool IndicatorVisible { get; private set; } = true;
     internal readonly HashSet<string?> Hidden = [PlanField.Status];
-    // #308: the two record columns follow 終了日, so the default view ends at 先行.
-    internal Column[] VisibleColumns { get; private set; } = Columns.Take(14).ToArray();
+    // #308: the two record columns follow 終了日, so the default view ends at 先行. #319 adds 種類 to every
+    // Project with an Issue-type-capable repository, which Refresh applies from the document.
+    internal Column[] VisibleColumns { get; private set; } = Columns.Take(15).ToArray();
     internal double RowHeight { get; private set; } = 28;
     private double? dividerWidth;
     private PlanSheetDivider divider = null!;
@@ -194,7 +197,7 @@ internal sealed partial class PlanSheetView : Grid
     internal string WorkDescription => $"loaded={IsLoaded}, disposed={disposed}, commands=[{string.Join(", ", commands.Values)}], tail={tail.Status}, clipboard={clipboardWork}, dragTimer={dragScroll.IsEnabled}, frame={frameSubscribed}, focusTarget={requestedFocus}, pendingCells={Pending.Count}, realizedRows={Realized.Count}, zoomOpen={zoom.IsDropDownOpen}, calendarOpen={statusDate.IsCalendarOpen}";
     internal event Action? Changed;
     internal event Action<PlanSaveResult>? SaveFeedbackChanged;
-    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? openColumns = null, Func<Task>? exportCsv = null,
+    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? exportCsv = null, Func<Task>? templateCsv = null,
         Func<Task>? reapplyStoredPlan = null, Func<Task>? savePlanCopy = null, Func<string, string, CancellationToken, Task<PlanResource>>? resolveAssignee = null,
         Func<bool, Task>? changeGanttVisible = null)
     {
@@ -267,13 +270,8 @@ internal sealed partial class PlanSheetView : Grid
         arrangeOutline = Overflow("階層順に並べ替え", "PlanSheetArrangeOutline", Symbol.Sort, ArrangeOutline);
         commands.SecondaryCommands.Add(new AppBarSeparator());
         if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
+        if (templateCsv is not null) Overflow("取り込み用 CSV を書き出す…", "PlanSheetCsvTemplate", Symbol.Save, templateCsv, queued: false);
         if (exportCsv is not null) Overflow("CSV に書き出し…", "PlanSheetCsvExport", Symbol.Save, exportCsv, queued: false);
-        Overflow("表示列", "PlanSheetColumns", Symbol.List, async () => {
-            var accepted = false;
-            await Run(async () => { await CommitPending(); accepted = true; }, "Column settings");
-            // The workspace flushes this queue, so invoke navigation only after it completes.
-            if (accepted && openColumns is not null) await openColumns();
-        }, queued: false);
         // A narrow sheet (a side pane open) overflows from the end, except 選択タスクの日程へ移動, which goes
         // last: with the Gantt kept at its minimum it is the way to a task's dates (#265). Lower orders go first.
         for (var i = 0; i < commands.PrimaryCommands.Count; i++)
@@ -835,9 +833,16 @@ internal sealed partial class PlanSheetView : Grid
         // of the generic 未設定.
         if (column.Field is "ActualStart" or "ActualFinish")
             return column.Label + "（Issue の履歴から読み取ります）";
-        var source = PlanSheetColumns.All(Session.Document).First(c => c.Key == (column.Indicator ? "Indicator" : column.Field ?? "Id")).GitHub;
-        return EffortPrefix(column) + (source == "—" && column.Field is not null ? "未設定" : "GitHub: " + source)
-            + (column.Field is { } field && PlanSheetColumns.IsIssueField(Session.Document, field) ? "\n" + PlanSheetColumns.IssueFieldShared : "");
+        var key = column.Indicator ? "Indicator" : column.Field ?? "Id";
+        var definition = PlanSheetColumns.All(Session.Document).First(c => c.Key == key);
+        // #319 D2: 種類 is the Issue's own type and maps to no Project field, so its header names none.
+        if (key == PlanField.IssueType) return "";
+        var shared = column.Field is { } field && PlanSheetColumns.IsIssueField(Session.Document, field)
+            ? "\n" + PlanSheetColumns.IssueFieldShared : "";
+        // #319 D1: only a Project field is renamed, and its header adds the GitHub field name (#319 D1).
+        if (definition.NameEditable && definition.Name != definition.DefaultName)
+            return column.Label + "（GitHub: " + definition.DefaultName + "）" + shared;
+        return EffortPrefix(column) + (definition.GitHub == "—" && column.Field is not null ? "未設定" : "GitHub: " + definition.GitHub) + shared;
     }
     internal static string DateText(DateOnly? day, bool full = false) => day is { } value
         ? value.ToString(full ? "yyyy-MM-dd" : "M/d", CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)value.DayOfWeek] + ")" : "";
@@ -899,6 +904,10 @@ internal sealed partial class PlanSheetView : Grid
     internal string? ReadOnlyReason(string identity, string field) => Rows.TryGetValue(identity, out var row)
         ? field == PlanField.Repository ? "この列は読み取り専用です。"
         : PlanSheetColumns.IsExtra(field) && PlanExtraEditing.ReadOnlyReason(Session.Document,row,field) is { } extraReason ? extraReason
+        // #319 D2: a repository whose owner organization has no Issue types cannot carry one; the cell says so
+        // instead of offering an edit Core would refuse.
+        : field == PlanField.IssueType && !Session.Document.Baseline.IssueTypeRepositories.Contains(row.Repository, StringComparer.OrdinalIgnoreCase)
+            ? "このリポジトリには Issue の種類がありません"
         : field == PlanField.Phase && !Session.Document.State.Settings.Columns.Any(c => c.Role == field) ? "工程のフィールドが未設定です。"
             : PlanOperations.ReadOnlyReason(row, Schedule.GetValueOrDefault(identity)?.IsSummary == true, field) : null;
     internal bool ReadOnly(string identity, string field) => remoteBusy || ReadOnlyReason(identity, field) is not null;
@@ -1014,8 +1023,10 @@ internal sealed partial class PlanSheetView : Grid
             // #264: the 状態 column's header reads its label; an icon read as "information".
             var text = Id(new TextBlock { Text = Header(column), Width = column.Width, Padding = column.Indicator ? new(2, 0, 2, 6) : new(8, 0, 4, 6), FontSize = column.Indicator ? 11 : 12, VerticalAlignment = VerticalAlignment.Bottom, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("TextFillColorSecondaryBrush") },
                 "PlanHeader" + (column.Indicator ? "Indicator" : column.Field?.ToString() ?? "Id"));
-            AutomationProperties.SetName(text, FullName(column)); AutomationProperties.SetHelpText(text, HeaderHelp(column));
-            ToolTipService.SetToolTip(text, HeaderHelp(column));
+            // #319: 種類 has no GitHub field to name, so it carries no header tooltip at all.
+            var help = HeaderHelp(column);
+            AutomationProperties.SetName(text, FullName(column)); AutomationProperties.SetHelpText(text, help);
+            ToolTipService.SetToolTip(text, help.Length > 0 ? help : null);
             var cell = new Grid { Height = 48, Width = column.Width }; cell.Children.Add(text); sheetHead.Children.Add(cell);
             var grip = column.Indicator ? null : ColumnGrip(column);
             columnHeaders.Add((cell, text, grip));

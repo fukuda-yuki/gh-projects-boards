@@ -142,6 +142,8 @@ internal sealed partial class PlanWorkspaceView
         var held = PlanOperations.HeldRows(document);
         var untitled = PlanOperations.UntitledNewRows(document).ToHashSet(StringComparer.Ordinal);
         var issueFieldTasks = new HashSet<string>(StringComparer.Ordinal);
+        // #319: 種類 is likewise the Issue's own value, so the review states the shared scope for it too.
+        var issueTypeTasks = new HashSet<string>(StringComparer.Ordinal);
         var newIssues = 0;
         void MoveToRow(string identity) { Show("tasks"); sheet?.RevealAddedRow(identity); }
         void RowActions(PlanPublishReviewLine line, string identity)
@@ -209,6 +211,7 @@ internal sealed partial class PlanWorkspaceView
                     line.Text += "（Issue フィールド）";
                     issueFieldTasks.Add(row.Identity);
                 }
+                else if (oldValue != newValue && field == PlanField.IssueType) issueTypeTasks.Add(row.Identity);
                 if (kind == PlanUnpublishedInputKind.Recalculated && !isNew) Recalculated(row.Identity).Lines.Add(line);
                 else { line.Typed = kind == PlanUnpublishedInputKind.Entered || isNew; Group(row.Identity).Lines.Add(line); }
             }
@@ -330,8 +333,13 @@ internal sealed partial class PlanWorkspaceView
         publishConflictTag.Visibility = conflictItems.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         AutomationProperties.SetName(publishConflictCount, publishConflictCount.Text);
         publishCounts.Text = reviewTaskCount == 0 ? "" : $"書き込む値 {values:N0} · 新しい Issue {newIssues:N0}";
-        publishIssueFields.Text = issueFieldTasks.Count == 0 ? "" : $"「Issue フィールド」の値（{issueFieldTasks.Count} タスク）は Issue 自体に書き込みます。この Issue を含むほかのプロジェクトにも同じ値が表示されます。";
-        publishIssueFields.Visibility = issueFieldTasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        // #258/#319: a value written on the Issue is shared by every Project holding it; the review states that
+        // once below the destination line for each such column whose changes this publish sends.
+        var issueWrites = new List<string>();
+        if (issueFieldTasks.Count > 0) issueWrites.Add(PlanPublishText.IssueDestinationNote("Issue フィールド", issueFieldTasks.Count));
+        if (issueTypeTasks.Count > 0) issueWrites.Add(PlanPublishText.IssueDestinationNote("種類", issueTypeTasks.Count));
+        publishIssueFields.Text = string.Join("\n", issueWrites);
+        publishIssueFields.Visibility = issueWrites.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         AutomationProperties.SetName(publishIssueFields, publishIssueFields.Text);
         confirmPublish.Content = reviewTaskCount > 0 ? $"{reviewTaskCount} タスクを発行" : "発行する";
         reviewItems = items;

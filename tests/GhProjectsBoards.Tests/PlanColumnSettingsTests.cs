@@ -33,13 +33,13 @@ internal sealed class PlanColumnSettingsTests
     public void ColumnWidthChangeClearMoveReorderAndResetPreserveOtherChoices()
     {
         var d = ExtraDocument();
-        d = d with { State = d.State with { Settings = PlanSheetColumns.Change(d, "Title", name: "作業", rename: true, width: 320, resize: true) } };
+        d = d with { State = d.State with { Settings = PlanSheetColumns.Change(d, "Title", width: 320, resize: true) } };
         d = d with { State = d.State with { Settings = PlanSheetColumns.Change(d, "Project:T", visible: true, width: 180, resize: true) } };
         d = d with { State = d.State with { Settings = PlanSheetColumns.Move(d, "Title", 0) } };
         Assert.That(PlanSheetColumns.All(d)[0].Width, Is.EqualTo(320));
         d = d with { State = d.State with { Settings = PlanSheetColumns.Reorder(d, PlanSheetColumns.All(d).Select(c => c.Key).Reverse().ToArray()) } };
         Assert.That(PlanSheetColumns.All(d)[^1].Width, Is.EqualTo(320));
-        Assert.That(PlanSheetColumns.All(d)[^1].Name, Is.EqualTo("作業"));
+        Assert.That(PlanSheetColumns.All(d)[^1].Name, Is.EqualTo("タスク名"), "The app's own columns cannot be renamed (#319 D1).");
         d = d with { State = d.State with { Settings = PlanSheetColumns.Change(d, "Title", resize: true) } };
         Assert.That(PlanSheetColumns.All(d).Single(c => c.Key == "Title").Width, Is.Null);
         Assert.That(PlanSheetColumns.All(d).Single(c => c.Key == "Project:T").Width, Is.EqualTo(180));
@@ -199,6 +199,29 @@ internal sealed class PlanColumnSettingsTests
             RepositoryMilestones = [new("acme/repo","M1","Release"),new("acme/other","M2","Other")],
             RepositoryLabels = [new("acme/repo","L1","bug"),new("acme/repo","L2","urgent")] }, new([row], new()));
     }
+    [Test]
+    public void AProjectFieldDisplayNameStaysUniqueAndNeverTakesATemplateHeader()
+    {
+        var d = ExtraDocument();
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => PlanSheetColumns.Change(d, "Project:T", name: "タスク名", rename: true),
+                Throws.ArgumentException.With.Message.EqualTo("ほかの列と同じ表示名は使えません。"));
+            // Another Project field's GitHub name is equally taken.
+            Assert.That(() => PlanSheetColumns.Change(d, "Project:T", name: "Risk", rename: true),
+                Throws.ArgumentException.With.Message.EqualTo("ほかの列と同じ表示名は使えません。"));
+            Assert.That(() => PlanSheetColumns.Change(d, "Project:T", name: "キー", rename: true),
+                Throws.ArgumentException.With.Message.EqualTo("キーと親は取り込み用 CSV の見出しに使うため、表示名にできません。"));
+            Assert.That(() => PlanSheetColumns.Change(d, "Project:T", name: " メモ ", rename: true), Throws.Nothing);
+        });
+        var named = d with { State = d.State with { Settings = PlanSheetColumns.Change(d, "Project:T", name: " メモ ", rename: true) } };
+        Assert.That(PlanSheetColumns.All(named).Single(c => c.Key == "Project:T").Name, Is.EqualTo("メモ"));
+        // Clearing the box restores the GitHub name; restoring never collides with a stored name.
+        var restored = PlanSheetColumns.Change(named, "Project:T", name: "", rename: true);
+        Assert.That(PlanSheetColumns.All(named with { State = named.State with { Settings = restored } }).Single(c => c.Key == "Project:T").Name,
+            Is.EqualTo("Notes"));
+    }
+
     [TestCase("Id"), TestCase("Title")]
     public void RequiredColumnsCannotBeHidden(string key)
         => Assert.That(() => PlanOperations.Apply(ExtraDocument(), new ReplacePlanSettings(new() { SheetColumns = [new(key,false,null)] }),Day), Throws.ArgumentException);
@@ -295,7 +318,7 @@ internal sealed class PlanColumnSettingsTests
     }
 
     [Test]
-    public void RecordColumnsFollowTheEndStayReadOnlyAndRemainRenameable()
+    public void RecordColumnsFollowTheEndStayReadOnlyAndCannotBeRenamed()
     {
         var d = ExtraDocument();
         var keys = PlanSheetColumns.All(d).Select(c => c.Key).ToArray();
@@ -309,9 +332,11 @@ internal sealed class PlanColumnSettingsTests
             Assert.That(() => PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell, [new("I1", key, name)]), Day),
                 Throws.ArgumentException.With.Message.EqualTo("Issue の履歴から読み取ります（編集不可）"));
         }
-        var hidden = PlanSheetColumns.Change(d, "ActualStart", visible: false, name: "実開始", rename: true);
+        var hidden = PlanSheetColumns.Change(d, "ActualStart", visible: false);
         var changed = PlanSheetColumns.All(d with { State = d.State with { Settings = hidden } }).Single(c => c.Key == "ActualStart");
-        Assert.That((changed.Visible, changed.Name), Is.EqualTo((false, "実開始")), "the record columns hide and rename like other columns");
+        Assert.That((changed.Visible, changed.Name), Is.EqualTo((false, "着手日")), "the record columns hide like other columns and keep the standard name");
+        Assert.That(() => PlanSheetColumns.Change(d, "ActualStart", name: "実開始", rename: true),
+            Throws.ArgumentException.With.Message.EqualTo("この列の表示名は変更できません。"));
     }
 
     [Test]
@@ -325,6 +350,42 @@ internal sealed class PlanColumnSettingsTests
         Assert.That(PlanSummary.CalculateMilestones(changed,PlanOperations.Schedule(changed,Day)).Single().Tasks,Is.EqualTo(new[]{"I1"}));
         Assert.That(PlanOperations.Schedule(changed,Day).Select(t=>(t.Start,t.End)),Is.EqualTo(schedule.Select(t=>(t.Start,t.End))));
         Assert.That(PlanSummary.CalculateMilestones(d,schedule),Is.Empty, "A milestone no current row uses is not part of the plan until the edit assigns it.");
+    }
+
+    // #319 D1: the fixed-name set is every app column, so a later standard column cannot become renameable unnoticed.
+    [Test]
+    public void EveryAppColumnRefusesARenameWhileAProjectFieldKeepsItsDisplayName()
+    {
+        var d = ExtraDocument();
+        var appColumns = PlanSheetColumns.All(d).Where(column => !column.NameEditable).Select(column => column.Key).ToArray();
+        Assert.That(appColumns, Is.SupersetOf(PlanSheetColumns.Standard.Select(column => column.Key)
+            .Concat([PlanField.Labels, PlanField.MilestoneTitle, PlanField.Repository])), "Every app column is in the fixed-name set.");
+        foreach (var key in appColumns)
+            Assert.That(() => PlanSheetColumns.Change(d, key, name: "改名", rename: true),
+                Throws.ArgumentException.With.Message.EqualTo("この列の表示名は変更できません。"), key);
+        var named = d with { State = d.State with { Settings = PlanSheetColumns.Change(d, "Project:T", name: "メモ", rename: true) } };
+        Assert.That(PlanSheetColumns.All(named).Single(column => column.Key == "Project:T").Name, Is.EqualTo("メモ"));
+        var restored = named with { State = named.State with { Settings = PlanSheetColumns.Change(named, "Project:T", name: "", rename: true) } };
+        Assert.That(PlanSheetColumns.All(restored).Single(column => column.Key == "Project:T").Name, Is.EqualTo("Notes"));
+    }
+
+    // #319 D1: a settings file written by an earlier build may hold a display name for an app column. It still
+    // opens with the standard name and keeps its width and visibility; the app's settings operations need no rename.
+    [Test]
+    public void AnOldSettingsFileKeepsAnAppColumnsWidthAndVisibilityAndShowsItsStandardName()
+    {
+        var json = JsonNode.Parse(PlanJson.Text(new ProjectPlanSettings()))!;
+        json["sheetColumns"] = JsonNode.Parse("""[{"key":"Title","visible":true,"displayName":"作業","width":320}]""");
+        var settings = PlanJson.Read<ProjectPlanSettings>(Encoding.UTF8.GetBytes(json.ToJsonString()));
+        var row = new PlanRow("I1", "Task", "acme/repo");
+        var d = new PlanDocument(new(new("github.com", 1), "P1"), new([row], []), new([row], settings));
+        var title = PlanSheetColumns.All(d).Single(column => column.Key == "Title");
+        Assert.That((title.Name, title.Width, title.Visible), Is.EqualTo(("タスク名", 320, true)));
+        var hidden = PlanSheetColumns.Change(d, "Title", visible: false);
+        var changed = PlanSheetColumns.All(d with { State = d.State with { Settings = hidden } }).Single(column => column.Key == "Title");
+        Assert.That((changed.Name, changed.Width, changed.Visible), Is.EqualTo(("タスク名", 320, false)));
+        var widened = PlanSheetColumns.Change(d, "Title", width: 280, resize: true);
+        Assert.That(PlanSheetColumns.All(d with { State = d.State with { Settings = widened } }).Single(column => column.Key == "Title").Width, Is.EqualTo(280));
     }
 
     [Test]

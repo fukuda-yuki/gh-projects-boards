@@ -756,7 +756,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { OpenSettingsPage("columns", "tasks"); return Task.CompletedTask; }),
+                next = new(session, importCsv: () => Run(() => ImportCsv(session)), templateCsv: () => Run(() => WriteTemplateCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true,
                     reapplyStoredPlan: ReapplyStoredPlanAsync, savePlanCopy: SavePlanCopyAsync,
                     // #298: the sheet's ガント toggle changes the same this-PC preference as settings › 表示.
                     changeGanttVisible: value => Run(async () => {

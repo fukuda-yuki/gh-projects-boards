@@ -38,6 +38,6 @@ All interaction uses `scripts/Invoke-EvaluationUi.ps1` (`click`, `invoke`, `type
 | `12-period.png` | Open `PlanShowSettings`; select `PlanSettingsSection_period`, then wheel-scroll until `PlanProjectStart` is near the top, showing start and end | 設定 / 期間 |
 | `13-milestones.png` | Select `PlanSettingsSection_phases`, then wheel-scroll until `PlanPhaseMilestone_SA` is near the top, exposing the phase mappings | 設定 / 工程とマイルストーン |
 | `14-calendar.png` | Select `PlanSettingsSection_calendar`, then wheel-scroll until `PlanCompanyDaysOffDate` is near the top | 設定 / カレンダー |
-| `15-columns.png` | Reopen settings from the plan, select `PlanSettingsSection_columns` and wheel-scroll until `PlanColumnReset` is near the top (the overflow route opens a popup the window capture omits) | 設定 / 表示列 |
+| `15-columns.png` | Reopen settings from the plan with the title-bar gear, select `PlanSettingsSection_columns` and wheel-scroll until `PlanColumnReset` is near the top | 設定 / 列 |
 
 The review capture illustrates real local differences, not a fabricated conflict. Conflict recovery remains documented; the offline fixture has no ordinary UI action for simulating a concurrent remote edit. UI integration tests own that wiring evidence. The initial period/milestone derivation is described from the first-open contract; the evaluation fixture already seeds its period.

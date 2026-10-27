@@ -47,7 +47,7 @@ Enter the gh executable and hostname, then select **接続**. The app uses gh's 
 
 For the authorized sandbox, connect to github.com with C:\Program Files\GitHub CLI\gh.exe, then select user Project 3. Its fallback URL is https://github.com/users/fukuda-yuki/projects/3. Use an isolated data root for evaluation. Connecting and settings changes do not write to GitHub.
 
-**CSVから追加** imports new tasks with predecessors and parents as one local Undo operation. Use the Excel-friendly [template](templates/new-tasks.csv), also shipped in `templates/` beside the app. UTF-8 and Shift-JIS are accepted; errors reject the whole file. **発行** creates the Issues later. The [sandbox evaluation file](docs/evaluation/sandbox-plan.csv) contains 24 tasks for Project 3.
+**取り込み用 CSV を書き出す…** writes the Excel-friendly import template from the current column settings (キー and 親 first, every shown editable column, then リポジトリ), and **CSV から追加** imports those rows with predecessors and parents as one local Undo operation. UTF-8 and Shift-JIS are accepted; errors reject the whole file. **発行** creates the Issues later. The [sandbox evaluation file](docs/evaluation/sandbox-plan.csv) contains 24 tasks for Project 3.
 
 **設定** contains column mappings, calendar, holidays and company days off, assignee rates and allowances, optional Project start and end, phase mapping and option counts, default repository and settings export/import. Accepted changes autosave and recalculate; **元に戻す** reverses one operation. The [Japanese user manual](docs/user-manual.md) describes these flows.
 
