@@ -398,12 +398,21 @@ public sealed class PlanScreenPerformanceTests
                 mark("type:ST-002"); Keyboard.Type("ST-002");
                 mark("Enter"); Keyboard.Type(VirtualKeyShort.RETURN);
             }, TimeSpan.FromSeconds(3));
-            File.WriteAllText(Path.Combine(root, "filter-enter-result.json"), JsonSerializer.Serialize(new {
-                text = filter.Text, count = countElement!.Properties.Name.ValueOrDefault, enterRecording,
-                boundary = "Native Enter starts filter application without the debounce delay; screen frames bound visible result timing."
-            }));
             Assert.That(filter.Text, Is.EqualTo("ST-002"));
             Assert.That(countElement!.Properties.Name.ValueOrDefault, Is.EqualTo("40 件"));
+            // Enter applies the search without the debounce; the unchanged main baseline then moves keyboard
+            // focus to the first match's title cell, so clearing must re-acquire the box first. The candidate
+            // keeps focus, and the recorded flag separates the two behaviours on both sides of the comparison.
+            var enterFocusLost = !filter.Properties.HasKeyboardFocus.ValueOrDefault;
+            if (enterFocusLost) {
+                filter.Focus();
+                Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
+            }
+            File.WriteAllText(Path.Combine(root, "filter-enter-result.json"), JsonSerializer.Serialize(new {
+                text = filter.Text, count = countElement.Properties.Name.ValueOrDefault, enterRecording,
+                focusLostAfterEnter = enterFocusLost, focusReacquiredAfterEnter = enterFocusLost,
+                boundary = "Native Enter starts filter application without the debounce delay; screen frames bound visible result timing. The unchanged main baseline moves keyboard focus from PlanSheetFilter to the first match's title cell when Enter applies the search; the probe records whether focus was lost and re-acquires the box through UI Automation before clearing it. The candidate keeps focus, so a lost focus here is baseline behaviour, not a candidate assertion."
+            }));
             // Return to the edited task before the independent popup probes.
             using (Keyboard.Pressing(VirtualKeyShort.CONTROL)) Keyboard.Type(VirtualKeyShort.KEY_A);
             Keyboard.Type(VirtualKeyShort.BACK);
