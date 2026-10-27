@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using GhProjectsBoards.Core.PlanEditor;
 
 namespace GhProjectsBoards.Core.Reports;
 
@@ -70,8 +71,9 @@ internal static class SiteCsv
     // #308: 着手日 and 完了日 from the recorded Issue timeline, with the same rules the planning editor uses. The
     // latest Status change from not started to started decides the start while the Issue was open; the close and
     // reopen events bound that state, so the item-closed workflow's own Status write is not a start. 完了日 is the
-    // latest close as completed while the Issue is closed; a reopen or a not-planned close gives none. Days are the
-    // record's time zone, as the close day already is. Items that are not Issues keep no history and print blanks.
+    // latest close as completed while the Issue is closed, a close with no reason included; a reopen or a 中止
+    // close gives none. Days are the record's time zone, as the close day already is. Items that are not Issues
+    // keep no history and print blanks.
     private static ActualDates Actual(RawItem item, TimeZoneInfo zone, IReadOnlySet<string> notStarted)
     {
         if (item.Content is not { Type: "Issue" } content || item.Events.Count == 0) return ActualDates.None;
@@ -92,10 +94,10 @@ internal static class SiteCsv
                     break;
             }
         }
-        var finish = content.State == "CLOSED"
+        var lastClose = content.State == "CLOSED"
             ? item.Events.Where(change => change.Kind is "closed" or "reopened").OrderBy(change => change.At).LastOrDefault()
-                is { Kind: "closed", StateReason: "COMPLETED" } close ? close : null
             : null;
+        var finish = lastClose is { Kind: "closed" } close && PlanActualDates.IsCompletedClose(close.StateReason) ? close : null;
         return new(Day(start, zone), Who(start), Day(finish, zone), Who(finish));
     }
 

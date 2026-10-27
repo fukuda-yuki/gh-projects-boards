@@ -59,9 +59,15 @@ internal static class PlanActualDates
         PlanHistoryEvent? latest = null;
         foreach (var change in history.Events.OrderBy(e => e.At))
             if (change.Kind is PlanHistoryEventKind.Closed or PlanHistoryEventKind.Reopened) latest = change;
-        return latest is { Kind: PlanHistoryEventKind.Closed, StateReason: "COMPLETED" } close
+        return latest is { Kind: PlanHistoryEventKind.Closed } close && IsCompletedClose(close.StateReason)
             ? new(Day(close.At, zone), close.At, close.Actor, close.Automated) : null;
     }
+
+    // #308: GitHub can report a completed close without a state reason, for example a close made by merging a
+    // pull request. A closed Issue with no reason already reads as 完了, so its record must not depend on the
+    // reason being written; only a 中止 close (not planned or duplicate) gives no 完了日.
+    internal static bool IsCompletedClose(string? stateReason)
+        => stateReason is not ("NOT_PLANNED" or "DUPLICATE");
 
     // The Issue's closed state according to its events, for the refresh's consistency check. Null when the
     // history holds no close or reopen event (an Issue that never closed, or a timeline GitHub did not keep).
