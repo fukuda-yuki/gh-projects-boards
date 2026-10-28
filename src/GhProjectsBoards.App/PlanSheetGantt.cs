@@ -25,6 +25,7 @@ internal sealed partial class PlanSheetView
         ganttToggle.Checked += async (_, _) => await SetGanttChecked(true);
         ganttToggle.Unchecked += async (_, _) => await SetGanttChecked(false);
         controls.Children.Add(ganttToggle);
+        SetColumn(ganttToggle, 1);
     }
 
     // Called by the workspace after it loaded or saved the this-PC display preference.

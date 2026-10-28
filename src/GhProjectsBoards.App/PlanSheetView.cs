@@ -214,6 +214,7 @@ internal sealed partial class PlanSheetView : Grid
         var controls = new Grid { ColumnSpacing = 8, BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
         controls.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         var scales = ganttScale;
         // Beside the scale, like a calendar's 今日: one action back to the week the PMO decides about (#265).
         // No shortcut: Ctrl+T would surprise sheet users who know it as Excel's "create table".
@@ -225,7 +226,7 @@ internal sealed partial class PlanSheetView : Grid
         goToStatusDate.Click += async (_, _) => await Run(GoToStatusDate, "Go to status date");
         scales.Children.Add(goToStatusDate);
         scales.Children.Add(new TextBlock { Text = "表示単位", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom);
-        controls.Children.Add(scales); SetColumn(scales, 1);
+        controls.Children.Add(scales); SetColumn(scales, 2);
         InitializeGanttToggle(controls, changeGanttVisible);
         AutomationProperties.SetName(statusDate, "基準日"); AutomationProperties.SetName(zoom, "ガントの表示単位");
         // The attention strip sits above the command row and has a fixed height (#260 / #233).
