@@ -291,8 +291,20 @@ internal static class PlanPublishPlan
             // An order that names a row this publish does not create or is removing is held whole (#247, #231).
             if (children.Any(id => held.Contains(id) || removed.Contains(id))) continue;
             changes.Add(new(parent, PlanField.SubIssueOrder, PlanJson.Text(sibling.Before), PlanJson.Text(children)));
+            // Earlier moves can already place later siblings correctly. Only simulate a known,
+            // unchanged membership; additions/removals are applied in the relationship phase.
+            var positioned = sibling.Before.Length == children.Length && sibling.Before.ToHashSet().SetEquals(children)
+                ? sibling.Before.ToList() : null;
             for (var i = 0; i < children.Length; i++)
             {
+                if (positioned is not null)
+                {
+                    var previousPosition = positioned.IndexOf(children[i]);
+                    positioned.RemoveAt(previousPosition);
+                    var nextPosition = i > 0 ? positioned.IndexOf(children[i - 1]) + 1 : positioned.IndexOf(children[1]);
+                    positioned.Insert(nextPosition, children[i]);
+                    if (previousPosition == nextPosition) continue;
+                }
                 var input = new Dictionary<string, object?> { ["issueId"] = parent, ["subIssueId"] = children[i] };
                 if (i > 0) input["afterId"] = children[i - 1];
                 else input["beforeId"] = children[1];

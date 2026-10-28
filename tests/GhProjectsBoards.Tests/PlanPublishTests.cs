@@ -6,6 +6,34 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanPublishTests
 {
+    [Test]
+    public void EveryFourChildReorderReachesTheRequestedOrderWithoutNoOpPositionWrites()
+    {
+        var original = new[] { "I2", "I3", "I4", "I5" };
+        foreach (var a in original)
+        foreach (var b in original.Where(id => id != a))
+        foreach (var c in original.Where(id => id != a && id != b))
+        {
+            var desired = new[] { a, b, c, original.Single(id => id != a && id != b && id != c) };
+            var document = SiblingPlan(string.Join(',', original), string.Join(',', desired), string.Join(',', original));
+            var review = PlanPublishPlan.Build(document, SiblingRemote(document), Day, "permutation");
+            var remoteOrder = original.ToList();
+            foreach (var write in review.Writes.Where(w => w.Mutation == "reprioritizeSubIssue"))
+            {
+                var before = remoteOrder.ToArray();
+                using var input = System.Text.Json.JsonDocument.Parse(write.Input);
+                var value = input.RootElement;
+                var child = value.GetProperty("subIssueId").GetString()!;
+                remoteOrder.Remove(child);
+                var position = value.TryGetProperty("afterId", out var after)
+                    ? remoteOrder.IndexOf(after.GetString()!) + 1 : remoteOrder.IndexOf(value.GetProperty("beforeId").GetString()!);
+                remoteOrder.Insert(position, child);
+                Assert.That(remoteOrder, Is.Not.EqualTo(before), "A position mutation must change the remote order.");
+            }
+            Assert.That(remoteOrder, Is.EqualTo(desired));
+        }
+    }
+
     [TestCase(false), TestCase(true)]
     public void SummaryAssignmentsAndDependenciesNeverProduceWrites(bool editedBeforeBecomingSummary)
     {
@@ -68,9 +96,8 @@ internal sealed class PlanPublishTests
         Assert.That((change.Before, change.After), Is.EqualTo((PlanJson.Text(new[] { "I2", "I3" }), PlanJson.Text(new[] { "I3", "I2" }))));
         var writes = review.Writes.Where(w => w.Mutation == "reprioritizeSubIssue").ToArray();
         string Input(PlanWrite write, string key) => System.Text.Json.JsonDocument.Parse(write.Input).RootElement.GetProperty(key).GetString()!;
-        Assert.That(writes.Select(w => w.Identity), Is.EqualTo(new[] { "I3", "I2" }));
+        Assert.That(writes.Select(w => w.Identity), Is.EqualTo(new[] { "I3" }));
         Assert.That(Input(writes[0], "beforeId"), Is.EqualTo("I2"));
-        Assert.That(Input(writes[1], "afterId"), Is.EqualTo("I3"));
         Assert.That(review.Writes.Any(w => w.Mutation == "updateProjectV2ItemPosition"), Is.True);
     }
 
@@ -96,7 +123,7 @@ internal sealed class PlanPublishTests
         Assert.That((PlanJson.Text(change!.Before), PlanJson.Text(change.After)), Is.EqualTo((PlanJson.Text(new[] { "I2", "I3" }), PlanJson.Text(new[] { "I3", "I2" }))));
         Assert.That(PlanOperations.Changes(retry, Day).TaskCount, Is.EqualTo(1));
         var review = PlanPublishPlan.Build(retry, SiblingRemote(retry), Day, Guid.NewGuid().ToString("N"));
-        Assert.That(review.Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(2));
+        Assert.That(review.Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(1));
         Assert.That(review.Changes.Single(c => c.Field == PlanField.SubIssueOrder).Before, Is.EqualTo(PlanJson.Text(new[] { "I2", "I3" })));
     }
 
@@ -131,7 +158,7 @@ internal sealed class PlanPublishTests
             TestContext.Out.WriteLine($"Phase verification save: {saved.Succeeded}; {saved.Error}");
             Assert.That(session.Document.Sync.Failures, Is.EqualTo(new[] { failure }));
             var remaining = PlanPublishPlan.Build(session.Document, remote, Day, Guid.NewGuid().ToString("N"));
-            Assert.That(remaining.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "reprioritizeSubIssue", "reprioritizeSubIssue" }));
+            Assert.That(remaining.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "reprioritizeSubIssue" }));
             Assert.That(remaining.Changes.Single().After, Is.EqualTo(failure.Value));
 
             // A verified retry retires its old failures and must not be planned again.
@@ -199,7 +226,7 @@ internal sealed class PlanPublishTests
             if (refreshAfterReset) await session.AcceptRefresh(remote, Day);
             await session.Undo(Day);
             var retry = PlanPublishPlan.Build(session.Document, remote, Day, "undo-reset");
-            Assert.That(retry.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "reprioritizeSubIssue", "reprioritizeSubIssue" }));
+            Assert.That(retry.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "reprioritizeSubIssue" }));
             Assert.That(retry.Changes.Single().After, Is.EqualTo(PlanJson.Text(new[] { "I3", "I2" })));
             Assert.That(session.Document.Sync.Failures, Is.Empty, "Undo restores the requested order, not a historical publication outcome.");
             await session.Redo(Day);
@@ -252,7 +279,7 @@ internal sealed class PlanPublishTests
             var review = PlanPublishPlan.Build(session.Document, remote, Day, "local-choice");
             Assert.That(review.Changes.SingleOrDefault(c => c.Field == PlanField.SubIssueOrder)?.After,
                 Is.EqualTo(PlanJson.Text(new[] { "I3", "I2", "I4" })));
-            Assert.That(review.Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(3));
+            Assert.That(review.Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(2));
             Assert.That(review.Writes.Any(w => w.Mutation == "updateProjectV2ItemPosition"), Is.False);
             if (next == "undo-redo")
             {
@@ -260,7 +287,7 @@ internal sealed class PlanPublishTests
                 Assert.Throws<InvalidOperationException>(() => PlanPublishPlan.Build(session.Document, remote, Day, "undone"));
                 await session.Redo(Day);
                 await session.AcceptRefresh(remote, Day);
-                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "redone").Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(3));
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "redone").Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(2));
                 var changed = remote with { SubIssueOrders = remote.SubIssueOrders.SetItem("I1", ["I2", "I4", "I3"]) };
                 await session.AcceptRefresh(changed, Day);
                 Assert.That(session.Document.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.SubIssueOrder));
@@ -277,7 +304,7 @@ internal sealed class PlanPublishTests
                 await session.AcceptRefresh(remote, Day, reset: true);
                 Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "reset").Writes, Is.Empty);
                 await session.Undo(Day);
-                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "undo-reset").Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(3));
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "undo-reset").Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(2));
                 await session.Redo(Day);
             }
             else if (next.StartsWith("converged", StringComparison.Ordinal))

@@ -194,6 +194,7 @@ public sealed class PlanSheetRow : Grid
             if (cell.ForecastDisplay is { } forecast) grid.Children.Add(forecast);
             if (cell.EstimateDisplay is { } estimate) grid.Children.Add(estimate);
             if (cell.AssigneeDisplay is { } assignees) grid.Children.Add(assignees);
+            if (cell.ValueDisplay is { } value) grid.Children.Add(value);
             if (cell.Field == PlanField.Title) grid.Children.Add(fold);
             if (owner.IsDateField(cell.Field)) grid.Children.Add(CreateDateCalendar(cell));
             var frame = new Border { Child = grid, BorderThickness = new(0, 0, 0, 1) };
@@ -897,6 +898,7 @@ internal sealed class PlanSheetCell : TextBox
     internal void AllowAssigneeList() => AssigneeListDismissed = false;
     private readonly Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase? textMenu;
     internal TextBlock? TitleDisplay { get; }
+    internal TextBlock? ValueDisplay { get; }
     // #298: the calendar button the row places over this date cell while it is selected. The row owns the
     // control; the cell owns when a date edit may offer the calendar and hides it while the text editor shows.
     internal Button? CalendarButton { get; set; }
@@ -947,6 +949,13 @@ internal sealed class PlanSheetCell : TextBox
             AutomationProperties.SetAccessibilityView(AssigneeDisplay, AccessibilityView.Raw);
             AutomationProperties.SetAccessibilityView(AssigneeNameDisplay, AccessibilityView.Raw);
             AutomationProperties.SetAccessibilityView(AssigneeCountDisplay, AccessibilityView.Raw);
+        }
+        if (TitleDisplay is null && ForecastDisplay is null && EstimateDisplay is null && AssigneeDisplay is null) {
+            ValueDisplay = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap,
+                TextAlignment = field is PlanField.Remaining or PlanField.Actual or PlanField.Predecessors ? TextAlignment.Right : TextAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
+            Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(ValueDisplay, FontNumeralAlignment.Tabular);
+            AutomationProperties.SetAccessibilityView(ValueDisplay, AccessibilityView.Raw);
         }
         // Sheet Clear owns deletion, so the template has no delete button taking editor width.
         Style = (Style)Application.Current.Resources["PlanSheetCellStyle"];
@@ -1015,13 +1024,12 @@ internal sealed class PlanSheetCell : TextBox
         contentHost = GetTemplateChild("ContentElement") as ScrollViewer;
         ApplyContentHost();
     }
-    // Title, forecast, estimate and assignee cells already paint with an overlay. The text host
-    // still measures its hidden text on every refresh, so it stays collapsed until editing or an
+    // Idle cells paint through lightweight displays. The text host otherwise
+    // measures its hidden text on every refresh, so it stays collapsed until editing or an
     // IME composition needs the caret. The TextBox value, focus and input path stay.
     private void ApplyContentHost()
     {
         if (contentHost is null) return;
-        if (TitleDisplay is null && ForecastDisplay is null && EstimateDisplay is null && AssigneeDisplay is null) return;
         contentHost.Visibility = Editing || Composing ? Visibility.Visible : Visibility.Collapsed;
     }
     private string EditOriginal()
@@ -1104,6 +1112,14 @@ internal sealed class PlanSheetCell : TextBox
     }
     private void RefreshDisplay()
     {
+        if (ValueDisplay is { } value) {
+            Opacity = Editing || Composing ? 1 : 0;
+            value.Visibility = Editing || Composing || Visibility != Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            value.Text = shownText;
+            value.Margin = Padding;
+            value.FontSize = FontSize; value.FontFamily = FontFamily; value.FontWeight = FontWeight;
+            value.FontStyle = FontStyle; value.Foreground = Foreground;
+        }
         if (AssigneeDisplay is { } assignees) {
             Opacity = Editing ? 1 : 0;
             assignees.Visibility = !Editing && Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
