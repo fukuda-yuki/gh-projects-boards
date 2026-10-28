@@ -1,0 +1,12 @@
+  GhProjectsBoards.Core -> C:\w\plan-layout\src\GhProjectsBoards.Core\bin\Release\net10.0\GhProjectsBoards.Core.dll
+  GhProjectsBoards.Tests -> C:\w\plan-layout\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll
+  GhProjectsBoards.Report -> C:\w\plan-layout\src\GhProjectsBoards.Report\bin\Release\net10.0\ghpb-report.dll
+  GhProjectsBoards.App -> C:\w\plan-layout\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll
+  GhProjectsBoards.E2E.Tests -> C:\w\plan-layout\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll
+  GhProjectsBoards.UiIntegration.Tests -> C:\w\plan-layout\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll
+
+ビルドに成功しました。
+    0 個の警告
+    0 エラー
+
+経過時間 00:00:08.92
