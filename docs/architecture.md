@@ -1,5 +1,7 @@
 # Architecture
 
+At rest, plan cells render text through lightweight TextBlock displays. The native TextBox remains the focus, selection, accessibility and input target; its text host participates in layout only while editing or composing. Recycled rows refresh the display from their current identity, including formatting, theme and read-only state. This trades one small display element per realized cell for avoiding idle native text-editor layout; it does not virtualize away columns or remove native input.
+
 ## Production boundaries
 
 One UI-independent GhProjectsBoards.Core library and one GhProjectsBoards.App WinUI 3 application implement the [specification](spec.md). The GhProjectsBoards.Report console reuses Core for scheduled progress snapshots ([progress report tool](#progress-report-tool-262)). Core owns authentication orchestration, scoped identity, retrieval, validation, scheduling, local storage and publication. The app owns controls, presentation, window lifetime, file pickers, clipboard, shell document launching and UI Automation. No UI framework enters Core.

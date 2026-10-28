@@ -60,14 +60,16 @@ internal sealed partial class PlanSheetHostedTests
         });
     }
 
-    [TestCase(PlanField.Title), TestCase(PlanField.Assignees), Category("SheetRowPresentation")]
+    [TestCase(PlanField.Title), TestCase(PlanField.Assignees), TestCase(PlanField.Remaining), TestCase(PlanField.Actual), TestCase(PlanField.Start), TestCase(PlanField.End), Category("SheetRowPresentation")]
     public async Task DisplayOverlaySwitchToEditorPreservesVerticalTextCentre(string field)
     {
         await SelectFocusedCell(1, field);
         double centre = 0;
         await Ui.Run(() => {
             var cell = Ui.Find<PlanSheetCell>($"PlanCell1_{field}");
-            centre = TextCentre(field == PlanField.Title ? cell.TitleDisplay! : cell.AssigneeNameDisplay!);
+            centre = field is PlanField.Title or PlanField.Assignees
+                ? TextCentre(field == PlanField.Title ? cell.TitleDisplay! : cell.AssigneeNameDisplay!)
+                : TextCentre(Ui.Tree((FrameworkElement)cell.Parent).OfType<TextBlock>().Single(t => t.Text == cell.Text && t.Visibility == Visibility.Visible));
             cell.BeginEditing();
         });
         await SheetNativeInput.Rendered();
@@ -75,7 +77,8 @@ internal sealed partial class PlanSheetHostedTests
             var cell = Ui.Find<PlanSheetCell>($"PlanCell1_{field}");
             Assert.That(cell.Editing, Is.True);
             Assert.That(cell.Opacity, Is.EqualTo(1));
-            Assert.That((field == PlanField.Title ? (FrameworkElement)cell.TitleDisplay! : cell.AssigneeDisplay!).Visibility, Is.EqualTo(Visibility.Collapsed));
+            if (field is PlanField.Title or PlanField.Assignees)
+                Assert.That((field == PlanField.Title ? (FrameworkElement)cell.TitleDisplay! : cell.AssigneeDisplay!).Visibility, Is.EqualTo(Visibility.Collapsed));
             Assert.That(EditorTextCentre(cell), Is.EqualTo(centre).Within(1), "Entering edit mode must not move text vertically.");
         });
     }
