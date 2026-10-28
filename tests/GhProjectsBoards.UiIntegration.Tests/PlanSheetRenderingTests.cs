@@ -63,6 +63,7 @@ internal sealed partial class PlanSheetHostedTests
     [TestCase(PlanField.Title), TestCase(PlanField.Assignees), TestCase(PlanField.Remaining), TestCase(PlanField.Actual), TestCase(PlanField.Start), TestCase(PlanField.End), Category("SheetRowPresentation")]
     public async Task DisplayOverlaySwitchToEditorPreservesVerticalTextCentre(string field)
     {
+        if (field == PlanField.Actual) await Edit(1, field, "2");
         await SelectFocusedCell(1, field);
         double centre = 0;
         await Ui.Run(() => {

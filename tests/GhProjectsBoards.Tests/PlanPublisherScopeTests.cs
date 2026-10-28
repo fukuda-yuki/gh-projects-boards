@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Collections.Immutable;
 using System.Text.Json;
 using GhProjectsBoards.Core.PlanEditor;
 using NUnit.Framework;
@@ -7,6 +8,25 @@ namespace GhProjectsBoards.Tests;
 
 internal sealed partial class PlanPublisherTests
 {
+    [Test]
+    public async Task MovingLastOfTwentyFiveChildrenToFirstDoesNotRewriteTheOtherChildren()
+    {
+        await Start(26, state => state with { SubOrders = state.SubOrders.Add("I1", Enumerable.Range(2, 25).Select(i => "I" + i).ToImmutableArray()), Issues = state.Issues.Select((i, n) => n == 0 ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray() });
+        await session.Execute(new MovePlanSubtrees(["I26"], "I2"), Today);
+        var watch = Stopwatch.StartNew();
+        var result = await publisher.PublishAsync(session, Today);
+        TestContext.Out.WriteLine($"25-child reorder publish: {watch.Elapsed.TotalMilliseconds:F1} ms; batches={FakePlanEditor.Load(root).MutationBatches}");
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var expected = new[] { "I26" }.Concat(Enumerable.Range(2, 24).Select(i => "I" + i));
+        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(expected));
+        var writes = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl"))
+            .Select(line => JsonDocument.Parse(line).RootElement.Clone())
+            .Where(r => r.GetProperty("query").GetString()!.Contains("reprioritizeSubIssue"))
+            .SelectMany(r => r.GetProperty("variables").EnumerateObject().Select(v => v.Value)).ToArray();
+        Assert.That(writes.Select(w => w.GetProperty("subIssueId").GetString()), Is.EqualTo(new[] { "I26" }));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
     [Test]
     public async Task VersionScaleTitleEditWritesOnlyThatTitleAndSecondPublishWritesNothing()
     {
