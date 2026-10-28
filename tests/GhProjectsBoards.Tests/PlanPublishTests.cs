@@ -6,6 +6,34 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanPublishTests
 {
+    [Test]
+    public void EveryFourChildReorderReachesTheRequestedOrderWithoutNoOpPositionWrites()
+    {
+        var original = new[] { "I2", "I3", "I4", "I5" };
+        foreach (var a in original)
+        foreach (var b in original.Where(id => id != a))
+        foreach (var c in original.Where(id => id != a && id != b))
+        {
+            var desired = new[] { a, b, c, original.Single(id => id != a && id != b && id != c) };
+            var document = SiblingPlan(string.Join(',', original), string.Join(',', desired), string.Join(',', original));
+            var review = PlanPublishPlan.Build(document, SiblingRemote(document), Day, "permutation");
+            var remoteOrder = original.ToList();
+            foreach (var write in review.Writes.Where(w => w.Mutation == "reprioritizeSubIssue"))
+            {
+                var before = remoteOrder.ToArray();
+                using var input = System.Text.Json.JsonDocument.Parse(write.Input);
+                var value = input.RootElement;
+                var child = value.GetProperty("subIssueId").GetString()!;
+                remoteOrder.Remove(child);
+                var position = value.TryGetProperty("afterId", out var after)
+                    ? remoteOrder.IndexOf(after.GetString()!) + 1 : remoteOrder.IndexOf(value.GetProperty("beforeId").GetString()!);
+                remoteOrder.Insert(position, child);
+                Assert.That(remoteOrder, Is.Not.EqualTo(before), "A position mutation must change the remote order.");
+            }
+            Assert.That(remoteOrder, Is.EqualTo(desired));
+        }
+    }
+
     [TestCase(false), TestCase(true)]
     public void SummaryAssignmentsAndDependenciesNeverProduceWrites(bool editedBeforeBecomingSummary)
     {

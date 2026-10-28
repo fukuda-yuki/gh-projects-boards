@@ -297,12 +297,18 @@ internal static class PlanPublishPlan
                 ? sibling.Before.ToList() : null;
             for (var i = 0; i < children.Length; i++)
             {
-                if (positioned is not null && positioned[i] == children[i]) continue;
+                if (positioned is not null)
+                {
+                    var previousPosition = positioned.IndexOf(children[i]);
+                    positioned.RemoveAt(previousPosition);
+                    var nextPosition = i > 0 ? positioned.IndexOf(children[i - 1]) + 1 : positioned.IndexOf(children[1]);
+                    positioned.Insert(nextPosition, children[i]);
+                    if (previousPosition == nextPosition) continue;
+                }
                 var input = new Dictionary<string, object?> { ["issueId"] = parent, ["subIssueId"] = children[i] };
                 if (i > 0) input["afterId"] = children[i - 1];
                 else input["beforeId"] = children[1];
                 Add(children[i], PlanPublishStage.Hierarchy, "reprioritizeSubIssue", "ReprioritizeSubIssueInput", input, "issue { id }");
-                if (positioned is not null) { positioned.Remove(children[i]); positioned.Insert(i, children[i]); }
             }
         }
         for (var i = 0; i < rows.Length; i++)

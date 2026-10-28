@@ -9,6 +9,28 @@ namespace GhProjectsBoards.Tests;
 internal sealed partial class PlanPublisherTests
 {
     [Test]
+    public async Task EffortEditWritesItsChangedDatesAndDependentDatesButLeavesUnrelatedIssueUntouched()
+    {
+        await Start(3, state => state with { Issues = state.Issues.Select((i, n) => i with { Row = i.Row with {
+            Estimate = 8, Remaining = 8, Start = n == 1 ? Today.AddDays(1) : Today,
+            End = n == 1 ? Today.AddDays(1) : Today, Predecessors = n == 1 ? ["I1"] : []
+        } }).ToImmutableArray() });
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Remaining, 16m)]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var writes = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl"))
+            .Select(line => JsonDocument.Parse(line).RootElement.Clone())
+            .SelectMany(r => r.GetProperty("variables").EnumerateObject().Select(v => v.Value)).ToArray();
+        Assert.That(writes.Select(w => (w.GetProperty("itemId").GetString(), w.GetProperty("fieldId").GetString())),
+            Is.EquivalentTo(new[] { ("T-I1", "F-Remaining"), ("T-I1", "F-End"), ("T-I2", "F-End") }));
+        // The stored start is an explicit plan date. Only the dependent end moves.
+        Assert.That(FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I2").Row.Start, Is.EqualTo(Today.AddDays(1)));
+        Assert.That(FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I3").Row,
+            Is.EqualTo(new PlanRow("I3", "Task 3", "acme/repo") { Estimate = 8, Remaining = 8, Start = Today, End = Today }));
+        TestContext.Out.WriteLine("Dependent schedule mutation audit: " + string.Join('\n', writes.Select(w => w.GetRawText())));
+    }
+
+    [Test]
     public async Task MovingLastOfTwentyFiveChildrenToFirstDoesNotRewriteTheOtherChildren()
     {
         await Start(26, state => state with { SubOrders = state.SubOrders.Add("I1", Enumerable.Range(2, 25).Select(i => "I" + i).ToImmutableArray()), Issues = state.Issues.Select((i, n) => n == 0 ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray() });

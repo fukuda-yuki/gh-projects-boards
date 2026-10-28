@@ -455,7 +455,7 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Document.Sync.Failures, Is.Empty);
         var sent = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Skip(mutationsBefore)
             .Select(line => JsonDocument.Parse(line).RootElement.Clone()).ToArray();
-        Assert.That(sent.Count(r => r.GetProperty("query").GetString()!.Contains("reprioritizeSubIssue")), Is.EqualTo(2));
+        Assert.That(sent.Count(r => r.GetProperty("query").GetString()!.Contains("reprioritizeSubIssue")), Is.EqualTo(1));
         Assert.That(sent.Count(r => r.GetProperty("query").GetString()!.Contains("createIssue")), Is.EqualTo(intervening == "creation" ? 1 : 0));
         var positions = sent.Where(r => r.GetProperty("query").GetString()!.Contains("updateProjectV2ItemPosition"))
             .SelectMany(r => r.GetProperty("variables").EnumerateObject().Select(v => v.Value.GetProperty("itemId").GetString())).ToArray();
