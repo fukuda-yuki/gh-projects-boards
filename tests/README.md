@@ -103,6 +103,8 @@ The isolated fake gh supports concurrent read-only invocations within one fixtur
 
 Core fixtures opt in to NUnit parallel execution after their shared state is reviewed. `PlanPublisherTests` uses `FixtureLifeCycle(LifeCycle.InstancePerTestCase)` and `Parallelizable(ParallelScope.All)`: each case owns its session, publisher, process runner and GUID-named storage root, also passed to each fake-gh child as `GH_CONFIG_DIR`. Shared settings are immutable. New cases in that fixture need no CI assignment; new fixtures require the same independence review before opting in. Keep process-wide mutable state or shared resources non-parallel, using `NonParallelizable` at the smallest necessary scope.
 
+Publisher refill and unresolved-response tests control when real fake-gh responses reach the publisher at the process boundary. Hold peer responses to prove refill and stop behavior independently of host speed; retain the real subprocess results and local storage. A bounded wait detects a missing event, rather than making elapsed time a correctness threshold.
+
 The Core assembly caps NUnit at four workers by default. For comparison, append `-- NUnit.NumberOfTestWorkers=0`, `=2` or `=4` to the same `dotnet test` command; zero disables parallel execution. Keep the filter, build, runner image and instrumentation identical, repeat each setting, and compare TRX case identities, outcomes and elapsed time before changing the cap. Record measurements in the owning Issue/PR. UI integration and E2E keep their own execution settings.
 
 ### Commands

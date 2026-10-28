@@ -575,33 +575,43 @@ internal sealed partial class PlanPublisherTests
     }
 
     [Test]
-    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
-    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
-    [NonParallelizable]
     public async Task FieldRequestsStayFourInFlightAndStartTheNextOnCompletion()
     {
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        // Holding the first response until all four slots are dispatched makes the steady-state bound measurable
-        // independent of host speed; the 300 ms per request then spaces the completions for the refill check.
-        Scenario(mutationDelayMs: 300, firstMutationDelayMs: 2000);
+        Scenario();
+        var started = Enumerable.Range(0, 7).Select(_ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
+        var responses = Enumerable.Range(0, 7).Select(_ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
+        var nextRequest = 0;
+        runner.MutationStarting = () => started[nextRequest++].TrySetResult();
+        runner.BeforeMutationResponse = (index, token) => responses[index].Task.WaitAsync(token);
 
-        var result = await publisher.PublishAsync(session, Today);
+        var publishing = publisher.PublishAsync(session, Today);
+        try
+        {
+            await Task.WhenAll(started.Take(4).Select(signal => signal.Task)).WaitAsync(TimeSpan.FromSeconds(30));
+            for (var index = 0; index < 3; index++)
+            {
+                // Only this response is released; the publisher must refill before any peer returns.
+                responses[index].TrySetResult();
+                await started[index + 4].Task.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+        }
+        finally
+        {
+            foreach (var response in responses) response.TrySetResult();
+            await publishing.WaitAsync(TimeSpan.FromSeconds(30));
+            runner.BeforeMutationResponse = null;
+            runner.MutationStarting = null;
+        }
 
+        var result = await publishing;
         Assert.That(result.Succeeded, Is.True, result.Error);
-        var intervals = runner.MutationIntervals;
-        TestContext.Out.WriteLine("field request intervals: " + string.Join("; ", intervals.Select(i =>
-            i.Start.ToString("HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture) + "-" +
-            i.End.ToString("HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture))));
-        var inFlightAtStart = intervals.Select(request =>
-            intervals.Count(other => other.Start <= request.Start && other.End > request.Start)).ToArray();
-        TestContext.Out.WriteLine("requests in flight when each starts: " + string.Join(",", inFlightAtStart));
-        Assert.That(intervals, Has.Count.EqualTo(7), "65 values fill seven ten-alias requests.");
+        Assert.That(FakePlanEditor.Load(root).Issues.All(i => i.Row.Actual == 3), Is.True);
         Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(4), "The field phase never exceeds four requests in flight.");
-        Assert.That(inFlightAtStart.Take(4), Is.EqualTo(new[] { 1, 2, 3, 4 }), "The phase fills its four slots before waiting for a response.");
-        Assert.That(inFlightAtStart.Skip(4), Is.All.GreaterThanOrEqualTo(3),
-            "A completion starts the next request while its peers are still running; a window of four would start the next group after its peers all finished.");
+        Assert.That(runner.MutationConcurrency, Is.EqualTo(new[] { 1, 2, 3, 4, 4, 4, 4 }),
+            "Each released response starts one new request while the other three remain outstanding.");
         Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 10, 10, 10, 10, 10, 5 }));
     }
 
@@ -1720,18 +1730,35 @@ internal sealed partial class PlanPublisherTests
     [TestCase("global-resource-unknown")]
     [TestCase("missing-alias")]
     [TestCase("unknown-and-resource")]
-    // These assertions measure request scheduling (four in flight, fault stops dispatch), which the rest of
-    // the suite competing for the runner's cores can perturb; the same flake failed main #299.
-    [NonParallelizable]
     public async Task UnresolvedResponseStopsLaterFieldsAndRelationshipsAndSurvivesReopen(string fault)
     {
         await Start(51);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m))
             .Append(new("I51", PlanField.Predecessors, new[] { "I1" })).ToImmutableArray()), Today);
-        Scenario(fault, firstMutationDelayMs: 2000);
+        Scenario(fault);
+        var fourStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = 0;
+        runner.MutationStarting = () => { if (++started == 4) fourStarted.TrySetResult(); };
+        runner.BeforeMutationResponse = async (index, token) =>
+        {
+            await fourStarted.Task.WaitAsync(TimeSpan.FromSeconds(30), token);
+            if (index == 0) return;
+            // Return the unresolved response first. Peers remain outstanding until its outcome is saved.
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+            deadline.CancelAfter(TimeSpan.FromSeconds(30));
+            while (!session.Document.Sync.Publish!.Writes.Any(w => w.Stage == PlanPublishStage.Fields &&
+                w.State == PlanWriteState.Dispatched && w.Error is not null))
+                await Task.Delay(10, deadline.Token);
+        };
 
-        var result = await publisher.PublishAsync(session, Today);
+        PlanPublishResult result;
+        try { result = await publisher.PublishAsync(session, Today); }
+        finally
+        {
+            runner.BeforeMutationResponse = null;
+            runner.MutationStarting = null;
+        }
 
         Assert.That(result.Succeeded, Is.False);
         var remote = FakePlanEditor.Load(root);
@@ -2365,16 +2392,12 @@ internal sealed partial class PlanPublisherTests
     private sealed class CountingRunner(IGhProcessRunner inner) : IGhProcessRunner
     {
         private int active, tickets;
-        private readonly List<(DateTimeOffset Start, DateTimeOffset End)> mutationIntervals = [];
         public int MaximumConcurrentMutations { get; private set; }
         public int MaximumConcurrentNonFieldMutations { get; private set; }
         public List<int> MutationConcurrency { get; } = [];
         public List<DateTimeOffset> MutationStarted { get; } = [];
-        // Start and end of each field request, in dispatch order; the interval between them is how long the
-        // request stayed in flight, so a test can see the bound and that a completion refilled the phase.
-        public IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> MutationIntervals
-        { get { lock (Queries) return mutationIntervals.ToArray(); } }
         public Action? MutationStarting { get; set; }
+        public Func<int, CancellationToken, Task>? BeforeMutationResponse { get; set; }
         public int Count { get; private set; }
         public List<string> Queries { get; } = [];
         public List<DateTimeOffset> Started { get; } = [];
@@ -2397,8 +2420,7 @@ internal sealed partial class PlanPublisherTests
                     MaximumConcurrentMutations = Math.Max(MaximumConcurrentMutations, concurrent);
                     MutationConcurrency.Add(concurrent);
                     MutationStarted.Add(DateTimeOffset.UtcNow);
-                    mutationIndex = mutationIntervals.Count;
-                    mutationIntervals.Add((MutationStarted[^1], DateTimeOffset.MaxValue));
+                    mutationIndex = tickets - 1;
                     MutationStarting?.Invoke();
                     if (new[] { "createIssue", "addProjectV2ItemById", "addSubIssue", "removeSubIssue",
                         "reprioritizeSubIssue", "addBlockedBy", "removeBlockedBy", "updateProjectV2ItemPosition" }
@@ -2409,6 +2431,8 @@ internal sealed partial class PlanPublisherTests
             try
             {
                 var result = await inner.RunAsync(command, cancellationToken);
+                if (mutation && BeforeMutationResponse is { } beforeResponse)
+                    await beforeResponse(mutationIndex, cancellationToken);
                 if (result.StandardOutput.StartsWith("HTTP/2 429", StringComparison.Ordinal)) RateLimitObserved?.Invoke();
                 return result;
             }
@@ -2416,11 +2440,6 @@ internal sealed partial class PlanPublisherTests
             {
                 if (mutation)
                 {
-                    lock (Queries)
-                    {
-                        var interval = mutationIntervals[mutationIndex];
-                        mutationIntervals[mutationIndex] = (interval.Start, DateTimeOffset.UtcNow);
-                    }
                     Interlocked.Decrement(ref active);
                 }
             }
