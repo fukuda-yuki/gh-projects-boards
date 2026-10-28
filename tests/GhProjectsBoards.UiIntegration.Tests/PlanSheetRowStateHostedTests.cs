@@ -191,6 +191,10 @@ internal sealed partial class PlanSheetHostedTests
             Ui.Find<AppBarButton>("PlanSheetMore").Flyout.Hide();
         });
         await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("PlanSheetDeleteOverflow") is null);
+        // Popup removal precedes Closed; wait for the public menu state before reopening it.
+        await Ui.Until(() => ((IExpandCollapseProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
+            Ui.Find<CommandBar>("PlanSheetCommands")).GetPattern(PatternInterface.ExpandCollapse)).ExpandCollapseState
+            == ExpandCollapseState.Collapsed);
         await Ui.Idle();
         // A local row can be deleted from the same menu, as one Undo step, like the primary command.
         await Ui.Run(async () => { await session.Execute(new InsertPlanRows([PlanRow.New("Local", "acme/repo")]), Today); sheet.Refresh(); });
