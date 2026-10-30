@@ -301,8 +301,9 @@ internal static class FakePlanEditor
         {
             var all = state.Issues.Where(i => i.Row.Repository == (variables.GetProperty("id").GetString() == "R2" ? "acme/other" : "acme/repo")).ToArray();
             var offset = variables.TryGetProperty("after", out var cursor) && cursor.ValueKind == JsonValueKind.String ? int.Parse(cursor.GetString()!) : 0;
+            if (offset > 0 && fault == "creation-guard-page-failure") { Console.Write("HTTP/2 503 Failed\n\n{}"); return 1; }
             node = new { issues = Page(all.Skip(offset).Take(100).Select(i => (object)new { id = i.Row.Identity, body = i.Body }), all.Length,
-                offset + 100 < all.Length, offset + 100 < all.Length ? (offset + 100).ToString() : null) };
+                offset + 100 < all.Length, offset + 100 < all.Length ? (fault == "creation-guard-cursor-cycle" && offset > 0 ? offset : offset + 100).ToString() : null) };
         }
         else if (query.Contains("PlanExistingItem"))
         {

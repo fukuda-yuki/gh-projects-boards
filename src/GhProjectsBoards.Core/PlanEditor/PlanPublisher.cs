@@ -234,24 +234,33 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             !string.Equals(repo.GetProperty("nameWithOwner").GetString(), repository, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("Issue を作成できません。");
         return repo.GetProperty("id").GetString() ?? throw new InvalidOperationException("リポジトリの識別子がありません。");
     }
-    private static async Task<string?> FindCreation(PlanWrite write, string repositoryId, GhConnectionService.OperationLease lease, CancellationToken token)
+    private static async Task<Dictionary<string, string?>> FindCreations(IEnumerable<PlanWrite> writes, string repositoryId, GhConnectionService.OperationLease lease, CancellationToken token)
     {
-        var marker = JsonNode.Parse(write.Input)!["body"]!.GetValue<string>();
-        string? after = null; var cursors = new HashSet<string>(); var found = new List<string>();
+        var markers = writes.ToDictionary(w => w.Key, w => JsonNode.Parse(w.Input)!["body"]!.GetValue<string>());
+        var found = markers.Keys.ToDictionary(key => key, _ => (string?)null);
+        string? after = null; var cursors = new HashSet<string>();
         do
         {
             var response = await lease.SendAsync(ApiRequest.GraphQl("query PlanCreationGuard($id:ID!,$after:String){node(id:$id){... on Repository{issues(first:100,after:$after){nodes{id body} pageInfo{hasNextPage endCursor}}}}}", new { id = repositoryId, after }), token);
             token.ThrowIfCancellationRequested();
             if (!response.IsSuccess || response.Data is not { } body) throw new InvalidOperationException("作成結果を確認できません。再作成は行いません。");
             var connection = body.GetProperty("data").GetProperty("node").GetProperty("issues");
-            found.AddRange(connection.GetProperty("nodes").EnumerateArray().Where(n => n.GetProperty("body").GetString()?.Contains(marker, StringComparison.Ordinal) == true).Select(n => n.GetProperty("id").GetString()!));
+            foreach (var node in connection.GetProperty("nodes").EnumerateArray())
+            {
+                var issueBody = node.GetProperty("body").GetString();
+                foreach (var (key, marker) in markers)
+                {
+                    if (issueBody?.Contains(marker, StringComparison.Ordinal) != true) continue;
+                    if (found[key] is not null) throw new InvalidOperationException("同じ作成マーカーが複数あります。確認が必要です。");
+                    found[key] = node.GetProperty("id").GetString() ?? throw new InvalidOperationException("作成結果の識別子がありません。");
+                }
+            }
             var page = connection.GetProperty("pageInfo");
             if (!page.GetProperty("hasNextPage").GetBoolean()) break;
             after = page.GetProperty("endCursor").GetString();
             if (string.IsNullOrWhiteSpace(after) || !cursors.Add(after)) throw new InvalidOperationException("作成結果のページ取得が不完全です。");
         } while (true);
-        if (found.Count > 1) throw new InvalidOperationException("同じ作成マーカーが複数あります。確認が必要です。");
-        return found.SingleOrDefault();
+        return found;
     }
     private static async Task<string?> FindProjectItem(string issue, string project, GhConnectionService.OperationLease lease, CancellationToken token)
     {
@@ -276,10 +285,11 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         var uncertain = progress.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.State == PlanWriteState.Dispatched).ToArray();
         if (uncertain.Length == 0) return;
         var repositories = await Repositories(uncertain, lease, token).ConfigureAwait(false);
-        foreach (var write in uncertain)
+        foreach (var group in uncertain.GroupBy(CreationRepository, StringComparer.OrdinalIgnoreCase))
         {
-            var id = await FindCreation(write, repositories[CreationRepository(write)], lease, token).ConfigureAwait(false);
-            progress = progress with { Writes = progress.Writes.Select(w => w.Key == write.Key ? w with
+            // Absence and uniqueness are established by the entire scan, even if every marker was found early.
+            var found = await FindCreations(group, repositories[group.Key], lease, token).ConfigureAwait(false);
+            progress = progress with { Writes = progress.Writes.Select(w => found.TryGetValue(w.Key, out var id) ? w with
                 { State = id is null ? PlanWriteState.Pending : PlanWriteState.Succeeded, ResultId = id, Error = null } : w).ToImmutableArray() };
             RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
         }
