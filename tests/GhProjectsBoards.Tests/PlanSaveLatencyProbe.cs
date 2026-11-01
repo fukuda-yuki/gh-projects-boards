@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using GhProjectsBoards.Core.PlanEditor;
+using GhProjectsBoards.Core.Projects;
 using NUnit.Framework;
 namespace GhProjectsBoards.Tests;
 // #332: times row operations and publish-record saves at 0/50/200 retained Undo entries on the 1,040-row fixture.
@@ -30,7 +31,7 @@ internal sealed class PlanSaveLatencyProbe
         {
             var sw = Stopwatch.StartNew(); var task = run(); var accepted = sw.ElapsedMilliseconds; var r = await task; var total = sw.ElapsedMilliseconds;
             Assert.That(r.Succeeded, Is.True, r.Error);
-            TestContext.Out.WriteLine($"{name,-24} command {accepted,6} ms  +save {total - accepted,6} ms  total {total,6} ms");
+            TestContext.Out.WriteLine($"{name,-26} command {accepted,6} ms  +save {total - accepted,6} ms  total {total,6} ms");
         }
         await Time("edit title", () => session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new(anchor.Identity, PlanField.Title, "x")]), day));
         var na = PlanRow.New("A") with { Parent = parent, Estimate = 8 }; var nb = PlanRow.New("B") with { Parent = parent, Estimate = 8 };
@@ -40,12 +41,23 @@ internal sealed class PlanSaveLatencyProbe
         await Time("move to top of siblings", () => session.Execute(new MovePlanSubtrees([nb.Identity], sibling[0]), day));
         await Time("undo", () => session.Undo(day));
         await Time("publish-record save", () => session.SaveSync(session.Document.Sync));
+        // An unchanged read: the history is rebased onto the same baseline.
+        var remote = new PlanRemoteSnapshot(session.Document.Baseline, session.Document.Baseline.Rows.ToImmutableDictionary(r => r.Identity, r => "T-" + r.Identity), [], 0, 0);
+        using (var trace = new PerformanceTrace())
+        {
+            await Time("unchanged refresh (local)", () => session.AcceptRefresh(remote, day));
+            TestContext.Out.WriteLine(string.Join(" | ", trace.Samples.GroupBy(x => x.Kind).Select(g =>
+                $"{g.Key} {g.Count()}x {g.Sum(x => Stopwatch.GetElapsedTime(x.Start, x.End).TotalMilliseconds):0} ms")));
+        }
         await Time("publish-record save 2", () => session.SaveSync(session.Document.Sync));
         // The parts one save and one command are made of.
         var doc = session.Document;
         var sw2 = Stopwatch.StartNew(); PlanOperations.ValidateDocument(doc, day); var v = sw2.ElapsedMilliseconds;
         sw2.Restart(); PlanOperations.Schedule(doc, day); var s = sw2.ElapsedMilliseconds;
         sw2.Restart(); PlanOperations.Apply(doc, new IndentPlanRows([nb.Identity]), day); var a = sw2.ElapsedMilliseconds;
+        sw2.Restart(); var mergedDoc = PlanMerge.Merge(doc, doc.Baseline); var merge = sw2.ElapsedMilliseconds;
+        sw2.Restart(); PlanMerge.NativeOrder(doc, mergedDoc, doc.Sync.NativeOrders); var native = sw2.ElapsedMilliseconds;
+        TestContext.Out.WriteLine($"Merge {merge} ms | NativeOrder {native} ms");
         var loaded = await store.LoadAsync(doc.Project);
         sw2.Restart(); PlanJson.Validate(loaded.Checkpoint!, doc.Project); var full = sw2.ElapsedMilliseconds;
         var bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(loaded.Checkpoint!, PlanJson.Options);

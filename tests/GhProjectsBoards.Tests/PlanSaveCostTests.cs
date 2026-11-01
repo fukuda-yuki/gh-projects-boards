@@ -58,6 +58,23 @@ internal sealed class PlanSaveCostTests
     }
 
     [Test]
+    public async Task ARefreshRebasesEachHistoryStateOnceAndKeepsTheHistory()
+    {
+        var (session, day, _) = await Version();
+        var before = session.Document;
+        var remote = new PlanRemoteSnapshot(before.Baseline, before.Baseline.Rows.ToImmutableDictionary(r => r.Identity, r => "T-" + r.Identity), [], 0, 0);
+        using var trace = new PerformanceTrace();
+        Assert.That((await session.AcceptRefresh(remote, day)).Succeeded, Is.True);
+        // One merge per reachable state: the current plan and the state before each of the 30 steps.
+        Assert.That(Counted(trace, "plan-history-rebase-merge"), Is.EqualTo(History + 1));
+        Assert.That(session.UndoCount, Is.EqualTo(History));
+        Assert.That(session.Document.State.Rows.Select(r => r.Title), Is.EqualTo(before.State.Rows.Select(r => r.Title)));
+        for (var i = 0; i < History; i++) Assert.That((await session.Undo(day)).Succeeded, Is.True);
+        Assert.That(session.Document.State.Rows.Select(r => r.Title), Is.EqualTo(before.Baseline.Rows.Select(r => r.Title)),
+            "Undo through the rebased history returns every title to the read value.");
+    }
+
+    [Test]
     public async Task ReopeningStillValidatesEveryHistoryState()
     {
         var (session, day, _) = await Version();

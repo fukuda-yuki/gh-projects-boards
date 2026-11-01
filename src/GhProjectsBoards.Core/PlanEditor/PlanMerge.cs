@@ -144,6 +144,11 @@ internal static class PlanMerge
             LocalOrderChoices = merged.Sync.LocalOrderChoices.Where(p => members.Contains(p.Key) &&
                 (!remote.TryGetValue(p.Key, out var observed) || !p.Value.SequenceEqual(observed.Where(id => members.Contains(id) && !merged.Sync.Unavailable.Contains(id))))).ToImmutableDictionary() } };
     }
+    // #332: Set rebuilds the whole row through JSON. Nearly every field of every row already holds the value
+    // the read returns, and Merge runs once per Undo step when a read rebases the history, so a value that
+    // is already there is kept. Extra fields always take Set: it also records the value's availability.
+    private static PlanRow Adopt(PlanRow row, string field, string json)
+        => !PlanSheetColumns.IsExtra(field) && PlanValues.Get(row, field) == json ? row : PlanValues.Set(row, field, json);
     internal static PlanDocument Merge(PlanDocument document, PlanBaseline remote)
     {
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
@@ -164,16 +169,20 @@ internal static class PlanMerge
             var merged = l;
             if (!pendingState) merged = merged with { Closed = r.Closed, Cancelled = r.Cancelled, CloseDate = r.Closed ? r.CloseDate : null };
             else if (l.Closed && r.Closed) merged = merged with { CloseDate = r.CloseDate };
+            // #332: a row the plan, the last read and this read hold identically keeps every planning value;
+            // only its extra fields go through the loop, because adopting one also records its availability.
+            var unchanged = PlanOperations.RowEqual(l, b) && PlanOperations.RowEqual(r, b);
             // Date adoption needs the merged progress state, regardless of enum declaration order.
             foreach (var field in PlanValues.Fields(b, l, r).OrderBy(field => field is PlanField.Start or PlanField.End))
             {
+                if (unchanged && !PlanSheetColumns.IsExtra(field)) continue;
                 if (PlanSheetColumns.IsExtra(field) && !r.ExtraValues.ContainsKey(field)) continue;
                 var bv = PlanValues.Get(b, field); var lv = PlanValues.Get(l, field); var rv = PlanValues.Get(r, field);
                 var prior = document.Sync.Conflicts.FirstOrDefault(c => c.Identity == r.Identity && c.Field == field);
                 if (prior is not null && lv != rv)
                     conflicts.Add(prior with { Local = lv, Remote = rv });
-                else if (PlanOperations.NeedsProgressDate(l, merged, field)) merged = PlanValues.Set(merged, field, rv);
-                else if (lv == bv || lv == rv) merged = PlanValues.Set(merged, field, rv);
+                else if (PlanOperations.NeedsProgressDate(l, merged, field)) merged = Adopt(merged, field, rv);
+                else if (lv == bv || lv == rv) merged = Adopt(merged, field, rv);
                 else if (rv != bv) conflicts.Add(new(r.Identity, field, bv, lv, rv));
             }
             local[r.Identity] = merged;
