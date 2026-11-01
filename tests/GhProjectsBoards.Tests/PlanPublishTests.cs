@@ -586,6 +586,32 @@ internal sealed class PlanPublishTests
         Assert.That(actual.Length, Is.EqualTo(batches));
         Assert.That(actual.SelectMany(b => b), Is.EqualTo(writes));
     }
+    // #332: GitHub keeps the remaining order on removal and appends on addition; a planned child move that
+    // this already satisfies needs no request.
+    private static PlanWrite Link(string key, string mutation, string parent, string child, PlanWriteState state = PlanWriteState.Succeeded)
+        => new(key, child, PlanPublishStage.Hierarchy, mutation, char.ToUpperInvariant(mutation[0]) + mutation[1..] + "Input",
+            System.Text.Json.JsonSerializer.Serialize(new { issueId = parent, subIssueId = child }), "issue { id }") { State = state };
+    private static PlanWrite ChildMove(string key, string parent, string child, string? after, string? before)
+        => new(key, child, PlanPublishStage.Hierarchy, "reprioritizeSubIssue", "ReprioritizeSubIssueInput",
+            System.Text.Json.JsonSerializer.Serialize(after is null ? (object)new { issueId = parent, subIssueId = child, beforeId = before } : new { issueId = parent, subIssueId = child, afterId = after }), "issue { id }");
+    [Test]
+    public void ChildMovesThatGitHubsResultingOrderSatisfiesAreFound()
+    {
+        var orders = new Dictionary<string, ImmutableArray<string>> { ["P"] = ["a", "b", "c"], ["Q"] = ["x", "y"] };
+        // c leaves P for the top of Q: P needs nothing; in Q only c moves, x and y are then in place.
+        var writes = ImmutableArray.Create(Link("0", "removeSubIssue", "P", "c"), Link("1", "addSubIssue", "Q", "c"),
+            ChildMove("2", "P", "a", null, "b"), ChildMove("3", "P", "b", "a", null),
+            ChildMove("4", "Q", "c", null, "x"), ChildMove("5", "Q", "x", "c", null), ChildMove("6", "Q", "y", "x", null));
+        var inPlace = PlanPublishPlan.AlreadyInPlace(new(Guid.NewGuid().ToString("N"), writes), orders);
+        Assert.That(inPlace.Select(w => w.Key), Is.EqualTo(new[] { "2", "3", "5", "6" }));
+        // An addition without an outcome leaves that parent's moves to be sent.
+        var uncertain = writes.SetItem(1, writes[1] with { State = PlanWriteState.Dispatched });
+        Assert.That(PlanPublishPlan.AlreadyInPlace(new(Guid.NewGuid().ToString("N"), uncertain), orders).Select(w => w.Key), Is.EqualTo(new[] { "2", "3" }));
+        // A parent whose order the read did not return is not simulated.
+        Assert.That(PlanPublishPlan.AlreadyInPlace(new(Guid.NewGuid().ToString("N"), writes), new Dictionary<string, ImmutableArray<string>> { ["P"] = ["a", "b", "c"] })
+            .Select(w => w.Key), Is.EqualTo(new[] { "2", "3" }));
+    }
+
     [Test]
     public void MixedAndNumericDateRunsUseAtMostTenAliasesWithoutReordering()
     {

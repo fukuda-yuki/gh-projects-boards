@@ -172,6 +172,42 @@ internal sealed class ProjectReaderPipelineTests
         Assert.That(result.Project!.Items.SelectMany(i => i.Values).Any(v => v.Availability == ValueAvailability.Empty), Is.False);
     }
 
+    // #332: on Project 3 (1,040 items) item pages waited for a detail slot, so 11 pages of ~0.7 s took
+    // 13.5 s, and a response that arrived behind a slower earlier one still held its slot.
+    [Test]
+    public async Task ItemPagesAndLaterDetailsDoNotWaitForASlowEarlierDetail()
+    {
+        var boundary = Paged(260);
+        var pages = 0; var details = 0; var active = 0;
+        var head = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var othersAnswered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        boundary.Runner.BeforeResponse = async (command, token) =>
+        {
+            if (command.StandardInput is not { } input) return;
+            using var json = JsonDocument.Parse(input);
+            var query = json.RootElement.GetProperty("query").GetString()!;
+            if (query.Contains("ProjectItems")) { Interlocked.Increment(ref pages); return; }
+            if (!query.Contains("ProjectItemDetails")) return;
+            Assert.That(Interlocked.Increment(ref active), Is.LessThanOrEqualTo(6));
+            try
+            {
+                var index = Interlocked.Increment(ref details);
+                if (index == 1) await head.Task.WaitAsync(TimeSpan.FromSeconds(10), token);
+                else if (index == 11) othersAnswered.TrySetResult();
+            }
+            finally { Interlocked.Decrement(ref active); }
+        };
+        var reading = Read(boundary);
+        // 260 items are 11 batches of at most 25. All of them, and all 3 pages, go out while the first is held.
+        await othersAnswered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.That(pages, Is.EqualTo(3));
+        head.TrySetResult();
+        var result = await reading;
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete));
+        Assert.That(result.Project!.Items.Select(i => i.Id.NodeId), Is.EqualTo(Enumerable.Range(0, 260).Select(i => "T" + i)));
+        Assert.That(details, Is.EqualTo(11));
+    }
+
     [Test]
     public async Task AcceptedDetailsReportProgressWhileTheNextLightPageIsStillWaiting()
     {

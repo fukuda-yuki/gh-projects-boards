@@ -52,11 +52,18 @@ internal sealed class ProjectHistoryReader(GhConnectionService service, GhConnec
         {
             while (!stopped && (batches.Count > 0 || pending.Count > 0))
             {
-                while (batches.Count > 0 && pending.Count < Concurrency)
+                // #332: a slot is a request in flight. A response that arrived behind a slower earlier one waits
+                // to be accepted in order but no longer holds a slot.
+                while (batches.Count > 0 && pending.Count(p => !p.Response.IsCompleted) < Concurrency)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var batch = batches.Dequeue();
                     pending.Enqueue((batch, SendAsync(context, Histories, new { ids = batch }, cancellationToken)));
+                }
+                if (!pending.Peek().Response.IsCompleted)
+                {
+                    await Task.WhenAny(pending.Select(p => p.Response).Where(t => !t.IsCompleted));
+                    continue;
                 }
                 var (current, response) = pending.Dequeue();
                 var result = await response;

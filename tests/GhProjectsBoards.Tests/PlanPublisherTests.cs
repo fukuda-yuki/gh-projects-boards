@@ -626,7 +626,9 @@ internal sealed partial class PlanPublisherTests
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(fault, mutationDelayMs: 50, firstMutationDelayMs: 2000);
+        // The held first response lets all four slots fill before any outcome (see the second publish below):
+        // 2 s let a hosted runner reach only two in flight (PR #335 run 41315810662).
+        Scenario(fault, mutationDelayMs: 50, firstMutationDelayMs: 6000);
         var deadlines = new List<DateTimeOffset?>();
         runner.MutationStarting = () => deadlines.Add(session.Document.Sync.NotBefore);
         var result = await publisher.PublishAsync(session, Today);
@@ -1673,6 +1675,83 @@ internal sealed partial class PlanPublisherTests
             .SelectMany(r => r.GetProperty("variables").EnumerateObject().Select(v => v.Value)).ToArray();
         Assert.That(positions.Select(v => v.GetProperty("itemId").GetString()), Is.EqualTo(new[] { "T-I1", "T-I2" }));
         Assert.That(positions.Select(v => v.GetProperty("afterId").GetString()), Is.EqualTo(new[] { "T-I6", "T-I1" }));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    // #332: a reorder sent one move per request took one request and two record saves per moved row.
+    private async Task<string[]> Reverse(int count)
+    {
+        await Start(count);
+        for (var k = 2; k <= count; k++)
+            await session.Execute(new MovePlanRows(["I" + k], session.Document.State.Rows[0].Identity), Today);
+        var reversed = Enumerable.Range(1, count).Reverse().Select(i => "I" + i).ToArray();
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(reversed));
+        return reversed;
+    }
+    private int[] PositionRequestSizes(int skip = 0) => File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Skip(skip)
+        .Select(line => JsonDocument.Parse(line).RootElement.Clone())
+        .Where(r => r.GetProperty("query").GetString()!.Contains("updateProjectV2ItemPosition"))
+        .Select(r => r.GetProperty("variables").EnumerateObject().Count()).ToArray();
+
+    [Test]
+    public async Task AReorderOfManyRowsSendsThreeMovesPerRequestAndReachesThePlanOrder()
+    {
+        var expected = await Reverse(24);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(PositionRequestSizes(), Is.EqualTo(new[] { 3, 3, 3, 3, 3, 3, 3, 2 }), "23 moves (one row stays) in eight requests");
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Identity), Is.EqualTo(expected));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task AMoveRejectedInsideARequestLeavesTheMovesAnchoredOnItForTheNextPublish()
+    {
+        var expected = await Reverse(5);
+        Scenario("position-denied");
+        var failed = await publisher.PublishAsync(session, Today);
+        Assert.That(failed.Succeeded, Is.False);
+        // I5 stays; the moves are I4, I3 (rejected), I2 in one request and I1 after it. GitHub still runs I2
+        // beside I3's old place, so I2 counts as not sent, and I1, anchored on I2, is held before its request.
+        Assert.That(PositionRequestSizes(), Is.EqualTo(new[] { 3 }));
+        Assert.That(session.Document.Sync.Failures.Where(f => f.Field == PlanField.Order).Select(f => f.Identity),
+            Is.SupersetOf(new[] { "I2", "I1" }));
+        Assert.That(session.Changes(Today).TaskCount, Is.GreaterThan(0));
+        var sent = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Length;
+        Scenario();
+        var retried = await publisher.PublishAsync(session, Today);
+        Assert.That(retried.Succeeded, Is.True, retried.Error);
+        Assert.That(PositionRequestSizes(sent).Sum(), Is.EqualTo(4));
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Identity), Is.EqualTo(expected));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    // #332: moving one Issue to another parent planned a move for every child of both parents.
+    private int ChildMovesSent() => File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl"))
+        .Select(line => JsonDocument.Parse(line).RootElement.Clone())
+        .Where(r => r.GetProperty("query").GetString()!.Contains("reprioritizeSubIssue"))
+        .Sum(r => r.GetProperty("variables").EnumerateObject().Count());
+    private Task TwoParentsOfFive() => Start(12, state => state with {
+        Issues = state.Issues.Select(i => i with { Row = i.Row with { Parent = int.Parse(i.Row.Identity[1..]) switch { 1 or 7 => null, < 7 => "I1", _ => "I7" } } }).ToImmutableArray(),
+        SubOrders = state.SubOrders.Add("I1", ["I2", "I3", "I4", "I5", "I6"]).Add("I7", ["I8", "I9", "I10", "I11", "I12"])
+    });
+
+    // Only the moved Issue's own place is written, wherever it lands, whatever GitHub's insertion point.
+    [TestCase(null, 1, TestName = "AnIssueMovedToTheEndOfAnotherParentSendsOnlyItsOwnChildMove")]
+    [TestCase("I8", 1, TestName = "AnIssueMovedToTheTopOfAnotherParentSendsOnlyItsOwnChildMove")]
+    public async Task MovingAnIssueToAnotherParentSendsOnlyTheChildMovesGitHubNeeds(string? before, int expectedMoves)
+    {
+        await TwoParentsOfFive();
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, [new("I4", PlanField.Parent, "I7")]), Today);
+        await session.Execute(new MovePlanRows(["I4"], before), Today);
+        var children = session.Document.State.Rows.Where(r => r.Parent == "I7").Select(r => r.Identity).ToArray();
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(ChildMovesSent(), Is.EqualTo(expectedMoves), "9 child moves were planned; GitHub's order already satisfied the rest");
+        var remote = FakePlanEditor.Load(root);
+        Assert.That(remote.SubOrders["I7"], Is.EqualTo(children));
+        Assert.That(remote.SubOrders["I1"], Is.EqualTo(new[] { "I2", "I3", "I5", "I6" }));
+        Assert.That(session.Document.Sync.Failures, Is.Empty);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
 
