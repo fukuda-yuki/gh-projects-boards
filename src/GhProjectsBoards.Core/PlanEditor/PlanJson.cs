@@ -107,16 +107,36 @@ internal static class PlanJson
     }
     internal static void Validate(PlanCheckpoint checkpoint, ScopedId project)
     {
+        ValidateCurrent(checkpoint, project);
+        foreach (var (patches, forward) in new[] { (checkpoint.Undo, false), (checkpoint.Redo, true) })
+        {
+            var document = checkpoint.Document;
+            for (var i = patches.Length - 1; i >= 0; i--)
+                document = ReplayHistory(document, patches[i], forward, syncOnly: false);
+        }
+    }
+    // #332: the load contract without replaying the history. Replaying costs one full document validation
+    // per retained step (about 10 ms each at 1,040 rows, so 2 s at 200 steps), so a save checks the written
+    // file with this instead: the session only stores a checkpoint whose history it has already proven
+    // replayable (PlanJson.Restores or RetainReplayableHistory), and reopening still runs the full Validate.
+    internal static void ValidateCurrent(PlanCheckpoint checkpoint, ScopedId project)
+    {
         PlanOperations.Require(checkpoint.Version == 1 && checkpoint.Revision >= 0 && checkpoint.Document.Project == project &&
             !checkpoint.Undo.IsDefault && !checkpoint.Redo.IsDefault && checkpoint.Undo.Length + checkpoint.Redo.Length <= PlanSession.HistoryLimit,
             "保存形式、プロジェクトまたは履歴数が不正です。");
         // A stable date is sufficient for structural validation; today is supplied when displaying the plan.
         var day = checkpoint.Document.State.Settings.StatusDate ?? new DateOnly(2000, 1, 1);
         PlanOperations.ValidateDocument(checkpoint.Document, day);
-        var sync = checkpoint.Document.Sync;
+        ValidateSync(checkpoint.Document);
+    }
+    // The update records' own rules. They read the rows of the document they belong to, but nothing in
+    // ValidateDocument reads them, so a change of the records alone needs only this for each history state.
+    private static void ValidateSync(PlanDocument document)
+    {
+        var sync = document.Sync;
         PlanOperations.Require(!sync.Unverified.IsDefault && sync.Unverified.Distinct().Count() == sync.Unverified.Length &&
-            (sync.Unverified.IsEmpty || sync.Publish is not null) && sync.Unverified.All(id => checkpoint.Document.State.Rows.Any(r => r.Identity == id)) && !sync.Failures.IsDefault && sync.Failures.All(f => PlanField.IsDefined(f.Field) && !string.IsNullOrWhiteSpace(f.Reason)) && !sync.Conflicts.IsDefault && !sync.Unavailable.IsDefault && sync.InaccessibleCount >= 0 && sync.DraftCount >= 0 && sync.PullRequestCount >= 0 &&
-            sync.Unavailable.Distinct().Count() == sync.Unavailable.Length && sync.Unavailable.All(id => checkpoint.Document.Baseline.Rows.Any(r => r.Identity == id)) &&
+            (sync.Unverified.IsEmpty || sync.Publish is not null) && sync.Unverified.All(id => document.State.Rows.Any(r => r.Identity == id)) && !sync.Failures.IsDefault && sync.Failures.All(f => PlanField.IsDefined(f.Field) && !string.IsNullOrWhiteSpace(f.Reason)) && !sync.Conflicts.IsDefault && !sync.Unavailable.IsDefault && sync.InaccessibleCount >= 0 && sync.DraftCount >= 0 && sync.PullRequestCount >= 0 &&
+            sync.Unavailable.Distinct().Count() == sync.Unavailable.Length && sync.Unavailable.All(id => document.Baseline.Rows.Any(r => r.Identity == id)) &&
             !sync.CannotUpdate.IsDefault && sync.CannotUpdate.Distinct().Count() == sync.CannotUpdate.Length &&
             // #238: read observations stay a set. They may name rows a later local delete removed, like the
             // latest read's placed Issues, so their membership is not part of the stored invariant.
@@ -126,26 +146,24 @@ internal static class PlanJson
             (sync.LastRead is not { } lastRead || lastRead.Added.Distinct().Count() == lastRead.Added.Length), "更新状態が不正です。");
         PlanOperations.Require(sync.Conflicts.Select(c => (c.Identity, c.Field)).Distinct().Count() == sync.Conflicts.Length &&
             sync.Conflicts.All(c => PlanField.IsDefined(c.Field) && c.Field != PlanField.NewTask && c.Baseline is not null && c.Local is not null && c.Remote is not null &&
-                (c.DeletedFieldName is null || PlanSheetColumns.IsExtra(c.Field) && c.Remote == "null" && !checkpoint.Document.Baseline.Columns.Any(f => "Project:" + f.Id == c.Field)) &&
-                (c.Field == PlanField.Order ? c.Identity == "" : checkpoint.Document.State.Rows.Any(r => r.Identity == c.Identity))), "競合状態が不正です。");
+                (c.DeletedFieldName is null || PlanSheetColumns.IsExtra(c.Field) && c.Remote == "null" && !document.Baseline.Columns.Any(f => "Project:" + f.Id == c.Field)) &&
+                (c.Field == PlanField.Order ? c.Identity == "" : document.State.Rows.Any(r => r.Identity == c.Identity))), "競合状態が不正です。");
         PlanOperations.Require(!sync.CreationStarts.IsDefault && sync.CreationStarts.All(s => s.Issues is >= 1 and <= 10) &&
             sync.CreationStarts.Select(s => s.Started).SequenceEqual(sync.CreationStarts.Select(s => s.Started).Order()), "作成ペースの記録が不正です。");
         for (var i = 0; i < sync.CreationStarts.Length; i++)
             PlanOperations.Require(PlanCreationPacing.NextStart(sync.CreationStarts.Take(i).ToImmutableArray(), sync.CreationStarts[i].Issues, sync.CreationStarts[i].Started) <= sync.CreationStarts[i].Started,
                 "作成ペースの上限を超えています。");
-        if (sync.Publish is { } publish) PlanPublishPlan.Validate(publish, checkpoint.Document);
-        foreach (var (patches, forward) in new[] { (checkpoint.Undo, false), (checkpoint.Redo, true) })
-        {
-            var document = checkpoint.Document;
-            for (var i = patches.Length - 1; i >= 0; i--)
-                document = ReplayHistory(document, patches[i], forward);
-        }
+        if (sync.Publish is { } publish) PlanPublishPlan.Validate(publish, document);
     }
-    private static PlanDocument ReplayHistory(PlanDocument document, PlanPatch patch, bool forward)
+    private static PlanDocument ReplayHistory(PlanDocument document, PlanPatch patch, bool forward, bool syncOnly)
     {
         var next = Step(document, patch, forward);
         // Use the complete load contract, including reconciliation identities, for each reachable state.
-        Validate(new(1, 0, next, [], []), next.Project);
+        // A step's rows, settings and baseline come from the patch and the current rows alone, so when only the
+        // update records changed since the history was proven, the document part of that proof still holds.
+        if (syncOnly) ValidateSync(next);
+        else Validate(new(1, 0, next, [], []), next.Project);
+        GhProjectsBoards.Core.Projects.PerformanceTrace.Count(syncOnly ? "plan-history-records-checked" : "plan-history-state-validated");
         return next;
     }
     private static PlanDocument Step(PlanDocument document, PlanPatch patch, bool forward)
@@ -181,14 +199,17 @@ internal static class PlanJson
             && back.State.ArchivedIdentities.SequenceEqual(before.State.ArchivedIdentities) && Same(back.Baseline.Rows, before.Baseline.Rows)
             && (back with { State = before.State, Baseline = back.Baseline with { Rows = before.Baseline.Rows }, Sync = back.Sync with { Failures = before.Sync.Failures } }) == before;
     }
-    internal static PlanCheckpoint RetainReplayableHistory(PlanCheckpoint checkpoint)
+    // `syncOnly`: since the history was last proven, only the document's update records (Sync) changed, so
+    // each state's rows, settings and baseline are those already validated and only the records' rules are
+    // checked again (#332: a publish saves its record before and after every batch).
+    internal static PlanCheckpoint RetainReplayableHistory(PlanCheckpoint checkpoint, bool syncOnly = false)
     {
         ImmutableArray<PlanPatch> Trim(ImmutableArray<PlanPatch> patches, bool forward)
         {
             var document = checkpoint.Document;
             for (var i = patches.Length - 1; i >= 0; i--)
             {
-                try { document = ReplayHistory(document, patches[i], forward); }
+                try { document = ReplayHistory(document, patches[i], forward, syncOnly); }
                 catch (Exception ex) when (IsDataError(ex)) { return patches.Skip(i + 1).ToImmutableArray(); }
             }
             return patches;

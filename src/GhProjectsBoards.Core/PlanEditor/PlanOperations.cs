@@ -135,11 +135,17 @@ internal static class PlanOperations
         try { _ = Schedule(d, today); }
         catch (PlanCycleException cycle) { throw Named(d, cycle); }
     }
+    // #332: a row is immutable, so one that passed the row checks once passes them again. Consecutive history
+    // states and the baseline share most row instances, and the checks parse every extra value, so a history
+    // replay at 1,040 rows with a dozen Project fields spent most of its time here.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<PlanRow, object> ValidRows = new();
+    private static readonly object Valid = new();
     private static void ValidateRows(ImmutableArray<PlanRow> rows)
     {
         Unique(rows.Select(r => r.Identity).ToImmutableArray());
         foreach (var r in rows)
         {
+            if (ValidRows.TryGetValue(r, out _)) continue;
             Require(!string.IsNullOrWhiteSpace(r.Identity) && r.Title is not null && Repository(r.Repository), "行の識別子、タイトルまたはリポジトリが不正です。");
             Unique(r.Assignees); Unique(r.Predecessors); Unique(r.Labels);
             Require(r.ExtraValues is not null && r.ExtraValues.All(p => PlanSheetColumns.IsExtra(p.Key) && p.Value is not null && Enum.IsDefined(p.Value.Availability)), "追加列の値が不正です。");
@@ -150,6 +156,7 @@ internal static class PlanOperations
             Require(r.CsvSourceHash is null || System.Text.RegularExpressions.Regex.IsMatch(r.CsvSourceHash, "^[a-f0-9]{64}$"), "CSVの識別情報が不正です。");
             Require(r.Assignees.Concat(r.Predecessors).All(x => !string.IsNullOrWhiteSpace(x)) && (r.Parent is null || !string.IsNullOrWhiteSpace(r.Parent)), "関係の識別子が不正です。");
             Require(r.IssueType is null || !string.IsNullOrWhiteSpace(r.IssueType), "Issue の種類が不正です。");
+            ValidRows.AddOrUpdate(r, Valid);
         }
     }
     private static bool IsLocal(string id) => id.StartsWith("local:", StringComparison.Ordinal) && Guid.TryParseExact(id[6..], "N", out _);

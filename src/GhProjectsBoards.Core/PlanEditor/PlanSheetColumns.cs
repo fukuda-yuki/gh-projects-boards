@@ -54,7 +54,8 @@ internal static class PlanSheetColumns
     internal static void ValidateOwnership(PlanDocument document)
     {
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
-        foreach (var row in document.State.Rows)
+        // A row equal to its baseline has no unpublished extra value (#332: this runs for every history state).
+        foreach (var row in document.State.Rows.Where(r => !(baseline.TryGetValue(r.Identity, out var same) && PlanOperations.RowEqual(r, same))))
             foreach (var key in row.ExtraValues.Keys.Where(k => IsMappedExtra(document, k)))
                 PlanOperations.Require(PlanValues.Get(row, key) == (baseline.TryGetValue(row.Identity, out var before) ? PlanValues.Get(before, key) : "null"),
                     "未発行の追加列編集があるフィールドは割り当てられません。編集を発行するか元に戻してください。");

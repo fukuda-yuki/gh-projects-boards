@@ -148,9 +148,12 @@ internal sealed class PlanSession
     }
     private Task<PlanSaveResult> CurrentSave() => pending ?? Task.FromResult(lastSave);
     // `replayable`: the caller knows the checkpoint's history is still replayable (see PlanJson.Restores).
-    private Task<PlanSaveResult> QueueSave(bool replayable = false)
+    // `syncOnly`: only Document.Sync changed since the history was last proven (see RetainReplayableHistory).
+    private Task<PlanSaveResult> QueueSave(bool replayable = false, bool syncOnly = false)
     {
-        if (!replayable) checkpoint = PlanJson.RetainReplayableHistory(checkpoint);
+        if (!replayable)
+            using (GhProjectsBoards.Core.Projects.PerformanceTrace.Span("plan-history-retain"))
+                checkpoint = PlanJson.RetainReplayableHistory(checkpoint, syncOnly);
         if (pending is not null) return pending;
         pending = Task.Run(SaveLoop);
         return pending;
@@ -161,7 +164,8 @@ internal sealed class PlanSession
         {
             PlanCheckpoint captured; string? expected;
             lock (gate) { captured = checkpoint; expected = fingerprint; }
-            var result = await store.SaveAsync(captured, expected).ConfigureAwait(false);
+            // Every checkpoint this session stores has had its history proven by QueueSave's caller or by QueueSave.
+            var result = await store.SaveAsync(captured, expected, historyProven: true).ConfigureAwait(false);
             lock (gate)
             {
                 lastSave = result;
@@ -247,7 +251,7 @@ internal sealed class PlanSession
                 sync = sync with { Publish = next };
             }
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { Sync = sync } };
-            return QueueSave();
+            return QueueSave(syncOnly: true);
         }
     }
     public Task<PlanSaveResult> ResolveConflict(string identity, string field, bool useGitHub, DateOnly today)
@@ -428,14 +432,22 @@ internal sealed class PlanSession
     {
         // Rebase complete row patches so unrelated remote changes do not invalidate local Undo.
         var current = original; var history = new List<PlanPatch>();
+        PlanDocument Rebased(PlanDocument state)
+        {
+            using var span = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("plan-history-rebase-merge");
+            var rebased = PlanMerge.NativeOrder(state, PlanMerge.Merge(state, historyBaseline), historyOrders);
+            return readDay is { } day ? ReadDate(rebased, day) : rebased;
+        }
+        // #332: each step's state after is the previous step's state before, so each state is merged once.
+        PlanDocument? rebasedCurrent = null;
         for (var i = patches.Length - 1; i >= 0; i--)
         {
             var patch = patches[i];
             var before = current with { State = PlanOperations.Replay(current.State, patch, forward), Baseline = PlanOperations.ReplayBaseline(current.Baseline, patch, forward),
                 Sync = current.Sync with { LocalOrderChoices = (forward ? patch.AfterLocalOrderChoices : patch.BeforeLocalOrderChoices) ?? current.Sync.LocalOrderChoices, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? current.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? current.Sync.Unavailable } };
-            var rebasedBefore = PlanMerge.NativeOrder(before, PlanMerge.Merge(before, historyBaseline), historyOrders);
-            var rebasedAfter = PlanMerge.NativeOrder(current, PlanMerge.Merge(current, historyBaseline), historyOrders);
-            if (readDay is { } day) { rebasedBefore = ReadDate(rebasedBefore, day); rebasedAfter = ReadDate(rebasedAfter, day); }
+            var rebasedBefore = Rebased(before);
+            var rebasedAfter = rebasedCurrent ?? Rebased(current);
+            using var difference = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("plan-history-rebase-difference");
             var rebased = forward ? PlanOperations.Difference(rebasedAfter.State, rebasedBefore.State, patch.Kind)
                 : PlanOperations.Difference(rebasedBefore.State, rebasedAfter.State, patch.Kind);
             if (!patch.DiscardedRows.IsEmpty) rebased = rebased with
@@ -447,7 +459,7 @@ internal sealed class PlanSession
             if (patch.BeforeConflicts.HasValue) rebased = rebased with { BeforeConflicts = forward ? rebasedAfter.Sync.Conflicts : rebasedBefore.Sync.Conflicts, AfterConflicts = forward ? rebasedBefore.Sync.Conflicts : rebasedAfter.Sync.Conflicts };
             if (!rebased.Rows.IsEmpty || rebased.BeforeOrder.HasValue || rebased.BeforeSettings is not null || rebased.BeforeConflicts.HasValue || rebased.BeforeLocalOrderChoices is not null || !rebased.DiscardedRows.IsEmpty)
                 history.Add(rebased);
-            current = before;
+            current = before; rebasedCurrent = rebasedBefore;
         }
         return history.AsEnumerable().Reverse().ToImmutableArray();
     }
