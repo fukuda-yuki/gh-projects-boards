@@ -52,6 +52,19 @@ internal static class PlanValues
             ? number.ToString("G29", CultureInfo.InvariantCulture) : json;
     internal static readonly string[] RowFields = PlanField.All.Where(f => f is not (PlanField.Order or PlanField.NewTask or PlanField.SubIssueOrder)).ToArray();
     internal static IEnumerable<string> Fields(params PlanRow[] rows) => RowFields.Concat(rows.SelectMany(r => r.ExtraValues.Keys)).Distinct();
+    private static readonly Dictionary<string, System.Reflection.PropertyInfo> Properties =
+        RowFields.ToDictionary(f => f, f => typeof(PlanRow).GetProperty(f) ?? throw new ArgumentException("Unknown row field."));
+    // #332: true only when Get would return the same text for both rows, without serializing either.
+    // A decimal compares with its scale (8 and 8.0 serialize differently); a list compares in held order.
+    internal static bool Same(PlanRow a, PlanRow b, string field)
+    {
+        var x = Properties[field].GetValue(a); var y = Properties[field].GetValue(b);
+        return (x, y) switch {
+            (ImmutableArray<string> p, ImmutableArray<string> q) => p.SequenceEqual(q, StringComparer.Ordinal),
+            (decimal p, decimal q) => p.ToString(CultureInfo.InvariantCulture) == q.ToString(CultureInfo.InvariantCulture),
+            _ => Equals(x, y)
+        };
+    }
     internal static string Get(PlanRow row, string field)
     {
         if (PlanSheetColumns.IsExtra(field)) return NormalizeNumber(row.ExtraValues.GetValueOrDefault(field)?.Json ?? "null");
@@ -144,11 +157,15 @@ internal static class PlanMerge
             LocalOrderChoices = merged.Sync.LocalOrderChoices.Where(p => members.Contains(p.Key) &&
                 (!remote.TryGetValue(p.Key, out var observed) || !p.Value.SequenceEqual(observed.Where(id => members.Contains(id) && !merged.Sync.Unavailable.Contains(id))))).ToImmutableDictionary() } };
     }
-    // #332: Set rebuilds the whole row through JSON. Nearly every field of every row already holds the value
-    // the read returns, and Merge runs once per Undo step when a read rebases the history, so a value that
-    // is already there is kept. Extra fields always take Set: it also records the value's availability.
+    // #332: Set rebuilds the row. Nearly every field of every row already holds the value the read returns,
+    // and Merge runs once per Undo step when a read rebases the history, so a value that is already there is
+    // kept. An extra field is kept only when it also holds the availability Set would record.
     private static PlanRow Adopt(PlanRow row, string field, string json)
-        => !PlanSheetColumns.IsExtra(field) && PlanValues.Get(row, field) == json ? row : PlanValues.Set(row, field, json);
+    {
+        if (!PlanSheetColumns.IsExtra(field)) return PlanValues.Get(row, field) == json ? row : PlanValues.Set(row, field, json);
+        var adopted = PlanValues.Set(row, field, json);
+        return row.ExtraValues.TryGetValue(field, out var held) && held == adopted.ExtraValues[field] ? row : adopted;
+    }
     internal static PlanDocument Merge(PlanDocument document, PlanBaseline remote)
     {
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
@@ -172,10 +189,15 @@ internal static class PlanMerge
             // #332: a row the plan, the last read and this read hold identically keeps every planning value;
             // only its extra fields go through the loop, because adopting one also records its availability.
             var unchanged = PlanOperations.RowEqual(l, b) && PlanOperations.RowEqual(r, b);
+            // Its extra values are kept too when each already holds what adopting it would record.
+            var canonical = unchanged && r.ExtraValues.Values.All(v => v.Json is { } json && json == PlanValues.NormalizeNumber(json)
+                && v.Availability == (json == "null" ? Projects.ValueAvailability.Empty : Projects.ValueAvailability.Present));
+            if (canonical) { local[r.Identity] = merged; continue; }
             // Date adoption needs the merged progress state, regardless of enum declaration order.
             foreach (var field in PlanValues.Fields(b, l, r).OrderBy(field => field is PlanField.Start or PlanField.End))
             {
-                if (unchanged && !PlanSheetColumns.IsExtra(field)) continue;
+                // A planning value the plan and this read hold alike is kept by every branch below.
+                if (!PlanSheetColumns.IsExtra(field) && (unchanged || PlanValues.Same(l, r, field))) continue;
                 if (PlanSheetColumns.IsExtra(field) && !r.ExtraValues.ContainsKey(field)) continue;
                 var bv = PlanValues.Get(b, field); var lv = PlanValues.Get(l, field); var rv = PlanValues.Get(r, field);
                 var prior = document.Sync.Conflicts.FirstOrDefault(c => c.Identity == r.Identity && c.Field == field);
@@ -201,7 +223,8 @@ internal static class PlanMerge
                 if (prior is not null || lv != bv)
                     conflicts.Add(new(row.Identity, field, prior?.Baseline ?? bv, prior?.DeletedFieldName is not null ? prior.Local : lv, "null") { DeletedFieldName = name });
             }
-            local[row.Identity] = local[row.Identity] with { ExtraValues = local[row.Identity].ExtraValues.RemoveRange(removed.Keys) };
+            // #332: rebuilding every row when no field was removed loses each row's identity for later checks.
+            if (removed.Count > 0) local[row.Identity] = local[row.Identity] with { ExtraValues = local[row.Identity].ExtraValues.RemoveRange(removed.Keys) };
         }
         // Compare order only among identities present in all three snapshots; membership is merged separately.
         var localIds = document.State.Rows.Select(r => r.Identity).ToHashSet();
@@ -231,7 +254,7 @@ internal static class PlanMerge
         return document with
         {
             Baseline = remote with { Rows = remote.Rows.AddRange(document.Baseline.Rows.Where(r => unavailable.Contains(r.Identity)))
-                .Select(r => r with { ExtraValues = r.ExtraValues.RemoveRange(removed.Keys) }).ToImmutableArray() },
+                .Select(r => removed.Count == 0 ? r : r with { ExtraValues = r.ExtraValues.RemoveRange(removed.Keys) }).ToImmutableArray() },
             State = document.State with { Rows = rows,
                 // A remembered archive the read returned is adopted; the memory has done its job.
                 ArchivedIdentities = document.State.ArchivedIdentities.Where(id => !incoming.ContainsKey(id)).ToImmutableArray() },

@@ -17,7 +17,13 @@ internal sealed class PlanSaveLatencyProbe
         var day = plan.StatusDate;
         var root = Path.Combine(Path.GetTempPath(), "ghpb-probe-" + Guid.NewGuid().ToString("N"));
         var store = new PlanStore(root);
-        var session = await PlanSession.CreateAsync(store, snapshot.Document, day);
+        // A real Project carries about a dozen further fields on every item; the fixture carries none.
+        var extra = Enumerable.Range(1, 12).Select(i => new PlanColumnDefinition("X" + i, "Extra " + i, "TEXT")).ToImmutableArray();
+        PlanRow WithExtras(PlanRow r) => r with { ExtraValues = extra.ToImmutableDictionary(c => "Project:" + c.Id, c => new PlanExtraValue(ValueAvailability.Present, "\"" + c.Name + " " + r.Identity + "\"")) };
+        var document = snapshot.Document with {
+            State = snapshot.Document.State with { Rows = snapshot.Document.State.Rows.Select(WithExtras).ToImmutableArray() },
+            Baseline = snapshot.Document.Baseline with { Rows = snapshot.Document.Baseline.Rows.Select(WithExtras).ToImmutableArray(), Columns = snapshot.Document.Baseline.Columns.AddRange(extra) } };
+        var session = await PlanSession.CreateAsync(store, document, day);
         var rows = session.Document.State.Rows;
         var leaves = rows.Where(r => !rows.Any(c => c.Parent == r.Identity) && r.Parent is not null && !r.Closed).ToList();
         for (var i = 0; i < history; i++)
@@ -54,8 +60,10 @@ internal sealed class PlanSaveLatencyProbe
         var doc = session.Document;
         var sw2 = Stopwatch.StartNew(); PlanOperations.ValidateDocument(doc, day); var v = sw2.ElapsedMilliseconds;
         sw2.Restart(); PlanOperations.Schedule(doc, day); var s = sw2.ElapsedMilliseconds;
+        sw2.Restart(); PlanSheetColumns.ValidateOwnership(doc); TestContext.Out.WriteLine($"ValidateOwnership {sw2.ElapsedMilliseconds} ms");
         sw2.Restart(); PlanOperations.Apply(doc, new IndentPlanRows([nb.Identity]), day); var a = sw2.ElapsedMilliseconds;
-        sw2.Restart(); var mergedDoc = PlanMerge.Merge(doc, doc.Baseline); var merge = sw2.ElapsedMilliseconds;
+        var mergedDoc = PlanMerge.Merge(doc, doc.Baseline); var merge = long.MaxValue;
+        for (var k = 0; k < 5; k++) { sw2.Restart(); mergedDoc = PlanMerge.Merge(doc, doc.Baseline); merge = Math.Min(merge, sw2.ElapsedMilliseconds); }
         sw2.Restart(); PlanMerge.NativeOrder(doc, mergedDoc, doc.Sync.NativeOrders); var native = sw2.ElapsedMilliseconds;
         TestContext.Out.WriteLine($"Merge {merge} ms | NativeOrder {native} ms");
         var loaded = await store.LoadAsync(doc.Project);
