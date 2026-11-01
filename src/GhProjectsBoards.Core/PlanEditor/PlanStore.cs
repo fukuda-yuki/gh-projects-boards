@@ -53,7 +53,10 @@ internal sealed class PlanStore(string dataRoot)
         if (File.Exists(path + ".bak")) File.Move(path + ".bak", kept + ".bak");
         File.Move(path, kept);
     }
-    public async Task<PlanSaveResult> SaveAsync(PlanCheckpoint checkpoint, string? expectedFingerprint)
+    // `historyProven`: the caller has already proven every reachable history state replayable, as PlanSession does
+    // before it stores a checkpoint (PlanJson.Restores or RetainReplayableHistory). Any other caller gets the
+    // full load contract, including every history state, before the last good file is replaced.
+    public async Task<PlanSaveResult> SaveAsync(PlanCheckpoint checkpoint, string? expectedFingerprint, bool historyProven = false)
     {
         string? temporary = null;
         try
@@ -65,13 +68,18 @@ internal sealed class PlanStore(string dataRoot)
             CheckInterrupted(path, old is null);
             if ((old is null ? null : Fingerprint(old)) != expectedFingerprint)
                 return new(false, PlanSaveFailure.ChangedFile, "別のウィンドウまたは別のアプリがこの計画を保存したため、保存できませんでした。読み直して編集を適用するか、コピーとして保存してください。", null);
-            // A new checkpoint must satisfy the same contract as reopening it, including every history state.
+            // A new checkpoint must satisfy the same contract as reopening it.
             var bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(checkpoint, PlanJson.Options);
             temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             await WriteCandidate(temporary, bytes).ConfigureAwait(false);
             var verified = await File.ReadAllBytesAsync(temporary).ConfigureAwait(false);
             if (!bytes.AsSpan().SequenceEqual(verified)) throw new IOException("保存後の検証が一致しません。");
-            PlanJson.Validate(PlanJson.Read<PlanCheckpoint>(verified), checkpoint.Document.Project);
+            // #332: replaying costs one document validation per history state (2 s at 200 states and 1,040 rows),
+            // so a proven history is not replayed again; the reread still checks the current plan, and reopening
+            // replays it all.
+            var reread = PlanJson.Read<PlanCheckpoint>(verified);
+            if (historyProven) PlanJson.ValidateCurrent(reread, checkpoint.Document.Project);
+            else PlanJson.Validate(reread, checkpoint.Document.Project);
             // Recheck noncooperating external editors immediately before replacement as well.
             var latest = await ReadExisting(path).ConfigureAwait(false);
             if ((latest is null ? null : Fingerprint(latest)) != expectedFingerprint)

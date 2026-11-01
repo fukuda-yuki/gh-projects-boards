@@ -148,9 +148,10 @@ internal sealed class PlanSession
     }
     private Task<PlanSaveResult> CurrentSave() => pending ?? Task.FromResult(lastSave);
     // `replayable`: the caller knows the checkpoint's history is still replayable (see PlanJson.Restores).
-    private Task<PlanSaveResult> QueueSave(bool replayable = false)
+    // `syncOnly`: only Document.Sync changed since the history was last proven (see RetainReplayableHistory).
+    private Task<PlanSaveResult> QueueSave(bool replayable = false, bool syncOnly = false)
     {
-        if (!replayable) checkpoint = PlanJson.RetainReplayableHistory(checkpoint);
+        if (!replayable) checkpoint = PlanJson.RetainReplayableHistory(checkpoint, syncOnly);
         if (pending is not null) return pending;
         pending = Task.Run(SaveLoop);
         return pending;
@@ -161,7 +162,8 @@ internal sealed class PlanSession
         {
             PlanCheckpoint captured; string? expected;
             lock (gate) { captured = checkpoint; expected = fingerprint; }
-            var result = await store.SaveAsync(captured, expected).ConfigureAwait(false);
+            // Every checkpoint this session stores has had its history proven by QueueSave's caller or by QueueSave.
+            var result = await store.SaveAsync(captured, expected, historyProven: true).ConfigureAwait(false);
             lock (gate)
             {
                 lastSave = result;
@@ -247,7 +249,7 @@ internal sealed class PlanSession
                 sync = sync with { Publish = next };
             }
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { Sync = sync } };
-            return QueueSave();
+            return QueueSave(syncOnly: true);
         }
     }
     public Task<PlanSaveResult> ResolveConflict(string identity, string field, bool useGitHub, DateOnly today)
