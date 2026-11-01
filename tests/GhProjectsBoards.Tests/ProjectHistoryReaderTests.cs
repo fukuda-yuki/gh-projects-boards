@@ -136,4 +136,43 @@ internal sealed class ProjectHistoryReaderTests
             .ToArray();
         Assert.That(batches, Is.EqualTo(new[] { 25, 5 }), "a batch is at most 25 Issues");
     }
+
+    // #332: a response that arrived behind a slower earlier one no longer holds one of the six slots.
+    [Test]
+    public async Task LaterBatchesDoNotWaitForASlowFirstBatch()
+    {
+        var ids = Enumerable.Range(1, 25 * 10).Select(n => "I" + n).ToArray();
+        var nodes = ids.ToDictionary(id => id, id => (JsonNode?)Node(id, "2026-10-01T03:00:00Z", []));
+        var (service, runner) = Boundary(variables =>
+        {
+            var array = new JsonArray();
+            foreach (var id in variables.GetProperty("ids").EnumerateArray().Select(v => v.GetString()!)) array.Add(nodes.GetValueOrDefault(id));
+            return array;
+        });
+        var sent = 0; var active = 0;
+        var head = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var othersAnswered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        runner.BeforeResponse = async (command, token) =>
+        {
+            if (command.StandardInput?.Contains("PlanIssueHistories") != true) return;
+            Assert.That(Interlocked.Increment(ref active), Is.LessThanOrEqualTo(6));
+            try
+            {
+                var index = Interlocked.Increment(ref sent);
+                if (index == 1) await head.Task.WaitAsync(TimeSpan.FromSeconds(10), token);
+                else if (index == 10) othersAnswered.TrySetResult();
+            }
+            finally { Interlocked.Decrement(ref active); }
+        };
+        var report = await service.ConnectAsync();
+        // A read runs under an operation lease, which lets its requests overlap (without one each request
+        // takes the connection gate on its own).
+        using var lease = await service.BeginOperationAsync(report.Context!, CancellationToken.None, mutation: false);
+        var reading = new ProjectHistoryReader(service, lease).ReadAsync(report.Context!, Project, ids);
+        await othersAnswered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        head.TrySetResult();
+        var result = await reading;
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete));
+        Assert.That(result.History!.Count, Is.EqualTo(ids.Length));
+    }
 }

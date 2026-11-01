@@ -156,7 +156,11 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         private const int DetailBatchSize = 25;
         private const int DetailConcurrency = 6;
         private readonly List<string> detailIds = [];
+        // Sent batches in page order; they are accepted in this order.
         private readonly Queue<(string[] Ids, Task<ApiResult> Response)> pendingDetails = [];
+        // #332: batches the item pages produced while every window slot was busy. The page walk no longer
+        // waits for a slot, so the next page is already read when one frees.
+        private readonly Queue<string[]> readyDetails = [];
 
         private async Task<bool> ReadItemsAsync()
         {
@@ -169,7 +173,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                         detailIds.Add(Text(node, "id"));
                         if (detailIds.Count == DetailBatchSize) await FlushDetailsAsync();
                     });
-                while (!stopped && pendingDetails.Count > 0)
+                while (!stopped && (pendingDetails.Count > 0 || readyDetails.Count > 0))
                 {
                     await DrainCompletedDetailsAsync();
                     if (!stopped && pendingDetails.Count > 0)
@@ -295,6 +299,21 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             while (!stopped && pendingDetails.TryPeek(out var first) && first.Response.IsCompleted)
                 await AcceptNextDetailsAsync();
             await ObserveDetailFailuresAsync();
+            SendReadyDetails();
+        }
+
+        // #332: a slot is a request in flight. A response that arrived behind a slower earlier one waits to
+        // be accepted in order but no longer holds a slot, so one slow response does not stall the window.
+        private void SendReadyDetails()
+        {
+            while (!stopped && readyDetails.Count > 0 && pendingDetails.Count(batch => !batch.Response.IsCompleted) < DetailConcurrency)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var ids = readyDetails.Dequeue();
+                var query = lease is null ? ProjectQueries.ItemDetails : ProjectQueries.ItemDetails.Replace("parent { id }",
+                    "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}");
+                pendingDetails.Enqueue((ids, SendAsync(query, new { ids })));
+            }
         }
 
         private Task WaitForDetailResponseAsync()
@@ -303,20 +322,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
 
         private async Task FlushDetailsAsync()
         {
-            await DrainCompletedDetailsAsync();
-            if (stopped || detailIds.Count == 0) return;
-            while (!stopped && pendingDetails.Count >= DetailConcurrency)
-            {
-                await WaitForDetailResponseAsync();
-                await DrainCompletedDetailsAsync();
-            }
-            if (stopped) return;
-            cancellationToken.ThrowIfCancellationRequested();
-            var ids = detailIds.ToArray(); detailIds.Clear();
-            var query = lease is null ? ProjectQueries.ItemDetails : ProjectQueries.ItemDetails.Replace("parent { id }",
-                "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}");
-            var response = SendAsync(query, new { ids });
-            pendingDetails.Enqueue((ids, response));
+            if (!stopped && detailIds.Count > 0) { readyDetails.Enqueue(detailIds.ToArray()); detailIds.Clear(); }
             await DrainCompletedDetailsAsync();
         }
 
