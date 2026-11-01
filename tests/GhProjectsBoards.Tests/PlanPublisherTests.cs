@@ -626,7 +626,9 @@ internal sealed partial class PlanPublisherTests
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(fault, mutationDelayMs: 50, firstMutationDelayMs: 2000);
+        // The held first response lets all four slots fill before any outcome (see the second publish below):
+        // 2 s let a hosted runner reach only two in flight (PR #335 run 41315810662).
+        Scenario(fault, mutationDelayMs: 50, firstMutationDelayMs: 6000);
         var deadlines = new List<DateTimeOffset?>();
         runner.MutationStarting = () => deadlines.Add(session.Document.Sync.NotBefore);
         var result = await publisher.PublishAsync(session, Today);
