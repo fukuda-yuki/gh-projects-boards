@@ -1,0 +1,56 @@
+using System.Collections.Immutable;
+using System.Diagnostics;
+using GhProjectsBoards.Core.PlanEditor;
+using NUnit.Framework;
+namespace GhProjectsBoards.Tests;
+// #332: times row operations and publish-record saves at 0/50/200 retained Undo entries on the 1,040-row fixture.
+// Explicit: a measurement, not a pass/fail check; the bounded regression lives in PlanSaveCostTests.
+[Explicit, Category("Performance")]
+internal sealed class PlanSaveLatencyProbe
+{
+    [TestCase(0)][TestCase(50)][TestCase(200)]
+    public async Task RowOperations(int history)
+    {
+        var plan = EvaluationFixture.ReadPlan();
+        var snapshot = EvaluationFixture.Simulate(plan, [plan.StatusDate]).Single();
+        var day = plan.StatusDate;
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-probe-" + Guid.NewGuid().ToString("N"));
+        var store = new PlanStore(root);
+        var session = await PlanSession.CreateAsync(store, snapshot.Document, day);
+        var rows = session.Document.State.Rows;
+        var leaves = rows.Where(r => !rows.Any(c => c.Parent == r.Identity) && r.Parent is not null && !r.Closed).ToList();
+        for (var i = 0; i < history; i++)
+            await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new(leaves[i % leaves.Count].Identity, PlanField.Title, "t" + i)]), day);
+        var file = store.FileFor(session.Document.Project);
+        TestContext.Out.WriteLine($"rows={rows.Length} history={session.UndoCount} file={new FileInfo(file).Length / 1024} KB");
+        // Two new rows next to an open leaf: the fixture chains its tasks, so existing rows refuse an indent.
+        var anchor = leaves[leaves.Count / 2]; var parent = anchor.Parent;
+        var sibling = rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToList();
+        async Task Time(string name, Func<Task<PlanSaveResult>> run)
+        {
+            var sw = Stopwatch.StartNew(); var task = run(); var accepted = sw.ElapsedMilliseconds; var r = await task; var total = sw.ElapsedMilliseconds;
+            Assert.That(r.Succeeded, Is.True, r.Error);
+            TestContext.Out.WriteLine($"{name,-24} command {accepted,6} ms  +save {total - accepted,6} ms  total {total,6} ms");
+        }
+        await Time("edit title", () => session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new(anchor.Identity, PlanField.Title, "x")]), day));
+        var na = PlanRow.New("A") with { Parent = parent, Estimate = 8 }; var nb = PlanRow.New("B") with { Parent = parent, Estimate = 8 };
+        await Time("insert row", () => session.Execute(new InsertPlanRows([na, nb], anchor.Identity), day));
+        await Time("indent", () => session.Execute(new IndentPlanRows([nb.Identity]), day));
+        await Time("outdent", () => session.Execute(new IndentPlanRows([nb.Identity], true), day));
+        await Time("move to top of siblings", () => session.Execute(new MovePlanSubtrees([nb.Identity], sibling[0]), day));
+        await Time("undo", () => session.Undo(day));
+        await Time("publish-record save", () => session.SaveSync(session.Document.Sync));
+        await Time("publish-record save 2", () => session.SaveSync(session.Document.Sync));
+        // The parts one save and one command are made of.
+        var doc = session.Document;
+        var sw2 = Stopwatch.StartNew(); PlanOperations.ValidateDocument(doc, day); var v = sw2.ElapsedMilliseconds;
+        sw2.Restart(); PlanOperations.Schedule(doc, day); var s = sw2.ElapsedMilliseconds;
+        sw2.Restart(); PlanOperations.Apply(doc, new IndentPlanRows([nb.Identity]), day); var a = sw2.ElapsedMilliseconds;
+        var loaded = await store.LoadAsync(doc.Project);
+        sw2.Restart(); PlanJson.Validate(loaded.Checkpoint!, doc.Project); var full = sw2.ElapsedMilliseconds;
+        var bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(loaded.Checkpoint!, PlanJson.Options);
+        sw2.Restart(); for (var i = 0; i < 3; i++) System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(loaded.Checkpoint!, PlanJson.Options); var ser = sw2.ElapsedMilliseconds / 3;
+        TestContext.Out.WriteLine($"ValidateDocument {v} ms | Schedule {s} ms | Apply(indent) {a} ms | Validate checkpoint incl. {loaded.Checkpoint!.Undo.Length} history {full} ms | serialize {ser} ms ({bytes.Length / 1024} KB)");
+        Directory.Delete(root, true);
+    }
+}
