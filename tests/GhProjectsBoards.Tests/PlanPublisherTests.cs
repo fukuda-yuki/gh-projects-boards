@@ -1676,6 +1676,53 @@ internal sealed partial class PlanPublisherTests
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
 
+    // #332: a reorder sent one move per request took one request and two record saves per moved row.
+    private async Task<string[]> Reverse(int count)
+    {
+        await Start(count);
+        for (var k = 2; k <= count; k++)
+            await session.Execute(new MovePlanRows(["I" + k], session.Document.State.Rows[0].Identity), Today);
+        var reversed = Enumerable.Range(1, count).Reverse().Select(i => "I" + i).ToArray();
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(reversed));
+        return reversed;
+    }
+    private int[] PositionRequestSizes(int skip = 0) => File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Skip(skip)
+        .Select(line => JsonDocument.Parse(line).RootElement.Clone())
+        .Where(r => r.GetProperty("query").GetString()!.Contains("updateProjectV2ItemPosition"))
+        .Select(r => r.GetProperty("variables").EnumerateObject().Count()).ToArray();
+
+    [Test]
+    public async Task AReorderOfManyRowsSendsTenMovesPerRequestAndReachesThePlanOrder()
+    {
+        var expected = await Reverse(24);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(PositionRequestSizes(), Is.EqualTo(new[] { 10, 10, 3 }), "23 moves (one row stays) in three requests");
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Identity), Is.EqualTo(expected));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task AMoveRejectedInsideARequestLeavesTheMovesAnchoredOnItForTheNextPublish()
+    {
+        var expected = await Reverse(6);
+        Scenario("position-denied");
+        var failed = await publisher.PublishAsync(session, Today);
+        Assert.That(failed.Succeeded, Is.False);
+        Assert.That(PositionRequestSizes(), Is.EqualTo(new[] { 5 }));
+        // GitHub ran the moves after the rejected one, beside I3's old place; they are not counted as done.
+        Assert.That(session.Document.Sync.Failures.Where(f => f.Field == PlanField.Order).Select(f => f.Identity),
+            Is.SupersetOf(new[] { "I2", "I1" }));
+        Assert.That(session.Changes(Today).TaskCount, Is.GreaterThan(0));
+        var sent = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Length;
+        Scenario();
+        var retried = await publisher.PublishAsync(session, Today);
+        Assert.That(retried.Succeeded, Is.True, retried.Error);
+        Assert.That(PositionRequestSizes(sent), Has.Length.EqualTo(1));
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Identity), Is.EqualTo(expected));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
     [Test]
     public async Task PositionUpdatesCompleteWhenMultiAliasPositionRequestsLoseTheirResponsePartway()
     {

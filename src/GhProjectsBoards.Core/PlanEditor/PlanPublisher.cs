@@ -436,11 +436,17 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 }
                 async Task SendBatch(ImmutableArray<PlanWrite> group)
                 {
+                    if (group[0].Stage == PlanPublishStage.Order)
+                    {
+                        group = await HoldUnplacedAnchors(group).ConfigureAwait(false);
+                        if (group.IsEmpty) return;
+                    }
                     var request = await PrepareBatch(group).ConfigureAwait(false);
                     await Save(group.Select(w => w with { State = PlanWriteState.Dispatched, Error = null })).ConfigureAwait(false);
                     EffectiveBatchSizes.Add(group.Length);
                     var response = await lease.SendAsync(request, token).ConfigureAwait(false);
                     var results = ReadBatch(group, response);
+                    if (group[0].Stage == PlanPublishStage.Order) results = UnplacedAfterFailure(results);
                     await Save(results).ConfigureAwait(false);
                     var notBefore = session.Document.Sync.NotBefore;
                     if (response.RetryAfter is { } delay && delay > TimeSpan.Zero)
@@ -456,7 +462,11 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                         serialFields = true;
                     if (notBefore != session.Document.Sync.NotBefore)
                         RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = notBefore }).ConfigureAwait(false));
-                    if (!recovery.Gateway && results.Any(w => w.State == PlanWriteState.Dispatched &&
+                    // #332: a move says "this item after that one", so sending it again lands it in the same place. A
+                    // position request whose outcome is unknown is resent in halves, like a field gateway failure,
+                    // and only a single move without an outcome stops the publish.
+                    var positionRecovery = group.Length > 1 && group[0].Stage == PlanPublishStage.Order;
+                    if (!recovery.Gateway && !positionRecovery && results.Any(w => w.State == PlanWriteState.Dispatched &&
                         !(recovery.Resource && w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
                     {
                         // #246: a response that never arrived is a lost connection; an answered 5xx
@@ -467,6 +477,37 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     if (notBefore is { } until && until - DateTimeOffset.UtcNow is var wait && wait > TimeSpan.Zero)
                         await Task.Delay(wait, token).ConfigureAwait(false);
                     await HandleResponse(group, response, results).ConfigureAwait(false);
+                }
+                // #332: position writes share a request (PlanPublishPlan.Batches). A move whose anchor this attempt has
+                // not placed is held, as it was when each move had its own request; a move in the same request
+                // as its anchor is sent, because GitHub runs the request's mutations in order.
+                async Task<ImmutableArray<PlanWrite>> HoldUnplacedAnchors(ImmutableArray<PlanWrite> group)
+                {
+                    var sending = new HashSet<string>(StringComparer.Ordinal);
+                    var kept = ImmutableArray.CreateBuilder<PlanWrite>();
+                    foreach (var write in group)
+                    {
+                        var anchor = JsonNode.Parse(write.Input)!["afterId"]?.GetValue<string>();
+                        var unplaced = anchor is not null && progress.Writes.TakeWhile(w => w.Key != write.Key).Any(w =>
+                            w.Stage == PlanPublishStage.Order && "item:" + w.Identity == anchor && w.State != PlanWriteState.Succeeded && !sending.Contains(w.Key));
+                        if (unplaced) { await Save([write with { State = PlanWriteState.Pending, Error = "NotDispatched" }]).ConfigureAwait(false); continue; }
+                        kept.Add(write); sending.Add(write.Key);
+                    }
+                    return kept.ToImmutable();
+                }
+                // GitHub still runs the moves after a rejected one in the same request, and a move anchored on a row
+                // that did not move lands beside that row's old place. Such a move, and any anchored on it, counts as
+                // not sent, so the next attempt sends it again in order.
+                static ImmutableArray<PlanWrite> UnplacedAfterFailure(ImmutableArray<PlanWrite> results)
+                {
+                    var unplaced = new HashSet<string>(StringComparer.Ordinal);
+                    return results.Select(write =>
+                    {
+                        if (write.State != PlanWriteState.Succeeded) { unplaced.Add("item:" + write.Identity); return write; }
+                        if (JsonNode.Parse(write.Input)!["afterId"]?.GetValue<string>() is not { } anchor || !unplaced.Contains(anchor)) return write;
+                        unplaced.Add("item:" + write.Identity);
+                        return write with { State = PlanWriteState.Pending, Error = "NotDispatched" };
+                    }).ToImmutableArray();
                 }
                 async Task HandleResponse(ImmutableArray<PlanWrite> group, ApiResult response, ImmutableArray<PlanWrite> results)
                 {
@@ -488,6 +529,16 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     }
                     var limited = results.Where(w => w.State != PlanWriteState.Succeeded &&
                         (fieldGatewayRecovery || w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)).ToArray();
+                    // A position request retries, in the planned order, every move from the first one whose outcome is
+                    // unknown or resource-limited: those moves and the ones held behind them.
+                    if (group[0].Stage == PlanPublishStage.Order && group.Length > 1)
+                    {
+                        static bool Open(PlanWrite w) => w.State == PlanWriteState.Dispatched || w.State != PlanWriteState.Succeeded &&
+                            w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true;
+                        var first = results.ToList().FindIndex(Open);
+                        limited = first < 0 ? [] : results.Skip(first)
+                            .Where(w => Open(w) || w.State == PlanWriteState.Pending && w.Error == "NotDispatched").ToArray();
+                    }
                     if (group.Length > 1 && limited.Length > 0)
                     {
                         var reduced = Math.Max(1, group.Length / 2);
@@ -552,7 +603,11 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                         fieldNotBefore = DateTimeOffset.UtcNow + delay;
                     // An unresolved outcome is never acted on until every in-flight response is recorded. A
                     // gateway failure keeps its split recovery instead of stopping the phase.
-                    if (!recovery.Gateway && results.Any(w => w.State == PlanWriteState.Dispatched && !(recovery.Resource &&
+                    // #332: a move says "this item after that one", so sending it again lands it in the same place. A
+                    // position request whose outcome is unknown is resent in halves, like a field gateway failure,
+                    // and only a single move without an outcome stops the publish.
+                    var positionRecovery = group.Length > 1 && group[0].Stage == PlanPublishStage.Order;
+                    if (!recovery.Gateway && !positionRecovery && results.Any(w => w.State == PlanWriteState.Dispatched && !(recovery.Resource &&
                         w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
                     {
                         fieldStopped = true;
@@ -590,6 +645,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     if (batch[0].Stage != PlanPublishStage.Fields)
                         await FinishFieldRequests().ConfigureAwait(false);
                     var ready = ImmutableArray.CreateBuilder<PlanWrite>();
+                    var sameRequest = new HashSet<string>(StringComparer.Ordinal);
                     foreach (var write in batch)
                     {
                         var earlier = progress.Writes.TakeWhile(w => w.Key != write.Key);
@@ -601,12 +657,12 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                              write.Mutation == "addBlockedBy" && w.Mutation == "removeBlockedBy" && (w.Identity == write.Identity || w.Identity == input["blockingIssueId"]?.GetValue<string>()) ||
                              write.Mutation == "reprioritizeSubIssue" && w.Mutation == "addSubIssue" &&
                                 (w.Identity == write.Identity || w.Identity == input["afterId"]?.GetValue<string>() || w.Identity == input["beforeId"]?.GetValue<string>()) ||
-                             write.Stage == PlanPublishStage.Order && w.Stage == PlanPublishStage.Order && input["afterId"]?.GetValue<string>() == "item:" + w.Identity));
+                             write.Stage == PlanPublishStage.Order && w.Stage == PlanPublishStage.Order && !sameRequest.Contains(w.Key) && input["afterId"]?.GetValue<string>() == "item:" + w.Identity));
                         if (!blocked)
                             try { ResolveInput(write, progress, remote, repositories); }
                             catch (InvalidOperationException) { blocked = true; }
                         if (blocked) await Save([write with { State = PlanWriteState.Pending, Error = "NotDispatched" }]);
-                        else ready.Add(write);
+                        else { ready.Add(write); sameRequest.Add(write.Key); }
                     }
                     var remainingReady = ready.ToImmutable();
                     while (!remainingReady.IsEmpty)

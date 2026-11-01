@@ -460,6 +460,8 @@ internal static class FakePlanEditor
                     { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic resource failure" })); data[alias] = null; }
                     continue;
                 }
+                if (fault == "position-denied" && mutation == "updateProjectV2ItemPosition" && ItemIdentity(input.GetProperty("itemId").GetString()!) == "I3")
+                { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "FORBIDDEN", message = "Synthetic position failure" })); data[alias] = null; continue; }
                 if (fault == "sibling-denied" && mutation == "reprioritizeSubIssue")
                 { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "FORBIDDEN", message = "Synthetic sibling failure" })); data[alias] = null; continue; }
                 if (fault == "sibling-resource" && mutation == "reprioritizeSubIssue" && matches.Count > 1 && input.GetProperty("subIssueId").GetString() == "I4")

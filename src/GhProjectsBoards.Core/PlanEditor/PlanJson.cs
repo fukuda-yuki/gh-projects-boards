@@ -169,9 +169,15 @@ internal static class PlanJson
     private static PlanDocument Step(PlanDocument document, PlanPatch patch, bool forward)
     {
         var state = PlanOperations.Replay(document.State, patch, forward);
+        // #332: a set, not a row scan per write. A publish saves its record before and after every request,
+        // and this runs for every history state on each save: scanning 1,040 rows for each of 1,000 order
+        // writes cost ~1.7 ms per state, ~0.35 s per save at 200 Undo steps.
         if (document.Sync.Publish is { DispatchStarted: true } attempt)
-            PlanOperations.Require(patch.BeforeSettings is null && attempt.Writes.All(w => state.Rows.Any(r => r.Identity == w.Identity)),
+        {
+            var present = state.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
+            PlanOperations.Require(patch.BeforeSettings is null && attempt.Writes.All(w => present.Contains(w.Identity)),
                 "送信済みの発行対象または設定を履歴から変更できません。");
+        }
         var next = document with { State = state, Baseline = PlanOperations.ReplayBaseline(document.Baseline, patch, forward),
             Sync = document.Sync with { LocalOrderChoices = (forward ? patch.AfterLocalOrderChoices : patch.BeforeLocalOrderChoices) ?? document.Sync.LocalOrderChoices, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? document.Sync.Conflicts,
                 Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? document.Sync.Unavailable } };

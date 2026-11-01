@@ -17,12 +17,20 @@ internal sealed record PlanPublishReview(ImmutableArray<PlanReviewChange> Change
 internal static class PlanPublishPlan
 {
     internal static bool IsIdentifierField(string key) => key is "id" or "repositoryId" or "projectId" or "itemId" or "contentId" or "issueId" or "subIssueId" or "blockingIssueId" or "assignableId" or "assigneeIds" or "labelableId" or "labelIds" or "milestoneId" or "afterId" or "beforeId";
+    // #332: a write is immutable, so one that passed the checks below for a Project passes them again; only
+    // its row's presence depends on the document. A publish saves its record before and after every
+    // request, and each save checks the record against every Undo step, so a reorder of 1,000 rows at
+    // 200 steps spent ~0.9 s per save re-parsing every write and scanning every row for each one.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<PlanWrite, string> ValidWrites = new();
     internal static void Validate(PlanPublishProgress progress, PlanDocument document)
     {
         PlanOperations.Require(Guid.TryParseExact(progress.RunId, "N", out _) && !progress.Writes.IsDefault &&
             progress.Writes.Select(w => w.Key).Distinct().Count() == progress.Writes.Length, "発行記録が不正です。");
+        var identities = document.State.Rows.Select(r => r.Identity).ToHashSet(StringComparer.Ordinal);
         foreach (var write in progress.Writes)
         {
+            PlanOperations.Require(identities.Contains(write.Identity), "発行操作の対象または形式が不正です。");
+            if (ValidWrites.TryGetValue(write, out var validFor) && validFor == document.Project.NodeId) continue;
             var contract = write.Mutation switch
             {
                 "createIssue" => (PlanPublishStage.Create, "issue { id }"),
@@ -43,8 +51,7 @@ internal static class PlanPublishPlan
                 _ => throw new ArgumentException("未対応の発行操作です。")
             };
             PlanOperations.Require(Enum.IsDefined(write.State) && !(write.Stage == PlanPublishStage.Create && write.ResultId is not null && write.State != PlanWriteState.Succeeded) && write.Stage == contract.Item1 && write.Selection == contract.Item2 &&
-                write.InputType == char.ToUpperInvariant(write.Mutation[0]) + write.Mutation[1..] + "Input" &&
-                document.State.Rows.Any(r => r.Identity == write.Identity), "発行操作の対象または形式が不正です。");
+                write.InputType == char.ToUpperInvariant(write.Mutation[0]) + write.Mutation[1..] + "Input", "発行操作の対象または形式が不正です。");
             PlanOperations.Require(write.Field is null || write.Field == PlanField.MilestoneTitle && write.Mutation == "updateIssue"
                 || write.Field == PlanField.Labels && write.Mutation is "addLabelsToLabelable" or "removeLabelsFromLabelable"
                 || write.Field == PlanField.IssueType && write.Mutation == "updateIssueIssueType"
@@ -68,6 +75,7 @@ internal static class PlanPublishPlan
             if (target is not null) PlanOperations.Require(input.RootElement.GetProperty(target).GetString() == (target == "itemId" ? "item:" : "") + write.Identity, "発行対象が行と一致しません。");
             if (input.RootElement.TryGetProperty("projectId", out var project))
                 PlanOperations.Require(project.GetString() == document.Project.NodeId, "発行先のプロジェクトが一致しません。");
+            ValidWrites.AddOrUpdate(write, document.Project.NodeId);
         }
     }
     internal static PlanPublishReview Build(PlanDocument document, PlanRemoteSnapshot remote, DateOnly today, string runId)
@@ -346,12 +354,13 @@ internal static class PlanPublishPlan
     private static int RelationshipPhase(PlanWrite write) => write.Mutation switch { "addSubIssue" or "addBlockedBy" => 1, "reprioritizeSubIssue" => 2, _ => 0 };
     internal static IEnumerable<ImmutableArray<PlanWrite>> Batches(IEnumerable<PlanWrite> writes)
     {
+        // #332: position writes (Project item order and sub-issue reprioritization) go ten to a request like the
+        // others. GraphQL runs a mutation's top-level fields one after another in the order written, so each
+        // move still follows the one before it; the publisher treats a move whose anchor did not land as not
+        // sent, so a partial result is resent in order instead of leaving a row beside the wrong neighbour.
+        // Sent one per request, a reorder of 1,000 rows was 1,000 requests and 2,000 record saves.
         foreach (var group in writes.GroupBy(w => (w.Stage, Phase: RelationshipPhase(w))).OrderBy(g => g.Key.Stage).ThenBy(g => g.Key.Phase))
-        {
-            // Position changes depend on preceding moves; partial-alias retries would reorder siblings.
-            var serial = group.Key.Stage == PlanPublishStage.Order || group.Key is (PlanPublishStage.Hierarchy, 2);
-            foreach (var batch in group.Chunk(serial ? 1 : 10))
+            foreach (var batch in group.Chunk(10))
                 yield return batch.ToImmutableArray();
-        }
     }
 }
