@@ -48,7 +48,10 @@ internal sealed class PlanSaveLatencyProbe
         await Time("undo", () => session.Undo(day));
         await Time("publish-record save", () => session.SaveSync(session.Document.Sync));
         // An unchanged read: the history is rebased onto the same baseline.
-        var remote = new PlanRemoteSnapshot(session.Document.Baseline, session.Document.Baseline.Rows.ToImmutableDictionary(r => r.Identity, r => "T-" + r.Identity), [], 0, 0);
+        // Like a real read, it returns a sub-issue order for every Issue, an empty one for an Issue without children.
+        var baselineRows = session.Document.Baseline.Rows;
+        var orders = baselineRows.ToImmutableDictionary(r => r.Identity, r => baselineRows.Where(c => c.Parent == r.Identity).Select(c => c.Identity).ToImmutableArray());
+        var remote = new PlanRemoteSnapshot(session.Document.Baseline, baselineRows.ToImmutableDictionary(r => r.Identity, r => "T-" + r.Identity), [], 0, 0) { SubIssueOrders = orders };
         using (var trace = new PerformanceTrace())
         {
             await Time("unchanged refresh (local)", () => session.AcceptRefresh(remote, day));
@@ -64,7 +67,8 @@ internal sealed class PlanSaveLatencyProbe
         sw2.Restart(); PlanOperations.Apply(doc, new IndentPlanRows([nb.Identity]), day); var a = sw2.ElapsedMilliseconds;
         var mergedDoc = PlanMerge.Merge(doc, doc.Baseline); var merge = long.MaxValue;
         for (var k = 0; k < 5; k++) { sw2.Restart(); mergedDoc = PlanMerge.Merge(doc, doc.Baseline); merge = Math.Min(merge, sw2.ElapsedMilliseconds); }
-        sw2.Restart(); PlanMerge.NativeOrder(doc, mergedDoc, doc.Sync.NativeOrders); var native = sw2.ElapsedMilliseconds;
+        var native = long.MaxValue;
+        for (var k = 0; k < 5; k++) { sw2.Restart(); PlanMerge.NativeOrder(doc, mergedDoc, orders); native = Math.Min(native, sw2.ElapsedMilliseconds); }
         TestContext.Out.WriteLine($"Merge {merge} ms | NativeOrder {native} ms");
         var loaded = await store.LoadAsync(doc.Project);
         sw2.Restart(); PlanJson.Validate(loaded.Checkpoint!, doc.Project); var full = sw2.ElapsedMilliseconds;

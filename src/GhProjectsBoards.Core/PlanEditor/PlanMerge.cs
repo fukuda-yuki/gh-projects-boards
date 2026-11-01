@@ -135,8 +135,19 @@ internal static class PlanMerge
     {
         var conflicts = merged.Sync.Conflicts.ToBuilder(); var state = merged.State;
         var members = state.Rows.Select(r => r.Identity).ToHashSet();
-        var unavailable = original.Sync.Unavailable;
+        var unavailable = original.Sync.Unavailable.ToHashSet(StringComparer.Ordinal);
         remote = remote.Where(pair => members.Contains(pair.Key)).ToImmutableDictionary();
+        // #332: the read returns an order for every Issue, also those without children, and this runs for
+        // every Undo step after a read, so each parent's children are gathered once instead of per parent.
+        static Dictionary<string, List<string>> Children(IEnumerable<PlanRow> rows)
+        {
+            var children = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            foreach (var row in rows)
+                if (row.Parent is { } parent) { if (!children.TryGetValue(parent, out var list)) children[parent] = list = []; list.Add(row.Identity); }
+            return children;
+        }
+        var baselineChildren = Children(original.Baseline.Rows); var stateChildren = Children(original.State.Rows);
+        var none = new List<string>();
         foreach (var (parent, remoteIds) in remote)
         {
             var prior = original.Sync.Conflicts.FirstOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
@@ -144,13 +155,16 @@ internal static class PlanMerge
             // Rows the read could not deliver are appended to the baseline, so they carry no displayed order.
             string Text(IEnumerable<string> ids) => JsonSerializer.Serialize(ids.Where(id => members.Contains(id) && !unavailable.Contains(id)));
             var b = Text(readIds);
-            var p = Text(original.Baseline.Rows.Where(r => r.Parent == parent).Select(r => r.Identity));
-            var l = Text(original.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity));
+            var p = Text(baselineChildren.GetValueOrDefault(parent, none));
+            var children = stateChildren.GetValueOrDefault(parent, none);
+            var l = Text(children);
             var r = Text(remoteIds);
             // "Local" means the plan's child order moved away from the order the plan read. A difference
             // that already exists between the two GitHub orders is not a local change. A pending retry
             // or explicit local conflict choice still counts after the Project baseline has advanced.
-            var localChange = l != p || PlanOperations.SiblingOrderChange(original, parent) is not null; var remoteChange = r != b;
+            // SiblingOrderChange finds no change for a parent with fewer than two available children.
+            var localChange = l != p || children.Count(id => !unavailable.Contains(id)) >= 2 && PlanOperations.SiblingOrderChange(original, parent) is not null;
+            var remoteChange = r != b;
             if (l != r && (prior is not null || localChange && remoteChange)) conflicts.Add(new(parent, PlanField.SubIssueOrder, prior?.Baseline ?? b, l, r));
             else if (l == b && r != b) state = SiblingOrder(state, parent, remoteIds);
         }
