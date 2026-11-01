@@ -47,6 +47,7 @@ internal sealed record PlanSync
 }
 internal static class PlanValues
 {
+    internal static PlanExtraValue Extra(string json) => new(json == "null" ? Projects.ValueAvailability.Empty : Projects.ValueAvailability.Present, NormalizeNumber(json));
     internal static string NormalizeNumber(string json)
         => decimal.TryParse(json, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
             ? number.ToString("G29", CultureInfo.InvariantCulture) : json;
@@ -75,7 +76,7 @@ internal static class PlanValues
     }
     internal static PlanRow Set(PlanRow row, string field, string json)
     {
-        if (PlanSheetColumns.IsExtra(field)) return row with { ExtraValues = row.ExtraValues.SetItem(field, new(json == "null" ? Projects.ValueAvailability.Empty : Projects.ValueAvailability.Present, NormalizeNumber(json))) };
+        if (PlanSheetColumns.IsExtra(field)) return row with { ExtraValues = row.ExtraValues.SetItem(field, Extra(json)) };
         var node = JsonNode.Parse(PlanJson.Text(row))!.AsObject();
         var name = JsonNamingPolicy.CamelCase.ConvertName(field.ToString());
         node[name] = JsonNode.Parse(json);
@@ -134,8 +135,19 @@ internal static class PlanMerge
     {
         var conflicts = merged.Sync.Conflicts.ToBuilder(); var state = merged.State;
         var members = state.Rows.Select(r => r.Identity).ToHashSet();
-        var unavailable = original.Sync.Unavailable;
+        var unavailable = original.Sync.Unavailable.ToHashSet(StringComparer.Ordinal);
         remote = remote.Where(pair => members.Contains(pair.Key)).ToImmutableDictionary();
+        // #332: the read returns an order for every Issue, also those without children, and this runs for
+        // every Undo step after a read, so each parent's children are gathered once instead of per parent.
+        static Dictionary<string, List<string>> Children(IEnumerable<PlanRow> rows)
+        {
+            var children = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            foreach (var row in rows)
+                if (row.Parent is { } parent) { if (!children.TryGetValue(parent, out var list)) children[parent] = list = []; list.Add(row.Identity); }
+            return children;
+        }
+        var baselineChildren = Children(original.Baseline.Rows); var stateChildren = Children(original.State.Rows);
+        var none = new List<string>();
         foreach (var (parent, remoteIds) in remote)
         {
             var prior = original.Sync.Conflicts.FirstOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
@@ -143,13 +155,16 @@ internal static class PlanMerge
             // Rows the read could not deliver are appended to the baseline, so they carry no displayed order.
             string Text(IEnumerable<string> ids) => JsonSerializer.Serialize(ids.Where(id => members.Contains(id) && !unavailable.Contains(id)));
             var b = Text(readIds);
-            var p = Text(original.Baseline.Rows.Where(r => r.Parent == parent).Select(r => r.Identity));
-            var l = Text(original.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity));
+            var p = Text(baselineChildren.GetValueOrDefault(parent, none));
+            var children = stateChildren.GetValueOrDefault(parent, none);
+            var l = Text(children);
             var r = Text(remoteIds);
             // "Local" means the plan's child order moved away from the order the plan read. A difference
             // that already exists between the two GitHub orders is not a local change. A pending retry
             // or explicit local conflict choice still counts after the Project baseline has advanced.
-            var localChange = l != p || PlanOperations.SiblingOrderChange(original, parent) is not null; var remoteChange = r != b;
+            // SiblingOrderChange finds no change for a parent with fewer than two available children.
+            var localChange = l != p || children.Count(id => !unavailable.Contains(id)) >= 2 && PlanOperations.SiblingOrderChange(original, parent) is not null;
+            var remoteChange = r != b;
             if (l != r && (prior is not null || localChange && remoteChange)) conflicts.Add(new(parent, PlanField.SubIssueOrder, prior?.Baseline ?? b, l, r));
             else if (l == b && r != b) state = SiblingOrder(state, parent, remoteIds);
         }
@@ -163,9 +178,11 @@ internal static class PlanMerge
     private static PlanRow Adopt(PlanRow row, string field, string json)
     {
         if (!PlanSheetColumns.IsExtra(field)) return PlanValues.Get(row, field) == json ? row : PlanValues.Set(row, field, json);
-        var adopted = PlanValues.Set(row, field, json);
-        return row.ExtraValues.TryGetValue(field, out var held) && held == adopted.ExtraValues[field] ? row : adopted;
+        var adopted = PlanValues.Extra(json);
+        return row.ExtraValues.TryGetValue(field, out var held) && held == adopted ? row : row with { ExtraValues = row.ExtraValues.SetItem(field, adopted) };
     }
+    // An extra value already in the form adopting it would record.
+    private static bool Canonical(PlanExtraValue value) => value.Json is { } json && value == PlanValues.Extra(json);
     internal static PlanDocument Merge(PlanDocument document, PlanBaseline remote)
     {
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
@@ -176,6 +193,8 @@ internal static class PlanMerge
         var returning = document.State.ArchivedIdentities.ToHashSet(StringComparer.Ordinal);
         var conflicts = new List<PlanConflict>();
         var unavailable = baseline.Keys.Where(id => !incoming.ContainsKey(id)).ToImmutableArray();
+        // #332: how many rows took each path, so a measurement on real data shows why a merge is slow.
+        int kept = 0, extrasOnly = 0, compared = 0;
         foreach (var r in remote.Rows)
         {
             if (!baseline.TryGetValue(r.Identity, out var b)) { local[r.Identity] = r; continue; }
@@ -190,15 +209,17 @@ internal static class PlanMerge
             // only its extra fields go through the loop, because adopting one also records its availability.
             var unchanged = PlanOperations.RowEqual(l, b) && PlanOperations.RowEqual(r, b);
             // Its extra values are kept too when each already holds what adopting it would record.
-            var canonical = unchanged && r.ExtraValues.Values.All(v => v.Json is { } json && json == PlanValues.NormalizeNumber(json)
-                && v.Availability == (json == "null" ? Projects.ValueAvailability.Empty : Projects.ValueAvailability.Present));
-            if (canonical) { local[r.Identity] = merged; continue; }
+            var canonical = unchanged && r.ExtraValues.Values.All(Canonical);
+            if (canonical) { kept++; local[r.Identity] = merged; continue; }
+            if (unchanged) extrasOnly++; else compared++;
             // Date adoption needs the merged progress state, regardless of enum declaration order.
             foreach (var field in PlanValues.Fields(b, l, r).OrderBy(field => field is PlanField.Start or PlanField.End))
             {
                 // A planning value the plan and this read hold alike is kept by every branch below.
                 if (!PlanSheetColumns.IsExtra(field) && (unchanged || PlanValues.Same(l, r, field))) continue;
-                if (PlanSheetColumns.IsExtra(field) && !r.ExtraValues.ContainsKey(field)) continue;
+                if (PlanSheetColumns.IsExtra(field) && (!r.ExtraValues.TryGetValue(field, out var read)
+                    // The plan already holds the canonical value this read returns: every branch below keeps it.
+                    || l.ExtraValues.TryGetValue(field, out var held) && held == read && Canonical(read))) continue;
                 var bv = PlanValues.Get(b, field); var lv = PlanValues.Get(l, field); var rv = PlanValues.Get(r, field);
                 var prior = document.Sync.Conflicts.FirstOrDefault(c => c.Identity == r.Identity && c.Field == field);
                 if (prior is not null && lv != rv)
@@ -209,6 +230,9 @@ internal static class PlanMerge
             }
             local[r.Identity] = merged;
         }
+        Projects.PerformanceTrace.Count("plan-merge-rows-kept", kept);
+        Projects.PerformanceTrace.Count("plan-merge-rows-extras-only", extrasOnly);
+        Projects.PerformanceTrace.Count("plan-merge-rows-compared", compared);
         var removed = document.Baseline.Columns.Where(c => !remote.Columns.Any(r => r.Id == c.Id))
             .ToDictionary(c => "Project:" + c.Id, c => c.Name);
         foreach (var prior in document.Sync.Conflicts.Where(c => c.DeletedFieldName is not null))
