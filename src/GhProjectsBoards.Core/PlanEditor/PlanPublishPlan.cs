@@ -352,15 +352,61 @@ internal static class PlanPublishPlan
         return Contains(input.RootElement);
     }
     private static int RelationshipPhase(PlanWrite write) => write.Mutation switch { "addSubIssue" or "addBlockedBy" => 1, "reprioritizeSubIssue" => 2, _ => 0 };
+    // #332: the child-order writes a membership change plans for every child of the parent (Build) that the
+    // order GitHub holds already satisfies. GitHub keeps the remaining sub-issues' order when one is removed
+    // and appends an added one at the end, so moving one Issue between two parents of 25 children planned
+    // about 50 moves where at most one was needed, each a request of over a second. The simulation starts
+    // from the order read before the writes and applies this attempt's removals and additions (all of them
+    // must have landed) and then the planned moves in order; a move that leaves its child where it already
+    // is needs no request, except an added child's own move. It is still verified with the others by the read after the writes, so a wrong
+    // assumption shows as a failed order and the next publish repairs it, never as a silent difference.
+    internal static ImmutableArray<PlanWrite> AlreadyInPlace(PlanPublishProgress progress, IReadOnlyDictionary<string, ImmutableArray<string>> orders)
+    {
+        var bindings = progress.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.ResultId is not null).ToDictionary(w => w.Identity, w => w.ResultId!);
+        string Id(string id) => bindings.GetValueOrDefault(id) ?? id;
+        static string? Text(PlanWrite write, string key) => System.Text.Json.Nodes.JsonNode.Parse(write.Input)![key]?.GetValue<string>();
+        var hierarchy = progress.Writes.Where(w => w.Stage == PlanPublishStage.Hierarchy).ToArray();
+        var result = ImmutableArray.CreateBuilder<PlanWrite>();
+        foreach (var moves in hierarchy.Where(w => w.Mutation == "reprioritizeSubIssue" && w.State != PlanWriteState.Succeeded).GroupBy(w => Id(Text(w, "issueId")!)))
+        {
+            if (!orders.TryGetValue(moves.Key, out var read)) continue;
+            var links = hierarchy.Where(w => w.Mutation is "addSubIssue" or "removeSubIssue" && Id(Text(w, "issueId")!) == moves.Key).ToArray();
+            if (links.Any(w => w.State != PlanWriteState.Succeeded)) continue;
+            var order = read.ToList();
+            // An added child's own move is always sent, so its place never rests on where GitHub put it.
+            var added = links.Where(w => w.Mutation == "addSubIssue").Select(w => Id(Text(w, "subIssueId")!)).ToHashSet(StringComparer.Ordinal);
+            foreach (var link in links)
+            {
+                var child = Id(Text(link, "subIssueId")!);
+                order.Remove(child);
+                if (link.Mutation == "addSubIssue") order.Add(child);
+            }
+            foreach (var move in moves)
+            {
+                var child = Id(Text(move, "subIssueId")!);
+                var after = Text(move, "afterId") is { } a ? Id(a) : null; var before = Text(move, "beforeId") is { } b ? Id(b) : null;
+                var from = order.IndexOf(child);
+                if (from < 0 || (after ?? before) is not { } neighbour || !order.Contains(neighbour) || neighbour == child) break;
+                order.RemoveAt(from);
+                var to = after is not null ? order.IndexOf(after) + 1 : order.IndexOf(before!);
+                order.Insert(to, child);
+                if (to == from && !added.Contains(child)) result.Add(move);
+            }
+        }
+        return result.ToImmutable();
+    }
+    internal const int PositionMovesPerRequest = 3;
     internal static IEnumerable<ImmutableArray<PlanWrite>> Batches(IEnumerable<PlanWrite> writes)
     {
-        // #332: position writes (Project item order and sub-issue reprioritization) go ten to a request like the
-        // others. GraphQL runs a mutation's top-level fields one after another in the order written, so each
-        // move still follows the one before it; the publisher treats a move whose anchor did not land as not
-        // sent, so a partial result is resent in order instead of leaving a row beside the wrong neighbour.
-        // Sent one per request, a reorder of 1,000 rows was 1,000 requests and 2,000 record saves.
+        // #332: position writes (Project item order and sub-issue reprioritization) share a request, three at a
+        // time. GraphQL runs a mutation's top-level fields one after another in the order written, so each move
+        // still follows the one before it; the publisher treats a move whose anchor did not land as not sent,
+        // so a partial result is resent in order instead of leaving a row beside the wrong neighbour. GitHub
+        // spends 1.2-1.6 s on each Project item move (Project 3, 2026-11-01): ten in one request answered 502
+        // after about 10 s and five took 6-8 s, so three keep well inside that limit while saving most of the
+        // per-request overhead and record saves of one move per request.
         foreach (var group in writes.GroupBy(w => (w.Stage, Phase: RelationshipPhase(w))).OrderBy(g => g.Key.Stage).ThenBy(g => g.Key.Phase))
-            foreach (var batch in group.Chunk(10))
+            foreach (var batch in group.Chunk(group.Key.Stage == PlanPublishStage.Order || group.Key is (PlanPublishStage.Hierarchy, 2) ? PositionMovesPerRequest : 10))
                 yield return batch.ToImmutableArray();
     }
 }

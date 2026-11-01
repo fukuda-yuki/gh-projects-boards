@@ -79,9 +79,9 @@ internal sealed class PlanOrderTests
             order.Insert(after is null ? 0 : order.IndexOf(after[5..]) + 1, write.Identity);
         }
         Assert.That(order, Is.EqualTo(current.Select(c => c.ToString())));
-        // #332: moves share requests of up to ten, in plan order; GitHub runs a request's mutations in order.
+        // #332: moves share requests of up to three, in plan order; GitHub runs a request's mutations in order.
         var batches = PlanPublishPlan.Batches(writes).ToArray();
-        Assert.That(batches.All(b => b.Length <= 10), Is.True);
+        Assert.That(batches.All(b => b.Length <= PlanPublishPlan.PositionMovesPerRequest), Is.True);
         Assert.That(batches.SelectMany(b => b), Is.EqualTo(writes));
         PlanPublishPlan.Validate(new(Guid.NewGuid().ToString("N"), review.Writes), document);
     }

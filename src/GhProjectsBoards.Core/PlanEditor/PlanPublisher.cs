@@ -640,10 +640,23 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     await DispatchFieldRequest(group).ConfigureAwait(false);
                     while (fieldInFlight.Count >= FieldConcurrencyLimit) await ObserveFieldResponse().ConfigureAwait(false);
                 }
-                foreach (var batch in PlanPublishPlan.Batches(progress.Writes.Where(w => w.State != PlanWriteState.Succeeded)))
+                var placementChecked = false;
+                foreach (var planned in PlanPublishPlan.Batches(progress.Writes.Where(w => w.State != PlanWriteState.Succeeded)))
                 {
-                    if (batch[0].Stage != PlanPublishStage.Fields)
+                    if (planned[0].Stage != PlanPublishStage.Fields)
                         await FinishFieldRequests().ConfigureAwait(false);
+                    // #332: once the sub-issue additions and removals have their outcomes, the child-order moves
+                    // that GitHub's resulting order already satisfies are recorded as done instead of sent.
+                    if (!placementChecked && planned[0].Mutation == "reprioritizeSubIssue")
+                    {
+                        placementChecked = true;
+                        var inPlace = PlanPublishPlan.AlreadyInPlace(progress, remote.SubIssueOrders);
+                        if (!inPlace.IsEmpty) await Save(inPlace.Select(w => w with { State = PlanWriteState.Succeeded, Error = null })).ConfigureAwait(false);
+                        GhProjectsBoards.Core.Projects.PerformanceTrace.Count("publish-child-moves-in-place", inPlace.Length);
+                    }
+                    var done = progress.Writes.Where(w => w.State == PlanWriteState.Succeeded).Select(w => w.Key).ToHashSet(StringComparer.Ordinal);
+                    var batch = planned.Where(w => !done.Contains(w.Key)).ToImmutableArray();
+                    if (batch.IsEmpty) continue;
                     var ready = ImmutableArray.CreateBuilder<PlanWrite>();
                     var sameRequest = new HashSet<string>(StringComparer.Ordinal);
                     foreach (var write in batch)
